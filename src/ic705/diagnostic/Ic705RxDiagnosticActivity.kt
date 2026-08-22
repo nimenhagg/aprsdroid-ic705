@@ -387,11 +387,18 @@ class Ic705RxDiagnosticActivity : Activity() {
         "0x" + value.toString(16).uppercase().padStart(width, '0')
 
     private fun restoreConnectionFields() {
-        val preferences = getSharedPreferences(CONNECTION_PREFERENCES, MODE_PRIVATE)
-        address.setText(preferences.getString(KEY_ADDRESS, address.text.toString()))
-        port.setText(preferences.getString(KEY_PORT, port.text.toString()))
-        username.setText(preferences.getString(KEY_USERNAME, ""))
-        password.setText(preferences.getString(KEY_PASSWORD, ""))
+        val defaultPrefs = android.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        val diagPrefs = getSharedPreferences(CONNECTION_PREFERENCES, MODE_PRIVATE)
+        
+        val defaultAddress = defaultPrefs.getString("ic705.address", "192.168.59.1")?.trim().takeIf { !it.isNullOrEmpty() } ?: "192.168.59.1"
+        val defaultPort = defaultPrefs.getString("ic705.control_port", "50001")?.trim().takeIf { !it.isNullOrEmpty() } ?: "50001"
+        val defaultUser = defaultPrefs.getString("ic705.username", "") ?: ""
+        val defaultPass = defaultPrefs.getString("ic705.password", "") ?: ""
+
+        address.setText(diagPrefs.getString(KEY_ADDRESS, defaultAddress))
+        port.setText(diagPrefs.getString(KEY_PORT, defaultPort))
+        username.setText(diagPrefs.getString(KEY_USERNAME, defaultUser))
+        password.setText(diagPrefs.getString(KEY_PASSWORD, defaultPass))
     }
 
     private fun saveConnectionFields() {

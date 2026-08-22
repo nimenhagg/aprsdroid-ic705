@@ -52,13 +52,16 @@ class MainListActivity(actname : String, menuid : Int) extends LoadingListActivi
 	}
 
 	def setupButtons(running : Boolean) {
-		//singleBtn.setEnabled(!running)
 		if (running) {
-			startstopBtn.getBackground().setColorFilter(0xffffc0c0, PorterDuff.Mode.MULTIPLY)
+			startstopBtn.getBackground().clearColorFilter()
 			startstopBtn.setText(R.string.stoplog)
+			startstopBtn.setBackgroundColor(0xffba1a1a)
+			startstopBtn.setTextColor(0xffffffff)
 		} else {
-			startstopBtn.getBackground().setColorFilter(0xffc0ffc0, PorterDuff.Mode.MULTIPLY)
+			startstopBtn.getBackground().clearColorFilter()
 			startstopBtn.setText(R.string.startlog)
+			startstopBtn.setBackgroundColor(0xff00677d)
+			startstopBtn.setTextColor(0xffffffff)
 		}
 	}
 

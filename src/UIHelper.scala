@@ -315,7 +315,7 @@ trait UIHelper extends Activity
 		})
 		menu.findItem(R.id.age).setVisible(R.id.map == menu_id || R.id.hub == menu_id)
 		menu.findItem(R.id.overlays).setVisible(R.id.map == menu_id)
-		menu.findItem(R.id.ic705_rx_diagnostic).setVisible(android.os.Build.VERSION.SDK_INT >= 22)
+		// diagnostic in settings
 		true
 	}
 

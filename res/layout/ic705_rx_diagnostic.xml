@@ -1,101 +1,249 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:background="?attr/colorSurface"
     android:importantForAutofill="noExcludeDescendants">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="12dp">
 
-        <TextView
+        <!-- Card 1: Description & Help -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/ic705_rx_instructions" />
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/md3_outline_variant"
+            app:cardBackgroundColor="@color/md3_surface_container_low"
+            android:layout_marginBottom="10dp">
 
-        <EditText
-            android:id="@+id/ic705_rx_address"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/md3_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:text="@string/ic705_rx_title" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:textColor="@color/md3_on_surface_variant"
+                    android:textSize="13sp"
+                    android:lineSpacingMultiplier="1.2"
+                    android:text="@string/ic705_rx_instructions" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Card 2: Connection Parameters -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/ic705_rx_address"
-            android:importantForAutofill="no"
-            android:inputType="textNoSuggestions"
-            android:saveEnabled="false"
-            android:text="@string/ic705_rx_default_address" />
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/md3_outline_variant"
+            app:cardBackgroundColor="@color/md3_surface_container_low"
+            android:layout_marginBottom="10dp">
 
-        <EditText
-            android:id="@+id/ic705_rx_port"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/md3_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:text="电台连接参数" />
+
+                <EditText
+                    android:id="@+id/ic705_rx_address"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/pref_text_input_bg"
+                    android:paddingHorizontal="12dp"
+                    android:hint="@string/ic705_rx_address"
+                    android:textColor="@color/md3_on_surface"
+                    android:importantForAutofill="no"
+                    android:inputType="textNoSuggestions"
+                    android:saveEnabled="false"
+                    android:textSize="14sp"
+                    android:typeface="monospace" />
+
+                <EditText
+                    android:id="@+id/ic705_rx_port"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/pref_text_input_bg"
+                    android:paddingHorizontal="12dp"
+                    android:hint="@string/ic705_rx_port"
+                    android:textColor="@color/md3_on_surface"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:saveEnabled="false"
+                    android:textSize="14sp"
+                    android:typeface="monospace" />
+
+                <EditText
+                    android:id="@+id/ic705_rx_username"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/pref_text_input_bg"
+                    android:paddingHorizontal="12dp"
+                    android:hint="@string/ic705_rx_username"
+                    android:textColor="@color/md3_on_surface"
+                    android:importantForAutofill="no"
+                    android:inputType="textNoSuggestions"
+                    android:saveEnabled="false"
+                    android:textSize="14sp" />
+
+                <EditText
+                    android:id="@+id/ic705_rx_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/pref_text_input_bg"
+                    android:paddingHorizontal="12dp"
+                    android:hint="@string/ic705_rx_password"
+                    android:textColor="@color/md3_on_surface"
+                    android:importantForAutofill="no"
+                    android:inputType="textPassword"
+                    android:saveEnabled="false"
+                    android:textSize="14sp" />
+
+                <!-- Action Buttons -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="16dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/ic705_rx_connect"
+                        style="@style/Widget.Material3.Button"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        app:cornerRadius="24dp"
+                        app:backgroundTint="@color/md3_primary"
+                        android:textColor="@color/md3_on_primary"
+                        android:text="@string/ic705_rx_connect" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/ic705_rx_disconnect"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        app:cornerRadius="24dp"
+                        android:enabled="false"
+                        android:textColor="@color/md3_on_secondary_container"
+                        android:text="@string/ic705_rx_disconnect" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Card 3: Status & Metrics -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/ic705_rx_port"
-            android:importantForAutofill="no"
-            android:inputType="number"
-            android:saveEnabled="false"
-            android:text="50001" />
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/md3_outline_variant"
+            app:cardBackgroundColor="@color/md3_surface_container_low"
+            android:layout_marginBottom="10dp">
 
-        <EditText
-            android:id="@+id/ic705_rx_username"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/ic705_rx_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/md3_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:text="@string/ic705_rx_stopped"
+                    android:textIsSelectable="true" />
+
+                <TextView
+                    android:id="@+id/ic705_rx_statistics"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/md3_on_surface"
+                    android:textSize="13sp"
+                    android:lineSpacingMultiplier="1.3"
+                    android:typeface="monospace"
+                    android:textIsSelectable="true" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Card 4: Event Log -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/ic705_rx_username"
-            android:importantForAutofill="no"
-            android:inputType="textNoSuggestions"
-            android:saveEnabled="false" />
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/md3_outline_variant"
+            app:cardBackgroundColor="@color/md3_surface_container_high"
+            android:layout_marginBottom="24dp">
 
-        <EditText
-            android:id="@+id/ic705_rx_password"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/ic705_rx_password"
-            android:importantForAutofill="no"
-            android:inputType="textPassword"
-            android:saveEnabled="false" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <Button
-            android:id="@+id/ic705_rx_connect"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/ic705_rx_connect" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/md3_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:text="@string/ic705_rx_log_title" />
 
-        <Button
-            android:id="@+id/ic705_rx_disconnect"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:enabled="false"
-            android:text="@string/ic705_rx_disconnect" />
-
-        <TextView
-            android:id="@+id/ic705_rx_status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="16dp"
-            android:text="@string/ic705_rx_stopped"
-            android:textIsSelectable="true" />
-
-        <TextView
-            android:id="@+id/ic705_rx_statistics"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:textIsSelectable="true" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="16dp"
-            android:text="@string/ic705_rx_log_title"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/ic705_rx_event_log"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="4dp"
-            android:text="@string/ic705_rx_log_empty"
-            android:textIsSelectable="true"
-            android:typeface="monospace" />
+                <TextView
+                    android:id="@+id/ic705_rx_event_log"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/md3_on_surface"
+                    android:textSize="12sp"
+                    android:lineSpacingMultiplier="1.2"
+                    android:text="@string/ic705_rx_log_empty"
+                    android:textIsSelectable="true"
+                    android:typeface="monospace" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </ScrollView>

@@ -438,7 +438,9 @@
 <string name="no_perm_text">The following permissions are required:</string>
 
 <!-- Temporary IC-705 receive-only hardware diagnostic -->
-<string name="ic705_rx_title">IC-705 Wi-Fi 接收诊断</string>
+<string name="ic705_rx_title">IC-705 Wi-Fi 诊断</string>
+    <string name="ic705_rx_diagnostic_title">IC-705 Wi-Fi 诊断</string>
+    <string name="ic705_rx_diagnostic_summary">测试与 IC-705 的 UDP 握手、PCM 音频流与 AFSK 解码状态</string>
 <string name="ic705_rx_instructions">请先将手机连接到 IC-705 所在的 Wi-Fi 网络。本页面仅用于接收测试，不会控制 PTT，也不会发送音频。连接参数会保存在本机应用中；离开本页面时会断开当前会话。自动重连暂未启用，网络变化后请停止并重新开始。</string>
 <string name="ic705_rx_address">电台 IP 地址</string>
 <string name="ic705_rx_default_address" translatable="false">192.168.59.1</string>
