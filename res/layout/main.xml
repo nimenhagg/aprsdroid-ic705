@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:fitsSystemWindows="true"
     android:background="?attr/colorSurface">
 
     <ListView
@@ -38,8 +39,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:paddingHorizontal="14dp"
-        android:paddingTop="10dp"
-        android:paddingBottom="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp"
         android:background="?attr/colorSurfaceContainer">
         <include layout="@layout/buttons" />
     </LinearLayout>

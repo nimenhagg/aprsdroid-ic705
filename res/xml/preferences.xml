@@ -1,229 +1,219 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen
-        xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory
-	    android:title="@string/p__aprs">
-            
+    <PreferenceCategory android:title="@string/p__aprs">
         <de.duenndns.EditTextPreferenceWithValue
-                android:key="callsign"
-		android:inputType="textCapCharacters"
-		android:digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		android:maxLength="7"
-		android:title="@string/p_callsign_nossid"
-		android:summary="@string/p_callsign_summary"
-		android:hint="@string/p_callsign_nossid"
-		android:dialogTitle="@string/p_callsign_entry" />
+            android:key="callsign"
+            android:icon="@drawable/ic_pref_callsign"
+            android:inputType="textCapCharacters"
+            android:digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            android:maxLength="7"
+            android:title="@string/p_callsign_nossid"
+            android:summary="@string/p_callsign_summary"
+            android:hint="@string/p_callsign_nossid"
+            android:dialogTitle="@string/p_callsign_entry" />
 
         <de.duenndns.ListPreferenceWithValue
-                android:key="ssid"
-		android:title="@string/p_ssid"
-		android:summary="@string/p_ssid_summary"
-                android:entries="@array/p_ssid_e"
-                android:entryValues="@array/p_ssid_ev"
-		android:defaultValue="5"
-		android:dialogTitle="@string/p_ssid_entry" />
+            android:key="ssid"
+            android:icon="@drawable/ic_pref_ssid"
+            android:title="@string/p_ssid"
+            android:summary="@string/p_ssid_summary"
+            android:entries="@array/p_ssid_e"
+            android:entryValues="@array/p_ssid_ev"
+            android:defaultValue="5"
+            android:dialogTitle="@string/p_ssid_entry" />
 
         <de.duenndns.EditTextPreferenceWithValue
-                android:key="digi_path"
-		android:hint="hop1,hop2,.."
-		android:defaultValue="WIDE1-1"
-		android:inputType="textCapCharacters"
-		android:digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ,-"
-		android:title="@string/p_aprs_path"
-		android:summary="@string/p_aprs_path_summary"
-		android:dialogTitle="@string/p_aprs_path_entry" />
-
+            android:key="digi_path"
+            android:icon="@drawable/ic_pref_path"
+            android:hint="hop1,hop2,.."
+            android:defaultValue="WIDE1-1"
+            android:inputType="textCapCharacters"
+            android:digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ,-"
+            android:title="@string/p_aprs_path"
+            android:summary="@string/p_aprs_path_summary"
+            android:dialogTitle="@string/p_aprs_path_entry" />
     </PreferenceCategory>
 
-    <PreferenceCategory
-	android:title="@string/p__connection">
-
+    <PreferenceCategory android:title="@string/p__connection">
         <PreferenceScreen
-		android:key="p_connsetup"
-		android:title="@string/p_connsetup">
-
-            <intent android:action="android.intent.action.MAIN"
-                    android:targetPackage="me.nimenhagg.aprsdroidic705mod"
-                    android:targetClass="org.aprsdroid.app.BackendPrefs" />
-
+            android:key="p_connsetup"
+            android:icon="@drawable/ic_pref_connection"
+            android:title="@string/p_connsetup">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:targetPackage="me.nimenhagg.aprsdroidic705mod"
+                android:targetClass="org.aprsdroid.app.BackendPrefs" />
         </PreferenceScreen>
     </PreferenceCategory>
 
-    <PreferenceCategory
-	android:title="@string/p__position">
-    <PreferenceScreen
-	    android:key="p_symbol"
-	    android:title="@string/p_symbol"
-	    android:summary="@string/p_symbol_summary" >
-
-            <intent android:action="android.intent.action.MAIN"
-                    android:targetPackage="me.nimenhagg.aprsdroidic705mod"
-                    android:targetClass="org.aprsdroid.app.PrefSymbolAct" />
-    </PreferenceScreen>
-
-        <de.duenndns.EditTextPreferenceWithValue
-                android:key="frequency"
-		android:inputType="number|numberDecimal"
-		android:title="@string/p_frequency"
-		android:summary="@string/p_frequency_summary"
-		android:dialogTitle="@string/p_frequency_summary" />
+    <PreferenceCategory android:title="@string/p__position">
+        <PreferenceScreen
+            android:key="p_symbol"
+            android:icon="@drawable/ic_pref_symbol"
+            android:title="@string/p_symbol"
+            android:summary="@string/p_symbol_summary">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:targetPackage="me.nimenhagg.aprsdroidic705mod"
+                android:targetClass="org.aprsdroid.app.PrefSymbolAct" />
+        </PreferenceScreen>
 
         <de.duenndns.EditTextPreferenceWithValue
-                android:key="status"
-		android:singleLine="true"
-		android:maxLength="42"
-		android:hint="@string/default_status"
-		android:title="@string/p_status"
-		android:defaultValue="@string/default_status"
-		android:summary="@string/p_status_summary"
-		android:dialogTitle="@string/p_status_entry" />
+            android:key="frequency"
+            android:icon="@drawable/ic_pref_frequency"
+            android:inputType="number|numberDecimal"
+            android:title="@string/p_frequency"
+            android:summary="@string/p_frequency_summary"
+            android:dialogTitle="@string/p_frequency_summary" />
 
-    <!-- sub-screen "Position Reports" -->
+        <de.duenndns.EditTextPreferenceWithValue
+            android:key="status"
+            android:icon="@drawable/ic_pref_status"
+            android:singleLine="true"
+            android:maxLength="42"
+            android:hint="@string/default_status"
+            android:title="@string/p_status"
+            android:defaultValue="@string/default_status"
+            android:summary="@string/p_status_summary"
+            android:dialogTitle="@string/p_status_entry" />
 
-    <PreferenceScreen
-	    android:key="p_location"
-	    android:title="@string/p__location">
+        <PreferenceScreen
+            android:key="p_location"
+            android:icon="@drawable/ic_pref_location"
+            android:title="@string/p__location">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:targetPackage="me.nimenhagg.aprsdroidic705mod"
+                android:targetClass="org.aprsdroid.app.LocationPrefs" />
+        </PreferenceScreen>
 
-            <intent android:action="android.intent.action.MAIN"
-                    android:targetPackage="me.nimenhagg.aprsdroidic705mod"
-                    android:targetClass="org.aprsdroid.app.LocationPrefs" />
-    </PreferenceScreen>
+        <PreferenceScreen
+            android:title="@string/p_privacy"
+            android:icon="@drawable/ic_pref_privacy"
+            android:summary="@string/p_privacy_summary">
+            <PreferenceCategory android:title="@string/p_privacy">
+                <de.duenndns.ListPreferenceWithValue
+                    android:key="priv_ambiguity"
+                    android:icon="@drawable/ic_pref_privacy_blur"
+                    android:title="@string/p_priv_ambiguity"
+                    android:summary="@string/p_priv_ambiguity_summary"
+                    android:entries="@array/p_ambiguity_e"
+                    android:entryValues="@array/p_ambiguity_ev"
+                    android:defaultValue="0"
+                    android:dialogTitle="@string/p_priv_ambiguity" />
 
-    <PreferenceScreen
-	    android:title="@string/p_privacy"
-	    android:summary="@string/p_privacy_summary">
-    <!-- incoming messages -->
-    <PreferenceCategory
-	    android:title="@string/p_privacy">
+                <CheckBoxPreference
+                    android:key="priv_spdbear"
+                    android:icon="@drawable/ic_pref_privacy_speed"
+                    android:title="@string/p_priv_spdbear"
+                    android:summary="@string/p_priv_spdbear_summary"
+                    android:defaultValue="true" />
 
-        <de.duenndns.ListPreferenceWithValue
-                android:key="priv_ambiguity"
-		android:title="@string/p_priv_ambiguity"
-		android:summary="@string/p_priv_ambiguity_summary"
-                android:entries="@array/p_ambiguity_e"
-                android:entryValues="@array/p_ambiguity_ev"
-		android:defaultValue="0"
-		android:dialogTitle="@string/p_priv_ambiguity" />
+                <CheckBoxPreference
+                    android:key="priv_altitude"
+                    android:icon="@drawable/ic_pref_privacy_altitude"
+                    android:title="@string/p_priv_altitude"
+                    android:summary="@string/p_priv_altitude_summary"
+                    android:defaultValue="true" />
+            </PreferenceCategory>
+        </PreferenceScreen>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/p__display">
         <CheckBoxPreference
-                android:key="priv_spdbear"
-		android:title="@string/p_priv_spdbear"
-		android:summary="@string/p_priv_spdbear_summary"
-		android:defaultValue="true"
-		/>
-        <CheckBoxPreference
-                android:key="priv_altitude"
-		android:title="@string/p_priv_altitude"
-		android:summary="@string/p_priv_altitude_summary"
-		android:defaultValue="true"
-		/>
+            android:key="keepscreen"
+            android:icon="@drawable/ic_pref_screen"
+            android:title="@string/p_keepscreen"
+            android:summary="@string/p_keepscreen_summary" />
+
+        <PreferenceScreen
+            android:title="@string/p__notification"
+            android:icon="@drawable/ic_pref_notification"
+            android:summary="@string/p__notification_summary">
+            <PreferenceCategory android:title="@string/p_msg">
+                <CheckBoxPreference
+                    android:key="notify_led"
+                    android:title="@string/p_msg_led"
+                    android:summaryOn="@string/p_msg_led_on"
+                    android:summaryOff="@string/p_msg_led_off"
+                    android:defaultValue="true" />
+
+                <CheckBoxPreference
+                    android:key="notify_vibr"
+                    android:title="@string/p_msg_vibr"
+                    android:summaryOn="@string/p_msg_vibr_on"
+                    android:summaryOff="@string/p_msg_vibr_off"
+                    android:defaultValue="true" />
+
+                <RingtonePreference
+                    android:key="notify_ringtone"
+                    android:title="@string/p_msg_ring"
+                    android:summary="@string/p_msg_ring_summary"
+                    android:ringtoneType="notification"
+                    android:showDefault="true"
+                    android:showSilent="true" />
+            </PreferenceCategory>
+
+            <PreferenceCategory android:title="@string/p_pos">
+                <CheckBoxPreference
+                    android:key="pos_notify_led"
+                    android:title="@string/p_msg_led"
+                    android:summaryOn="@string/p_msg_led_on"
+                    android:summaryOff="@string/p_msg_led_off"
+                    android:defaultValue="false" />
+
+                <CheckBoxPreference
+                    android:key="pos_notify_vibr"
+                    android:title="@string/p_msg_vibr"
+                    android:summaryOn="@string/p_msg_vibr_on"
+                    android:summaryOff="@string/p_msg_vibr_off"
+                    android:defaultValue="false" />
+
+                <RingtonePreference
+                    android:key="pos_notify_ringtone"
+                    android:title="@string/p_pos_ring"
+                    android:summary="@string/p_pos_ring_summary"
+                    android:ringtoneType="notification"
+                    android:showDefault="true"
+                    android:showSilent="true" />
+            </PreferenceCategory>
+
+            <PreferenceCategory android:title="@string/p_dgp">
+                <CheckBoxPreference
+                    android:key="dgp_notify_led"
+                    android:title="@string/p_msg_led"
+                    android:summaryOn="@string/p_msg_led_on"
+                    android:summaryOff="@string/p_msg_led_off"
+                    android:defaultValue="false" />
+
+                <CheckBoxPreference
+                    android:key="dgp_notify_vibr"
+                    android:title="@string/p_msg_vibr"
+                    android:summaryOn="@string/p_msg_vibr_on"
+                    android:summaryOff="@string/p_msg_vibr_off"
+                    android:defaultValue="false" />
+
+                <RingtonePreference
+                    android:key="dgp_notify_ringtone"
+                    android:title="@string/p_dgp_ring"
+                    android:summary="@string/p_dgp_ring_summary"
+                    android:ringtoneType="notification"
+                    android:showDefault="true"
+                    android:showSilent="true" />
+            </PreferenceCategory>
+        </PreferenceScreen>
+
+        <de.duenndns.PreferenceWithValue
+            android:key="mapfile"
+            android:icon="@drawable/ic_pref_maps"
+            android:title="@string/p_mapfile"
+            android:summary="@string/p_mapfile_summary" />
+
+        <de.duenndns.PreferenceWithValue
+            android:key="themefile"
+            android:icon="@drawable/ic_pref_maps"
+            android:title="@string/p_themefile"
+            android:summary="@string/p_themefile_summary" />
     </PreferenceCategory>
-    </PreferenceScreen>
-    </PreferenceCategory>
-
-    <!-- sub-screen "display and notifications" -->
-    <PreferenceCategory
-	android:title="@string/p__display">
-    <CheckBoxPreference
-	    android:key="keepscreen"
-	    android:title="@string/p_keepscreen"
-	    android:summary="@string/p_keepscreen_summary" />
-    <PreferenceScreen
-	    android:title="@string/p__notification"
-	    android:summary="@string/p__notification_summary">
-    <!-- incoming messages -->
-    <PreferenceCategory
-	android:title="@string/p_msg">
-
-	<CheckBoxPreference
-		android:key="notify_led"
-		android:title="@string/p_msg_led"
-		android:summaryOn="@string/p_msg_led_on"
-		android:summaryOff="@string/p_msg_led_off"
-		android:defaultValue="true"
-		/>
-	<CheckBoxPreference
-		android:key="notify_vibr"
-		android:title="@string/p_msg_vibr"
-		android:summaryOn="@string/p_msg_vibr_on"
-		android:summaryOff="@string/p_msg_vibr_off"
-		android:defaultValue="true"
-		/>
-	<RingtonePreference
-		android:key="notify_ringtone"
-		android:title="@string/p_msg_ring"
-		android:summary="@string/p_msg_ring_summary"
-		android:ringtoneType="notification"
-		android:showDefault="true"
-		android:showSilent="true"
-		/>
-    </PreferenceCategory>
-    <!-- position reports -->
-    <PreferenceCategory
-	android:title="@string/p_pos">
-
-	<CheckBoxPreference
-		android:key="pos_notify_led"
-		android:title="@string/p_msg_led"
-		android:summaryOn="@string/p_msg_led_on"
-		android:summaryOff="@string/p_msg_led_off"
-		android:defaultValue="false"
-		/>
-	<CheckBoxPreference
-		android:key="pos_notify_vibr"
-		android:title="@string/p_msg_vibr"
-		android:summaryOn="@string/p_msg_vibr_on"
-		android:summaryOff="@string/p_msg_vibr_off"
-		android:defaultValue="false"
-		/>
-	<RingtonePreference
-		android:key="pos_notify_ringtone"
-		android:title="@string/p_pos_ring"
-		android:summary="@string/p_pos_ring_summary"
-		android:ringtoneType="notification"
-		android:showDefault="true"
-		android:showSilent="true"
-		/>
-    </PreferenceCategory>
-    <!-- digipeated position reports -->
-    <PreferenceCategory
-	android:title="@string/p_dgp">
-
-	<CheckBoxPreference
-		android:key="dgp_notify_led"
-		android:title="@string/p_msg_led"
-		android:summaryOn="@string/p_msg_led_on"
-		android:summaryOff="@string/p_msg_led_off"
-		android:defaultValue="false"
-		/>
-	<CheckBoxPreference
-		android:key="dgp_notify_vibr"
-		android:title="@string/p_msg_vibr"
-		android:summaryOn="@string/p_msg_vibr_on"
-		android:summaryOff="@string/p_msg_vibr_off"
-		android:defaultValue="false"
-		/>
-	<RingtonePreference
-		android:key="dgp_notify_ringtone"
-		android:title="@string/p_dgp_ring"
-		android:summary="@string/p_dgp_ring_summary"
-		android:ringtoneType="notification"
-		android:showDefault="true"
-		android:showSilent="true"
-		/>
-    </PreferenceCategory>
-    </PreferenceScreen>
-
-    <de.duenndns.PreferenceWithValue
-	    android:key="mapfile"
-	    android:title="@string/p_mapfile"
-	    android:summary="@string/p_mapfile_summary" />
-
-    <de.duenndns.PreferenceWithValue
-	    android:key="themefile"
-	    android:title="@string/p_themefile"
-	    android:summary="@string/p_themefile_summary" />
-
-    </PreferenceCategory>
-
 </PreferenceScreen>

@@ -7,6 +7,11 @@
         <item name="windowActionBar">true</item>
         <item name="windowNoTitle">false</item>
         <item name="android:windowOptOutEdgeToEdgeEnforcement">false</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
 
         <!-- Android 14-17 Material Motion Transitions -->
         <item name="android:windowActivityTransitions">true</item>
