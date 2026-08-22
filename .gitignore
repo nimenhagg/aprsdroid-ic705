@@ -22,3 +22,5 @@ wiki/
 *.keystore
 keystore/
 signing.properties
+
+release-signing.properties
