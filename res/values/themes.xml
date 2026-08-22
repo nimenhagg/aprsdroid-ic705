@@ -23,32 +23,36 @@
         <item name="colorSurfaceContainer">@color/md3_surface_container</item>
         <item name="colorSurfaceContainerHigh">@color/md3_surface_container_high</item>
         
-        <!-- Native ActionBar styling for Material 3 -->
+        <!-- Material 3 Native TopAppBar styling -->
         <item name="android:actionBarStyle">@style/Widget.Material3.ActionBar</item>
         <item name="android:actionBarTheme">@style/ThemeOverlay.Material3.ActionBar</item>
+        <item name="android:actionBarSize">52dp</item>
     </style>
 
     <style name="Widget.Material3.ActionBar" parent="@android:style/Widget.Material.ActionBar">
-        <item name="android:background">@color/md3_surface_container</item>
+        <item name="android:background">@color/md3_surface</item>
         <item name="android:titleTextStyle">@style/TextAppearance.Material3.Title</item>
         <item name="android:subtitleTextStyle">@style/TextAppearance.Material3.Subtitle</item>
-        <item name="android:elevation">2dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:displayOptions">showTitle|useLogo|showHome</item>
     </style>
 
     <style name="ThemeOverlay.Material3.ActionBar" parent="">
         <item name="android:textColorPrimary">@color/md3_on_surface</item>
         <item name="android:textColorSecondary">@color/md3_on_surface_variant</item>
+        <item name="android:colorControlNormal">@color/md3_on_surface</item>
+        <item name="android:actionMenuTextColor">@color/md3_on_surface</item>
     </style>
 
     <style name="TextAppearance.Material3.Title" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Title">
         <item name="android:textColor">@color/md3_on_surface</item>
-        <item name="android:textSize">19sp</item>
+        <item name="android:textSize">18sp</item>
         <item name="android:textStyle">bold</item>
     </style>
 
     <style name="TextAppearance.Material3.Subtitle" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Subtitle">
         <item name="android:textColor">@color/md3_on_surface_variant</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
     <style name="MapViewTheme" parent="DefaultTheme">
