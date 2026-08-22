@@ -1,0 +1,23 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Radio waves -->
+    <path
+        android:fillColor="@color/md3_primary"
+        android:pathData="M54,42 C47.4,42 42,47.4 42,54 C42,60.6 47.4,66 54,66 C60.6,66 66,60.6 66,54 C66,47.4 60.6,42 54,42 Z M54,48 C57.3,48 60,50.7 60,54 C60,57.3 57.3,60 54,60 C50.7,60 48,57.3 48,54 C48,50.7 50.7,48 54,48 Z" />
+    <path
+        android:fillColor="@color/md3_primary"
+        android:pathData="M54,30 C40.7,30 30,40.7 30,54 C30,67.3 40.7,78 54,78 L54,72 C44,72 36,64 36,54 C36,44 44,36 54,36 L54,30 Z" />
+    <path
+        android:fillColor="@color/md3_primary"
+        android:pathData="M54,30 L54,36 C64,36 72,44 72,54 C72,64 64,72 54,72 L54,78 C67.3,78 78,67.3 78,54 C78,40.7 67.3,30 54,30 Z" />
+    <!-- Center antenna beacon -->
+    <path
+        android:fillColor="@color/md3_primary"
+        android:pathData="M51,51 L57,51 L57,84 L51,84 Z" />
+    <path
+        android:fillColor="@color/md3_primary"
+        android:pathData="M54,24 L48,30 L60,30 Z" />
+</vector>

@@ -1,10 +1,12 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="28dp"
-    android:height="28dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24"
-    android:tint="@color/md3_primary">
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M20.38,8.57l-1.23,1.85a8,8 0 0,1 -0.22,7.58H5.07A8,8 0 0,1 15.58,6.85l1.85,-1.23A10,10 0 0,0 3.35,19a2,2 0 0,0 1.72,1h13.85a2,2 0 0,0 1.74,-1 10,10 0 0,0 -0.27,-10.44zM10.59,15.41a2,2 0 0,0 2.83,0l5.66,-8.49 -8.49,5.66a2,2 0 0,0 0,2.83z" />
+        android:fillColor="@color/md3_primary_container"
+        android:pathData="M12,0 L28,0 C34.6,0 40,5.4 40,12 L40,28 C40,34.6 34.6,40 28,40 L12,40 C5.4,40 0,34.6 0,28 L0,12 C0,5.4 5.4,0 12,0 Z" />
+    <path
+        android:fillColor="@color/md3_primary"
+        android:pathData="M20,10 C14.5,10 10,14.5 10,20 C10,25.5 14.5,30 20,30 C25.5,30 30,25.5 30,20 C30,14.5 25.5,10 20,10 Z M20,28 C15.6,28 12,24.4 12,20 C12,15.6 15.6,12 20,12 C24.4,12 28,15.6 28,20 C28,24.4 24.4,28 20,28 Z M24.3,15.7 L18.6,18.6 L15.7,24.3 L21.4,21.4 L24.3,15.7 Z" />
 </vector>
