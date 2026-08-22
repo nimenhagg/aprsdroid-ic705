@@ -24,3 +24,5 @@ keystore/
 signing.properties
 
 release-signing.properties
+
+RELEASE_NOTES.md
