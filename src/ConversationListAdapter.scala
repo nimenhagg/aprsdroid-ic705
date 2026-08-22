@@ -14,9 +14,6 @@ object ConversationListAdapter {
 	import StorageDatabase.Message._
 	val LIST_FROM = Array(CALL, TEXT)
 	val LIST_TO = Array(R.id.call, R.id.message)
-
-	// null, incoming, out-new, out-acked, out-rejected
-	val COLORS = Array(0, 0xff8080b0, 0xff80a080, 0xff30b030, 0xffb03030)
 }
 
 class ConversationListAdapter(context : Context, prefs : PrefsWrapper)
@@ -35,9 +32,8 @@ class ConversationListAdapter(context : Context, prefs : PrefsWrapper)
 	override def bindView(view : View, context : Context, cursor : Cursor) {
 		import StorageDatabase.Message._
 		val ts = cursor.getLong(COLUMN_TS)
-		val msgtype = cursor.getInt(COLUMN_TYPE)
-		view.findViewById(R.id.message).asInstanceOf[TextView]
-			.setTextColor(MessageListAdapter.COLORS(msgtype))
+		view.findViewById(R.id.call).asInstanceOf[TextView].setTextColor(0xff00677d)
+		view.findViewById(R.id.message).asInstanceOf[TextView].setTextColor(0xff40484c)
 		val age = DateUtils.getRelativeTimeSpanString(context, ts)
 		view.findViewById(R.id.ts).asInstanceOf[TextView].setText(age)
 		super.bindView(view, context, cursor)

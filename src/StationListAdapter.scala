@@ -40,19 +40,6 @@ class StationListAdapter(context : Context, prefs : PrefsWrapper,
 
 	ContextCompat.registerReceiver(context, locReceiver, new IntentFilter(AprsService.UPDATE), Context.RECEIVER_EXPORTED)
 
-	private val DARK = Array(0xff, 0x80, 0x80, 0x50)
-	private val BRIGHT = Array(0xff, 0xff, 0xff, 0xe8)
-	private val MAX = 30*60*1000
-	def getAgeColor(ts : Long) : Int = {
-		val delta = System.currentTimeMillis - ts
-		// normalize the time difference to a value 0..30min [ms]
-		val factor = if (delta < MAX) delta.toInt else MAX
-		// linearly blend the individual RGB values using the factor
-		val mix = DARK zip BRIGHT map (t => { t._2 - (t._2 - t._1)*factor/MAX } )
-		// make a single int from the color array
-		mix.reduceLeft(_*256 + _)
-	}
-
 	// return compass bearing for a given value
 	private val LETTERS = Array("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 	def getBearing(b : Double) = LETTERS(((b.toInt + 22 + 720) % 360) / 45)
@@ -60,7 +47,6 @@ class StationListAdapter(context : Context, prefs : PrefsWrapper,
 	override def bindView(view : View, context : Context, cursor : Cursor) {
 		import StorageDatabase.Station._
 
-		// TODO: multidimensional mapping
 		val distage = view.findViewById(R.id.station_distage).asInstanceOf[TextView]
 		val call = cursor.getString(COLUMN_CALL)
 		val ts = cursor.getLong(COLUMN_TS)
@@ -72,15 +58,16 @@ class StationListAdapter(context : Context, prefs : PrefsWrapper,
 		val dist = Array[Float](0, 0)
 
 		if (call == mycall) {
-			view.setBackgroundColor(0x4020ff20)
+			view.setBackgroundColor(0x2600677d)
 		} else if (call == targetcall) {
-			view.setBackgroundColor(0x402020ff)
-		} else
+			view.setBackgroundColor(0x265b53a4)
+		} else {
 			view.setBackgroundColor(0)
-		val color = getAgeColor(ts)
-		distage.setTextColor(color)
-		view.findViewById(R.id.station_call).asInstanceOf[TextView].setTextColor(color)
-		view.findViewById(R.id.station_qrg).asInstanceOf[TextView].setTextColor(color)
+		}
+
+		distage.setTextColor(0xff40484c)
+		view.findViewById(R.id.station_call).asInstanceOf[TextView].setTextColor(0xff00677d)
+		view.findViewById(R.id.station_qrg).asInstanceOf[TextView].setTextColor(0xff006874)
 		val qrg_visible = if (qrg != null && qrg != "") View.VISIBLE else View.GONE
 		view.findViewById(R.id.station_qrg).asInstanceOf[View].setVisibility(qrg_visible)
 		val MCD = 1000000.0

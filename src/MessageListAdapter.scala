@@ -16,8 +16,8 @@ object MessageListAdapter {
 	val LIST_TO = Array(R.id.listts, R.id.liststatus, R.id.listmessage)
 
 	val NUM_OF_RETRIES = 7
-	// null, incoming, out-new, out-acked, out-rejected, out-aborted
-	val COLORS = Array(0, 0xff8080b0, 0xff80a080, 0xff30b030, 0xffb03030, 0xffa08080)
+	// null, incoming (primary), out-new (amber), out-acked (forest green), out-rejected (red), out-aborted (slate)
+	val STATUS_COLORS = Array(0, 0xff00677d, 0xff7d5700, 0xff006d44, 0xffba1a1a, 0xff70787d)
 }
 
 class MessageListAdapter(context : Context, prefs : PrefsWrapper,
@@ -37,10 +37,17 @@ class MessageListAdapter(context : Context, prefs : PrefsWrapper,
 		import StorageDatabase.Message._
 		val msgtype = cursor.getInt(COLUMN_TYPE)
 		val retrycnt = cursor.getInt(COLUMN_RETRYCNT)
-		view.findViewById(R.id.listmessage).asInstanceOf[TextView]
-			.setTextColor(MessageListAdapter.COLORS(msgtype))
+		
+		val msgView = view.findViewById(R.id.listmessage).asInstanceOf[TextView]
+		msgView.setTextColor(0xff191c1e)
+
 		val statusview = view.findViewById(R.id.liststatus).asInstanceOf[TextView]
-		statusview.setTextColor(MessageListAdapter.COLORS(msgtype))
+		if (msgtype >= 0 && msgtype < MessageListAdapter.STATUS_COLORS.length) {
+			statusview.setTextColor(MessageListAdapter.STATUS_COLORS(msgtype))
+		} else {
+			statusview.setTextColor(0xff00677d)
+		}
+
 		super.bindView(view, context, cursor)
 		val status = msgtype match {
 		case TYPE_INCOMING =>
