@@ -33,7 +33,7 @@
         <item name="colorSurfaceContainer">@color/md3_surface_container</item>
         <item name="colorSurfaceContainerHigh">@color/md3_surface_container_high</item>
         <item name="colorOutlineVariant">@color/md3_outline_variant</item>
-        <item name="android:preferenceCategoryStyle">@style/PreferenceCategory.Material3</item>
+        <item name="android:preferenceCategoryStyle">@style/Material3PreferenceCategory</item>
 
         <!-- Material 3 Native TopAppBar styling (No Left App Icon) -->
         <item name="android:actionBarStyle">@style/Widget.Material3.ActionBar</item>
@@ -82,7 +82,7 @@
     <style name="MapViewTheme" parent="DefaultTheme">
         <item name="android:windowActionBarOverlay">true</item>
     </style>
-    <style name="PreferenceCategory.Material3" parent="@android:style/Widget.Material.PreferenceCategory">
+    <style name="Material3PreferenceCategory" >
         <item name="android:textColor">@color/md3_primary</item>
         <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
