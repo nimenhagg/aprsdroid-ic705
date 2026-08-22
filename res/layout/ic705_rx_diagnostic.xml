@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:fitsSystemWindows="true"
     android:background="?attr/colorSurface"
     android:importantForAutofill="noExcludeDescendants">
 
@@ -12,9 +11,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:paddingHorizontal="14dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="28dp">
 
-        <!-- Card 1: Description & Help -->
+        <!-- Card 1: Description -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -23,7 +24,7 @@
             app:strokeWidth="1dp"
             app:strokeColor="@color/md3_outline_variant"
             app:cardBackgroundColor="@color/md3_surface_container_low"
-            android:layout_marginBottom="10dp">
+            android:layout_marginBottom="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -35,7 +36,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textColor="@color/md3_primary"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:textStyle="bold"
                     android:text="@string/ic705_rx_title" />
 
@@ -50,7 +51,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Card 2: Connection Parameters -->
+        <!-- Card 2: Parameters -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -59,7 +60,7 @@
             app:strokeWidth="1dp"
             app:strokeColor="@color/md3_outline_variant"
             app:cardBackgroundColor="@color/md3_surface_container_low"
-            android:layout_marginBottom="10dp">
+            android:layout_marginBottom="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -73,15 +74,15 @@
                     android:textColor="@color/md3_primary"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:text="电台连接参数" />
+                    android:text="电台连接参数（自动同步首选项）" />
 
                 <EditText
                     android:id="@+id/ic705_rx_address"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="10dp"
                     android:background="@drawable/pref_text_input_bg"
-                    android:paddingHorizontal="12dp"
+                    android:paddingHorizontal="14dp"
                     android:hint="@string/ic705_rx_address"
                     android:textColor="@color/md3_on_surface"
                     android:importantForAutofill="no"
@@ -96,7 +97,7 @@
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/pref_text_input_bg"
-                    android:paddingHorizontal="12dp"
+                    android:paddingHorizontal="14dp"
                     android:hint="@string/ic705_rx_port"
                     android:textColor="@color/md3_on_surface"
                     android:importantForAutofill="no"
@@ -111,7 +112,7 @@
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/pref_text_input_bg"
-                    android:paddingHorizontal="12dp"
+                    android:paddingHorizontal="14dp"
                     android:hint="@string/ic705_rx_username"
                     android:textColor="@color/md3_on_surface"
                     android:importantForAutofill="no"
@@ -125,7 +126,7 @@
                     android:layout_height="48dp"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/pref_text_input_bg"
-                    android:paddingHorizontal="12dp"
+                    android:paddingHorizontal="14dp"
                     android:hint="@string/ic705_rx_password"
                     android:textColor="@color/md3_on_surface"
                     android:importantForAutofill="no"
@@ -144,30 +145,32 @@
                         android:id="@+id/ic705_rx_connect"
                         style="@style/Widget.Material3.Button"
                         android:layout_width="0dp"
-                        android:layout_height="48dp"
+                        android:layout_height="52dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="6dp"
-                        app:cornerRadius="24dp"
+                        app:cornerRadius="26dp"
                         app:backgroundTint="@color/md3_primary"
                         android:textColor="@color/md3_on_primary"
+                        android:textSize="14sp"
                         android:text="@string/ic705_rx_connect" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/ic705_rx_disconnect"
                         style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="0dp"
-                        android:layout_height="48dp"
+                        android:layout_height="52dp"
                         android:layout_weight="1"
                         android:layout_marginStart="6dp"
-                        app:cornerRadius="24dp"
+                        app:cornerRadius="26dp"
                         android:enabled="false"
                         android:textColor="@color/md3_on_secondary_container"
+                        android:textSize="14sp"
                         android:text="@string/ic705_rx_disconnect" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Card 3: Status & Metrics -->
+        <!-- Card 3: Metrics -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -176,7 +179,7 @@
             app:strokeWidth="1dp"
             app:strokeColor="@color/md3_outline_variant"
             app:cardBackgroundColor="@color/md3_surface_container_low"
-            android:layout_marginBottom="10dp">
+            android:layout_marginBottom="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -201,13 +204,13 @@
                     android:layout_marginTop="8dp"
                     android:textColor="@color/md3_on_surface"
                     android:textSize="13sp"
-                    android:lineSpacingMultiplier="1.3"
+                    android:lineSpacingMultiplier="1.4"
                     android:typeface="monospace"
                     android:textIsSelectable="true" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Card 4: Event Log -->
+        <!-- Card 4: Log Terminal -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

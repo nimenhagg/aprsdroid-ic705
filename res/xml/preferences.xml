@@ -42,8 +42,19 @@
             android:title="@string/p_connsetup">
             <intent
                 android:action="android.intent.action.MAIN"
-                android:targetPackage="me.nimenhagg.aprsdroidic705mod"
+                android:targetPackage="org.aprsdroid.app"
                 android:targetClass="org.aprsdroid.app.BackendPrefs" />
+        </PreferenceScreen>
+
+        <PreferenceScreen
+            android:key="p_ic705_diagnostic"
+            android:icon="@drawable/ic_pref_ic705"
+            android:title="@string/ic705_rx_diagnostic_title"
+            android:summary="@string/ic705_rx_diagnostic_summary">
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:targetPackage="org.aprsdroid.app"
+                android:targetClass="org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity" />
         </PreferenceScreen>
     </PreferenceCategory>
 
