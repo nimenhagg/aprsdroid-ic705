@@ -45,6 +45,16 @@ trait UIHelper extends Activity
 		with LoadingIndicator
 		with PermissionHelper
 {
+	def setupModernActionBar() {
+		val ab = getActionBar()
+		if (ab != null) {
+			ab.setDisplayShowHomeEnabled(false)
+			ab.setDisplayUseLogoEnabled(false)
+			ab.setLogo(null)
+			ab.setIcon(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+		}
+	}
+
 
 	var menu_id : Int = -1
 	lazy val prefs = new PrefsWrapper(this)

@@ -3,19 +3,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardCornerRadius="14dp"
-    app:cardElevation="1dp"
-    app:strokeWidth="0dp"
-    app:cardBackgroundColor="?attr/colorSurfaceContainer"
-    android:layout_marginHorizontal="2dp"
-    android:layout_marginVertical="3dp">
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/md3_outline_variant"
+    app:cardBackgroundColor="@color/md3_surface_container_low"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="14dp"
-        android:paddingVertical="10dp">
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -28,15 +29,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:textSize="13sp" />
+                android:textColor="@color/md3_on_surface_variant"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-medium" />
 
             <TextView
                 android:id="@+id/liststatus"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="?attr/colorPrimary"
+                android:textColor="@color/md3_primary"
                 android:textStyle="bold"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -45,9 +47,9 @@
             android:id="@+id/listmessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="?attr/colorOnSurface"
-            android:textSize="15sp"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/md3_on_surface"
+            android:textSize="14sp"
             android:typeface="monospace"
             android:focusable="false" />
     </LinearLayout>

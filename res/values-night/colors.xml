@@ -1,18 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="md3_primary">#99CBFF</color>
-    <color name="md3_on_primary">#003355</color>
-    <color name="md3_primary_container">#004A79</color>
-    <color name="md3_on_primary_container">#CFE5FF</color>
-    <color name="md3_secondary">#B9C8DA</color>
-    <color name="md3_on_secondary">#233240</color>
-    <color name="md3_secondary_container">#3A4857</color>
-    <color name="md3_on_secondary_container">#D5E4F7</color>
-    <color name="md3_surface">#101418</color>
-    <color name="md3_on_surface">#DFE2E8</color>
-    <color name="md3_surface_variant">#42474E</color>
-    <color name="md3_on_surface_variant">#C2C7CF</color>
-    <color name="md3_surface_container">#1C2024</color>
-    <color name="md3_surface_container_high">#272B2F</color>
-    <color name="md3_accent_orange">#FFB784</color>
+    <!-- Material 3 Expressive Dark Tonal Palette -->
+    <color name="md3_primary">#4FD8EB</color>
+    <color name="md3_on_primary">#00363D</color>
+    <color name="md3_primary_container">#004F58</color>
+    <color name="md3_on_primary_container">#97F0FF</color>
+
+    <color name="md3_secondary">#B1CBD0</color>
+    <color name="md3_on_secondary">#1B3438</color>
+    <color name="md3_secondary_container">#334B4F</color>
+    <color name="md3_on_secondary_container">#CDE7EC</color>
+
+    <color name="md3_surface">#0E1415</color>
+    <color name="md3_on_surface">#DEE3E4</color>
+    <color name="md3_surface_variant">#3F484A</color>
+    <color name="md3_on_surface_variant">#BFC8CA</color>
+
+    <color name="md3_surface_container_low">#171D1E</color>
+    <color name="md3_surface_container">#1B2122</color>
+    <color name="md3_surface_container_high">#252B2C</color>
+
+    <color name="md3_outline">#899295</color>
+    <color name="md3_outline_variant">#3F484A</color>
 </resources>
