@@ -35,7 +35,6 @@ class PasscodeDialog(act : Activity, firstrun : Boolean) extends AlertDialog(act
 		fr_view.findViewById(R.id.fr_text2).asInstanceOf[View].setVisibility(View.GONE)
 	}
 	setView(fr_view)
-	setIcon(android.R.drawable.ic_dialog_info)
 
 	inputCall.setText(prefs.getCallsign())
 	inputCall.addTextChangedListener(this)

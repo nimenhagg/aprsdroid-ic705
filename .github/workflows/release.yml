@@ -3,7 +3,7 @@ name: Build and Publish Release APK
 on:
   push:
     branches:
-      - master
+      - main
     tags:
       - 'v*'
   workflow_dispatch:

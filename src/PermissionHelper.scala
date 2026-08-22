@@ -62,7 +62,7 @@ trait PermissionHelper extends Activity {
 			sb.append("- ").append(getPermissionName(p)).append("\n")
 		}
 		new AlertDialog.Builder(this)
-			.setIcon(android.R.drawable.ic_dialog_alert)
+			
 			.setTitle(getActionName(action))
 			.setMessage(sb.toString())
 			.setPositiveButton(R.string.preferences, new DialogInterface.OnClickListener {
