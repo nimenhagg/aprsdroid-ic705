@@ -2,6 +2,8 @@ name: Build and Publish Release APK
 
 on:
   push:
+    branches:
+      - master
     tags:
       - 'v*'
   workflow_dispatch:
@@ -38,9 +40,9 @@ jobs:
       - name: Prepare and Sign Release APK
         id: sign_app
         run: |
-          TAG_NAME="${GITHUB_REF_NAME:-v1.7.0-ic705}"
+          GIT_VER=$(git describe --tags --always 2>/dev/null || git rev-parse --short HEAD)
           APK_SRC=$(find build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          APK_DEST="APRSdroid-${TAG_NAME}.apk"
+          APK_DEST="APRSdroid-${GIT_VER}.apk"
           
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
             echo "Signing with repository secret keystore..."
@@ -61,10 +63,18 @@ jobs:
           fi
           
           echo "apk_path=${APK_DEST}" >> $GITHUB_OUTPUT
+          echo "git_ver=${GIT_VER}" >> $GITHUB_OUTPUT
           ls -la "${APK_DEST}"
 
-      - name: Create GitHub Release and Upload APK
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aprsdroid-apk
+          path: ${{ steps.sign_app.outputs.apk_path }}
+
+      - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: ${{ steps.sign_app.outputs.apk_path }}
           generate_release_notes: true
