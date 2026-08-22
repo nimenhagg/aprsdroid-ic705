@@ -29,6 +29,10 @@
 
 ---
 
+## 🤖 AI 协同开发交接指引 (AI Handover & Context)
+
+本项目维护了专用的 AI 开发提示词与工程交接文档 [AI_CONTEXT.md](AI_CONTEXT.md)，任何 AI 编程助手（如 Antigravity / Claude / ChatGPT / Cursor / Copilot 等）均可直接读取该文件作为 System Prompt 进行无缝续护与功能开发。
+
 ## 🤖 制作说明 (Vibe Coding)
 
 本项目通过 **Vibe Coding（AI 辅助编程）** 协同开发，主要参与模型：
