@@ -16,3 +16,9 @@ tags
 translations/aprsdroid/
 translations/launchpad-*.tar.gz
 wiki/
+
+# Keystores & Private credentials
+*.jks
+*.keystore
+keystore/
+signing.properties
