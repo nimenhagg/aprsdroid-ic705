@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- APRSdroid strings.xml - this file contains strings which need to be translated -->
 <resources>
-<string name="app_name">APRSdroid</string>
+<string name="app_name">APRSdroid IC-705</string>
 <string name="app_prefs">APRSdroid Asetukset</string>
 <string name="app_map">APRSdroid Kartta</string>
 <string name="app_hub">APRSdroid Läheiset</string>
