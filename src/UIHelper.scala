@@ -34,7 +34,7 @@ object UIHelper
 	def shareFile(ctx : Context, file : File, filename : String) {
 		ctx.startActivity(Intent.createChooser(new Intent(Intent.ACTION_SEND)
 			.setType("text/plain")
-			.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(ctx, "org.aprsdroid.fileprovider", file))
+			.putExtra(Intent.EXTRA_STREAM, FileProvider.getUriForFile(ctx, ctx.getPackageName() + ".fileprovider", file))
 			.putExtra(Intent.EXTRA_SUBJECT, filename),
 		file.toString()))
 	}

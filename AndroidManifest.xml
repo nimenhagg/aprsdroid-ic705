@@ -180,7 +180,7 @@
 	<!-- file provider for exported logs and similar things -->
 	<provider
 		android:name="androidx.core.content.FileProvider"
-		android:authorities="org.aprsdroid.fileprovider"
+		android:authorities="${applicationId}.fileprovider"
 		android:exported="false"
 		android:grantUriPermissions="true">
 	    <meta-data
