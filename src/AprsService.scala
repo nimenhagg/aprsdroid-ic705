@@ -178,6 +178,37 @@ class AprsService extends Service {
 			onPosterStarted()
 	}
 
+	
+	def triggerImmediateLocation() {
+		try {
+			val locMan = getSystemService(Context.LOCATION_SERVICE).asInstanceOf[LocationManager]
+			if (locMan != null) {
+				val providers = Array(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER)
+				var bestLoc : Location = null
+				for (p <- providers) {
+					try {
+						val loc = locMan.getLastKnownLocation(p)
+						if (loc != null) {
+							if (bestLoc == null || loc.getTime > bestLoc.getTime) {
+								bestLoc = loc
+							}
+						}
+					} catch {
+						case _ : SecurityException => // ignore
+						case _ : IllegalArgumentException => // ignore
+					}
+				}
+				if (bestLoc != null) {
+					Log.i(TAG, "triggerImmediateLocation: posting best known location: " + bestLoc)
+					postLocation(bestLoc)
+				}
+			}
+		} catch {
+			case e : Throwable =>
+				Log.e(TAG, "triggerImmediateLocation error: " + e)
+		}
+	}
+
 	def onPosterStarted() {
 		Log.d(TAG, "onPosterStarted")
 		// (re)start location source, get location source name
@@ -196,6 +227,8 @@ class AprsService extends Service {
 		// startup completed, remember state
 		if (!singleShot)
 			prefs.setBoolean("service_running", true)
+		else
+			triggerImmediateLocation()
 	}
 
 	override def onBind(i : Intent) : IBinder = null

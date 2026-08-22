@@ -14,8 +14,12 @@ class SmartBeaconing(service : AprsService, prefs : PrefsWrapper) extends Locati
 
 	var lastLoc : Location = null
 	var started = false
+	var isSingleShot = false
 
-	def start(singleShot : Boolean) = {
+	def start(singleShot : Boolean) =
+	{
+		isSingleShot = singleShot
+		if (singleShot) lastLoc = null {
 		lastLoc = null
 		if (!started) try {
 			locMan.requestLocationUpdates(LocationManager.GPS_PROVIDER,
@@ -108,8 +112,10 @@ class SmartBeaconing(service : AprsService, prefs : PrefsWrapper) extends Locati
 
 	// LocationListener interface
 	override def onLocationChanged(location : Location) {
-		if (smartBeaconCheck(location))
+		if (isSingleShot || smartBeaconCheck(location)) {
+			isSingleShot = false
 			postLocation(location)
+		}
 	}
 
 	override def onProviderDisabled(provider : String) {

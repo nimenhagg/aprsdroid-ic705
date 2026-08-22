@@ -31,8 +31,11 @@ class PeriodicGPS(service : AprsService, prefs : PrefsWrapper) extends LocationS
 
 	var lastLoc : Location = null
 	var fastLaneLoc : Location = null
+	var isSingleShot = false
 
-	def start(singleShot : Boolean) = {
+	def start(singleShot : Boolean) =
+	{
+		isSingleShot = singleShot {
 		fastLaneLoc = null
 		lastLoc = null
 		stop()
@@ -112,6 +115,11 @@ class PeriodicGPS(service : AprsService, prefs : PrefsWrapper) extends LocationS
 
 	// LocationListener interface
 	override def onLocationChanged(location : Location) {
+		if (isSingleShot) {
+			isSingleShot = false
+			postLocation(location)
+			return
+		}
 		val upd_int = prefs.getStringInt("interval", 10) * 60000
 		val upd_dist = prefs.getStringInt("distance", 10) * 1000
 		if (lastLoc != null &&
