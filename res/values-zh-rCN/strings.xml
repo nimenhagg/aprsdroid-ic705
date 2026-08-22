@@ -421,4 +421,5 @@
 <string name="p_serial_notfound">找不到USB设备！</string>
 
 <string name="no_perm_text">需要以下权限：</string>
+	<string name="notification_action_exit">完全退出</string>
 </resources>

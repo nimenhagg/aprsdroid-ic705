@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="@string/p_conn_ic705">
+        <de.duenndns.EditTextPreferenceWithValue
+            android:key="ic705.address"
+            android:title="@string/ic705_rx_address"
+            android:dialogTitle="@string/ic705_rx_address" />
+        <de.duenndns.EditTextPreferenceWithValue
+            android:key="ic705.control_port"
+            android:defaultValue="50001"
+            android:inputType="number"
+            android:title="@string/ic705_rx_port"
+            android:dialogTitle="@string/ic705_rx_port" />
+        <de.duenndns.EditTextPreferenceWithValue
+            android:key="ic705.username"
+            android:title="@string/ic705_rx_username"
+            android:dialogTitle="@string/ic705_rx_username" />
+        <de.duenndns.EditTextPreferenceWithValue
+            android:key="ic705.password"
+            android:inputType="textPassword"
+            android:title="@string/ic705_rx_password"
+            android:dialogTitle="@string/ic705_rx_password" />
+    </PreferenceCategory>
+</PreferenceScreen>

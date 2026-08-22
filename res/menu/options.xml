@@ -20,6 +20,9 @@
 		android:title="@string/preferences"
 		android:alphabeticShortcut="p"
 		android:icon="@android:drawable/ic_menu_preferences" />
+	<item android:id="@+id/ic705_rx_diagnostic"
+		android:title="@string/ic705_rx_title"
+		android:icon="@android:drawable/ic_menu_manage" />
 	<item android:id="@+id/about"
 		android:title="@string/about"
 		android:alphabeticShortcut="a"

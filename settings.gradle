@@ -1,0 +1,10 @@
+pluginManagement {
+	includeBuild('build-logic/scalroid')
+	repositories {
+		google()
+		mavenCentral()
+		gradlePluginPortal()
+	}
+}
+
+rootProject.name = 'APRSdroid'

@@ -51,6 +51,21 @@ class ServiceNotifier {
 			.setOngoing(true)
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
 			nb.setShowWhen(true)
+
+		val stopIntent = AprsService.intent(ctx, AprsService.SERVICE_STOP)
+		val stopPendingIntent = PendingIntent.getService(ctx, 1, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE)
+		val exitTitle = ctx.getString(R.string.notification_action_exit)
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
+			val exitAction = new Notification.Action.Builder(
+				android.R.drawable.ic_menu_close_clear_cancel,
+				exitTitle,
+				stopPendingIntent
+			).build()
+			nb.addAction(exitAction)
+		} else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+			nb.addAction(android.R.drawable.ic_menu_close_clear_cancel, exitTitle, stopPendingIntent)
+		}
+
 		nb.build()
 	}
 

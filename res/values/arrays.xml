@@ -3,6 +3,7 @@
 	<string-array name="p_conntype_e">
 		<item>@string/p_conn_aprsis</item>
 		<item>@string/p_conn_afsk</item>
+		<item>@string/p_conn_ic705</item>
 		<item>@string/p_conn_kiss</item>
 		<item>@string/p_conn_tnc2</item>
 		<item>@string/p_conn_kwd</item>
@@ -10,6 +11,7 @@
 	<string-array name="p_conntype_ev">
 		<item>aprsis</item>
 		<item>afsk</item>
+		<item>ic705</item>
 		<item>kiss</item>
 		<item>tnc2</item>
 		<item>kenwood</item>

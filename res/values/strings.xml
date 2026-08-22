@@ -57,6 +57,7 @@
 <string name="service_once">APRS Service single shot: %1$s, %2$s.</string>
 <string name="service_start">APRS Service started: %1$s, %2$s.</string>
 <string name="service_stop">APRS Service stopped.</string>
+	<string name="notification_action_exit">Exit</string>
 <string name="service_no_location">You need to enable either GPS or Network Location for APRSdroid to work properly!</string>
 <string name="service_sm_no_gps">SmartBeaconing™ requires GPS!</string>
 <!-- service result codes -->
@@ -192,6 +193,7 @@
 <!-- array of connection types -->
 <string name="p_conn_aprsis">Internet (APRS-IS)</string>
 <string name="p_conn_afsk">Audio (AFSK)</string>
+<string name="p_conn_ic705">IC-705 Wi-Fi</string>
 <string name="p_conn_kiss">TNC (KISS)</string>
 <string name="p_conn_tnc2">TNC (plaintext TNC2)</string>
 <string name="p_conn_kwd">Kenwood (NMEA waypoint)</string>
@@ -434,4 +436,37 @@
 <string name="p_serial_notfound">No USB device found!</string>
 
 <string name="no_perm_text">The following permissions are required:</string>
+
+<!-- Temporary IC-705 receive-only hardware diagnostic -->
+<string name="ic705_rx_title">IC-705 Wi-Fi 接收诊断</string>
+<string name="ic705_rx_instructions">请先将手机连接到 IC-705 所在的 Wi-Fi 网络。本页面仅用于接收测试，不会控制 PTT，也不会发送音频。连接参数会保存在本机应用中；离开本页面时会断开当前会话。自动重连暂未启用，网络变化后请停止并重新开始。</string>
+<string name="ic705_rx_address">电台 IP 地址</string>
+<string name="ic705_rx_default_address" translatable="false">192.168.59.1</string>
+<string name="ic705_rx_port">控制 UDP 端口</string>
+<string name="ic705_rx_username">IC-705 网络用户名</string>
+<string name="ic705_rx_password">IC-705 网络密码</string>
+<string name="ic705_rx_connect">开始仅接收诊断</string>
+<string name="ic705_rx_disconnect">停止诊断</string>
+<string name="ic705_rx_stopped">已停止</string>
+<string name="ic705_rx_starting">正在建立 Wi-Fi UDP 会话…</string>
+<string name="ic705_rx_requires_api_22">IC-705 Wi-Fi 功能需要 Android 5.1（API 22）或更高版本。</string>
+<string name="ic705_rx_no_wifi">未找到可用的 Wi-Fi 网络，请先连接到电台所在的 Wi-Fi。</string>
+<string name="ic705_rx_bad_address">请输入有效的电台 IP 地址。</string>
+<string name="ic705_rx_bad_port">请输入 1 至 65535 范围内的 UDP 端口。</string>
+<string name="ic705_rx_bad_credentials">用户名、密码或客户端名称不符合协议要求。</string>
+<string name="ic705_rx_phase">会话阶段：%1$s</string>
+<string name="ic705_rx_issue">发生问题：%1$s（%2$s）</string>
+<string name="ic705_rx_issue_restart">发生问题：%1$s（%2$s）。自动重连暂未启用；请点击“停止诊断”，确认手机仍连接到 IC-705 所在的 Wi-Fi，然后重新开始。</string>
+<string name="ic705_rx_failed_restart">会话失败。请点击“停止诊断”，确认手机已连接到 IC-705 所在的 Wi-Fi，然后重新开始，以使用当前网络。</string>
+<string name="ic705_backend_requires_api_22">IC-705 Wi-Fi 需要 Android 5.1 或更高版本。</string>
+<string name="ic705_backend_no_wifi">未找到可用于连接 IC-705 的 Wi-Fi 网络。</string>
+<string name="ic705_backend_invalid_settings">IC-705 Wi-Fi 设置无效，请检查地址、端口、用户名和密码。</string>
+<string name="ic705_backend_failed">IC-705 Wi-Fi 会话失败，请检查网络并重新启动服务。</string>
+<string name="ic705_backend_tx_disabled">IC-705 Wi-Fi 发射尚未启用</string>
+    <string name="ic705_backend_tx_ok">IC-705 OK</string>
+    <string name="ic705_backend_tx_busy">IC-705 忙</string>
+    <string name="ic705_backend_not_connected">IC-705 未连接</string>
+<string name="ic705_rx_statistics">已接收音频块：%1$d\nPCM 采样数：%2$d\n已解码 AX.25 帧：%3$d\n音频重置次数：%4$d</string>
+<string name="ic705_rx_log_title">内存诊断事件（最近 100 条）</string>
+<string name="ic705_rx_log_empty">暂时没有诊断事件。</string>
 </resources>

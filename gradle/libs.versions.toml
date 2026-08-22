@@ -1,0 +1,11 @@
+[versions]
+agp = "8.1.3"
+kotlin = "1.9.20"
+scala = "2.11.12"
+
+[libraries]
+scala-library = { module = "org.scala-lang:scala-library", version.ref = "scala" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

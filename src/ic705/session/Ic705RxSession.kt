@@ -1,0 +1,1718 @@
+package org.aprsdroid.app.ic705.session
+
+import android.util.Log
+
+import java.io.Closeable
+import net.ab0oo.aprs.parser.APRSPacket
+import org.aprsdroid.app.audio.Afsk1200PcmGenerator
+import org.aprsdroid.app.audio.Ax25PacketEncoder
+import org.aprsdroid.app.ic705.protocol.Ic705CivDatagram
+import org.aprsdroid.app.ic705.protocol.Ic705CivDatagramCodec
+import org.aprsdroid.app.ic705.session.Ic705PttActions
+import org.aprsdroid.app.ic705.session.Ic705PttState
+import org.aprsdroid.app.ic705.session.Ic705PttStateMachine
+import org.aprsdroid.app.ic705.session.Ic705TxAudioPacketizer
+
+import java.io.IOException
+import java.net.InetAddress
+import java.net.Inet4Address
+import java.net.InetSocketAddress
+import java.security.SecureRandom
+import java.util.EnumMap
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
+import org.aprsdroid.app.audio.PcmSink
+import org.aprsdroid.app.ic705.protocol.Ic705AudioPacketCodec
+import org.aprsdroid.app.ic705.protocol.Ic705CivChannelAction
+import org.aprsdroid.app.ic705.protocol.Ic705CivOpenClosePacket
+import org.aprsdroid.app.ic705.protocol.Ic705ConnectionInfoAnnouncement
+import org.aprsdroid.app.ic705.protocol.Ic705ConnectionInfoCodec
+import org.aprsdroid.app.ic705.protocol.Ic705ConnectionParameters
+import org.aprsdroid.app.ic705.protocol.Ic705ControlPacket
+import org.aprsdroid.app.ic705.protocol.Ic705ControlPacketCodec
+import org.aprsdroid.app.ic705.protocol.Ic705HandshakeCodec
+import org.aprsdroid.app.ic705.protocol.Ic705PingPacket
+import org.aprsdroid.app.ic705.protocol.Ic705ProtocolException
+import org.aprsdroid.app.ic705.protocol.Ic705WireByteOrder
+import org.aprsdroid.app.ic705.transport.Ic705ChannelRole
+import org.aprsdroid.app.ic705.transport.Ic705DatagramChannel
+import org.aprsdroid.app.ic705.transport.Ic705DatagramChannelFactory
+import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
+import org.aprsdroid.app.ic705.transport.Ic705ReceivedDatagram
+import org.aprsdroid.app.ic705.transport.Ic705UdpChannel
+
+data class Ic705RxSessionTiming(
+    val discoveryPeriodMillis: Long = 500L,
+    val discoveryTimeoutMillis: Long = 10_000L,
+    /** RS-BA1 maintains each active LAN control channel at a 10 Hz cadence. */
+    val pingPeriodMillis: Long = 100L,
+    val idleCheckPeriodMillis: Long = 100L,
+    val idleAfterMillis: Long = 100L,
+    val tokenRenewalMillis: Long = 60_000L,
+    val watchdogPeriodMillis: Long = 500L,
+    val channelTimeoutMillis: Long = 3_000L,
+    val handshakeStageTimeoutMillis: Long = 10_000L,
+    val negotiationTimeoutMillis: Long = 45_000L,
+    /** RS-BA1 waits about three seconds after login before claiming the streams. */
+    val connectionInfoSettleMillis: Long = 3_000L,
+    val connectionInfoRetryMillis: Long = 10_000L,
+    val initialReconnectMillis: Long = 1_000L,
+    val maximumReconnectMillis: Long = 30_000L,
+) {
+    init {
+        val values = listOf(
+            discoveryPeriodMillis,
+            discoveryTimeoutMillis,
+            pingPeriodMillis,
+            idleCheckPeriodMillis,
+            idleAfterMillis,
+            tokenRenewalMillis,
+            watchdogPeriodMillis,
+            channelTimeoutMillis,
+            handshakeStageTimeoutMillis,
+            negotiationTimeoutMillis,
+            connectionInfoSettleMillis,
+            connectionInfoRetryMillis,
+            initialReconnectMillis,
+            maximumReconnectMillis,
+        )
+        require(values.all { it > 0 }) { "IC-705 timing values must be positive" }
+        require(maximumReconnectMillis >= initialReconnectMillis)
+    }
+}
+
+/** Credentials are deliberately excluded from [toString]. */
+class Ic705RxSessionConfig(
+    val radioAddress: InetAddress,
+    val controlPort: Int,
+    val username: String,
+    private val password: String,
+    val clientName: String = "APRSdroid",
+    val autoReconnect: Boolean = true,
+    val timing: Ic705RxSessionTiming = Ic705RxSessionTiming(),
+) {
+    init {
+        require(controlPort in 1..0xffff) { "controlPort must be a valid UDP port" }
+        require(username.isNotBlank()) { "username must not be blank" }
+        require(username.length <= 16) { "username must be at most 16 characters" }
+        require(password.length <= 16) { "password must be at most 16 characters" }
+        require(clientName.isNotBlank()) { "clientName must not be blank" }
+        require(clientName.length <= 16) { "clientName must be at most 16 characters" }
+        require(username.all { it.code <= 0x7f }) { "username must contain US-ASCII only" }
+        require(password.all { it.code <= 0x7f }) { "password must contain US-ASCII only" }
+        require(clientName.all { it.code <= 0x7f }) { "clientName must contain US-ASCII only" }
+    }
+
+    internal fun passwordValue(): String = password
+
+    override fun toString(): String =
+        "Ic705RxSessionConfig(radioAddress=$radioAddress, controlPort=$controlPort, " +
+            "username=<redacted>, password=<redacted>, clientName=$clientName, " +
+            "autoReconnect=$autoReconnect)"
+}
+
+enum class Ic705RxSessionIssueCode {
+    SOCKET_IO,
+    MALFORMED_PACKET,
+    AUDIO_QUEUE_OVERFLOW,
+}
+
+enum class Ic705PacketReceiverKind {
+    LOCAL,
+    ZERO,
+    OTHER,
+    ABSENT,
+}
+
+enum class Ic705PacketRejectionKind {
+    HEADER_TOO_SHORT,
+    DECLARED_LENGTH_MISMATCH,
+    RECEIVER_ZERO,
+    RECEIVER_OTHER,
+    PACKET_CODEC,
+}
+
+/** Credential-safe packet metadata for real-radio diagnostics; never contains payload bytes or IDs. */
+data class Ic705PacketDiagnostic(
+    val length: Int,
+    val declaredLength: Int?,
+    val commonType: Int?,
+    val receiverKind: Ic705PacketReceiverKind,
+    val payloadLength: Int?,
+    val requestReply: Int?,
+    val requestType: Int?,
+    val rejection: Ic705PacketRejectionKind,
+)
+
+data class Ic705RxSessionIssue(
+    val code: Ic705RxSessionIssueCode,
+    val channel: Ic705ChannelRole?,
+    val packet: Ic705PacketDiagnostic? = null,
+)
+
+enum class Ic705AudioResetReason {
+    UDP_DISCONTINUITY,
+    SESSION_RESTART,
+    AUDIO_QUEUE_OVERFLOW,
+}
+
+data class Ic705AudioReset(
+    val reason: Ic705AudioResetReason,
+    val discontinuity: Ic705AudioDiscontinuity? = null,
+)
+
+data class Ic705RxSessionCallbacks(
+    val onStateChanged: (Ic705RxSessionEngine.State) -> Unit = {},
+    val onIssue: (Ic705RxSessionIssue) -> Unit = {},
+    val onAudioReset: (Ic705AudioReset) -> Unit = {},
+)
+
+/**
+ * Wire-level A/B profile used only by package-local hardware diagnostics.
+ * Public application constructors always use [WFVIEW].
+ */
+internal enum class Ic705RxWireProfile(
+    val initialTrackedSequence: Int,
+    val initialAuthInnerSequence: Int,
+    val randomizeTokenRequest: Boolean,
+    val randomizeClientId: Boolean,
+    val sendTrackedIdle: Boolean,
+    val replyToUnknownRetransmit: Boolean,
+    val readySequence: Int,
+    val startPingBeforeReady: Boolean,
+    val loginAdvancesAuthSequence: Boolean,
+    val repeatReadyOnDuplicateDiscovery: Boolean,
+) {
+    WFVIEW(
+        initialTrackedSequence = 1,
+        initialAuthInnerSequence = 0x30,
+        randomizeTokenRequest = true,
+        randomizeClientId = true,
+        sendTrackedIdle = true,
+        replyToUnknownRetransmit = true,
+        readySequence = 1,
+        startPingBeforeReady = true,
+        loginAdvancesAuthSequence = true,
+        repeatReadyOnDuplicateDiscovery = true,
+    ),
+    RIGPLANE_DIAGNOSTIC(
+        initialTrackedSequence = 0,
+        initialAuthInnerSequence = 0,
+        randomizeTokenRequest = false,
+        randomizeClientId = false,
+        sendTrackedIdle = false,
+        replyToUnknownRetransmit = false,
+        readySequence = 0,
+        startPingBeforeReady = false,
+        loginAdvancesAuthSequence = false,
+        repeatReadyOnDuplicateDiscovery = false,
+    ),
+}
+
+/**
+ * Runtime coordinator for an IC-705 receive-only LAN session.
+ *
+ * It sends only the control traffic required to authenticate and open receive
+ * streams. There is intentionally no PTT, CI-V business-command, or audio-TX API.
+ */
+class Ic705RxSession internal constructor(
+    private val config: Ic705RxSessionConfig,
+    private val audioSink: PcmSink,
+    private val callbacks: Ic705RxSessionCallbacks,
+    private val channelFactory: Ic705DatagramChannelFactory,
+    private val controlExecutor: ScheduledExecutorService,
+    private val audioExecutor: ThreadPoolExecutor,
+    private val randomInt: () -> Int,
+    private val monotonicMillis: () -> Long,
+    private val wireProfile: Ic705RxWireProfile = Ic705RxWireProfile.WFVIEW,
+) : Ic705RadioSession {
+    constructor(
+        config: Ic705RxSessionConfig,
+        audioSink: PcmSink,
+        callbacks: Ic705RxSessionCallbacks = Ic705RxSessionCallbacks(),
+        socketFactory: Ic705DatagramSocketFactory,
+    ) : this(
+        config = config,
+        audioSink = audioSink,
+        callbacks = callbacks,
+        channelFactory = Ic705DatagramChannelFactory { role, localAddress, onDatagram, onError ->
+            Ic705UdpChannel(
+                role = role,
+                localAddress = localAddress,
+                socketFactory = socketFactory,
+                onDatagram = onDatagram,
+                onError = onError,
+            )
+        },
+        controlExecutor = Executors.newSingleThreadScheduledExecutor(
+            namedDaemonThreadFactory("IC-705 RX session"),
+        ),
+        audioExecutor = newAudioExecutor(),
+        randomInt = SecureRandom()::nextInt,
+        monotonicMillis = { System.nanoTime() / 1_000_000L },
+    )
+
+    internal constructor(
+        config: Ic705RxSessionConfig,
+        audioSink: PcmSink,
+        callbacks: Ic705RxSessionCallbacks,
+        socketFactory: Ic705DatagramSocketFactory,
+        wireProfile: Ic705RxWireProfile,
+    ) : this(
+        config = config,
+        audioSink = audioSink,
+        callbacks = callbacks,
+        channelFactory = Ic705DatagramChannelFactory { role, localAddress, onDatagram, onError ->
+            Ic705UdpChannel(
+                role = role,
+                localAddress = localAddress,
+                socketFactory = socketFactory,
+                onDatagram = onDatagram,
+                onError = onError,
+            )
+        },
+        controlExecutor = Executors.newSingleThreadScheduledExecutor(
+            namedDaemonThreadFactory("IC-705 RX session"),
+        ),
+        audioExecutor = newAudioExecutor(),
+        randomInt = SecureRandom()::nextInt,
+        monotonicMillis = { System.nanoTime() / 1_000_000L },
+        wireProfile = wireProfile,
+    )
+
+    constructor(
+        config: Ic705RxSessionConfig,
+        audioSink: PcmSink,
+        callbacks: Ic705RxSessionCallbacks = Ic705RxSessionCallbacks(),
+    ) : this(
+        config = config,
+        audioSink = audioSink,
+        callbacks = callbacks,
+        channelFactory = Ic705DatagramChannelFactory { role, localAddress, onDatagram, onError ->
+            Ic705UdpChannel(
+                role = role,
+                localAddress = localAddress,
+                onDatagram = onDatagram,
+                onError = onError,
+            )
+        },
+        controlExecutor = Executors.newSingleThreadScheduledExecutor(
+            namedDaemonThreadFactory("IC-705 RX session"),
+        ),
+        audioExecutor = newAudioExecutor(),
+        randomInt = SecureRandom()::nextInt,
+        monotonicMillis = { System.nanoTime() / 1_000_000L },
+    )
+
+    private data class ChannelRuntime(
+        val role: Ic705ChannelRole,
+        var localId: Int,
+        val trackedPackets: Ic705TrackedPacketStore,
+        var remoteId: Int? = null,
+        var pingSequence: Int = 0,
+        var civSequence: Int = 0,
+        val lastReceivedAtMillis: AtomicLong,
+    )
+
+    private val closed = AtomicBoolean(false)
+    private val closeMonitor = Any()
+    private val pendingCloseCallbacks = mutableListOf<() -> Unit>()
+    private var closeComplete = false
+    private val audioLifecycleLock = Any()
+    private val channels = EnumMap<Ic705ChannelRole, Ic705DatagramChannel>(Ic705ChannelRole::class.java)
+    private val channelRuntimes = EnumMap<Ic705ChannelRole, ChannelRuntime>(Ic705ChannelRole::class.java)
+    private val scheduledTasks = mutableMapOf<String, ScheduledFuture<*>>()
+
+    private val txExecutor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "ic705-tx").apply { isDaemon = true }
+    }
+    private val afskPcmGenerator = Afsk1200PcmGenerator(sampleRateHz = Ic705AudioPacketCodec.SAMPLE_RATE_HZ)
+    private var nextTxOuterSequence = 1
+    private var nextTxAudioSequence = 1
+    @Volatile
+    private var lastTxCompletedMonotonicMillis = 0L
+    @Volatile
+    private var pendingTxDatagrams: List<ByteArray>? = null
+
+    private val pttStateMachine: Ic705PttStateMachine = Ic705PttStateMachine(
+        actions = object : Ic705PttActions {
+            override fun sendCivFrame(frame: ByteArray) {
+                val runtime = channelRuntimes[Ic705ChannelRole.CIV] ?: return
+                val remoteId = runtime.remoteId ?: return
+                val civEnvelope = Ic705CivDatagramCodec.encode(
+                    Ic705CivDatagram(
+                        type = 0,
+                        sequence = 0,
+                        senderId = runtime.localId,
+                        receiverId = remoteId,
+                        civSequence = nextCivSequence(runtime),
+                        civFrame = frame,
+                    )
+                )
+                sendTracked(Ic705ChannelRole.CIV, civEnvelope)
+            }
+
+            override fun sendAudioDatagram(datagram: ByteArray) {
+                sendUntracked(Ic705ChannelRole.AUDIO, datagram)
+            }
+
+            override fun onStateChanged(state: Ic705PttState) {
+                // PTT state change hook
+            }
+        },
+    )
+
+    @Volatile
+    private var engineState = Ic705RxSessionEngine.State()
+
+    @Volatile
+    private var generation = 0L
+
+    @Volatile
+    private var audioReceiver: Ic705RxAudioReceiver? = null
+
+    private var localToken = 0
+    private var radioToken = 0
+    private var authInnerSequence = wireProfile.initialAuthInnerSequence
+    private var connectionAnnouncement: Ic705ConnectionInfoAnnouncement? = null
+    private var discoveredRadioAddress: InetAddress? = null
+    @Volatile
+    private var firstAudioReported = false
+
+    /** Guarded by [audioLifecycleLock]. */
+    private var audioWrittenInGeneration = false
+
+    /** Accessed only by the control executor. */
+    private var restartResetDeliveredByClose = false
+
+    override val state: Ic705RxSessionEngine.State
+        get() = engineState
+
+    override fun start() {
+        check(!closed.get()) { "IC-705 RX session is closed" }
+        controlExecutor.execute { dispatch(Ic705RxSessionEngine.Event.Start) }
+    }
+
+    override fun stop() {
+        if (closed.get()) return
+        controlExecutor.execute { dispatch(Ic705RxSessionEngine.Event.Stop) }
+    }
+
+    override val isTransmitting: Boolean
+        get() = pttStateMachine.isTransmitting
+
+    override fun transmit(packet: APRSPacket): Boolean {
+        synchronized(audioLifecycleLock) {
+            val now = monotonicMillis()
+            val cooldownRemaining = TX_COOLDOWN_GUARD_MILLIS - (now - lastTxCompletedMonotonicMillis)
+            if (cooldownRemaining > 0) {
+                Log.w(TAG, "transmit() rejected by cooldown guard (${cooldownRemaining}ms remaining)")
+                return false
+            }
+            if (engineState.phase != Ic705RxSessionEngine.Phase.RECEIVING) {
+                Log.w(TAG, "transmit() rejected: engine phase is ${engineState.phase}")
+                return false
+            }
+            if (pttStateMachine.isTransmitting) {
+                Log.w(TAG, "transmit() rejected: ptt is already transmitting")
+                return false
+            }
+            if (closed.get()) {
+                Log.w(TAG, "transmit() rejected: session is closed")
+                return false
+            }
+            val audioRuntime = channelRuntimes[Ic705ChannelRole.AUDIO]
+            val audioRemoteId = audioRuntime?.remoteId
+            val civRuntime = channelRuntimes[Ic705ChannelRole.CIV]
+            val civRemoteId = civRuntime?.remoteId
+            if (audioRuntime == null || audioRemoteId == null || civRuntime == null || civRemoteId == null) {
+                Log.w(TAG, "transmit() rejected: audio or civ runtime/remoteId is null (audio=$audioRemoteId, civ=$civRemoteId)")
+                return false
+            }
+
+            val ax25 = Ax25PacketEncoder.encode(packet)
+            val samples = afskPcmGenerator.generateSamples(ax25)
+            val packetizer = Ic705TxAudioPacketizer(
+                senderId = audioRuntime.localId,
+                receiverId = audioRemoteId,
+                initialOuterSequence = nextTxOuterSequence,
+                initialAudioSequence = nextTxAudioSequence,
+            )
+            val datagrams = packetizer.packetize(samples)
+            
+            nextTxOuterSequence = packetizer.outerSequence
+            nextTxAudioSequence = packetizer.audioSequence
+
+            val started = pttStateMachine.beginTransmission()
+            if (!started) {
+                Log.w(TAG, "transmit() pttStateMachine.beginTransmission() returned false")
+                return false
+            }
+            startTxAudioStreaming(datagrams)
+            return true
+        }
+    }
+
+    private fun startTxAudioStreaming(datagrams: List<ByteArray>) {
+        pttStateMachine.onAudioStreamingStarted()
+        try {
+            txExecutor.execute {
+                try {
+                    val samplesPerPacket = Ic705AudioPacketCodec.SAMPLES_PER_PACKET
+                    val sampleRateHz = Ic705AudioPacketCodec.SAMPLE_RATE_HZ
+                    val packetDurationNs = (samplesPerPacket.toLong() * 1_000_000_000L) / sampleRateHz
+                    // 50ms Pre-roll lead cushion fills IC-705 DSP jitter buffer to prevent underruns
+                    val leadNs = 60_000_000L
+                    val startNs = System.nanoTime()
+                    // streaming
+
+                    for ((index, datagram) in datagrams.withIndex()) {
+                        if (!pttStateMachine.isTransmitting || closed.get()) {
+                            Log.w(TAG, "startTxAudioStreaming: aborted at packet $index (transmitting=${pttStateMachine.isTransmitting}, closed=${closed.get()})")
+                            break
+                        }
+                        val targetNs = startNs + (index * packetDurationNs) - leadNs
+                        while (true) {
+                            val diffNs = targetNs - System.nanoTime()
+                            if (diffNs <= 0) break
+                            if (diffNs > 3_000_000L) {
+                                Thread.sleep(1)
+                            } else {
+                                Thread.yield()
+                            }
+                        }
+                        sendTracked(Ic705ChannelRole.AUDIO, datagram)
+
+                    }
+
+                    
+                    pttStateMachine.onAudioStreamingFinished()
+                    Thread.sleep(TX_DRAIN_WAIT_MILLIS)
+                    
+                } catch (_: InterruptedException) {
+                    Log.w(TAG, "startTxAudioStreaming: interrupted")
+                    Thread.currentThread().interrupt()
+                } finally {
+                    pttStateMachine.finishTransmission()
+                    lastTxCompletedMonotonicMillis = monotonicMillis()
+                    
+                }
+            }
+        } catch (_: RejectedExecutionException) {
+            Log.e(TAG, "startTxAudioStreaming: TX executor rejected execution")
+            pttStateMachine.forceRelease("TX executor shut down")
+            lastTxCompletedMonotonicMillis = monotonicMillis()
+        }
+    }
+
+    override fun close() {
+        close(onClosed = {})
+    }
+
+    /** Calls [onClosed] after sockets close and the audio worker has exited. */
+    override fun close(onClosed: () -> Unit) {
+        var initiateClose = false
+        var alreadyComplete = false
+        synchronized(closeMonitor) {
+            if (closeComplete) {
+                alreadyComplete = true
+            } else {
+                pendingCloseCallbacks += onClosed
+                initiateClose = closed.compareAndSet(false, true)
+            }
+        }
+        if (alreadyComplete) {
+            safeCallback(onClosed)
+            return
+        }
+        if (!initiateClose) return
+
+        try {
+            controlExecutor.execute {
+                try {
+                    // Interrupt a cooperative sink before closeSockets waits for the
+                    // lifecycle barrier held by an in-flight audio write.
+                    audioExecutor.shutdownNow()
+                    dispatch(Ic705RxSessionEngine.Event.Stop)
+                } finally {
+                    audioExecutor.shutdownNow()
+                    controlExecutor.shutdown()
+                    awaitAudioTermination()
+                    finishClose()
+                }
+            }
+        } catch (_: RejectedExecutionException) {
+            audioExecutor.shutdownNow()
+            controlExecutor.shutdown()
+            Thread(
+                {
+                    awaitAudioTermination()
+                    finishClose()
+                },
+                "IC-705 RX close",
+            ).apply {
+                isDaemon = true
+                start()
+            }
+        }
+    }
+
+    private fun awaitAudioTermination() {
+        var interrupted = false
+        while (!audioExecutor.isTerminated) {
+            try {
+                if (audioExecutor.awaitTermination(CLOSE_WAIT_SLICE_MILLIS, TimeUnit.MILLISECONDS)) break
+                audioExecutor.shutdownNow()
+            } catch (_: InterruptedException) {
+                interrupted = true
+                audioExecutor.shutdownNow()
+            }
+        }
+        if (interrupted) Thread.currentThread().interrupt()
+    }
+
+    private fun finishClose() {
+        val closeCallbacks = synchronized(closeMonitor) {
+            closeComplete = true
+            pendingCloseCallbacks.toList().also { pendingCloseCallbacks.clear() }
+        }
+        txExecutor.shutdownNow()
+        closeCallbacks.forEach(::safeCallback)
+    }
+
+    private fun dispatch(event: Ic705RxSessionEngine.Event) {
+        val transition = Ic705RxSessionEngine.reduce(engineState, event)
+        val previousState = engineState
+        engineState = transition.state
+        if (previousState != transition.state) {
+            safeCallback { callbacks.onStateChanged(transition.state) }
+            updateStageTimeout(transition.state)
+        }
+        transition.actions.forEach(::executeAction)
+    }
+
+    private fun executeAction(action: Ic705RxSessionEngine.Action) {
+        try {
+            when (action) {
+                Ic705RxSessionEngine.Action.OpenSockets -> openSockets()
+                Ic705RxSessionEngine.Action.CloseSockets -> closeSockets(sendProtocolClose = true)
+                Ic705RxSessionEngine.Action.SendDiscovery -> startDiscovery(Ic705ChannelRole.CONTROL)
+                Ic705RxSessionEngine.Action.SendLogin -> sendLogin()
+                is Ic705RxSessionEngine.Action.SendTokenConfirmation -> {
+                    sendTokenConfirmation(action.token)
+                }
+                Ic705RxSessionEngine.Action.ScheduleConnectionInfoSettle -> {
+                    scheduleConnectionInfoSettle()
+                }
+                Ic705RxSessionEngine.Action.SendConnectionInfo -> {
+                    sendConnectionInfo()
+                }
+                Ic705RxSessionEngine.Action.ScheduleConnectionInfoRetry -> {
+                    scheduleConnectionInfoRetry()
+                }
+                Ic705RxSessionEngine.Action.CancelConnectionInfoTimers -> {
+                    cancelConnectionInfoTimers()
+                }
+                is Ic705RxSessionEngine.Action.SendOpenStreams -> openStreams(action.endpoints)
+                is Ic705RxSessionEngine.Action.ScheduleRetry -> {
+                    scheduleRetry(action.attempt, action.cooldown)
+                }
+                Ic705RxSessionEngine.Action.CancelRetryTimer -> cancelTask(TASK_RETRY)
+                Ic705RxSessionEngine.Action.NotifyAudioDiscontinuity -> {
+                    if (restartResetDeliveredByClose) {
+                        restartResetDeliveredByClose = false
+                    } else {
+                        notifyAudioReset(Ic705AudioResetReason.SESSION_RESTART)
+                    }
+                }
+            }
+        } catch (_: IOException) {
+            reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, null)
+            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("socket I/O"))
+        } catch (_: RuntimeException) {
+            reportIssue(Ic705RxSessionIssueCode.MALFORMED_PACKET, null)
+            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("session action failed"))
+        }
+    }
+
+    private fun openSockets() {
+        closeSockets(sendProtocolClose = false)
+        val currentGeneration = generation
+        connectionAnnouncement = null
+        discoveredRadioAddress = null
+        radioToken = 0
+        localToken = if (wireProfile.randomizeTokenRequest) randomInt() and 0xffff else 0
+        authInnerSequence = wireProfile.initialAuthInnerSequence
+        nextTxOuterSequence = 1
+        nextTxAudioSequence = 1
+        firstAudioReported = false
+        val now = monotonicMillis()
+
+        Ic705ChannelRole.values().forEach { role ->
+            val runtime = ChannelRuntime(
+                role = role,
+                // The Icom LAN client ID is derived only after UDP bind assigns the
+                // actual local port. wfview and rigplane both tie this value to the
+                // local endpoint; a random ID can leave an IC-705 accepting login but
+                // silently ignoring the following connection-info request.
+                localId = 0,
+                trackedPackets = Ic705TrackedPacketStore(
+                    initialSequence = wireProfile.initialTrackedSequence,
+                    monotonicMillis = monotonicMillis,
+                ),
+                lastReceivedAtMillis = AtomicLong(now),
+            )
+            channelRuntimes[role] = runtime
+            channels[role] = channelFactory.create(
+                role,
+                preferredLocalAddress(role),
+                { datagram -> onTransportDatagram(currentGeneration, runtime, datagram) },
+                { onTransportError(currentGeneration, role) },
+            )
+        }
+
+        channels.getValue(Ic705ChannelRole.CONTROL).setRemoteEndpoint(
+            InetSocketAddress(config.radioAddress, config.controlPort),
+            lockSource = false,
+        )
+        channels.values.forEach(Ic705DatagramChannel::open)
+        channelRuntimes.values.forEach { runtime ->
+            val channel = channels.getValue(runtime.role)
+            runtime.localId = if (wireProfile.randomizeClientId) {
+                // Official RS-BA1 captures assign a fresh independent 32-bit ID to
+                // control, CI-V, and audio on every connection, despite fixed ports.
+                randomInt().takeUnless { it == 0 } ?: 1
+            } else {
+                ic705ClientIdForEndpoint(null, channel.localPort)
+            }
+        }
+        startFixedTask(
+            key = TASK_WATCHDOG,
+            initialDelayMillis = config.timing.watchdogPeriodMillis,
+            periodMillis = config.timing.watchdogPeriodMillis,
+            expectedGeneration = currentGeneration,
+            block = ::checkWatchdog,
+        )
+        dispatch(Ic705RxSessionEngine.Event.SocketsOpened)
+    }
+
+    private fun preferredLocalAddress(role: Ic705ChannelRole): InetSocketAddress {
+        val requestedPort = when (role) {
+            Ic705ChannelRole.CONTROL -> config.controlPort
+            Ic705ChannelRole.CIV -> config.controlPort + 1
+            Ic705ChannelRole.AUDIO -> config.controlPort + 2
+        }
+        // A successful RS-BA1 capture uses symmetric local/remote endpoints for
+        // all three channels: 50001 control, 50002 CI-V, and 50003 audio.
+        return InetSocketAddress(if (requestedPort in 1..0xffff) requestedPort else 0)
+    }
+
+    private fun closeSockets(sendProtocolClose: Boolean) {
+        pttStateMachine.forceRelease("Sockets closing")
+        cancelAllTasks()
+        restartResetDeliveredByClose = false
+        val shouldNotifyAudioReset = synchronized(audioLifecycleLock) {
+            generation += 1
+            audioExecutor.queue.clear()
+            val hadAudio = audioWrittenInGeneration
+            audioReceiver?.reset()
+            audioReceiver = null
+            audioWrittenInGeneration = false
+            hadAudio
+        }
+        if (shouldNotifyAudioReset) {
+            restartResetDeliveredByClose = true
+            safeCallback {
+                callbacks.onAudioReset(Ic705AudioReset(Ic705AudioResetReason.SESSION_RESTART))
+            }
+        }
+        if (sendProtocolClose) bestEffortProtocolClose()
+        channels.values.forEach { channel -> runCatching(channel::close) }
+        channels.clear()
+        channelRuntimes.clear()
+        connectionAnnouncement = null
+        discoveredRadioAddress = null
+        localToken = 0
+        radioToken = 0
+        authInnerSequence = wireProfile.initialAuthInnerSequence
+        firstAudioReported = false
+    }
+
+    private fun bestEffortProtocolClose() {
+        val civ = channelRuntimes[Ic705ChannelRole.CIV]
+        if (civ?.remoteId != null) {
+            runCatching {
+                sendTracked(
+                    Ic705ChannelRole.CIV,
+                    Ic705HandshakeCodec.encodeCivOpenClose(
+                        Ic705CivOpenClosePacket(
+                            sequence = 0,
+                            senderId = civ.localId,
+                            receiverId = requireNotNull(civ.remoteId),
+                            civSequence = nextCivSequence(civ),
+                            action = Ic705CivChannelAction.CLOSE,
+                        ),
+                    ),
+                )
+            }
+        }
+        val control = channelRuntimes[Ic705ChannelRole.CONTROL]
+        if (control?.remoteId != null && radioToken != 0) {
+            runCatching {
+                sendTracked(
+                    Ic705ChannelRole.CONTROL,
+                    Ic705HandshakeCodec.encodeTokenDelete(
+                        sequence = 0,
+                        senderId = control.localId,
+                        receiverId = requireNotNull(control.remoteId),
+                        innerSequence = nextAuthInnerSequence(),
+                        tokenRequest = localToken,
+                        token = radioToken,
+                    ),
+                )
+            }
+        }
+        channelRuntimes.values.forEach { runtime ->
+            if (runtime.remoteId != null) {
+                runCatching {
+                    sendUntracked(
+                        runtime.role,
+                        controlPacket(
+                            type = Ic705ControlPacketCodec.TYPE_DISCONNECT,
+                            sequence = 0,
+                            runtime = runtime,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun onTransportDatagram(
+        expectedGeneration: Long,
+        runtime: ChannelRuntime,
+        datagram: Ic705ReceivedDatagram,
+    ) {
+        val role = runtime.role
+        if (role == Ic705ChannelRole.AUDIO && looksLikeAudio(datagram.data)) {
+            enqueueAudio(expectedGeneration, runtime, datagram.data)
+        } else {
+            submitForGeneration(expectedGeneration) { handleDatagram(runtime, datagram) }
+        }
+    }
+
+    private fun onTransportError(expectedGeneration: Long, role: Ic705ChannelRole) {
+        submitForGeneration(expectedGeneration) {
+            reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, role)
+            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("$role socket I/O"))
+        }
+    }
+
+    private fun handleDatagram(runtime: ChannelRuntime, datagram: Ic705ReceivedDatagram) {
+        val role = runtime.role
+        try {
+            if (datagram.data.size == Ic705HandshakeCodec.PING_PACKET_SIZE) {
+                // Real radios use a zero declared-length field for ping packets,
+                // so they must be decoded before the generic envelope validator.
+                handlePing(runtime, datagram.data)
+                runtime.lastReceivedAtMillis.set(monotonicMillis())
+                return
+            }
+            validateCommonEnvelope(datagram.data, runtime.localId)
+            runtime.lastReceivedAtMillis.set(monotonicMillis())
+            when {
+                datagram.data.size == Ic705ControlPacketCodec.PACKET_SIZE -> {
+                    handleControlPacket(runtime, datagram.data, datagram.source)
+                }
+                role == Ic705ChannelRole.CONTROL &&
+                    datagram.data.size in AUTHENTICATED_PACKET_SIZES -> {
+                    handleControlSessionPacket(datagram.data)
+                }
+                isVariableRetransmit(datagram.data) -> handleRetransmit(runtime, datagram.data)
+                role == Ic705ChannelRole.CIV &&
+                    datagram.data.size > Ic705CivDatagramCodec.HEADER_SIZE &&
+                    (datagram.data[0x10].toInt() and 0xff) == Ic705CivDatagramCodec.CIV_MARKER -> {
+                    handleCivDatagram(runtime, datagram.data)
+                }
+                else -> Unit
+            }
+        } catch (_: Ic705ProtocolException) {
+            reportIssue(
+                Ic705RxSessionIssueCode.MALFORMED_PACKET,
+                role,
+                packetDiagnostic(datagram.data, runtime.localId),
+            )
+        } catch (_: IllegalArgumentException) {
+            reportIssue(
+                Ic705RxSessionIssueCode.MALFORMED_PACKET,
+                role,
+                packetDiagnostic(datagram.data, runtime.localId),
+            )
+        }
+    }
+
+    private fun handleCivDatagram(runtime: ChannelRuntime, data: ByteArray) {
+        val civPacket = Ic705CivDatagramCodec.decode(data, expectedReceiverId = runtime.localId)
+        
+        
+        pttStateMachine.onCivReceived(civPacket.civFrame)
+    }
+
+    private fun handleControlPacket(
+        runtime: ChannelRuntime,
+        data: ByteArray,
+        source: InetSocketAddress,
+    ) {
+        val packet = Ic705ControlPacketCodec.decode(data, expectedReceiverId = runtime.localId)
+        when (packet.type) {
+            Ic705ControlPacketCodec.TYPE_RETRANSMIT -> handleRetransmit(runtime, data)
+            Ic705ControlPacketCodec.TYPE_ARE_YOU_THERE -> {
+                sendUntracked(
+                    runtime.role,
+                    Ic705ControlPacketCodec.encode(
+                        Ic705ControlPacket(
+                            type = Ic705ControlPacketCodec.TYPE_I_AM_HERE,
+                            sequence = packet.sequence,
+                            senderId = runtime.localId,
+                            receiverId = packet.senderId,
+                        ),
+                    ),
+                )
+            }
+            Ic705ControlPacketCodec.TYPE_I_AM_HERE -> {
+                onChannelDiscovered(runtime, packet.senderId, source)
+            }
+            Ic705ControlPacketCodec.TYPE_READY -> onChannelReady(runtime)
+            Ic705ControlPacketCodec.TYPE_DISCONNECT -> {
+                dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("radio disconnected"))
+            }
+        }
+    }
+
+    private fun onChannelDiscovered(
+        runtime: ChannelRuntime,
+        remoteId: Int,
+        source: InetSocketAddress,
+    ) {
+        if (runtime.remoteId != null && !wireProfile.repeatReadyOnDuplicateDiscovery) return
+        runtime.remoteId = remoteId
+        channels.getValue(runtime.role).setRemoteEndpoint(source, lockSource = true)
+        if (runtime.role == Ic705ChannelRole.CONTROL) discoveredRadioAddress = source.address
+        cancelTask(discoveryTask(runtime.role))
+        cancelTask(discoveryTimeoutTask(runtime.role))
+        if (wireProfile.startPingBeforeReady) startPing(runtime.role)
+        sendUntracked(
+            runtime.role,
+            controlPacket(
+                type = Ic705ControlPacketCodec.TYPE_READY,
+                sequence = wireProfile.readySequence,
+                runtime = runtime,
+            ),
+        )
+        if (runtime.role == Ic705ChannelRole.CONTROL) {
+            dispatch(Ic705RxSessionEngine.Event.ControlDiscovered)
+        } else if (runtime.role == Ic705ChannelRole.AUDIO) {
+            val receiverGeneration = generation
+            synchronized(audioLifecycleLock) {
+                if (generation != receiverGeneration || closed.get()) return
+                audioReceiver = Ic705RxAudioReceiver(
+                localId = runtime.localId,
+                radioId = remoteId,
+                sink = audioSink,
+                onDiscontinuity = { discontinuity ->
+                    // This callback runs before the current post-gap PCM is written,
+                    // allowing the downstream demodulator to reset synchronously.
+                    if (generation == receiverGeneration && !closed.get()) {
+                        safeCallback {
+                            callbacks.onAudioReset(
+                                Ic705AudioReset(
+                                    Ic705AudioResetReason.UDP_DISCONTINUITY,
+                                    discontinuity,
+                                ),
+                            )
+                        }
+                    }
+                },
+                )
+            }
+        }
+    }
+
+    private fun onChannelReady(runtime: ChannelRuntime) {
+        when (runtime.role) {
+            Ic705ChannelRole.CONTROL -> {
+                if (!wireProfile.startPingBeforeReady) startPing(runtime.role)
+                if (wireProfile.sendTrackedIdle) startIdle(runtime.role)
+                dispatch(Ic705RxSessionEngine.Event.ControlReady)
+            }
+            Ic705ChannelRole.CIV -> {
+                sendTracked(
+                    runtime.role,
+                    Ic705HandshakeCodec.encodeCivOpenClose(
+                        Ic705CivOpenClosePacket(
+                            sequence = 0,
+                            senderId = runtime.localId,
+                            receiverId = requireNotNull(runtime.remoteId),
+                            civSequence = nextCivSequence(runtime),
+                            action = Ic705CivChannelAction.OPEN,
+                        ),
+                    ),
+                )
+                if (wireProfile.sendTrackedIdle) startIdle(runtime.role)
+                dispatch(Ic705RxSessionEngine.Event.CivReady)
+            }
+            Ic705ChannelRole.AUDIO -> dispatch(Ic705RxSessionEngine.Event.AudioReady)
+        }
+    }
+
+    private fun handlePing(runtime: ChannelRuntime, data: ByteArray) {
+        val packet = Ic705HandshakeCodec.decodePing(data, expectedReceiverId = runtime.localId)
+        if (packet.isReply) {
+            if (packet.sequence == runtime.pingSequence) {
+                runtime.pingSequence = (runtime.pingSequence + 1) and 0xffff
+            }
+        } else {
+            sendUntracked(
+                runtime.role,
+                Ic705HandshakeCodec.encodePing(
+                    packet.copy(
+                        senderId = runtime.localId,
+                        receiverId = packet.senderId,
+                        isReply = true,
+                    ),
+                ),
+            )
+        }
+    }
+
+    private fun handleControlSessionPacket(data: ByteArray) {
+        val control = channelRuntimes.getValue(Ic705ChannelRole.CONTROL)
+        when (data.size) {
+            Ic705HandshakeCodec.LOGIN_RESPONSE_PACKET_SIZE -> {
+                val response = Ic705HandshakeCodec.decodeLoginResponse(data, control.localId)
+                if (response.isAuthenticated) {
+                    radioToken = response.header.token
+                    dispatch(Ic705RxSessionEngine.Event.LoginAccepted(radioToken))
+                } else {
+                    dispatch(Ic705RxSessionEngine.Event.LoginRejected("authentication rejected"))
+                }
+            }
+            Ic705HandshakeCodec.TOKEN_PACKET_SIZE -> {
+                val tokenPacket = Ic705HandshakeCodec.decodeTokenPacket(data, control.localId)
+                if (
+                    tokenPacket.header.requestType == Ic705HandshakeCodec.TOKEN_REQUEST_RENEWAL &&
+                    tokenPacket.header.requestReply == Ic705HandshakeCodec.REQUEST_REPLY_RESPONSE
+                ) {
+                    when (tokenPacket.responseCode) {
+                        0 -> Unit
+                        -1 -> {
+                            control.remoteId = tokenPacket.header.senderId
+                            localToken = tokenPacket.header.tokenRequest
+                            radioToken = tokenPacket.header.token
+                            if (engineState.connectionRequestAuthorized) {
+                                // A later -1 invalidates the established authorization.
+                                // Reusing the old reducer facts would leave the UI in
+                                // RECEIVING without reopening potentially new stream ports.
+                                dispatch(
+                                    Ic705RxSessionEngine.Event.RecoverableFailure(
+                                        "token reauthorization required",
+                                    ),
+                                )
+                            } else {
+                                dispatch(Ic705RxSessionEngine.Event.ConnectionRequestAuthorized)
+                            }
+                        }
+                        else -> dispatch(
+                            Ic705RxSessionEngine.Event.RecoverableFailure("token renewal rejected"),
+                        )
+                    }
+                }
+            }
+            Ic705ConnectionInfoCodec.PACKET_SIZE -> {
+                val announcement = Ic705ConnectionInfoCodec.decodeAnnouncement(data, control.localId)
+                if (!announcement.isBusy) {
+                    connectionAnnouncement = announcement
+                    control.remoteId = announcement.header.senderId
+                    localToken = announcement.header.tokenRequest
+                    radioToken = announcement.header.token
+                    // Preserve the fact first so the reducer suppresses a redundant blank 0x90.
+                    dispatch(Ic705RxSessionEngine.Event.ConnectionInfoReceived)
+                    if (!engineState.connectionRequestAuthorized) {
+                        dispatch(Ic705RxSessionEngine.Event.ConnectionRequestAuthorized)
+                    }
+                } else if (
+                    engineState.connectionInfoSent &&
+                    announcement.busyClientName == config.clientName
+                ) {
+                    // kappanhang treats the post-request busy 0x90 for its own client as
+                    // the positive "serial and audio request success" signal. wfview
+                    // independently uses the client-name field to distinguish our claim
+                    // from another owner's busy announcement. Default radio data ports
+                    // are adjacent to the configured control port.
+                    defaultStreamEndpoints()?.let { endpoints ->
+                        dispatch(Ic705RxSessionEngine.Event.StatusEndpointsReceived(endpoints))
+                    }
+                }
+            }
+            Ic705HandshakeCodec.STATUS_PACKET_SIZE -> {
+                val status = Ic705HandshakeCodec.decodeStatusPacket(data, control.localId)
+                if (
+                    status.isAuthenticated &&
+                    status.isConnected &&
+                    status.civPort != 0 &&
+                    status.audioPort != 0
+                ) {
+                    dispatch(
+                        Ic705RxSessionEngine.Event.StatusEndpointsReceived(
+                            Ic705RxSessionEngine.StreamEndpoints(status.civPort, status.audioPort),
+                        ),
+                    )
+                } else {
+                    dispatch(
+                        Ic705RxSessionEngine.Event.StatusNotReady(
+                            errorCode = status.errorCode,
+                            disconnectFlag = status.disconnectFlag,
+                        ),
+                    )
+                }
+            }
+            else -> if (isVariableRetransmit(data)) handleRetransmit(control, data)
+        }
+    }
+
+    private fun sendLogin() {
+        val control = channelRuntimes.getValue(Ic705ChannelRole.CONTROL)
+        val loginInnerSequence = if (wireProfile.loginAdvancesAuthSequence) {
+            nextAuthInnerSequence()
+        } else {
+            authInnerSequence
+        }
+        sendTracked(
+            control.role,
+            Ic705HandshakeCodec.encodeLoginRequest(
+                sequence = 0,
+                senderId = control.localId,
+                receiverId = requireNotNull(control.remoteId),
+                innerSequence = loginInnerSequence,
+                tokenRequest = localToken,
+                token = radioToken,
+                username = config.username,
+                password = config.passwordValue(),
+                clientName = config.clientName,
+            ),
+        )
+    }
+
+    private fun sendTokenConfirmation(token: Int) {
+        val control = channelRuntimes.getValue(Ic705ChannelRole.CONTROL)
+        radioToken = token
+        sendTracked(
+            control.role,
+            Ic705HandshakeCodec.encodeTokenConfirm(
+                sequence = 0,
+                senderId = control.localId,
+                receiverId = requireNotNull(control.remoteId),
+                innerSequence = nextAuthInnerSequence(),
+                tokenRequest = localToken,
+                token = radioToken,
+            ),
+        )
+        startFixedTask(
+            key = TASK_TOKEN_RENEWAL,
+            initialDelayMillis = config.timing.tokenRenewalMillis,
+            periodMillis = config.timing.tokenRenewalMillis,
+            expectedGeneration = generation,
+            block = ::sendTokenRenewal,
+        )
+    }
+
+    private fun sendTokenRenewal() {
+        val control = channelRuntimes[Ic705ChannelRole.CONTROL] ?: return
+        val remoteId = control.remoteId ?: return
+        sendTracked(
+            control.role,
+            Ic705HandshakeCodec.encodeTokenRenewal(
+                sequence = 0,
+                senderId = control.localId,
+                receiverId = remoteId,
+                innerSequence = nextAuthInnerSequence(),
+                tokenRequest = localToken,
+                token = radioToken,
+            ),
+        )
+    }
+
+    private fun sendConnectionInfo() {
+        val control = channelRuntimes.getValue(Ic705ChannelRole.CONTROL)
+        val announcement = requireNotNull(connectionAnnouncement)
+        sendTracked(
+            control.role,
+            Ic705ConnectionInfoCodec.encodeParameters(
+                Ic705ConnectionParameters(
+                    sequence = 0,
+                    senderId = control.localId,
+                    receiverId = requireNotNull(control.remoteId),
+                    innerSequence = nextAuthInnerSequence(),
+                    tokenRequest = localToken,
+                    token = radioToken,
+                    radioIdentityBlock = announcement.radioIdentityBlock,
+                    radioName = announcement.radioName,
+                    username = config.username,
+                    localCivPort = channels.getValue(Ic705ChannelRole.CIV).localPort,
+                    localAudioPort = channels.getValue(Ic705ChannelRole.AUDIO).localPort,
+                    receiveEnabled = true,
+                    // The IC-705 expects the full-duplex LPCM capability bit during LAN
+                    // negotiation even for a receive-only client. This only advertises
+                    // wire compatibility; this RX session exposes no TX audio or PTT API.
+                    transmitEnabled = true,
+                ),
+            ),
+        )
+    }
+
+    private fun openStreams(endpoints: Ic705RxSessionEngine.StreamEndpoints) {
+        val radioAddress = discoveredRadioAddress ?: config.radioAddress
+        channels.getValue(Ic705ChannelRole.CIV).setRemoteEndpoint(
+            InetSocketAddress(radioAddress, endpoints.civPort),
+            lockSource = false,
+        )
+        channels.getValue(Ic705ChannelRole.AUDIO).setRemoteEndpoint(
+            InetSocketAddress(radioAddress, endpoints.audioPort),
+            lockSource = false,
+        )
+        startDiscovery(Ic705ChannelRole.CIV)
+        startDiscovery(Ic705ChannelRole.AUDIO)
+    }
+
+    private fun defaultStreamEndpoints(): Ic705RxSessionEngine.StreamEndpoints? {
+        if (config.controlPort > 0xffff - 2) return null
+        return Ic705RxSessionEngine.StreamEndpoints(
+            civPort = config.controlPort + 1,
+            audioPort = config.controlPort + 2,
+        )
+    }
+
+    private fun startDiscovery(role: Ic705ChannelRole) {
+        val currentGeneration = generation
+        sendAreYouThere(role)
+        startFixedTask(
+            key = discoveryTask(role),
+            initialDelayMillis = config.timing.discoveryPeriodMillis,
+            periodMillis = config.timing.discoveryPeriodMillis,
+            expectedGeneration = currentGeneration,
+        ) { sendAreYouThere(role) }
+        replaceTask(
+            discoveryTimeoutTask(role),
+            controlExecutor.schedule(
+                {
+                    if (generation == currentGeneration && channelRuntimes[role]?.remoteId == null) {
+                        dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("$role discovery timeout"))
+                    }
+                },
+                config.timing.discoveryTimeoutMillis,
+                TimeUnit.MILLISECONDS,
+            ),
+        )
+    }
+
+    private fun sendAreYouThere(role: Ic705ChannelRole) {
+        val runtime = channelRuntimes.getValue(role)
+        sendUntracked(
+            role,
+            Ic705ControlPacketCodec.encode(
+                Ic705ControlPacket(
+                    type = Ic705ControlPacketCodec.TYPE_ARE_YOU_THERE,
+                    sequence = 0,
+                    senderId = runtime.localId,
+                    receiverId = 0,
+                ),
+            ),
+        )
+    }
+
+    private fun startPing(role: Ic705ChannelRole) {
+        val currentGeneration = generation
+        sendPing(role)
+        startFixedTask(
+            key = pingTask(role),
+            initialDelayMillis = config.timing.pingPeriodMillis,
+            periodMillis = config.timing.pingPeriodMillis,
+            expectedGeneration = currentGeneration,
+        ) { sendPing(role) }
+    }
+
+    private fun sendPing(role: Ic705ChannelRole) {
+        val runtime = channelRuntimes.getValue(role)
+        val remoteId = runtime.remoteId ?: return
+        sendUntracked(
+            role,
+            Ic705HandshakeCodec.encodePing(
+                Ic705PingPacket(
+                    sequence = runtime.pingSequence,
+                    senderId = runtime.localId,
+                    receiverId = remoteId,
+                    isReply = false,
+                    timestampBits = System.currentTimeMillis().toInt(),
+                ),
+            ),
+        )
+    }
+
+    private fun startIdle(role: Ic705ChannelRole) {
+        startFixedTask(
+            key = idleTask(role),
+            initialDelayMillis = config.timing.idleCheckPeriodMillis,
+            periodMillis = config.timing.idleCheckPeriodMillis,
+            expectedGeneration = generation,
+        ) {
+            val runtime = channelRuntimes[role] ?: return@startFixedTask
+            if (
+                shouldSendIc705TrackedIdle(
+                    runtime.trackedPackets.millisSinceLastTracked(),
+                    config.timing.idleAfterMillis,
+                )
+            ) {
+                sendTracked(
+                    role,
+                    controlPacket(
+                        type = Ic705ControlPacketCodec.TYPE_NULL,
+                        sequence = 0,
+                        runtime = runtime,
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun handleRetransmit(runtime: ChannelRuntime, data: ByteArray) {
+        Ic705ControlPacketCodec.decodeRetransmitRequest(data, runtime.localId).forEach { sequence ->
+            val stored = runtime.trackedPackets.find(sequence)
+            if (stored != null) {
+                sendUntracked(runtime.role, stored)
+            } else if (wireProfile.replyToUnknownRetransmit) {
+                sendUntracked(
+                    runtime.role,
+                    controlPacket(
+                        type = Ic705ControlPacketCodec.TYPE_NULL,
+                        sequence = sequence,
+                        runtime = runtime,
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun sendTracked(role: Ic705ChannelRole, template: ByteArray) {
+        val runtime = channelRuntimes.getValue(role)
+        val tracked = runtime.trackedPackets.track(template)
+        channels.getValue(role).send(tracked.data)
+    }
+
+    private fun sendUntracked(role: Ic705ChannelRole, data: ByteArray) {
+        channels.getValue(role).send(data)
+    }
+
+    private fun controlPacket(
+        type: Int,
+        sequence: Int,
+        runtime: ChannelRuntime,
+    ): ByteArray = Ic705ControlPacketCodec.encode(
+        Ic705ControlPacket(
+            type = type,
+            sequence = sequence,
+            senderId = runtime.localId,
+            receiverId = requireNotNull(runtime.remoteId),
+        ),
+    )
+
+    private fun enqueueAudio(
+        expectedGeneration: Long,
+        runtime: ChannelRuntime,
+        data: ByteArray,
+    ) {
+        try {
+            audioExecutor.execute {
+                try {
+                    val result = synchronized(audioLifecycleLock) {
+                        if (generation != expectedGeneration || closed.get()) {
+                            return@synchronized null
+                        }
+                        val receiver = audioReceiver ?: return@synchronized null
+                        receiver.accept(data).also { receiveResult ->
+                            if (receiveResult == Ic705AudioReceiveResult.ACCEPTED) {
+                                audioWrittenInGeneration = true
+                            }
+                        }
+                    } ?: return@execute
+                    runtime.lastReceivedAtMillis.set(monotonicMillis())
+                    if (result == Ic705AudioReceiveResult.ACCEPTED && !firstAudioReported) {
+                        submitForGeneration(expectedGeneration) {
+                            if (generation == expectedGeneration && !firstAudioReported) {
+                                firstAudioReported = true
+                                dispatch(Ic705RxSessionEngine.Event.FirstAudio)
+                            }
+                        }
+                    }
+                } catch (_: IllegalArgumentException) {
+                    submitForGeneration(expectedGeneration) {
+                        reportIssue(
+                            Ic705RxSessionIssueCode.MALFORMED_PACKET,
+                            Ic705ChannelRole.AUDIO,
+                            packetDiagnostic(data, runtime.localId),
+                        )
+                    }
+                }
+            }
+        } catch (_: RejectedExecutionException) {
+            audioExecutor.queue.clear()
+            submitForGeneration(expectedGeneration) {
+                reportIssue(Ic705RxSessionIssueCode.AUDIO_QUEUE_OVERFLOW, Ic705ChannelRole.AUDIO)
+                notifyAudioReset(Ic705AudioResetReason.AUDIO_QUEUE_OVERFLOW)
+            }
+        }
+    }
+
+    private fun checkWatchdog() {
+        val now = monotonicMillis()
+        val stale = channelRuntimes.values.firstOrNull { runtime ->
+            runtime.remoteId != null &&
+                now - runtime.lastReceivedAtMillis.get() > config.timing.channelTimeoutMillis
+        }
+        if (stale != null) {
+            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("${stale.role} timeout"))
+        }
+    }
+
+    private fun scheduleConnectionInfoSettle() {
+        cancelTask(TASK_CONNECTION_INFO_RETRY)
+        val expectedGeneration = generation
+        replaceTask(
+            TASK_CONNECTION_INFO_SETTLE,
+            controlExecutor.schedule(
+                {
+                    if (generation == expectedGeneration && !closed.get()) {
+                        dispatch(Ic705RxSessionEngine.Event.ConnectionInfoSettleTimerFired)
+                    }
+                },
+                config.timing.connectionInfoSettleMillis,
+                TimeUnit.MILLISECONDS,
+            ),
+        )
+    }
+
+    private fun scheduleConnectionInfoRetry() {
+        cancelTask(TASK_CONNECTION_INFO_SETTLE)
+        val expectedGeneration = generation
+        replaceTask(
+            TASK_CONNECTION_INFO_RETRY,
+            controlExecutor.schedule(
+                {
+                    if (generation == expectedGeneration && !closed.get()) {
+                        dispatch(Ic705RxSessionEngine.Event.ConnectionInfoRetryTimerFired)
+                    }
+                },
+                config.timing.connectionInfoRetryMillis,
+                TimeUnit.MILLISECONDS,
+            ),
+        )
+    }
+
+    private fun cancelConnectionInfoTimers() {
+        cancelTask(TASK_CONNECTION_INFO_SETTLE)
+        cancelTask(TASK_CONNECTION_INFO_RETRY)
+    }
+
+    private fun scheduleRetry(
+        attempt: Int,
+        cooldown: Ic705RxSessionEngine.RetryCooldown,
+    ) {
+        if (!config.autoReconnect) {
+            dispatch(Ic705RxSessionEngine.Event.RetryDisabled)
+            return
+        }
+        var delay = config.timing.initialReconnectMillis
+        repeat((attempt - 1).coerceAtLeast(0).coerceAtMost(30)) {
+            delay = (delay * 2).coerceAtMost(config.timing.maximumReconnectMillis)
+        }
+        delay = maxOf(
+            delay,
+            when (cooldown) {
+                Ic705RxSessionEngine.RetryCooldown.NORMAL -> 0L
+                Ic705RxSessionEngine.RetryCooldown.SESSION_NOT_READY ->
+                    config.timing.connectionInfoRetryMillis
+                Ic705RxSessionEngine.RetryCooldown.SESSION_REJECTED ->
+                    SESSION_REJECTED_COOLDOWN_MILLIS
+            },
+        )
+        val expectedGeneration = generation
+        replaceTask(
+            TASK_RETRY,
+            controlExecutor.schedule(
+                {
+                    if (generation == expectedGeneration && !closed.get()) {
+                        dispatch(Ic705RxSessionEngine.Event.RetryTimerFired)
+                    }
+                },
+                delay,
+                TimeUnit.MILLISECONDS,
+            ),
+        )
+    }
+
+    private fun updateStageTimeout(state: Ic705RxSessionEngine.State) {
+        if (state.phase !in HANDSHAKE_PHASES) {
+            cancelTask(TASK_STAGE_TIMEOUT)
+            return
+        }
+        val expectedGeneration = generation
+        replaceTask(
+            TASK_STAGE_TIMEOUT,
+            controlExecutor.schedule(
+                {
+                    if (
+                        generation == expectedGeneration &&
+                        !closed.get() &&
+                        engineState == state
+                    ) {
+                        dispatch(
+                            Ic705RxSessionEngine.Event.RecoverableFailure(
+                                "${state.phase} handshake timeout",
+                            ),
+                        )
+                    }
+                },
+                if (state.phase == Ic705RxSessionEngine.Phase.NEGOTIATING) {
+                    config.timing.negotiationTimeoutMillis
+                } else {
+                    config.timing.handshakeStageTimeoutMillis
+                },
+                TimeUnit.MILLISECONDS,
+            ),
+        )
+    }
+
+    private fun startFixedTask(
+        key: String,
+        initialDelayMillis: Long,
+        periodMillis: Long,
+        expectedGeneration: Long,
+        block: () -> Unit,
+    ) {
+        replaceTask(
+            key,
+            controlExecutor.scheduleAtFixedRate(
+                {
+                    if (generation == expectedGeneration && !closed.get()) {
+                        try {
+                            block()
+                        } catch (_: IOException) {
+                            reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, null)
+                            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("scheduled I/O"))
+                        } catch (_: RuntimeException) {
+                            reportIssue(Ic705RxSessionIssueCode.MALFORMED_PACKET, null)
+                            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("scheduled task failed"))
+                        }
+                    }
+                },
+                initialDelayMillis,
+                periodMillis,
+                TimeUnit.MILLISECONDS,
+            ),
+        )
+    }
+
+    private fun replaceTask(key: String, task: ScheduledFuture<*>) {
+        scheduledTasks.put(key, task)?.cancel(false)
+    }
+
+    private fun cancelTask(key: String) {
+        scheduledTasks.remove(key)?.cancel(false)
+    }
+
+    private fun cancelAllTasks() {
+        scheduledTasks.values.forEach { it.cancel(false) }
+        scheduledTasks.clear()
+    }
+
+    private fun submitForGeneration(expectedGeneration: Long, block: () -> Unit) {
+        if (closed.get()) return
+        try {
+            controlExecutor.execute {
+                if (generation == expectedGeneration && !closed.get()) block()
+            }
+        } catch (_: RejectedExecutionException) {
+            // Normal close race: a receive callback can arrive after executor shutdown.
+        }
+    }
+
+    private fun reportIssue(
+        code: Ic705RxSessionIssueCode,
+        role: Ic705ChannelRole?,
+        packet: Ic705PacketDiagnostic? = null,
+    ) {
+        safeCallback { callbacks.onIssue(Ic705RxSessionIssue(code, role, packet)) }
+    }
+
+    private fun packetDiagnostic(data: ByteArray, localId: Int): Ic705PacketDiagnostic {
+        val declaredLength = if (data.size >= 4) Ic705WireByteOrder.readInt32Le(data, 0) else null
+        val commonType = if (data.size >= 6) Ic705WireByteOrder.readUInt16Le(data, 4) else null
+        val receiverKind = if (data.size < Ic705ControlPacketCodec.PACKET_SIZE) {
+            Ic705PacketReceiverKind.ABSENT
+        } else {
+            when (Ic705WireByteOrder.readInt32Le(data, 0x0c)) {
+                localId -> Ic705PacketReceiverKind.LOCAL
+                0 -> Ic705PacketReceiverKind.ZERO
+                else -> Ic705PacketReceiverKind.OTHER
+            }
+        }
+        val rejection = when {
+            data.size < Ic705ControlPacketCodec.PACKET_SIZE -> {
+                Ic705PacketRejectionKind.HEADER_TOO_SHORT
+            }
+            declaredLength != data.size -> Ic705PacketRejectionKind.DECLARED_LENGTH_MISMATCH
+            receiverKind == Ic705PacketReceiverKind.ZERO -> Ic705PacketRejectionKind.RECEIVER_ZERO
+            receiverKind == Ic705PacketReceiverKind.OTHER -> Ic705PacketRejectionKind.RECEIVER_OTHER
+            else -> Ic705PacketRejectionKind.PACKET_CODEC
+        }
+        val hasAuthenticatedHeader = data.size in AUTHENTICATED_PACKET_SIZES
+        return Ic705PacketDiagnostic(
+            length = data.size,
+            declaredLength = declaredLength,
+            commonType = commonType,
+            receiverKind = receiverKind,
+            payloadLength = if (hasAuthenticatedHeader) {
+                Ic705WireByteOrder.readUInt16Be(data, 0x12)
+            } else {
+                null
+            },
+            requestReply = if (hasAuthenticatedHeader) data[0x14].toInt() and 0xff else null,
+            requestType = if (hasAuthenticatedHeader) data[0x15].toInt() and 0xff else null,
+            rejection = rejection,
+        )
+    }
+
+    private fun notifyAudioReset(reason: Ic705AudioResetReason) {
+        synchronized(audioLifecycleLock) {
+            audioReceiver?.reset()
+        }
+        safeCallback { callbacks.onAudioReset(Ic705AudioReset(reason)) }
+    }
+
+    private fun safeCallback(block: () -> Unit) {
+        runCatching(block)
+    }
+
+    private fun validateCommonEnvelope(data: ByteArray, expectedReceiverId: Int) {
+        if (data.size < Ic705ControlPacketCodec.PACKET_SIZE) {
+            throw Ic705ProtocolException("Datagram is shorter than the common Icom header")
+        }
+        val declaredLength = Ic705WireByteOrder.readInt32Le(data, 0)
+        if (declaredLength != data.size) {
+            throw Ic705ProtocolException("Datagram length does not match its common header")
+        }
+        val receiverId = Ic705WireByteOrder.readInt32Le(data, 0x0c)
+        if (receiverId != expectedReceiverId) {
+            throw Ic705ProtocolException("Datagram receiver ID does not match this channel")
+        }
+    }
+
+    private fun isVariableRetransmit(data: ByteArray): Boolean =
+        data.size > Ic705ControlPacketCodec.PACKET_SIZE &&
+            data.size % 2 == 0 &&
+            Ic705WireByteOrder.readUInt16Le(data, 0x04) == Ic705ControlPacketCodec.TYPE_RETRANSMIT
+
+    private fun looksLikeAudio(data: ByteArray): Boolean = runCatching {
+        data.size > Ic705AudioPacketCodec.HEADER_SIZE &&
+            Ic705WireByteOrder.readInt32Le(data, 0) == data.size &&
+            Ic705WireByteOrder.readUInt16Le(data, 0x04) != Ic705ControlPacketCodec.TYPE_RETRANSMIT &&
+            Ic705WireByteOrder.readUInt16Be(data, 0x16) == data.size - Ic705AudioPacketCodec.HEADER_SIZE
+    }.getOrDefault(false)
+
+    private fun nextAuthInnerSequence(): Int {
+        val result = authInnerSequence
+        authInnerSequence = (authInnerSequence + 1) and 0xffff
+        return result
+    }
+
+    private fun nextCivSequence(runtime: ChannelRuntime): Int {
+        val result = runtime.civSequence
+        runtime.civSequence = (runtime.civSequence + 1) and 0xffff
+        return result
+    }
+
+    private fun discoveryTask(role: Ic705ChannelRole) = "discovery-$role"
+    private fun discoveryTimeoutTask(role: Ic705ChannelRole) = "discovery-timeout-$role"
+    private fun pingTask(role: Ic705ChannelRole) = "ping-$role"
+    private fun idleTask(role: Ic705ChannelRole) = "idle-$role"
+
+    private companion object {
+        const val TAG = "Ic705RxSession"
+        const val CLOSE_WAIT_SLICE_MILLIS = 2_000L
+        const val TASK_WATCHDOG = "watchdog"
+        const val TASK_TOKEN_RENEWAL = "token-renewal"
+        const val TASK_CONNECTION_INFO_SETTLE = "connection-info-settle"
+        const val TASK_CONNECTION_INFO_RETRY = "connection-info-retry"
+        const val TASK_RETRY = "retry"
+        const val TASK_STAGE_TIMEOUT = "stage-timeout"
+        const val SESSION_REJECTED_COOLDOWN_MILLIS = 30_000L
+        const val TX_DRAIN_WAIT_MILLIS = 150L
+        const val TX_COOLDOWN_GUARD_MILLIS = 300L
+
+        val HANDSHAKE_PHASES = setOf(
+            Ic705RxSessionEngine.Phase.OPENING_SOCKETS,
+            Ic705RxSessionEngine.Phase.CONTROL_DISCOVERY,
+            Ic705RxSessionEngine.Phase.AUTHENTICATING,
+            Ic705RxSessionEngine.Phase.NEGOTIATING,
+            Ic705RxSessionEngine.Phase.OPENING_STREAMS,
+            Ic705RxSessionEngine.Phase.STREAMS_READY,
+        )
+
+        val AUTHENTICATED_PACKET_SIZES = setOf(
+            Ic705HandshakeCodec.TOKEN_PACKET_SIZE,
+            Ic705HandshakeCodec.STATUS_PACKET_SIZE,
+            Ic705HandshakeCodec.LOGIN_RESPONSE_PACKET_SIZE,
+            Ic705ConnectionInfoCodec.PACKET_SIZE,
+        )
+    }
+}
+
+/** wfview encodes the route IPv4 suffix and bound UDP port into each client ID. */
+internal fun ic705ClientIdForEndpoint(localAddress: InetAddress?, localPort: Int): Int {
+    require(localPort in 1..0xffff) { "localPort must be a bound UDP port" }
+    if (localAddress is Inet4Address && !localAddress.isAnyLocalAddress) {
+        val octets = localAddress.address
+        return ((octets[2].toInt() and 0xff) shl 24) or
+            ((octets[3].toInt() and 0xff) shl 16) or
+            localPort
+    }
+    // rigplane's endpoint-derived form is the safe fallback for socket providers
+    // that cannot expose the selected route's concrete IPv4.
+    return 0x0001_0000 or localPort
+}
+
+internal fun shouldSendIc705TrackedIdle(
+    millisSinceLastTracked: Long,
+    idleAfterMillis: Long,
+): Boolean = millisSinceLastTracked >= idleAfterMillis
+
+private fun namedDaemonThreadFactory(name: String): ThreadFactory = ThreadFactory { runnable ->
+    Thread(runnable, name).apply { isDaemon = true }
+}
+
+private fun newAudioExecutor(): ThreadPoolExecutor = ThreadPoolExecutor(
+    1,
+    1,
+    0L,
+    TimeUnit.MILLISECONDS,
+    ArrayBlockingQueue(64),
+    namedDaemonThreadFactory("IC-705 RX audio"),
+    ThreadPoolExecutor.AbortPolicy(),
+)

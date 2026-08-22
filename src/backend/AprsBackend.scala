@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Build
 import _root_.net.ab0oo.aprs.parser.APRSPacket
 import _root_.java.io.{InputStream, OutputStream}
+import org.aprsdroid.app.backend.Ic705WifiBackend
 
 object AprsBackend {
         /** "Modular" system to connect to an APRS backend.
@@ -71,6 +72,12 @@ object AprsBackend {
 			Set(Manifest.permission.RECORD_AUDIO),
 			CAN_DUPLEX,
 			PASSCODE_NONE),
+		"ic705" -> new BackendInfo(
+			(s, p) => new Ic705WifiBackend(s, p),
+			0,
+			Set(),
+			CAN_DUPLEX,
+			PASSCODE_NONE),
 		"tcp" -> new BackendInfo(
 			(s, p) => new TcpUploader(s, p),
 			R.xml.backend_tcp,
@@ -110,6 +117,9 @@ object AprsBackend {
 		"afsk" -> new ProtoInfo(
 			null,
 			R.xml.proto_afsk, null),
+		"ic705" -> new ProtoInfo(
+			null,
+			R.xml.proto_ic705, null),
 		"kiss" -> new ProtoInfo(
 			(s, is, os) => new KissProto(s, is, os),
 			R.xml.proto_kiss, "link"),

@@ -305,6 +305,7 @@ trait UIHelper extends Activity
 		})
 		menu.findItem(R.id.age).setVisible(R.id.map == menu_id || R.id.hub == menu_id)
 		menu.findItem(R.id.overlays).setVisible(R.id.map == menu_id)
+		menu.findItem(R.id.ic705_rx_diagnostic).setVisible(android.os.Build.VERSION.SDK_INT >= 22)
 		true
 	}
 
@@ -321,6 +322,10 @@ trait UIHelper extends Activity
 		mi.getItemId match {
 		case R.id.preferences =>
 			startActivity(new Intent(this, classOf[PrefsAct]));
+			true
+		case R.id.ic705_rx_diagnostic =>
+			startActivity(new Intent().setClassName(this,
+				"org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity"));
 			true
 		case R.id.export =>
 			onStartLoading()

@@ -12,6 +12,7 @@
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
@@ -25,7 +26,6 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
@@ -84,6 +84,11 @@
 	<activity android:name=".BackendPrefs" android:label="@string/p__connection"
 		android:parentActivityName=".PrefsAct"
 		/>
+	<activity
+		android:name=".ic705.diagnostic.Ic705RxDiagnosticActivity"
+		android:label="@string/ic705_rx_title"
+		android:exported="false"
+		android:parentActivityName=".HubActivity" />
 	<activity android:name=".PrefSymbolAct" android:label="@string/p_symbol"
 		android:parentActivityName=".PrefsAct"
 		/>
@@ -171,12 +176,7 @@
 		<action android:name="org.aprsdroid.app.FREQUENCY" />
 	    </intent-filter>
 	</service>
-	<!-- start the service if applicable on boot -->
-	<receiver android:name=".SystemEventReceiver" android:exported="true">
-	    <intent-filter>
-		<action android:name="android.intent.action.BOOT_COMPLETED"/>
-	    </intent-filter>
-	</receiver>
+
 	<!-- file provider for exported logs and similar things -->
 	<provider
 		android:name="androidx.core.content.FileProvider"

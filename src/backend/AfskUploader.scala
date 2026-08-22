@@ -5,7 +5,7 @@ import _root_.android.media.{AudioManager, AudioTrack}
 import _root_.android.util.Log
 import _root_.androidx.core.content.ContextCompat
 import _root_.java.net.{InetAddress, DatagramSocket, DatagramPacket}
-import _root_.net.ab0oo.aprs.parser.{APRSPacket, Digipeater, Parser}
+import _root_.net.ab0oo.aprs.parser.{APRSPacket, Digipeater}
 import com.nogy.afu.soundmodem.{Message, APRSFrame, Afsk}
 
 import com.jazzido.PacketDroid.{AudioBufferProcessor, PacketCallback}
@@ -24,6 +24,10 @@ class AfskUploader(service : AprsService, prefs : PrefsWrapper) extends AprsBack
 	val in_type = if (use_bt) /*VOICE_CALL*/1 else /*MIC*/1
 	val output = new Afsk(out_type, samplerate)
 	val aw = new AfskInWrapper(use_hq, this, in_type, samplerate/2) // 8000 / 11025
+	private val ax25PacketConsumer = new Ax25PacketConsumer(
+		new Ax25SubmitSink {
+			def postSubmit(text : String) { service.postSubmit(text) }
+		}, TAG)
 
 	output.setVolume(AudioTrack.getMaxVolume())
 	
@@ -98,12 +102,7 @@ class AfskUploader(service : AprsService, prefs : PrefsWrapper) extends AprsBack
 	def received(data : Array[Byte]) = handlePacket(data)
 
 	def handlePacket(data : Array[Byte]) {
-		try {
-			service.postSubmit(Parser.parseAX25(data).toString().trim())
-		} catch {
-			case e : Exception =>
-				Log.e(TAG, "bad packet: %s".format(data.map("%02x".format(_)).mkString(" "))); e.printStackTrace()
-		}
+		ax25PacketConsumer.accept(data)
 	}
 
 	def peak(peak_value : Short) = notifyMicLevel(peak_value / 330)

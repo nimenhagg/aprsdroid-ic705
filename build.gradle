@@ -18,7 +18,8 @@ plugins {
 	// https://github.com/Triple-T/gradle-play-publisher#usage
 	id("com.github.triplet.play") version "3.13.0"
 	alias(libs.plugins.androidApplication)
-	alias(libs.plugins.scalaAndroid)
+	alias(libs.plugins.kotlinAndroid)
+	id 'cash.bdo.scalroid'
 }
 
 allprojects {
@@ -31,7 +32,6 @@ allprojects {
 }
 
 /////////////// APRSdroid specific build rules ///////////////
-scala.scalaVersion = "2.11.12"
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
@@ -42,6 +42,17 @@ ext {
 tasks.withType(ScalaCompile) {
 	// Suppress deprecation warnings
 	scalaCompileOptions.deprecation = false
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+	kotlinOptions.jvmTarget = '17'
+}
+
+// Scalroid's bidirectional Scala/Kotlin mode exposes Scala classes to Java-resource
+// processing but does not declare this ordering itself on Gradle 8.
+tasks.configureEach {
+	if (name == 'processDebugJavaRes') dependsOn 'compileDebugScala'
+	if (name == 'processReleaseJavaRes') dependsOn 'compileReleaseScala'
 }
 
 def versionCodeDate() {
@@ -63,9 +74,14 @@ def mapsApiKey() {
 
 
 android {
+	scalroid {
+		scalaCodeReferToKt = true
+		ktCodeReferToScala = true
+		javaDirsExcludes = ['src']
+	}
 	namespace 'org.aprsdroid.app'
+	compileSdk = 35
 	defaultConfig {
-		compileSdk = 35
 		minSdk = 14
 		targetSdk = 35
 		versionName "$build_revision"
@@ -82,6 +98,9 @@ android {
 	compileOptions {
 		sourceCompatibility JavaVersion.VERSION_17
 		targetCompatibility JavaVersion.VERSION_17
+	}
+	buildFeatures {
+		buildConfig = true
 	}
 
 	buildTypes {
@@ -114,10 +133,8 @@ android {
 		main {
 			manifest.srcFile 'AndroidManifest.xml'
 			java.srcDirs = ['src']
-			// some gradle-android-scala-plugin versions don't know scala.* properties
-			// if it breaks, just remove the following two lines:
-			//scala.srcDirs = ['src']
-			//scala.excludes = ["*.sw?"]
+			scala.srcDirs = ['src']
+			scala.excludes = ["*.sw?"]
 			resources.srcDirs = ['src']
 			aidl.srcDirs = ['src']
 			renderscript.srcDirs = ['src']
@@ -136,6 +153,12 @@ android {
 		disable 'MissingTranslation'
 		disable 'InvalidPackage'
 	}
+	testOptions {
+		unitTests {
+			// The shared bad-frame logging path calls android.util.Log; JVM tests need it to no-op.
+			returnDefaultValues = true
+		}
+	}
 }
 
 play {
@@ -146,6 +169,9 @@ play {
 dependencies {
 	implementation(libs.scala.library)
 	implementation fileTree(include: ['*.jar'], dir: 'libs')
+	// Scalroid does not propagate optional useLibrary jars to the Scala classpath.
+	compileOnly files(new File(android.sdkDirectory,
+		"platforms/${android.compileSdkVersion}/optional/org.apache.http.legacy.jar"))
 	implementation 'com.google.android.gms:play-services-maps:17.0.0'
 	implementation 'com.google.maps.android:android-maps-utils:0.5'
 	implementation 'androidx.core:core:1.12.0'
