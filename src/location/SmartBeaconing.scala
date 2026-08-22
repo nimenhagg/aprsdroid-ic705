@@ -16,11 +16,10 @@ class SmartBeaconing(service : AprsService, prefs : PrefsWrapper) extends Locati
 	var started = false
 	var isSingleShot = false
 
-	def start(singleShot : Boolean) =
-	{
+	def start(singleShot : Boolean) : String = {
 		isSingleShot = singleShot
-		if (singleShot) lastLoc = null {
-		lastLoc = null
+		if (singleShot)
+			lastLoc = null
 		if (!started) try {
 			locMan.requestLocationUpdates(LocationManager.GPS_PROVIDER,
 				0, 0, this)
@@ -132,10 +131,8 @@ class SmartBeaconing(service : AprsService, prefs : PrefsWrapper) extends Locati
 		Log.d(TAG, "onStatusChanged: " + provider)
 	}
 
-
 	def postLocation(location : Location) {
 		lastLoc = location
-
 		service.postLocation(location)
 	}
 }

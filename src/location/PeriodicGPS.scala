@@ -33,9 +33,8 @@ class PeriodicGPS(service : AprsService, prefs : PrefsWrapper) extends LocationS
 	var fastLaneLoc : Location = null
 	var isSingleShot = false
 
-	def start(singleShot : Boolean) =
-	{
-		isSingleShot = singleShot {
+	def start(singleShot : Boolean) : String = {
+		isSingleShot = singleShot
 		fastLaneLoc = null
 		lastLoc = null
 		stop()
@@ -69,9 +68,8 @@ class PeriodicGPS(service : AprsService, prefs : PrefsWrapper) extends LocationS
 		}
 	}
 
-
 	def stop() {
-		locMan.removeUpdates(this);
+		locMan.removeUpdates(this)
 	}
 
 	def getGpsInterval() : Int = {
@@ -82,24 +80,24 @@ class PeriodicGPS(service : AprsService, prefs : PrefsWrapper) extends LocationS
 
 	def startFastLane() {
 		import AprsService.block2runnable
-		Log.d(TAG, "switching to fast lane");
+		Log.d(TAG, "switching to fast lane")
 		// request fast update rate
-		locMan.removeUpdates(this);
+		locMan.removeUpdates(this)
 		requestLocations(true)
 		service.handler.postDelayed({ stopFastLane(true) }, FAST_LANE_ACT)
 	}
 
 	def stopFastLane(post : Boolean) {
 		if (!AprsService.running)
-			return;
-		Log.d(TAG, "switching to slow lane");
+			return
+		Log.d(TAG, "switching to slow lane")
 		if (post && fastLaneLoc != null) {
-			Log.d(TAG, "stopFastLane: posting " + fastLaneLoc);
+			Log.d(TAG, "stopFastLane: posting " + fastLaneLoc)
 			postLocation(fastLaneLoc)
 		}
 		fastLaneLoc = null
 		// reset update speed
-		locMan.removeUpdates(this);
+		locMan.removeUpdates(this)
 		requestLocations(false)
 	}
 
@@ -154,10 +152,8 @@ class PeriodicGPS(service : AprsService, prefs : PrefsWrapper) extends LocationS
 		Log.d(TAG, "onStatusChanged: " + provider)
 	}
 
-
 	def postLocation(location : Location) {
 		lastLoc = location
-
 		service.postLocation(location)
 	}
 }
