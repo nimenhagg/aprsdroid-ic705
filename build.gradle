@@ -87,11 +87,11 @@ android {
 		javaDirsExcludes = ['src']
 	}
 	namespace 'org.aprsdroid.app'
-	compileSdk = 35
+	compileSdk = 36
 	defaultConfig {
 		applicationId "me.nimenhagg.aprsdroidic705mod"
 		minSdk = 24
-		targetSdk = 35
+		targetSdk = 36
 		versionName "$build_revision"
 		versionCode versionCodeDate()
 		resValue "string", "build_revision", "$build_revision"
