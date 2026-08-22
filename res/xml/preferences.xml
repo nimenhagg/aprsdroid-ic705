@@ -44,7 +44,7 @@
 		android:title="@string/p_connsetup">
 
             <intent android:action="android.intent.action.MAIN"
-                    android:targetPackage="org.aprsdroid.app"
+                    
                     android:targetClass="org.aprsdroid.app.BackendPrefs" />
 
         </PreferenceScreen>
@@ -58,7 +58,7 @@
 	    android:summary="@string/p_symbol_summary" >
 
             <intent android:action="android.intent.action.MAIN"
-                    android:targetPackage="org.aprsdroid.app"
+                    
                     android:targetClass="org.aprsdroid.app.PrefSymbolAct" />
     </PreferenceScreen>
 
@@ -86,7 +86,7 @@
 	    android:title="@string/p__location">
 
             <intent android:action="android.intent.action.MAIN"
-                    android:targetPackage="org.aprsdroid.app"
+                    
                     android:targetClass="org.aprsdroid.app.LocationPrefs" />
     </PreferenceScreen>
 
