@@ -1,18 +1,27 @@
-<merge
-xmlns:android="http://schemas.android.com/apk/res/android"
->
-<Button
-android:id="@+id/singlebtn"
-android:layout_weight="1"
-android:layout_width="fill_parent"
-android:layout_height="wrap_content"
-android:text="@string/singlelog"
-/>
-<Button
-android:id="@+id/startstopbtn"
-android:layout_weight="1"
-android:layout_width="fill_parent"
-android:layout_height="wrap_content"
-android:text="@string/startlog"
-/>
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/singlebtn"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginEnd="6dp"
+        android:paddingVertical="12dp"
+        app:cornerRadius="20dp"
+        android:text="@string/singlelog"
+        android:textSize="15sp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/startstopbtn"
+        style="@style/Widget.Material3.Button.ElevatedButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="6dp"
+        android:paddingVertical="12dp"
+        app:cornerRadius="20dp"
+        android:text="@string/startlog"
+        android:textSize="15sp" />
 </merge>

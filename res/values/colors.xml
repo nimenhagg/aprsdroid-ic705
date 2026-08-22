@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="md3_primary">#00629E</color>
+    <color name="md3_on_primary">#FFFFFF</color>
+    <color name="md3_primary_container">#CFE5FF</color>
+    <color name="md3_on_primary_container">#001D34</color>
+    <color name="md3_secondary">#51606F</color>
+    <color name="md3_on_secondary">#FFFFFF</color>
+    <color name="md3_secondary_container">#D5E4F7</color>
+    <color name="md3_on_secondary_container">#0E1D2A</color>
+    <color name="md3_surface">#F7F9FF</color>
+    <color name="md3_on_surface">#181C20</color>
+    <color name="md3_surface_variant">#DEE3EB</color>
+    <color name="md3_on_surface_variant">#42474E</color>
+    <color name="md3_surface_container">#ECEEF4</color>
+    <color name="md3_surface_container_high">#E6E8EE</color>
+    <color name="md3_accent_orange">#E65100</color>
+</resources>

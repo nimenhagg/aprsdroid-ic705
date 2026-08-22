@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="DefaultTheme"
-	    parent="@android:style/Theme.Holo">
-	<item name="android:textColor">@android:color/white</item>
-	<item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
-    </style>
-    <style name="MapViewTheme"
-           parent="@android:style/Theme.Holo.Light.DarkActionBar">
-	<item name="android:windowActionBarOverlay">true</item>
-	<item name="android:actionBarStyle">@style/Map.ActionBar</item>
+    <style name="DefaultTheme" parent="Theme.Material3.DayNight">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">false</item>
+        <item name="colorPrimary">@color/md3_primary</item>
+        <item name="colorOnPrimary">@color/md3_on_primary</item>
+        <item name="colorPrimaryContainer">@color/md3_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/md3_on_primary_container</item>
+        <item name="colorSecondary">@color/md3_secondary</item>
+        <item name="colorOnSecondary">@color/md3_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/md3_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/md3_on_secondary_container</item>
+        <item name="colorSurface">@color/md3_surface</item>
+        <item name="colorOnSurface">@color/md3_on_surface</item>
+        <item name="colorSurfaceVariant">@color/md3_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/md3_on_surface_variant</item>
+        <item name="colorSurfaceContainer">@color/md3_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/md3_surface_container_high</item>
     </style>
 
-    <style name="Map.ActionBar" parent="@android:style/Widget.Holo.Light.ActionBar.Solid.Inverse">
-	<item name="android:background">#a0000000</item>
+    <style name="MapViewTheme" parent="Theme.Material3.DayNight">
+        <item name="android:windowActionBarOverlay">true</item>
     </style>
 </resources>
