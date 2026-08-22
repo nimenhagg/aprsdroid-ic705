@@ -6,6 +6,17 @@
 
 ---
 
+## 🤖 Vibe Coding 创作声明 (AI Co-Creation)
+
+本项目由 **Vibe Coding（AI 全程协同编程）** 深度驱动开发完成，涵盖从 Icom UDP LAN 协议逆向分析、FT8CN 12kHz 架构对齐、AFSK1200 纯软件调制解调器实现、Android 现代构建升级到真机联合调试的全过程。
+
+参与协同创作的 AI 大模型包括：
+- 🧠 **GPT-5.6 Sol**
+- ⚡ **DeepSeek V4 Flash**
+- 🚀 **Gemini 3.7 Flash**
+
+---
+
 ## ✨ 核心特性与架构 (Key Features)
 
 - **📻 IC-705 Wi-Fi 原生全双工通信 (UDP LAN Protocol)**
@@ -32,7 +43,7 @@
 ### 1. IC-705 电台端设置
 1. 打开 IC-705 菜单：`MENU` -> `SET` -> `WLAN & Internet` -> `WLAN` -> `ON`。
 2. 将 **Connection Type** 设置为 `Access Point`（或加入同一局域网路由器）。
-3. 在 `WLAN & Internet` -> `Network User / Pass` 中添加一个用户（例如用户名：`ic705`，密码：`radioqid`）。
+3. 在 `WLAN & Internet` -> `Network User / Pass` 中添加一个用户（设置自定义用户名与密码）。
 4. 确认 `Control Port` 为 `50001`。
 5. 手机连接到 IC-705 的 Wi-Fi 热点。
 
@@ -40,9 +51,9 @@
 1. 打开 APRSdroid，进入 **设置 / 首选项 (Preferences)**。
 2. **连接偏好设置 (Connection Preferences)**：
    - **连接协议 (Connection Protocol)**：选择 `IC-705 Wi-Fi`。
-   - **电台 IP (Radio IP)**：输入 IC-705 的 IP 地址（热点模式默认通常为 `192.168.59.1` 或路由器分配的 IP 如 `192.168.1.143`）。
+   - **电台 IP (Radio IP)**：输入 IC-705 的 IP 地址（热点模式默认通常为 `192.168.59.1` 或路由器分配给电台的局域网 IP）。
    - **控制端口 (Control Port)**：`50001`。
-   - **用户名与密码**：输入电台端设置的账号密码。
+   - **用户名与密码**：输入在电台端设置的网络用户名与密码。
 3. 返回主界面，点击 **「开始记录路径」** 开启自动位置信标，或点击 **「发送位置」** 进行手动单次发射。
 
 ---
