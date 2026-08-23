@@ -91,7 +91,8 @@
 		android:name=".ic705.diagnostic.Ic705RxDiagnosticActivity"
 		android:label="@string/ic705_rx_title"
 		android:exported="false"
-		android:parentActivityName=".HubActivity" />
+		android:theme="@style/PreferenceTheme"
+		android:parentActivityName=".BackendPrefs" />
 	<activity android:name=".PrefSymbolAct" android:label="@string/p_symbol"
 		android:parentActivityName=".PrefsAct"
 		/>
@@ -175,10 +176,6 @@
 			android:mimeType="application/x-pkcs12" />
 	    </intent-filter>
 	</activity>
-	<activity android:name=".ic705.diagnostic.Ic705RxDiagnosticActivity"
-		android:label="@string/ic705_rx_title"
-		android:theme="@style/PreferenceTheme"
-		android:exported="false" />
 	<service android:name=".AprsService" android:label="@string/aprsservice"
 		android:foregroundServiceType="location|microphone|specialUse"
 		tools:ignore="ExportedService"
