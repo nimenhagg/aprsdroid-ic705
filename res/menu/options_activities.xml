@@ -1,24 +1,29 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 <group android:id="@+id/menu_options_activities">
 	<item android:id="@+id/hub"
 		android:title="@string/show_hub"
 		android:alphabeticShortcut="h"
 		android:showAsAction="always"
+		app:showAsAction="always"
 		android:icon="@drawable/ic_action_hub" />
 	<item android:id="@+id/log"
 		android:title="@string/show_log"
 		android:alphabeticShortcut="l"
 		android:showAsAction="always"
+		app:showAsAction="always"
 		android:icon="@drawable/ic_action_log" />
 	<item android:id="@+id/map"
 		android:title="@string/show_map"
 		android:alphabeticShortcut="m"
 		android:showAsAction="always"
+		app:showAsAction="always"
 		android:icon="@drawable/ic_action_map" />
 	<item android:id="@+id/conversations"
 		android:title="@string/app_messages"
 		android:alphabeticShortcut="c"
 		android:showAsAction="always"
+		app:showAsAction="always"
 		android:icon="@drawable/ic_action_messages" />
 </group>
 </menu>

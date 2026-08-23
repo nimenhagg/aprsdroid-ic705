@@ -1,13 +1,16 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 	<item android:id="@+id/age"
 		android:title="@string/age"
 		android:alphabeticShortcut="a"
 		android:showAsAction="ifRoom"
+		app:showAsAction="ifRoom"
 		android:icon="@drawable/ic_action_today" />
 	<item android:id="@+id/overlays"
 		android:title="@string/map_overlays"
 		android:alphabeticShortcut="o"
 		android:showAsAction="ifRoom"
+		app:showAsAction="ifRoom"
 		android:icon="@drawable/ic_action_layers" >
 		<menu>
 			<group android:checkableBehavior="all">
