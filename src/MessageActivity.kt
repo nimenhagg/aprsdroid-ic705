@@ -38,7 +38,55 @@ class MessageActivity : StationHelper(R.string.app_messages),
         super.onCreate(savedInstanceState)
         setContentView(R.layout.message_act)
 
-        listView.setOnCreateContextMenuListener(this)
+        registerForContextMenu(listView)
+        listView.setOnItemLongClickListener { _, _, position, _ ->
+            val c = listView.getItemAtPosition(position) as? Cursor ?: return@setOnItemLongClickListener false
+            val msgId = c.getLong(0)
+            val msgText = c.getString(StorageDatabase.Companion.Message.COLUMN_TEXT) ?: ""
+            val msgType = c.getInt(StorageDatabase.Companion.Message.COLUMN_TYPE)
+            val items = mutableListOf<String>()
+            items.add(getString(android.R.string.copy))
+            items.add(getString(R.string.delete_message))
+            if (msgType != StorageDatabase.Companion.Message.TYPE_INCOMING) {
+                items.add(getString(R.string.msg_restart))
+                if (msgType == StorageDatabase.Companion.Message.TYPE_OUT_NEW) {
+                    items.add(getString(R.string.msg_abort))
+                }
+            }
+            android.app.AlertDialog.Builder(this)
+                .setTitle(if (msgType == StorageDatabase.Companion.Message.TYPE_INCOMING) getString(R.string.msg_from, targetcall) else getString(R.string.msg_to, targetcall))
+                .setItems(items.toTypedArray()) { _, which ->
+                    val chosen = items[which]
+                    when (chosen) {
+                        getString(android.R.string.copy) -> {
+                            val clip = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            @Suppress("DEPRECATION")
+                            clip.text = msgText
+                            Toast.makeText(this, R.string.text_copied, Toast.LENGTH_SHORT).show()
+                        }
+                        getString(R.string.delete_message) -> {
+                            storage.deleteMessage(msgId)
+                            targetcall?.let { pla.changeCursor(storage.getMessages(it)) }
+                            Toast.makeText(this, R.string.message_deleted, Toast.LENGTH_SHORT).show()
+                        }
+                        getString(R.string.msg_restart) -> {
+                            val cv = ContentValues().apply {
+                                put(StorageDatabase.Companion.Message.TYPE, StorageDatabase.Companion.Message.TYPE_OUT_NEW)
+                                put(StorageDatabase.Companion.Message.RETRYCNT, 0)
+                                put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+                            }
+                            storage.updateMessage(msgId, cv)
+                            sendBroadcast(AprsService.MSG_TX_PRIV_INTENT)
+                        }
+                        getString(R.string.msg_abort) -> {
+                            storage.updateMessageType(msgId, StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
+                            sendBroadcast(AprsService.MSG_PRIV_INTENT)
+                        }
+                    }
+                }
+                .show()
+            true
+        }
 
         onStartLoading()
         listAdapter = pla

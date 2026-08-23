@@ -29,7 +29,29 @@ class ConversationsActivity : LoadingListActivity(), View.OnClickListener {
 
         registerForContextMenu(listView)
         newConversationBtn.setOnClickListener(this)
-        listView.setOnCreateContextMenuListener(this)
+        listView.setOnItemLongClickListener { _, _, position, _ ->
+            val c = listView.getItemAtPosition(position) as? Cursor ?: return@setOnItemLongClickListener false
+            val call = c.getString(StorageDatabase.Companion.Message.COLUMN_CALL)
+            AlertDialog.Builder(this)
+                .setTitle(call)
+                .setItems(arrayOf(getString(R.string.delete_conversation))) { _, which ->
+                    if (which == 0) {
+                        AlertDialog.Builder(this)
+                            .setTitle(R.string.delete_conversation)
+                            .setMessage(getString(R.string.confirm_delete_messages, call))
+                            .setPositiveButton(android.R.string.ok) { _, _ ->
+                                val storage = StorageDatabase.open(this)
+                                storage.deleteMessages(call)
+                                pla.changeCursor(storage.getConversations())
+                                android.widget.Toast.makeText(this, R.string.messages_cleared, android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show()
+                    }
+                }
+                .show()
+            true
+        }
 
         onStartLoading()
         listAdapter = pla
