@@ -134,6 +134,14 @@ class LogActivity : MainRecyclerActivity("log", R.id.log) {
                 StorageCleaner(this, storage) { onStopLoading() }.execute()
                 true
             }
+            R.id.about -> {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.app_name)
+                    .setMessage(getString(R.string.build_version))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
