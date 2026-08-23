@@ -211,7 +211,7 @@ class MapAct : MapActivity(), LoadingIndicator {
         // Hide crosshair and coordinate selection buttons when not in coordinate chooser mode
         val isChooser = callingActivity != null
         findViewById<View>(R.id.crosshair)?.visibility = if (isChooser) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.select)?.visibility = if (isChooser) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.accept)?.visibility = if (isChooser) View.VISIBLE else View.GONE
 
         mapview.setBuiltInZoomControls(true)
         mapview.overlays.add(staoverlay)
@@ -221,7 +221,10 @@ class MapAct : MapActivity(), LoadingIndicator {
         showObjects = prefs.getBoolean("show_objects", false)
 
         applyCurrentMapMode()
-        loadMapPosition()
+        mapview.post {
+            loadMapPosition()
+            mapview.redrawTiles()
+        }
         startLoading()
     }
 
@@ -253,9 +256,24 @@ class MapAct : MapActivity(), LoadingIndicator {
     }
 
     private fun loadMapPosition() {
-        val lat = prefs.prefs.getFloat("map_lat", 39.9042f)
-        val lon = prefs.prefs.getFloat("map_lon", 116.4074f)
+        var lat = prefs.prefs.getFloat("map_lat", 0f)
+        var lon = prefs.prefs.getFloat("map_lon", 0f)
         val zoom = prefs.prefs.getFloat("map_zoom", 12f).toInt()
+
+        if (lat == 0f && lon == 0f) {
+            val c = db.getStations(null, null, "TS DESC LIMIT 1")
+            if (c.moveToFirst()) {
+                val latE6 = c.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LAT)
+                val lonE6 = c.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LON)
+                lat = (latE6 / 1e6).toFloat()
+                lon = (lonE6 / 1e6).toFloat()
+            } else {
+                lat = 39.9042f
+                lon = 116.4074f
+            }
+            c.close()
+        }
+
         mapview.controller.setCenter(GeoPoint((lat * 1e6).toInt(), (lon * 1e6).toInt()))
         mapview.controller.setZoom(zoom)
     }
@@ -332,12 +350,10 @@ class MapAct : MapActivity(), LoadingIndicator {
 
     override fun onResume() {
         super.onResume()
-        mapview.onResume()
     }
 
     override fun onPause() {
         saveMapPosition()
-        mapview.onPause()
         super.onPause()
     }
 
