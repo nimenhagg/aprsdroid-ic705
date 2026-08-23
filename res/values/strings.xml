@@ -136,7 +136,6 @@
 <string name="p_map_custom_url_summary">URL template with {x}, {y}, {z}, and optional {s}</string>
 <string name="p_map_custom_subdomains">Tile Subdomains ({s})</string>
 <string name="p_map_custom_subdomains_summary">Subdomains for load balancing, e.g. 1234 or abc</string>
-<string name="map_objects">APRS Objects</string>
 
 <!-- map view -->
 <string name="age">Show last...</string>
