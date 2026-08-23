@@ -4,10 +4,12 @@
 
         <CheckBoxPreference
                 android:key="conn_log"
+                android:icon="@drawable/ic_pref_log"
 		android:title="@string/p_connlog"
 		android:summary="@string/p_connlog_summary" />
         <de.duenndns.ListPreferenceWithValue
                 android:key="proto"
+                android:icon="@drawable/ic_pref_connection"
 		android:title="@string/p_conntype"
                 android:entries="@array/p_conntype_e"
                 android:entryValues="@array/p_conntype_ev"

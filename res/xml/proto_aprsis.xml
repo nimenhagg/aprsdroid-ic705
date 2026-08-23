@@ -7,11 +7,13 @@
 
         <Preference
                 android:key="passcode"
+                android:icon="@drawable/ic_pref_password"
 		android:inputType="number"
 		android:title="@string/p_passcode"
 		android:summary="@string/p_passcode_summary"
 		android:dialogTitle="@string/p_passcode_entry" />
 	<Preference
+                android:icon="@drawable/ic_action_info"
 		android:title="@string/p_passreq"
 		android:summary="@string/p_passreq_summary" >
 		<intent android:action="android.intent.action.VIEW"
@@ -20,6 +22,7 @@
 
         <de.duenndns.ListPreferenceWithValue
                 android:key="aprsis"
+                android:icon="@drawable/ic_pref_server"
 		android:title="@string/p_link"
                 android:entries="@array/p_aprsis_e"
                 android:entryValues="@array/p_aprsis_ev"
@@ -29,4 +32,3 @@
     </PreferenceCategory>
 
 </PreferenceScreen>
-

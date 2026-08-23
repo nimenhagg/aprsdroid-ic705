@@ -2,6 +2,7 @@ package org.aprsdroid.app
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -115,11 +116,17 @@ abstract class MapMenuHelper : Activity(), View.OnClickListener, LoadingIndicato
     }
 
     fun switchMapActivity(cls: Class<*>) {
-        MapModes.startMap(this, prefs, targetcall)
-        finish()
+        if (cls != this::class.java) {
+            val intent = Intent(this, cls)
+            if (targetcall.isNotEmpty()) {
+                intent.data = Uri.parse(targetcall)
+            }
+            startActivity(intent)
+            finish()
+        }
     }
 
-    fun setMapMode(mm: MapMode) {
+    open fun setMapMode(mm: MapMode) {
         switchMapActivity(mm.viewClass)
     }
 

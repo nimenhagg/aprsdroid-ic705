@@ -39,10 +39,21 @@ public class EditTextPreferenceWithValue extends EditTextPreference {
 	private void setSummaryToText(String text) {
 		if (mSummary == null)
 			mSummary = getSummary();
-		if (text == null || text.length() == 0)
+		if (text == null || text.length() == 0) {
 			setSummary(mSummary);
-		else
-			setSummary(mSummary + ": " + text);
+		} else {
+			String display = text;
+			if ((getEditText().getInputType() & InputType.TYPE_TEXT_VARIATION_PASSWORD) != 0 ||
+			    (getEditText().getInputType() & InputType.TYPE_NUMBER_VARIATION_PASSWORD) != 0 ||
+			    getEditText().getTransformationMethod() instanceof android.text.method.PasswordTransformationMethod) {
+				display = "••••••••";
+			}
+			if (mSummary == null || mSummary.length() == 0) {
+				setSummary(display);
+			} else {
+				setSummary(mSummary + ": " + display);
+			}
+		}
 	}
 	@Override
 	protected void onBindView(View view) {

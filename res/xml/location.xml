@@ -3,6 +3,7 @@
         xmlns:android="http://schemas.android.com/apk/res/android">
         <de.duenndns.ListPreferenceWithValue
                 android:key="loc_source"
+                android:icon="@drawable/ic_pref_location"
 		android:title="@string/p_locsource"
 		android:summary="@string/p_locsource_summary"
                 android:entries="@array/p_locsource_e"

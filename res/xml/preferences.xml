@@ -134,6 +134,7 @@
             <PreferenceCategory android:title="@string/p_msg">
                 <CheckBoxPreference
                     android:key="notify_led"
+                    android:icon="@drawable/ic_pref_led"
                     android:title="@string/p_msg_led"
                     android:summaryOn="@string/p_msg_led_on"
                     android:summaryOff="@string/p_msg_led_off"
@@ -141,6 +142,7 @@
 
                 <CheckBoxPreference
                     android:key="notify_vibr"
+                    android:icon="@drawable/ic_pref_vibrate"
                     android:title="@string/p_msg_vibr"
                     android:summaryOn="@string/p_msg_vibr_on"
                     android:summaryOff="@string/p_msg_vibr_off"
@@ -148,6 +150,7 @@
 
                 <RingtonePreference
                     android:key="notify_ringtone"
+                    android:icon="@drawable/ic_pref_ringtone"
                     android:title="@string/p_msg_ring"
                     android:summary="@string/p_msg_ring_summary"
                     android:ringtoneType="notification"
@@ -158,6 +161,7 @@
             <PreferenceCategory android:title="@string/p_pos">
                 <CheckBoxPreference
                     android:key="pos_notify_led"
+                    android:icon="@drawable/ic_pref_led"
                     android:title="@string/p_msg_led"
                     android:summaryOn="@string/p_msg_led_on"
                     android:summaryOff="@string/p_msg_led_off"
@@ -165,6 +169,7 @@
 
                 <CheckBoxPreference
                     android:key="pos_notify_vibr"
+                    android:icon="@drawable/ic_pref_vibrate"
                     android:title="@string/p_msg_vibr"
                     android:summaryOn="@string/p_msg_vibr_on"
                     android:summaryOff="@string/p_msg_vibr_off"
@@ -172,6 +177,7 @@
 
                 <RingtonePreference
                     android:key="pos_notify_ringtone"
+                    android:icon="@drawable/ic_pref_ringtone"
                     android:title="@string/p_pos_ring"
                     android:summary="@string/p_pos_ring_summary"
                     android:ringtoneType="notification"
@@ -182,6 +188,7 @@
             <PreferenceCategory android:title="@string/p_dgp">
                 <CheckBoxPreference
                     android:key="dgp_notify_led"
+                    android:icon="@drawable/ic_pref_led"
                     android:title="@string/p_msg_led"
                     android:summaryOn="@string/p_msg_led_on"
                     android:summaryOff="@string/p_msg_led_off"
@@ -189,6 +196,7 @@
 
                 <CheckBoxPreference
                     android:key="dgp_notify_vibr"
+                    android:icon="@drawable/ic_pref_vibrate"
                     android:title="@string/p_msg_vibr"
                     android:summaryOn="@string/p_msg_vibr_on"
                     android:summaryOff="@string/p_msg_vibr_off"
@@ -196,6 +204,7 @@
 
                 <RingtonePreference
                     android:key="dgp_notify_ringtone"
+                    android:icon="@drawable/ic_pref_ringtone"
                     android:title="@string/p_dgp_ring"
                     android:summary="@string/p_dgp_ring_summary"
                     android:ringtoneType="notification"
@@ -203,6 +212,13 @@
                     android:showSilent="true" />
             </PreferenceCategory>
         </PreferenceScreen>
+
+        <de.duenndns.EditTextPreferenceWithValue
+            android:key="google_maps_key"
+            android:icon="@drawable/ic_pref_maps"
+            android:title="@string/p_google_maps_key"
+            android:summary="@string/p_google_maps_key_summary"
+            android:dialogTitle="@string/p_google_maps_key" />
 
         <de.duenndns.PreferenceWithValue
             android:key="mapfile"

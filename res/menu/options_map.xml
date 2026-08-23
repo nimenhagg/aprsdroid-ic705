@@ -3,12 +3,12 @@
 		android:title="@string/age"
 		android:alphabeticShortcut="a"
 		android:showAsAction="ifRoom"
-		android:icon="@android:drawable/ic_menu_today" />
+		android:icon="@drawable/ic_action_today" />
 	<item android:id="@+id/overlays"
 		android:title="@string/map_overlays"
 		android:alphabeticShortcut="o"
 		android:showAsAction="ifRoom"
-		android:icon="@android:drawable/ic_menu_view" >
+		android:icon="@drawable/ic_action_layers" >
 		<menu>
 			<group android:checkableBehavior="all">
 				<item android:id="@+id/objects"
@@ -25,4 +25,3 @@
 		</menu>
 	</item>
 </menu>
-

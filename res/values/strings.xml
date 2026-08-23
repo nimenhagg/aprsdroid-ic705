@@ -469,4 +469,6 @@
 <string name="ic705_rx_statistics">已接收音频块：%1$d\nPCM 采样数：%2$d\n已解码 AX.25 帧：%3$d\n音频重置次数：%4$d</string>
 <string name="ic705_rx_log_title">内存诊断事件（最近 100 条）</string>
 <string name="ic705_rx_log_empty">暂时没有诊断事件。</string>
+    <string name="p_google_maps_key">Google Maps API Key</string>
+    <string name="p_google_maps_key_summary">Custom Google Maps API key (leave empty to use default)</string>
 </resources>

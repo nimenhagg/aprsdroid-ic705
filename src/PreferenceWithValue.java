@@ -19,10 +19,13 @@ public class PreferenceWithValue extends Preference {
 	private void setSummaryToText(String text) {
 		if (mSummary == null)
 			mSummary = getSummary();
-		if (text == null || text.length() == 0)
+		if (text == null || text.length() == 0) {
 			setSummary(mSummary);
-		else
+		} else if (mSummary == null || mSummary.length() == 0) {
+			setSummary(text);
+		} else {
 			setSummary(mSummary + ": " + text);
+		}
 	}
 	@Override
 	protected void onBindView(View view) {
