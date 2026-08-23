@@ -41,6 +41,24 @@ public class EditTextPreferenceWithValue extends EditTextPreference {
 		}
 	}
 	@Override
+	protected View onCreateDialogView() {
+		LinearLayout layout = new LinearLayout(getContext());
+		layout.setOrientation(LinearLayout.VERTICAL);
+		int paddingH = (int) (24 * getContext().getResources().getDisplayMetrics().density);
+		int paddingV = (int) (12 * getContext().getResources().getDisplayMetrics().density);
+		layout.setPadding(paddingH, paddingV, paddingH, paddingV);
+		EditText et = getEditText();
+		if (et.getParent() != null) {
+			((android.view.ViewGroup) et.getParent()).removeView(et);
+		}
+		layout.addView(et, new LinearLayout.LayoutParams(
+			LinearLayout.LayoutParams.MATCH_PARENT,
+			LinearLayout.LayoutParams.WRAP_CONTENT
+		));
+		return layout;
+	}
+
+	@Override
 	protected void onBindDialogView(View view) {
 		super.onBindDialogView(view);
 		fixupCaps();
