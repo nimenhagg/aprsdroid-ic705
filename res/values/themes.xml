@@ -38,6 +38,10 @@
         <item name="android:alertDialogTheme">@style/Material3AlertDialogTheme</item>
         <item name="dialogTheme">@style/Material3DialogTheme</item>
         <item name="alertDialogTheme">@style/Material3AlertDialogTheme</item>
+        <item name="actionOverflowMenuStyle">@style/Material3PopupMenu</item>
+        <item name="popupMenuStyle">@style/Material3PopupMenu</item>
+        <item name="android:popupMenuStyle">@style/Material3PopupMenu</item>
+        <item name="android:actionOverflowMenuStyle">@style/Material3PopupMenu</item>
 
         <!-- Material 3 Native TopAppBar styling (No Left App Icon) -->
         <item name="android:actionBarStyle">@style/Widget.Material3.ActionBar</item>
@@ -106,5 +110,10 @@
         <item name="android:windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Material3PopupMenu" parent="Widget.Material3.PopupMenu.Overflow">
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:paddingBottom">0dp</item>
     </style>
 </resources>

@@ -43,6 +43,7 @@ class BackendPrefs : AppCompatActivity(), PermissionHelper {
     class BackendPrefsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedPreferenceChangeListener {
 
         private fun loadXml() {
+            preferenceScreen = null
             val prefs = PrefsWrapper(requireContext())
             setPreferencesFromResource(R.xml.backend, null)
             val protoXml = AprsBackend.prefxml_proto(prefs)

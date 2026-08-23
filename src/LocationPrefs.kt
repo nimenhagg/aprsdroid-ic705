@@ -94,6 +94,7 @@ class LocationPrefs : AppCompatActivity(), PermissionHelper {
     class LocationPrefsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedPreferenceChangeListener {
 
         private fun loadXml() {
+            preferenceScreen = null
             val prefs = PrefsWrapper(requireContext())
             setPreferencesFromResource(R.xml.location, null)
             val prefRes = LocationSource.instanciatePrefsAct(prefs)

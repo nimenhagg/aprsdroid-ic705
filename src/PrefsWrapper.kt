@@ -15,6 +15,13 @@ class PrefsWrapper(@JvmField val context: Context) {
     @JvmField
     val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
+    init {
+        val currentStatus = prefs.getString("status", null)
+        if (currentStatus == null || currentStatus == "https://aprsdroid.org/" || currentStatus == "https://aprsdroid.org") {
+            prefs.edit().putString("status", "APRSDroid Mod").apply()
+        }
+    }
+
     fun getString(key: String, defValue: String?): String {
         return prefs.getString(key, defValue) ?: (defValue ?: "")
     }
