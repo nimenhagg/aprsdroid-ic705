@@ -103,15 +103,20 @@ abstract class MapMenuHelper : Activity(), View.OnClickListener, LoadingIndicato
         return if (i != null && i.dataString != null) i.dataString ?: "" else ""
     }
 
+    fun getMapTitlePrefix(): String {
+        val mode = MapModes.defaultMapMode(this, prefs)
+        return mode.title ?: getString(R.string.app_map)
+    }
+
     fun startFollowStation(call: String) {
         targetcall = call
-        title = getString(R.string.app_map) + ": " + targetcall
+        title = getMapTitlePrefix() + ": " + targetcall
         invalidateOptionsMenu()
     }
 
     fun stopFollowStation() {
         targetcall = ""
-        title = getString(R.string.app_map)
+        title = getMapTitlePrefix()
         invalidateOptionsMenu()
     }
 
@@ -209,8 +214,8 @@ abstract class MapMenuHelper : Activity(), View.OnClickListener, LoadingIndicato
     }
 
     fun loadMapViewPosition() {
-        val lat = prefs.prefs.getFloat("map_lat", 52.5075f)
-        val lon = prefs.prefs.getFloat("map_lon", 13.39027f)
+        val lat = prefs.prefs.getFloat("map_lat", 39.9042f)
+        val lon = prefs.prefs.getFloat("map_lon", 116.4074f)
         val zoom = prefs.prefs.getFloat("map_zoom", 12.0f)
         loadMapViewPosition(lat, lon, zoom)
     }

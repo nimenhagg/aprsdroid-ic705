@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/message_act"
@@ -14,7 +14,7 @@
         android:layout_height="56dp"
         android:background="?attr/colorSurface"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:titleTextColor="@color/md3_on_surface"
+        app:titleTextColor="?attr/colorOnSurface"
         app:titleTextAppearance="@style/TextAppearance.Material3.Title"
         app:popupTheme="@style/Material3PopupMenu" />
 
@@ -24,8 +24,8 @@
         android:layout_height="4dp"
         android:indeterminate="true"
         android:visibility="gone"
-        app:indicatorColor="@color/md3_primary"
-        app:trackColor="@color/md3_surface_container" />
+        app:indicatorColor="?attr/colorPrimary"
+        app:trackColor="?attr/colorSurfaceContainer" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
@@ -78,8 +78,8 @@
             android:layout_height="48dp"
             android:minWidth="72dp"
             app:cornerRadius="24dp"
-            app:backgroundTint="@color/md3_primary"
-            android:textColor="@color/md3_on_primary"
+            app:backgroundTint="?attr/colorPrimary"
+            android:textColor="?attr/colorOnPrimary"
             android:text="@android:string/ok"
             android:enabled="false" />
     </LinearLayout>

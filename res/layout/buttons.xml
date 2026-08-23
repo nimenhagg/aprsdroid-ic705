@@ -16,8 +16,6 @@
         android:layout_weight="1"
         android:layout_marginEnd="8dp"
         app:cornerRadius="26dp"
-        app:backgroundTint="@color/md3_secondary_container"
-        android:textColor="@color/md3_on_secondary_container"
         android:text="@string/singlelog"
         android:fontFamily="sans-serif-medium"
         android:textSize="15sp" />
@@ -30,8 +28,6 @@
         android:layout_weight="1"
         android:layout_marginStart="8dp"
         app:cornerRadius="26dp"
-        app:backgroundTint="@color/md3_primary"
-        android:textColor="@color/md3_on_primary"
         android:text="@string/startlog"
         android:fontFamily="sans-serif-medium"
         android:textSize="15sp" />

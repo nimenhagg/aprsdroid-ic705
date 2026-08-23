@@ -1,16 +1,16 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
+﻿<vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="40dp"
     android:height="40dp"
     android:viewportWidth="40"
     android:viewportHeight="40">
     <path
-        android:fillColor="@color/md3_primary_container"
+        android:fillColor="?attr/colorPrimaryContainer"
         android:pathData="M12,0 L28,0 C34.6,0 40,5.4 40,12 L40,28 C40,34.6 34.6,40 28,40 L12,40 C5.4,40 0,34.6 0,28 L0,12 C0,5.4 5.4,0 12,0 Z" />
     <group
         android:translateX="8"
         android:translateY="8">
         <path
-            android:fillColor="@color/md3_primary"
+            android:fillColor="?attr/colorPrimary"
             android:pathData="M17.71,7.71L12,2h-1v7.59L6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 11,14.41V22h1l5.71,-5.71 -4.3,-4.29 4.3,-4zM13,5.83l1.88,1.88L13,9.59V5.83zm1.88,10.46L13,18.17v-3.76l1.88,1.88z" />
     </group>
 </vector>

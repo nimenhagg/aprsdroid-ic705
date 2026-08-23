@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.PorterDuff
+import android.view.Menu
 import android.view.View
 import android.widget.Button
 import androidx.core.content.ContextCompat
@@ -70,12 +71,19 @@ abstract class MainRecyclerActivity(
 
     fun setupButtons(running: Boolean) {
         if (running) {
-            startstopBtn.background.setColorFilter(0xffffc0c0.toInt(), PorterDuff.Mode.MULTIPLY)
             startstopBtn.setText(R.string.stoplog)
         } else {
-            startstopBtn.background.setColorFilter(0xffc0ffc0.toInt(), PorterDuff.Mode.MULTIPLY)
             startstopBtn.setText(R.string.startlog)
         }
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        val mapItem = menu.findItem(R.id.map)
+        if (mapItem != null) {
+            val mode = MapModes.defaultMapMode(this, prefs)
+            mapItem.setTitle(mode.title ?: getString(R.string.show_map))
+        }
+        return super.onPrepareOptionsMenu(menu)
     }
 
     override fun onClick(view: View) {
