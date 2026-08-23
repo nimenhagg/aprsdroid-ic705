@@ -152,9 +152,12 @@ class AprsService : Service() {
             }
         }
 
-        val toastString = if (i.action == SERVICE_ONCE) {
-            singleShot = !running || singleShot
-            if (singleShot) getString(R.string.service_once) else null
+        val isOnce = (i.action == SERVICE_ONCE)
+        val toastString = if (isOnce) {
+            if (!running) {
+                singleShot = true
+            }
+            getString(R.string.service_once)
         } else {
             getString(R.string.service_start)
         }
@@ -176,6 +179,9 @@ class AprsService : Service() {
             )
         } else {
             onPosterStarted()
+            if (isOnce) {
+                triggerImmediateLocation()
+            }
         }
     }
 
@@ -190,10 +196,19 @@ class AprsService : Service() {
 
     fun triggerImmediateLocation() {
         try {
+            if (locSource is org.aprsdroid.app.location.FixedPosition) {
+                (locSource as org.aprsdroid.app.location.FixedPosition).start(true)
+                return
+            }
+
             val locMan = getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+            var bestLoc: Location? = null
             if (locMan != null) {
-                val providers = arrayOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER)
-                var bestLoc: Location? = null
+                val providers = arrayOf(
+                    LocationManager.GPS_PROVIDER,
+                    LocationManager.NETWORK_PROVIDER,
+                    LocationManager.PASSIVE_PROVIDER
+                )
                 for (provider in providers) {
                     try {
                         val loc = locMan.getLastKnownLocation(provider)
@@ -205,9 +220,37 @@ class AprsService : Service() {
                     } catch (_: SecurityException) {
                     } catch (_: IllegalArgumentException) {}
                 }
-                if (bestLoc != null) {
-                    Log.i(TAG, "triggerImmediateLocation: posting best known location: $bestLoc")
-                    postLocation(bestLoc)
+            }
+
+            if (bestLoc != null) {
+                Log.i(TAG, "triggerImmediateLocation: posting best known location: $bestLoc")
+                postLocation(bestLoc)
+            } else {
+                Log.w(TAG, "triggerImmediateLocation: no cached location, requesting immediate update")
+                locMan?.let { lm ->
+                    val singleListener = object : android.location.LocationListener {
+                        override fun onLocationChanged(loc: Location) {
+                            Log.i(TAG, "triggerImmediateLocation singleListener got location: $loc")
+                            try { lm.removeUpdates(this) } catch (_: Exception) {}
+                            postLocation(loc)
+                        }
+                        @Deprecated("Deprecated in Java")
+                        override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
+                        override fun onProviderDisabled(provider: String) {}
+                        override fun onProviderEnabled(provider: String) {}
+                    }
+                    try {
+                        if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                            lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, singleListener, Looper.getMainLooper())
+                        }
+                        if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, singleListener, Looper.getMainLooper())
+                        }
+                        handler.postDelayed({
+                            try { lm.removeUpdates(singleListener) } catch (_: Exception) {}
+                        }, 15000L)
+                    } catch (_: SecurityException) {
+                    } catch (_: Exception) {}
                 }
             }
         } catch (e: Throwable) {
