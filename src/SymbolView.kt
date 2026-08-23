@@ -6,8 +6,10 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.widget.ImageView
+import com.google.android.material.color.MaterialColors
 
 class SymbolView @JvmOverloads constructor(
     context: Context,
@@ -40,7 +42,6 @@ class SymbolView @JvmOverloads constructor(
     val iconbitmap: Bitmap by lazy { getSingleton(context) }
     val symbolSize: Int by lazy { iconbitmap.width / 16 }
 
-
     fun symbol2rect(index: Int, page: Int): Rect {
         val altOffset = page * symbolSize * 6
         val y = (index / 16) * symbolSize + altOffset
@@ -58,14 +59,45 @@ class SymbolView @JvmOverloads constructor(
         return sym.isNotEmpty() && sym[0] != '/' && sym[0] != '\\'
     }
 
+    private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = context.resources.displayMetrics.density * 1f
+    }
+    private val drawPaint = Paint().apply {
+        isAntiAlias = true
+        isFilterBitmap = true
+        isDither = true
+    }
+
+    private val containerRect = RectF()
+    private val destRect = Rect()
+
     override fun onDraw(canvas: Canvas) {
-        val srcRect = symbol2rect(symbol)
-        val destRect = Rect(0, 0, width, height)
-        val drawPaint = Paint().apply {
-            isAntiAlias = true
-            isFilterBitmap = true
+        val w = width.toFloat()
+        val h = height.toFloat()
+        if (w <= 0 || h <= 0) return
+
+        val cornerRadius = w * 0.28f
+
+        containerRect.set(1f, 1f, w - 1f, h - 1f)
+        try {
+            bgPaint.color = MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurfaceContainerHigh)
+            strokePaint.color = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOutlineVariant)
+        } catch (_: Throwable) {
+            bgPaint.color = 0x22888888.toInt()
+            strokePaint.color = 0x33888888.toInt()
         }
 
+        // Draw modern squircle badge background & border
+        canvas.drawRoundRect(containerRect, cornerRadius, cornerRadius, bgPaint)
+        canvas.drawRoundRect(containerRect, cornerRadius, cornerRadius, strokePaint)
+
+        // Draw crisp icon with 12% padding inside badge
+        val pad = (w * 0.12f).toInt()
+        destRect.set(pad, pad, width - pad, height - pad)
+
+        val srcRect = symbol2rect(symbol)
         canvas.drawBitmap(iconbitmap, srcRect, destRect, drawPaint)
 
         if (symbolIsOverlayed(symbol)) {
