@@ -13,8 +13,9 @@ import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 
-abstract class MapMenuHelper : Activity(), View.OnClickListener, LoadingIndicator {
+abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, LoadingIndicator {
     open val TAG = "APRSdroid.MapMenu"
 
     var menu_id: Int = R.id.map

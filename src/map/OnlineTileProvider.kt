@@ -1,8 +1,10 @@
 package org.aprsdroid.app.map
 
-import com.google.android.gms.maps.model.UrlTileProvider
+import com.google.android.gms.maps.model.Tile
+import com.google.android.gms.maps.model.TileProvider
+import java.io.ByteArrayOutputStream
+import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Locale
 
 /**
  * Universal online tile provider for Google Maps SDK.
@@ -11,11 +13,33 @@ import java.util.Locale
 class OnlineTileProvider(
     private val urlPattern: String,
     private val subdomains: String = "",
-    width: Int = 256,
-    height: Int = 256
-) : UrlTileProvider(width, height) {
+    private val width: Int = 256,
+    private val height: Int = 256
+) : TileProvider {
 
-    override fun getTileUrl(x: Int, y: Int, zoom: Int): URL? {
+    override fun getTile(x: Int, y: Int, zoom: Int): Tile? {
+        val url = getTileUrl(x, y, zoom) ?: return TileProvider.NO_TILE
+        return try {
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.setRequestProperty("User-Agent", "APRSdroid/1.5.4 (Android)")
+            conn.setRequestProperty("Accept", "image/webp,image/png,image/*")
+            if (conn.responseCode != 200) {
+                return TileProvider.NO_TILE
+            }
+            val bytes = conn.inputStream.use { input ->
+                val buffer = ByteArrayOutputStream()
+                input.copyTo(buffer)
+                buffer.toByteArray()
+            }
+            Tile(width, height, bytes)
+        } catch (_: Exception) {
+            TileProvider.NO_TILE
+        }
+    }
+
+    fun getTileUrl(x: Int, y: Int, zoom: Int): URL? {
         val s = if (subdomains.isNotEmpty()) {
             val idx = Math.floorMod(x + y, subdomains.length)
             subdomains[idx].toString()

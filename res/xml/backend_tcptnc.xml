@@ -11,8 +11,8 @@
 		android:title="@string/p_host"
 		android:summary="@string/p_tcptnc_server_summary"
 		android:hint="@string/p_host_hint"
-		android:defaultValue="euro.aprs2.net"
-		android:dialogTitle="@string/p_tcptnc_entry" />
+		android:defaultValue="china.aprs2.net"
+		android:dialogTitle="@string/p_host_entry" />
 
 	<de.duenndns.EditTextPreferenceWithValue
 		android:key="tcp.sotimeout"

@@ -17,7 +17,7 @@ import javax.net.ssl.X509TrustManager
 
 class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(prefs) {
     val TAG = "APRSdroid.TcpUploader"
-    val hostport: String = prefs.getString("tcp.server", "euro.aprs2.net")
+    val hostport: String = prefs.getString("tcp.server", "china.aprs2.net")
     val so_timeout: Int = prefs.getStringInt("tcp.sotimeout", 120)
     val RECONNECT = 30
     var conn: TcpSocketThread? = null

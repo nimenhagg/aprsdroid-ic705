@@ -14,6 +14,7 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.TileOverlay
 import com.google.android.gms.maps.model.TileOverlayOptions
+import com.google.android.material.appbar.MaterialToolbar
 import org.aprsdroid.app.map.OnlineTileProvider
 import java.util.ArrayList
 
@@ -35,6 +36,10 @@ class GoogleMapAct : MapLoaderBase(),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.googlemapview)
+
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        toolbar.setNavigationOnClickListener { finish() }
 
         mapview.onCreate(savedInstanceState)
         mapview.getMapAsync { googleMap ->

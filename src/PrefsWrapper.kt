@@ -20,6 +20,10 @@ class PrefsWrapper(@JvmField val context: Context) {
         if (currentStatus == null || currentStatus == "https://aprsdroid.org/" || currentStatus == "https://aprsdroid.org") {
             prefs.edit().putString("status", "APRSDroid Mod").apply()
         }
+        val currentTcpServer = prefs.getString("tcp.server", null)
+        if (currentTcpServer == null || currentTcpServer == "euro.aprs2.net" || currentTcpServer == "rotate.aprs.net" || currentTcpServer == "rotate.aprs2.net") {
+            prefs.edit().putString("tcp.server", "china.aprs2.net").apply()
+        }
     }
 
     fun getString(key: String, defValue: String?): String {
