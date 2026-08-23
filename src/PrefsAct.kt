@@ -150,6 +150,14 @@ class PrefsAct : AppCompatActivity() {
             setPreferencesFromResource(R.xml.preferences, rootKey)
         }
 
+        override fun onPreferenceTreeClick(preference: Preference): Boolean {
+            if (preference.intent != null) {
+                startActivity(preference.intent)
+                return true
+            }
+            return super.onPreferenceTreeClick(preference)
+        }
+
         override fun onResume() {
             super.onResume()
             val act = activity as? PrefsAct ?: return
