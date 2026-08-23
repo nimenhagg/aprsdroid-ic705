@@ -53,6 +53,7 @@ class MessageActivity : StationHelper(R.string.app_messages),
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.message_act)
+        initToolbar(hasBackButton = true, titleRes = R.string.app_messages)
 
         recyclerView = findViewById(R.id.recycler_view)
         msginput = findViewById(R.id.msginput)

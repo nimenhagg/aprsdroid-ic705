@@ -35,16 +35,19 @@ abstract class MainRecyclerActivity(
     }
 
     fun onContentViewLoaded() {
+        initToolbar(hasBackButton = false)
         singleBtn.setOnClickListener(this)
         startstopBtn.setOnClickListener(this)
     }
 
     fun setTitleStatus() {
-        title = if (AprsService.running) {
+        val titleText = if (AprsService.running) {
             getString(R.string.app_name) + " (" + prefs.getCallSsid() + ")"
         } else {
             getString(R.string.app_name)
         }
+        title = titleText
+        supportActionBar?.title = titleText
     }
 
     @SuppressLint("WrongConstant")

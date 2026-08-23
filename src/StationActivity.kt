@@ -41,6 +41,7 @@ class StationActivity : StationHelper(R.string.app_sta), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.stationactivity)
+        initToolbar(hasBackButton = true, titleRes = R.string.app_sta)
 
         ssidRecyclerView = findViewById(R.id.ssid_recycler_view)
         postRecyclerView = findViewById(R.id.post_recycler_view)

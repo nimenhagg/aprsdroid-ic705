@@ -3,9 +3,11 @@ package org.aprsdroid.app
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.appbar.MaterialToolbar
 
 abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, PermissionHelper {
 
@@ -17,6 +19,20 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
         super.onCreate(savedInstanceState)
     }
 
+    fun initToolbar(hasBackButton: Boolean = false, titleRes: Int? = null) {
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        if (toolbar != null) {
+            setSupportActionBar(toolbar)
+            if (hasBackButton) {
+                supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                toolbar.setNavigationOnClickListener { finish() }
+            }
+            if (titleRes != null) {
+                supportActionBar?.setTitle(titleRes)
+            }
+        }
+    }
+
     override fun onStartLoading() {
         loadingIndicator?.visibility = View.VISIBLE
     }
@@ -26,7 +42,9 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
     }
 
     fun setLongTitle(resId: Int, subtitle: String) {
-        title = getString(resId) + ": " + subtitle
+        val t = getString(resId) + ": " + subtitle
+        title = t
+        supportActionBar?.title = t
     }
 
     fun openDetails(call: String) {
@@ -92,6 +110,14 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
             }
             else -> false
         }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     // PermissionHelper defaults

@@ -7,6 +7,16 @@
     android:fitsSystemWindows="true"
     android:background="?attr/colorSurface">
 
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="?attr/colorSurface"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:titleTextColor="@color/md3_on_surface"
+        app:titleTextAppearance="@style/TextAppearance.Material3.Title"
+        app:popupTheme="@style/Material3PopupMenu" />
+
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/loading"
         android:layout_width="match_parent"

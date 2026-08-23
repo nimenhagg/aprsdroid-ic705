@@ -51,6 +51,7 @@ class ConversationsActivity : BaseRecyclerActivity(), View.OnClickListener {
         super.onCreate(savedInstanceState)
         menu_id = R.id.conversations
         setContentView(R.layout.conversations)
+        initToolbar(hasBackButton = false, titleRes = R.string.app_messages)
 
         recyclerView = findViewById(R.id.recycler_view)
         emptyView = findViewById(R.id.empty)
