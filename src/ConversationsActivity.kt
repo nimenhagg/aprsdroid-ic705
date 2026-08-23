@@ -91,7 +91,11 @@ class ConversationsActivity : LoadingListActivity(), View.OnClickListener {
                 true
             }
             R.id.about -> {
-                AboutDialog(this).show()
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.app_name)
+                    .setMessage(getString(R.string.build_version))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
                 true
             }
             else -> super.onOptionsItemSelected(item)
