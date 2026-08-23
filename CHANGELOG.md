@@ -1,3 +1,11 @@
+## 🚑 [v1.3.1-ic705] - 2026-08-23
+
+### 🐛 修复纯 Kotlin 迁移后首发页面与服务启动崩溃
+* **路径记录启动崩溃修复**：将 `AprsService` 的 `prefs` 等关键属性从类构造期立即初始化改为 `by lazy` 懒加载，彻底消除在 Android 服务上下文未挂载前调用 `getPackageName()` 导致的 `NullPointerException` 崩溃。
+* **连接首选项与定位偏好修复**：补全 `BackendPrefs` 与 `LocationPrefs` 的基础 XML、协议专属 XML 动态装载及 `OnSharedPreferenceChangeListener` 变更监听，恢复所有连接方式与定位源的设置。
+* **IC-705 Wi-Fi 诊断入口修复**：在 `HubActivity` 与 `LogActivity` 菜单项分发中接入 `Ic705RxDiagnosticActivity` 页面路由。
+* **地图生命周期修复**：在 `GoogleMapAct` 中补齐 `onStart()` 与 `onStop()` 代理分发，确保 Google Map 与 Mapsforge 矢量地图正常初始化渲染。
+
 ## 🚀 [v1.3.0-ic705] - 2026-08-23
 
 ### ⚡ 全量架构重构：Scala 2.11 迁移至纯 Kotlin 1.9+ & 彻底解绑构建系统

@@ -93,6 +93,10 @@ class LogActivity : MainListActivity("log", R.id.log) {
                 startActivity(Intent(this, ConversationsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
                 true
             }
+            R.id.ic705_rx_diagnostic -> {
+                startActivity(Intent(this, org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity::class.java))
+                true
+            }
             R.id.export -> {
                 onStartLoading()
                 LogExporter(this, storage, null) { onStopLoading() }.execute()

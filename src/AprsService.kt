@@ -90,8 +90,7 @@ class AprsService : Service() {
         "APDR$digits"
     }
 
-    @JvmField
-    val prefs: PrefsWrapper = PrefsWrapper(this)
+    val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 
     @JvmField
     val handler = Handler(Looper.getMainLooper())

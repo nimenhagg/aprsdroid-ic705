@@ -47,6 +47,11 @@ class GoogleMapAct : MapLoaderBase(),
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        mapview.onStart()
+    }
+
     override fun onResume() {
         super.onResume()
         mapview.onResume()
@@ -59,6 +64,11 @@ class GoogleMapAct : MapLoaderBase(),
             val target = it.cameraPosition.target
             saveMapViewPosition(target.latitude.toFloat(), target.longitude.toFloat(), it.cameraPosition.zoom)
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        mapview.onStop()
     }
 
     override fun onDestroy() {
