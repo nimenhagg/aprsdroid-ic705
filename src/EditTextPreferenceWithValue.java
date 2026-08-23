@@ -7,6 +7,7 @@ import android.text.InputType;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 
 public class EditTextPreferenceWithValue extends EditTextPreference {
 	private CharSequence mInitialSummary = null;
