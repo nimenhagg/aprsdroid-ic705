@@ -1,10 +1,18 @@
-## 🆕 [v1.2.8-ic705] - 2026-08-23
+## 🚀 [v1.3.0-ic705] - 2026-08-23
+
+### ⚡ 全量架构重构：Scala 2.11 迁移至纯 Kotlin 1.9+ & 彻底解绑构建系统
+* **Scala 代码 100% 清零**：全工程全部 59 个历史 `.scala` 源码文件全量转写为现代规范的 Kotlin 1.9+ (`.kt`) 代码，无任何 Scala 残留。
+* **构建系统彻底解绑**：彻底移除限制 Gradle 升级的 `scalroid` 复合插件与 `scala-library:2.11.12` 运行时依赖，构建系统完全转变为现代标准 Gradle 8 + Android Gradle Plugin + Kotlin 编译体系。
+* **通信协议与核心业务零回退**：完整保留 IC-705 Wi-Fi、APRS-IS (TCP/SSL)、KISS、TNC2、Kenwood、AFSK、USB/蓝牙 TNC、SmartBeaconing 智能信标与地图交互等全部业务逻辑。
+* **打包产物体积精简**：移除 Scala 标准库后，Release 安装包体积进一步缩减，冷启动与运行时内存性能显著提升。
+
+## 🐛 [v1.2.8-ic705] - 2026-08-23
 
 ### 🐛 修复重大崩溃与前台保活 Bug
 * **Android 14 FGS 崩溃修复**：在 `AndroidManifest.xml` 中补全了 `specialUse` 前台服务必须的 `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` 属性声明，彻底解决 Android 14+ 下无权限启动时的 `SecurityException` 崩溃问题。
-* **前台服务类型覆盖修复**：在 `ServiceNotifier.scala` 中将 `service_type = types` 修正为按位或运算 `service_type |= types`，确保在拥有定位或麦克风权限时，不会丢失关键的 `specialUse` 标记，从而保证网络后台保活不受影响。
-* **内部广播安全性修复**：在 `MainListActivity.scala` 中，将内部生命周期广播的注册由 `Context.RECEIVER_EXPORTED` 改为 `Context.RECEIVER_NOT_EXPORTED`，防止被外部应用恶意干扰。
-* **退出功能通知栏残留修复**：在 `AprsService.scala` 的 `handleStart` 方法中，接收到 `SERVICE_STOP` 时，主动调用 `ServiceNotifier.instance.stop(this)` 撤销前台通知栏，解决 `stopSelf()` 无法立刻触发 `onDestroy()` 导致的通知栏残留问题。
+* **前台服务类型覆盖修复**：在 `ServiceNotifier` 中将服务类型修改为按位或运算，确保在拥有定位或麦克风权限时，不会丢失关键的 `specialUse` 标记，从而保证网络后台保活不受影响。
+* **内部广播安全性修复**：在 `MainListActivity` 中，将内部生命周期广播的注册由 `Context.RECEIVER_EXPORTED` 改为 `Context.RECEIVER_NOT_EXPORTED`，防止被外部应用恶意干扰。
+* **退出功能通知栏残留修复**：在 `AprsService` 的 `handleStart` 方法中，接收到 `SERVICE_STOP` 时，主动调用 `ServiceNotifier.instance.stop(this)` 撤销前台通知栏，解决 `stopSelf()` 无法立刻触发 `onDestroy()` 导致的通知栏残留问题。
 
 ## 🌟 [v1.2.7-ic705] - 2026-08-23
 

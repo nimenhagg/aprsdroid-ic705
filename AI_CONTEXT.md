@@ -17,11 +17,11 @@
 
 | 模块 / 组件 | 技术选型 | 说明 |
 | :--- | :--- | :--- |
-| **基础框架** | **Scala 2.11.12** (`cash.bdo.scalroid`) | APRSdroid 核心业务与状态机 |
-| **直连扩展** | **Kotlin 1.9.22** | IC-705 UDP 握手、PCM 音频流与网络管理 |
+| **基础语言与框架** | **Kotlin 1.9.20+** | 全量纯 Kotlin 代码，无 Scala 依赖 |
+| **直连扩展** | **Kotlin Coroutines / UDP** | IC-705 UDP 握手、PCM 音频流与网络管理 |
 | **JDK 版本** | **Java 17 (Temurin JDK 17)** | 标准构建运行环境 |
 | **Android SDK** | `compileSdk 36`, `targetSdk 36/37` | 适配 Android 14 ~ 17 现代系统 |
-| **构建系统** | **Gradle 8.4** | 支持 R8 优化与 Proguard |
+| **构建系统** | **Gradle 8.4 + AGP 8.1.3** | 标准 Android Gradle 插件体系 |
 
 ---
 
@@ -50,6 +50,6 @@
 ## 🤖 5. 给 AI 助手的开发提示词 (Prompt Guidelines for AI)
 
 若作为 AI 助手在此代码库上继续迭代开发，请遵循以下工程准则：
-1. **代码规范**：保持原有 Scala 与 Kotlin 混合编程模式，新增网络或界面组件优先使用 Kotlin。
+1. **代码规范**：项目已实现 100% 纯 Kotlin 开发，所有新增功能与组件均采用现代 Kotlin 1.9+ 语法编写。
 2. **UI 规范**：使用 Material 3 配色（`?attr/colorPrimary`），避免使用 Android 2.x 时代的过时资源（如 `android.R.drawable.ic_dialog_*`）。
 3. **版本迭代**：每次修改均在 `build.gradle` 中递增 `mod_version` 并在 `CHANGELOG.md` 中记录改动。
