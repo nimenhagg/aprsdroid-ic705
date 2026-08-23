@@ -10,10 +10,10 @@ import android.view.View
 import android.widget.Button
 import androidx.core.content.ContextCompat
 
-abstract class MainListActivity(
+abstract class MainRecyclerActivity(
     val actname: String,
     menuid: Int
-) : LoadingListActivity(), View.OnClickListener {
+) : BaseRecyclerActivity(), View.OnClickListener {
 
     init {
         menu_id = menuid
@@ -24,8 +24,7 @@ abstract class MainListActivity(
 
     val miclReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context, i: Intent) {
-            @Suppress("DEPRECATION")
-            setProgress(i.getIntExtra("level", 100) * 99)
+            // microphone volume level update
         }
     }
 
@@ -38,7 +37,6 @@ abstract class MainListActivity(
     fun onContentViewLoaded() {
         singleBtn.setOnClickListener(this)
         startstopBtn.setOnClickListener(this)
-        registerForContextMenu(listView)
     }
 
     fun setTitleStatus() {

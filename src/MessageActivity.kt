@@ -1,22 +1,31 @@
 package org.aprsdroid.app
 
+import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.ClipboardManager
 import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.view.ContextMenu
 import android.view.KeyEvent
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.AdapterView.AdapterContextMenuInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import org.aprsdroid.app.adapter.MessageRecyclerAdapter
+import org.aprsdroid.app.model.MessageItem
+import java.util.concurrent.Executors
 
 class MessageActivity : StationHelper(R.string.app_messages),
     View.OnClickListener, View.OnKeyListener, TextWatcher {
@@ -25,101 +34,148 @@ class MessageActivity : StationHelper(R.string.app_messages),
         const val TAG = "APRSdroid.Message"
     }
 
-    val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
-    val mycall: String by lazy { prefs.getCallSsid() }
-    val pla: MessageListAdapter by lazy {
-        MessageListAdapter(this, prefs, mycall, targetcall ?: "")
-    }
+    private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
+    private val mycall: String by lazy { prefs.getCallSsid() }
+    private val executor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
 
-    val msginput: EditText by lazy { findViewById(R.id.msginput) }
-    val msgsend: Button by lazy { findViewById(R.id.msgsend) }
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: MessageRecyclerAdapter
+    private lateinit var msginput: EditText
+    private lateinit var msgsend: Button
+
+    private val messageReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            loadData()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.message_act)
 
-        registerForContextMenu(listView)
-        listView.setOnItemLongClickListener { _, _, position, _ ->
-            val c = listView.getItemAtPosition(position) as? Cursor ?: return@setOnItemLongClickListener false
-            val msgId = c.getLong(0)
-            val msgText = c.getString(StorageDatabase.Companion.Message.COLUMN_TEXT) ?: ""
-            val msgType = c.getInt(StorageDatabase.Companion.Message.COLUMN_TYPE)
-            val items = mutableListOf<String>()
-            items.add(getString(android.R.string.copy))
-            items.add(getString(R.string.delete_message))
-            if (msgType != StorageDatabase.Companion.Message.TYPE_INCOMING) {
-                items.add(getString(R.string.msg_restart))
-                if (msgType == StorageDatabase.Companion.Message.TYPE_OUT_NEW) {
-                    items.add(getString(R.string.msg_abort))
-                }
-            }
-            android.app.AlertDialog.Builder(this)
-                .setTitle(if (msgType == StorageDatabase.Companion.Message.TYPE_INCOMING) getString(R.string.msg_from, targetcall) else getString(R.string.msg_to, targetcall))
-                .setItems(items.toTypedArray()) { _, which ->
-                    val chosen = items[which]
-                    when (chosen) {
-                        getString(android.R.string.copy) -> {
-                            val clip = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            @Suppress("DEPRECATION")
-                            clip.text = msgText
-                            Toast.makeText(this, R.string.text_copied, Toast.LENGTH_SHORT).show()
-                        }
-                        getString(R.string.delete_message) -> {
-                            storage.deleteMessage(msgId)
-                            targetcall?.let { pla.changeCursor(storage.getMessages(it)) }
-                            Toast.makeText(this, R.string.message_deleted, Toast.LENGTH_SHORT).show()
-                        }
-                        getString(R.string.msg_restart) -> {
-                            val cv = ContentValues().apply {
-                                put(StorageDatabase.Companion.Message.TYPE, StorageDatabase.Companion.Message.TYPE_OUT_NEW)
-                                put(StorageDatabase.Companion.Message.RETRYCNT, 0)
-                                put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
-                            }
-                            storage.updateMessage(msgId, cv)
-                            sendBroadcast(AprsService.MSG_TX_PRIV_INTENT)
-                        }
-                        getString(R.string.msg_abort) -> {
-                            storage.updateMessageType(msgId, StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
-                            sendBroadcast(AprsService.MSG_PRIV_INTENT)
-                        }
-                    }
-                }
-                .show()
-            true
-        }
+        recyclerView = findViewById(R.id.recycler_view)
+        msginput = findViewById(R.id.msginput)
+        msgsend = findViewById(R.id.msgsend)
 
-        onStartLoading()
-        listAdapter = pla
+        val layoutManager = LinearLayoutManager(this).apply {
+            stackFromEnd = true
+        }
+        recyclerView.layoutManager = layoutManager
+
+        adapter = MessageRecyclerAdapter(
+            context = this,
+            mycall = mycall,
+            targetcall = targetcall ?: "",
+            onItemClick = {},
+            onItemLongClick = { item, _ ->
+                showMessageOptionsDialog(item)
+                true
+            }
+        )
+        recyclerView.adapter = adapter
 
         msginput.addTextChangedListener(this)
         msginput.setOnKeyListener(this)
         msgsend.setOnClickListener(this)
 
+        onStartLoading()
+        loadData()
+
         val message = intent.getStringExtra("message")
         if (message != null && !targetcall.isNullOrEmpty()) {
-            Log.d(TAG, "sending message to " + targetcall + ": " + message)
+            Log.d(TAG, "sending message to $targetcall: $message")
             sendMessage(message)
         }
     }
 
+    @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
         targetcall?.let { ServiceNotifier.instance.cancelMessage(this, it) }
+        ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_EXPORTED)
+        loadData()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try { unregisterReceiver(messageReceiver) } catch (_: Exception) {}
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        pla.onDestroy()
+        executor.shutdownNow()
+    }
+
+    fun loadData() {
+        val target = targetcall ?: return
+        executor.submit {
+            val cursor = storage.getMessages(target)
+            val items = MessageItem.fromCursor(cursor)
+            mainHandler.post {
+                adapter.submitList(items) {
+                    if (items.isNotEmpty()) {
+                        recyclerView.scrollToPosition(items.size - 1)
+                    }
+                }
+                onStopLoading()
+            }
+        }
+    }
+
+    private fun showMessageOptionsDialog(item: MessageItem) {
+        val items = mutableListOf<String>()
+        items.add(getString(android.R.string.copy))
+        items.add(getString(R.string.delete_message))
+        if (item.type != StorageDatabase.Companion.Message.TYPE_INCOMING) {
+            items.add(getString(R.string.msg_restart))
+            if (item.type == StorageDatabase.Companion.Message.TYPE_OUT_NEW) {
+                items.add(getString(R.string.msg_abort))
+            }
+        }
+
+        val title = if (item.type == StorageDatabase.Companion.Message.TYPE_INCOMING) {
+            getString(R.string.msg_from, targetcall)
+        } else {
+            getString(R.string.msg_to, targetcall)
+        }
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle(title)
+            .setItems(items.toTypedArray()) { _, which ->
+                when (items[which]) {
+                    getString(android.R.string.copy) -> {
+                        val clip = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clipData = android.content.ClipData.newPlainText("APRS message", item.text)
+                        clip.setPrimaryClip(clipData)
+                        Toast.makeText(this, R.string.text_copied, Toast.LENGTH_SHORT).show()
+                    }
+                    getString(R.string.delete_message) -> {
+                        storage.deleteMessage(item.id)
+                        loadData()
+                        Toast.makeText(this, R.string.message_deleted, Toast.LENGTH_SHORT).show()
+                    }
+                    getString(R.string.msg_restart) -> {
+                        val cv = ContentValues().apply {
+                            put(StorageDatabase.Companion.Message.TYPE, StorageDatabase.Companion.Message.TYPE_OUT_NEW)
+                            put(StorageDatabase.Companion.Message.RETRYCNT, 0)
+                            put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+                        }
+                        storage.updateMessage(item.id, cv)
+                        sendBroadcast(Intent(AprsService.MSG_TX_PRIV_INTENT))
+                    }
+                    getString(R.string.msg_abort) -> {
+                        storage.updateMessageType(item.id, StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
+                        sendBroadcast(Intent(AprsService.MSG_PRIV_INTENT))
+                    }
+                }
+            }
+            .show()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         menu.findItem(R.id.message)?.isVisible = false
         return true
-    }
-
-    fun menuMessageCursor(menuInfo: ContextMenu.ContextMenuInfo): Cursor {
-        val info = menuInfo as AdapterContextMenuInfo
-        return listView.getItemAtPosition(info.position) as Cursor
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -131,7 +187,7 @@ class MessageActivity : StationHelper(R.string.app_messages),
                         .setMessage(getString(R.string.confirm_delete_messages, call))
                         .setPositiveButton(android.R.string.ok) { _, _ ->
                             storage.deleteMessages(call)
-                            pla.changeCursor(storage.getMessages(call))
+                            loadData()
                             Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                         }
                         .setNegativeButton(android.R.string.cancel, null)
@@ -148,68 +204,6 @@ class MessageActivity : StationHelper(R.string.app_messages),
             }
             else -> super.onOptionsItemSelected(item)
         }
-    }
-
-    fun messageAction(id: Int, c: Cursor): Boolean {
-        val msgId = c.getLong(0)
-        val msgType = c.getInt(StorageDatabase.Companion.Message.COLUMN_TYPE)
-        return when (id) {
-            R.id.copy -> {
-                val clip = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                @Suppress("DEPRECATION")
-                clip.text = c.getString(StorageDatabase.Companion.Message.COLUMN_TEXT)
-                true
-            }
-            R.id.delete_msg -> {
-                android.app.AlertDialog.Builder(this)
-                    .setTitle(R.string.delete_message)
-                    .setMessage(R.string.confirm_delete_message)
-                    .setPositiveButton(android.R.string.ok) { _, _ ->
-                        storage.deleteMessage(msgId)
-                        targetcall?.let { pla.changeCursor(storage.getMessages(it)) }
-                        Toast.makeText(this, R.string.message_deleted, Toast.LENGTH_SHORT).show()
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
-                true
-            }
-            R.id.abort -> {
-                if (msgType == StorageDatabase.Companion.Message.TYPE_OUT_NEW) {
-                    storage.updateMessageType(msgId, StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
-                    sendBroadcast(AprsService.MSG_PRIV_INTENT)
-                }
-                true
-            }
-            R.id.resend -> {
-                if (msgType != StorageDatabase.Companion.Message.TYPE_INCOMING) {
-                    val cv = ContentValues().apply {
-                        put(StorageDatabase.Companion.Message.TYPE, StorageDatabase.Companion.Message.TYPE_OUT_NEW)
-                        put(StorageDatabase.Companion.Message.RETRYCNT, 0)
-                        put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
-                    }
-                    storage.updateMessage(msgId, cv)
-                    sendBroadcast(AprsService.MSG_TX_PRIV_INTENT)
-                }
-                true
-            }
-            else -> false
-        }
-    }
-
-    override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo) {
-        val c = menuMessageCursor(menuInfo)
-        val msgType = c.getInt(StorageDatabase.Companion.Message.COLUMN_TYPE)
-        val titleId = if (msgType == StorageDatabase.Companion.Message.TYPE_INCOMING) R.string.msg_from else R.string.msg_to
-        menuInflater.inflate(R.menu.context_msg, menu)
-        menu.setGroupVisible(R.id.msg_menu_out, msgType != StorageDatabase.Companion.Message.TYPE_INCOMING)
-        menu.setHeaderTitle(getString(titleId, c.getString(StorageDatabase.Companion.Message.COLUMN_CALL)))
-    }
-
-    override fun onContextItemSelected(item: MenuItem): Boolean {
-        val info = item.menuInfo
-        return if (info != null) {
-            messageAction(item.itemId, menuMessageCursor(info))
-        } else false
     }
 
     override fun afterTextChanged(s: Editable?) {
@@ -232,7 +226,7 @@ class MessageActivity : StationHelper(R.string.app_messages),
 
     fun sendMessage(msg: String) {
         if (msg.isEmpty() || targetcall.isNullOrEmpty()) return
-        Log.d(TAG, "sending " + msg)
+        Log.d(TAG, "sending $msg")
         msginput.text = null
 
         val cv = ContentValues().apply {
@@ -245,7 +239,7 @@ class MessageActivity : StationHelper(R.string.app_messages),
         }
         storage.addMessage(cv)
         sendMessageBroadcast(targetcall ?: "", msg)
-        sendBroadcast(AprsService.MSG_PRIV_INTENT)
+        sendBroadcast(Intent(AprsService.MSG_PRIV_INTENT))
 
         if (!AprsService.running) {
             Toast.makeText(this, R.string.msg_stored_offline, Toast.LENGTH_SHORT).show()

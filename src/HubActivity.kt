@@ -1,16 +1,38 @@
 package org.aprsdroid.app
 
+import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.ListView
+import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import org.aprsdroid.app.adapter.StationRecyclerAdapter
+import org.aprsdroid.app.model.StationItem
+import java.util.concurrent.Executors
 
-class HubActivity : MainListActivity("hub", R.id.hub) {
+class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
 
-    val sla: StationListAdapter by lazy {
-        StationListAdapter(this, prefs, prefs.getCallSsid(), "", StationListAdapter.NEIGHBORS)
+    private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
+    private val executor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var emptyView: TextView
+    private lateinit var adapter: StationRecyclerAdapter
+
+    private val updateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            loadData()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,21 +40,70 @@ class HubActivity : MainListActivity("hub", R.id.hub) {
         setContentView(R.layout.main)
         onContentViewLoaded()
 
+        recyclerView = findViewById(R.id.recycler_view)
+        emptyView = findViewById(R.id.empty)
+        emptyView.setText(R.string.empty_hubview)
+
+        adapter = StationRecyclerAdapter(
+            context = this,
+            mycall = prefs.getCallSsid(),
+            targetcall = "",
+            onItemClick = { item -> openMessaging(item.call) },
+            onItemLongClick = { item, _ ->
+                openDetails(item.call)
+                true
+            }
+        )
+
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+
         onStartLoading()
-        listAdapter = sla
-        listView.isTextFilterEnabled = true
+        loadData()
+    }
+
+    @SuppressLint("WrongConstant")
+    override fun onResume() {
+        super.onResume()
+        ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
+        loadData()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        sla.onDestroy()
+        executor.shutdownNow()
     }
 
-    override fun onListItemClick(l: ListView, v: View, position: Int, id: Long) {
-        val c = listView.getItemAtPosition(position) as? android.database.Cursor
-        c?.let {
-            val call = it.getString(StorageDatabase.Companion.Station.COLUMN_CALL)
-            openMessaging(call)
+    fun loadData() {
+        executor.submit {
+            val mycall = prefs.getCallSsid()
+            var myLat = 0
+            var myLon = 0
+
+            val posCursor = storage.getStaPosition(mycall)
+            if (posCursor.count > 0 && posCursor.moveToFirst()) {
+                val latIdx = posCursor.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+                val lonIdx = posCursor.getColumnIndex(StorageDatabase.Companion.Station.LON)
+                if (latIdx >= 0) myLat = posCursor.getInt(latIdx)
+                if (lonIdx >= 0) myLon = posCursor.getInt(lonIdx)
+            }
+            posCursor.close()
+
+            val cursor = storage.getNeighbors(mycall, myLat, myLon, System.currentTimeMillis() - prefs.getShowAge(), "300")
+            val items = StationItem.fromCursor(cursor)
+
+            mainHandler.post {
+                adapter.myLat = myLat
+                adapter.myLon = myLon
+                adapter.submitList(items)
+                emptyView.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+                onStopLoading()
+            }
         }
     }
 
@@ -66,12 +137,12 @@ class HubActivity : MainListActivity("hub", R.id.hub) {
             }
             R.id.export -> {
                 onStartLoading()
-                LogExporter(this, StorageDatabase.open(this), null) { onStopLoading() }.execute()
+                LogExporter(this, storage, null) { onStopLoading() }.execute()
                 true
             }
             R.id.clear -> {
                 onStartLoading()
-                StorageCleaner(this, StorageDatabase.open(this)) { onStopLoading() }.execute()
+                StorageCleaner(this, storage) { onStopLoading() }.execute()
                 true
             }
             else -> super.onOptionsItemSelected(item)

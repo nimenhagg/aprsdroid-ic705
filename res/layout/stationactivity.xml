@@ -7,6 +7,15 @@
     android:fitsSystemWindows="true"
     android:background="?attr/colorSurface">
 
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/loading"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:indicatorColor="@color/md3_primary"
+        app:trackColor="@color/md3_surface_container" />
+
     <!-- Top Station Info List -->
     <TextView
         android:layout_width="match_parent"
@@ -19,15 +28,13 @@
         android:fontFamily="sans-serif-medium"
         android:text="@string/sta_ssids" />
 
-    <ListView
-        android:id="@android:id/list"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/ssid_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:divider="@null"
-        android:dividerHeight="4dp"
         android:paddingHorizontal="8dp"
         android:clipToPadding="false"
-        android:descendantFocusability="blocksDescendants" />
+        android:nestedScrollingEnabled="false" />
 
     <!-- Station History Header & List -->
     <TextView
@@ -41,16 +48,14 @@
         android:fontFamily="sans-serif-medium"
         android:text="@string/sta_history" />
 
-    <ListView
-        android:id="@+id/postlist"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/post_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:divider="@null"
-        android:dividerHeight="6dp"
         android:paddingHorizontal="8dp"
         android:clipToPadding="false"
-        android:descendantFocusability="blocksDescendants" />
+        android:scrollbars="vertical" />
 
     <!-- Bottom Action Capsule Buttons -->
     <LinearLayout

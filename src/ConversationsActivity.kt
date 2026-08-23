@@ -1,75 +1,130 @@
 package org.aprsdroid.app
 
+import android.annotation.SuppressLint
 import android.app.AlertDialog
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
-import android.database.Cursor
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.InputFilter
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ListView
+import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import org.aprsdroid.app.adapter.ConversationRecyclerAdapter
+import org.aprsdroid.app.model.ConversationItem
+import java.util.concurrent.Executors
 
-class ConversationsActivity : LoadingListActivity(), View.OnClickListener {
+class ConversationsActivity : BaseRecyclerActivity(), View.OnClickListener {
 
     companion object {
         const val TAG = "APRSdroid.Conversations"
     }
 
-    val mycall: String get() = prefs.getCallSsid()
-    val pla: ConversationListAdapter by lazy { ConversationListAdapter(this, prefs) }
-    val newConversationBtn: Button by lazy { findViewById(R.id.new_conversation) }
+    private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
+    private val executor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var emptyView: TextView
+    private lateinit var adapter: ConversationRecyclerAdapter
+    private lateinit var newConversationBtn: Button
+
+    private val messageReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            loadData()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         menu_id = R.id.conversations
         setContentView(R.layout.conversations)
 
-        registerForContextMenu(listView)
+        recyclerView = findViewById(R.id.recycler_view)
+        emptyView = findViewById(R.id.empty)
+        emptyView.setText(R.string.msg_empty_list)
+
+        newConversationBtn = findViewById(R.id.new_conversation)
         newConversationBtn.setOnClickListener(this)
-        listView.setOnItemLongClickListener { _, _, position, _ ->
-            val c = listView.getItemAtPosition(position) as? Cursor ?: return@setOnItemLongClickListener false
-            val call = c.getString(StorageDatabase.Companion.Message.COLUMN_CALL)
-            AlertDialog.Builder(this)
-                .setTitle(call)
-                .setItems(arrayOf(getString(R.string.delete_conversation))) { _, which ->
-                    if (which == 0) {
-                        AlertDialog.Builder(this)
-                            .setTitle(R.string.delete_conversation)
-                            .setMessage(getString(R.string.confirm_delete_messages, call))
-                            .setPositiveButton(android.R.string.ok) { _, _ ->
-                                val storage = StorageDatabase.open(this)
-                                storage.deleteMessages(call)
-                                pla.changeCursor(storage.getConversations())
-                                android.widget.Toast.makeText(this, R.string.messages_cleared, android.widget.Toast.LENGTH_SHORT).show()
-                            }
-                            .setNegativeButton(android.R.string.cancel, null)
-                            .show()
-                    }
-                }
-                .show()
-            true
-        }
+
+        adapter = ConversationRecyclerAdapter(
+            context = this,
+            onItemClick = { item -> openMessaging(item.call) },
+            onItemLongClick = { item, _ ->
+                showDeleteConversationDialog(item.call)
+                true
+            }
+        )
+
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
 
         onStartLoading()
-        listAdapter = pla
-        listView.isTextFilterEnabled = true
+        loadData()
+    }
+
+    @SuppressLint("WrongConstant")
+    override fun onResume() {
+        super.onResume()
+        ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_EXPORTED)
+        loadData()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try { unregisterReceiver(messageReceiver) } catch (_: Exception) {}
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        pla.onDestroy()
+        executor.shutdownNow()
     }
 
-    override fun onListItemClick(l: ListView, v: View, position: Int, id: Long) {
-        val c = listView.getItemAtPosition(position) as Cursor
-        val call = c.getString(StorageDatabase.Companion.Message.COLUMN_CALL)
-        openMessaging(call)
+    fun loadData() {
+        executor.submit {
+            val cursor = storage.getConversations()
+            val items = ConversationItem.fromCursor(cursor)
+            mainHandler.post {
+                adapter.submitList(items)
+                emptyView.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+                onStopLoading()
+            }
+        }
     }
 
-    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+    private fun showDeleteConversationDialog(call: String) {
+        AlertDialog.Builder(this)
+            .setTitle(call)
+            .setItems(arrayOf(getString(R.string.delete_conversation))) { _, which ->
+                if (which == 0) {
+                    AlertDialog.Builder(this)
+                        .setTitle(R.string.delete_conversation)
+                        .setMessage(getString(R.string.confirm_delete_messages, call))
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                            storage.deleteMessages(call)
+                            loadData()
+                            Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                }
+            }
+            .show()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.options_activities, menu)
         menuInflater.inflate(R.menu.options, menu)
         menu.findItem(R.id.conversations)?.isVisible = false
@@ -80,32 +135,31 @@ class ConversationsActivity : LoadingListActivity(), View.OnClickListener {
         return true
     }
 
-    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.clear -> {
                 AlertDialog.Builder(this)
                     .setTitle(R.string.clear_all_messages)
                     .setMessage(R.string.confirm_clear_all_messages)
                     .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
-                        val storage = StorageDatabase.open(this)
                         storage.deleteAllMessages()
-                        pla.changeCursor(storage.getConversations())
-                        android.widget.Toast.makeText(this, R.string.messages_cleared, android.widget.Toast.LENGTH_SHORT).show()
+                        loadData()
+                        Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
                 true
             }
             R.id.preferences -> {
-                startActivity(android.content.Intent(this, PrefsAct::class.java))
+                startActivity(Intent(this, PrefsAct::class.java))
                 true
             }
             R.id.hub -> {
-                startActivity(android.content.Intent(this, HubActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                startActivity(Intent(this, HubActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
                 true
             }
             R.id.log -> {
-                startActivity(android.content.Intent(this, LogActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                startActivity(Intent(this, LogActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
                 true
             }
             R.id.map -> {
@@ -124,43 +178,13 @@ class ConversationsActivity : LoadingListActivity(), View.OnClickListener {
         }
     }
 
-    override fun onCreateContextMenu(menu: android.view.ContextMenu, v: View, menuInfo: android.view.ContextMenu.ContextMenuInfo?) {
-        super.onCreateContextMenu(menu, v, menuInfo)
-        val info = menuInfo as? android.widget.AdapterView.AdapterContextMenuInfo ?: return
-        val c = listView.getItemAtPosition(info.position) as? Cursor ?: return
-        val call = c.getString(StorageDatabase.Companion.Message.COLUMN_CALL)
-        menu.setHeaderTitle(call)
-        menu.add(0, 1001, 0, R.string.delete_conversation)
-    }
-
-    override fun onContextItemSelected(item: android.view.MenuItem): Boolean {
-        val info = item.menuInfo as? android.widget.AdapterView.AdapterContextMenuInfo ?: return false
-        val c = listView.getItemAtPosition(info.position) as? Cursor ?: return false
-        val call = c.getString(StorageDatabase.Companion.Message.COLUMN_CALL)
-        if (item.itemId == 1001) {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.delete_conversation)
-                .setMessage(getString(R.string.confirm_delete_messages, call))
-                .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
-                    val storage = StorageDatabase.open(this)
-                    storage.deleteMessages(call)
-                    pla.changeCursor(storage.getConversations())
-                    android.widget.Toast.makeText(this, R.string.messages_cleared, android.widget.Toast.LENGTH_SHORT).show()
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
-            return true
-        }
-        return super.onContextItemSelected(item)
-    }
-
     override fun onClick(view: View) {
         if (view.id == R.id.new_conversation) {
             newConversation()
         }
     }
 
-    fun newConversation() {
+    private fun newConversation() {
         val inflater = getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val nmView = inflater.inflate(R.layout.new_message_view, null, false)
         val nmCall = nmView.findViewById<EditText>(R.id.callsign)

@@ -4,7 +4,7 @@ import android.content.res.Configuration
 import android.view.Menu
 import android.view.MenuItem
 
-abstract class StationHelper(val titleId: Int) : LoadingListActivity() {
+abstract class StationHelper(val titleId: Int) : BaseRecyclerActivity() {
     val targetcall: String? by lazy { intent.dataString }
 
     override fun onResume() {

@@ -1,3 +1,20 @@
+## 🚀 [v1.5.0-ic705] - 2026-08-23
+
+### ⚡ 核心列表架构全量现代化：RecyclerView + ListAdapter + DiffUtil 重构
+* **彻底淘汰废弃基类**：
+  - 彻底移除 `android.app.ListActivity`（API 30 废弃）与 `android.widget.SimpleCursorAdapter`（API 11 废弃）；
+  - 新建现代抽象基类 `BaseRecyclerActivity` 与 `MainRecyclerActivity`，全面继承自 `AppCompatActivity`。
+* **引入强类型不可变数据模型**：
+  - 新增 `StationItem`、`LogPostItem`、`ConversationItem`、`MessageItem` 数据类，彻底解耦 UI 线程与 SQLite Cursor，杜绝主线程阻塞。
+* **4 大适配器全面现代化**：
+  - `StationRecyclerAdapter`：基于 `ListAdapter` + `DiffUtil`，台站列表支持局部高帧率差量刷新与 ViewHolder 缓存；
+  - `LogRecyclerAdapter`：报文日志流式渲染，支持 120Hz 高刷屏平滑滚动与语法高亮；
+  - `ConversationRecyclerAdapter`：会话列表现代化卡片渲染与长按删除手势；
+  - `MessageRecyclerAdapter`：消息气泡复用优化，发送/接收自动平滑滚动触底。
+* **5 大核心页面全量升级**：
+  - `HubActivity`（电台列表）、`LogActivity`（报文日志）、`ConversationsActivity`（消息会话）、`MessageActivity`（聊天详情）、`StationActivity`（台站详情）全量升级至 `RecyclerView`；
+  - 接入 Material 3 `LinearProgressIndicator` 现代顶部线性加载指示器与空状态占位图。
+
 ## 🧹 [v1.4.3-ic705] - 2026-08-23
 
 ### 🏛️ 全面清理历史包袱与“岁月史书” (Legacy Cleanup)

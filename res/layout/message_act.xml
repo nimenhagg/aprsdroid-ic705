@@ -1,39 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-android:id="@+id/message_act"
-android:layout_width="fill_parent"
-android:layout_height="fill_parent"
-android:orientation="vertical"
-xmlns:android="http://schemas.android.com/apk/res/android"
->
-<ListView
-	android:id="@android:id/list"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent"
-	android:layout_weight="1"
-	android:descendantFocusability="blocksDescendants"
-	android:stackFromBottom="true"
-	android:transcriptMode="alwaysScroll"
-	/>
-<LinearLayout
-android:id="@+id/buttonlayout"
-android:layout_width="fill_parent"
-android:layout_height="wrap_content"
-android:orientation="horizontal">
-<EditText android:id="@+id/msginput"
-	android:layout_width="fill_parent"
-	android:layout_height="wrap_content"
-	android:singleLine="true"
-	android:maxLength="67"
-	android:layout_weight="1"
-	android:inputType="textShortMessage|textCapSentences|textAutoCorrect"
-	/>
-<Button android:id="@+id/msgsend"
-	android:layout_width="60sp"
-	android:layout_height="wrap_content"
-	android:text="@android:string/ok"
-	android:enabled="false"
-	/>
-</LinearLayout>
-</LinearLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/message_act"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    android:background="?attr/colorSurface">
 
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/loading"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:indicatorColor="@color/md3_primary"
+        app:trackColor="@color/md3_surface_container" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="10dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
+
+    <LinearLayout
+        android:id="@+id/buttonlayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
+        android:background="?attr/colorSurfaceContainer">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
+            app:boxCornerRadiusTopStart="24dp"
+            app:boxCornerRadiusTopEnd="24dp"
+            app:boxCornerRadiusBottomStart="24dp"
+            app:boxCornerRadiusBottomEnd="24dp"
+            app:hintEnabled="false">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/msginput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/msg_message_text"
+                android:singleLine="true"
+                android:maxLength="67"
+                android:inputType="textShortMessage|textCapSentences|textAutoCorrect"
+                android:textSize="15sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/msgsend"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:minWidth="72dp"
+            app:cornerRadius="24dp"
+            app:backgroundTint="@color/md3_primary"
+            android:textColor="@color/md3_on_primary"
+            android:text="@android:string/ok"
+            android:enabled="false" />
+    </LinearLayout>
+</LinearLayout>

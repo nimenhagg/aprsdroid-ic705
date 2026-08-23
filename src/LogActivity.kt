@@ -1,29 +1,43 @@
 package org.aprsdroid.app
 
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.database.Cursor
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.ListView
+import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import org.aprsdroid.app.adapter.LogRecyclerAdapter
+import org.aprsdroid.app.model.LogPostItem
+import java.util.concurrent.Executors
 
-class LogActivity : MainListActivity("log", R.id.log) {
-    val TAG = "APRSdroid.Log"
+class LogActivity : MainRecyclerActivity("log", R.id.log) {
+    companion object {
+        const val TAG = "APRSdroid.Log"
+    }
 
-    val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
-    val postlist: ListView get() = listView
-    val la: PostListAdapter by lazy { PostListAdapter(this) }
-    val locReceiver = LocationReceiver2(
-        { load_cursor() },
-        { replace_cursor(it) },
-        { cancel_cursor(it) }
-    )
+    private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
+    private val executor = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var emptyView: TextView
+    private lateinit var adapter: LogRecyclerAdapter
+
+    private val updateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            loadData()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,38 +45,55 @@ class LogActivity : MainListActivity("log", R.id.log) {
 
         Log.d(TAG, "starting " + getString(R.string.build_version))
         onContentViewLoaded()
-        onStartLoading()
 
-        la.filterQueryProvider = storage.getPostFilter("300")
-        postlist.adapter = la
-        postlist.isTextFilterEnabled = true
+        recyclerView = findViewById(R.id.recycler_view)
+        emptyView = findViewById(R.id.empty)
+        emptyView.setText(R.string.empty_logview)
+
+        adapter = LogRecyclerAdapter(
+            onItemClick = { item ->
+                if (item.type == StorageDatabase.Companion.Post.TYPE_POST || item.type == StorageDatabase.Companion.Post.TYPE_INCMG) {
+                    val call = item.message.split(">")[0]
+                    Log.d(TAG, "onItemClick: $call")
+                    openDetails(call)
+                }
+            }
+        )
+
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+
+        onStartLoading()
+        loadData()
     }
 
     @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
-        ContextCompat.registerReceiver(this, locReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
-        locReceiver.startTask(Intent())
-        postlist.requestFocus()
+        ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
+        loadData()
     }
 
     override fun onPause() {
         super.onPause()
-        try { unregisterReceiver(locReceiver) } catch (_: Exception) {}
+        try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        la.changeCursor(null)
+        executor.shutdownNow()
     }
 
-    override fun onListItemClick(l: ListView, v: View, position: Int, id: Long) {
-        val c = listView.getItemAtPosition(position) as Cursor
-        val t = c.getInt(StorageDatabase.Companion.Post.COLUMN_TYPE)
-        if (t != StorageDatabase.Companion.Post.TYPE_POST && t != StorageDatabase.Companion.Post.TYPE_INCMG) return
-        val call = c.getString(StorageDatabase.Companion.Post.COLUMN_MESSAGE).split(">")[0]
-        Log.d(TAG, "onListItemClick: " + call)
-        openDetails(call)
+    fun loadData() {
+        executor.submit {
+            val cursor = storage.getPosts("300")
+            val items = LogPostItem.fromCursor(cursor)
+            mainHandler.post {
+                adapter.submitList(items)
+                emptyView.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+                onStopLoading()
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -105,22 +136,5 @@ class LogActivity : MainListActivity("log", R.id.log) {
             }
             else -> super.onOptionsItemSelected(item)
         }
-    }
-
-    fun load_cursor(): Cursor {
-        val c = storage.getPosts("300")
-        c.count
-        return c
-    }
-
-    fun replace_cursor(c: Cursor) {
-        if (!listView.hasTextFilter()) {
-            la.changeCursor(c)
-        }
-        onStopLoading()
-    }
-
-    fun cancel_cursor(c: Cursor) {
-        c.close()
     }
 }

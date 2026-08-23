@@ -1,12 +1,13 @@
 package org.aprsdroid.app
 
-import android.app.ListActivity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 
-abstract class LoadingListActivity : ListActivity(), LoadingIndicator {
+abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, PermissionHelper {
 
     var menu_id: Int = 0
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
@@ -60,7 +61,7 @@ abstract class LoadingListActivity : ListActivity(), LoadingIndicator {
 
     fun trackOnMap(call: String) {
         val text = getString(R.string.map_track_call, call)
-        android.widget.Toast.makeText(this, text, android.widget.Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
         MapModes.startMap(this, prefs, call)
     }
 
@@ -92,4 +93,9 @@ abstract class LoadingListActivity : ListActivity(), LoadingIndicator {
             else -> false
         }
     }
+
+    // PermissionHelper defaults
+    override fun getActionName(action: Int): Int = R.string.preferences
+    override fun onAllPermissionsGranted(action: Int) {}
+    override fun onPermissionsFailedCancel(action: Int) {}
 }
