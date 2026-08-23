@@ -32,8 +32,12 @@
         <item name="colorSurfaceVariant">@color/md3_surface_variant</item>
         <item name="colorOnSurfaceVariant">@color/md3_on_surface_variant</item>
         <item name="colorSurfaceContainer">@color/md3_surface_container</item>
-        <item name="colorSurfaceContainerHigh">@color/md3_surface_container_high</item>
         <item name="colorOutlineVariant">@color/md3_outline_variant</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+        <item name="android:dialogTheme">@style/Material3DialogTheme</item>
+        <item name="android:alertDialogTheme">@style/Material3AlertDialogTheme</item>
+        <item name="dialogTheme">@style/Material3DialogTheme</item>
+        <item name="alertDialogTheme">@style/Material3AlertDialogTheme</item>
 
         <!-- Material 3 Native TopAppBar styling (No Left App Icon) -->
         <item name="android:actionBarStyle">@style/Widget.Material3.ActionBar</item>
@@ -81,5 +85,19 @@
 
     <style name="MapViewTheme" parent="DefaultTheme">
         <item name="android:windowActionBarOverlay">true</item>
+    </style>
+
+    <style name="Material3DialogTheme" parent="Theme.Material3.DayNight.Dialog">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Material3AlertDialogTheme" parent="Theme.Material3.DayNight.Dialog.Alert">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
     </style>
 </resources>
