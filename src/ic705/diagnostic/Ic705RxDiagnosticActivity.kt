@@ -12,12 +12,19 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.R
-import org.aprsdroid.app.afsk.AfskDecoder
-import org.aprsdroid.app.ic705.audio.Ic705AudioSink
-import org.aprsdroid.app.ic705.control.Ic705ControlPort
-import org.aprsdroid.app.ic705.session.Ic705PacketDiagnostic
-import org.aprsdroid.app.ic705.session.Ic705ReceiveOnlySession
+import org.aprsdroid.app.audio.FeedableAfskDecoder
+import org.aprsdroid.app.audio.PcmFormat
+import org.aprsdroid.app.audio.PcmSink
+import org.aprsdroid.app.ic705.android.Ic705AndroidSocketFactoryProvider
+import org.aprsdroid.app.ic705.session.Ic705RadioSession
+import org.aprsdroid.app.ic705.session.Ic705RxSession
+import org.aprsdroid.app.ic705.session.Ic705RxSessionCallbacks
+import org.aprsdroid.app.ic705.session.Ic705RxSessionConfig
+import org.aprsdroid.app.ic705.session.Ic705RxSessionEngine
+import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
+import java.net.DatagramSocket
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.util.ArrayDeque
 import java.util.concurrent.atomic.AtomicLong
 
@@ -47,8 +54,8 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
     private val eventLogLock = Any()
     private val diagnosticEvents = ArrayDeque<String>()
 
-    private var activeSession: Ic705ReceiveOnlySession? = null
-    private var activeDecoder: AfskDecoder? = null
+    private var activeSession: Ic705RadioSession? = null
+    private var activeDecoder: PcmSink? = null
     private var activeAttempt: Long = 0
     private var activityDestroyed: Boolean = false
     private var activityStartedAtMillis: Long = 0
@@ -89,7 +96,7 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
 
     private fun startReceiveOnlySession() {
         val targetAddress = address.text.toString().trim()
-        val targetPort = port.text.toString().trim().toIntOrNull() ?: Ic705ControlPort.DEFAULT
+        val targetPort = port.text.toString().trim().toIntOrNull() ?: 50001
         val targetUsername = username.text.toString()
         val targetPassword = password.text.toString()
 
@@ -111,66 +118,94 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
         renderStatistics()
 
         val attempt = ++activeAttempt
-        val decoder = AfskDecoder(this, 12000, true) {
+
+        val decoder = FeedableAfskDecoder(PcmFormat.MONO_48K) {
             decodedAx25Frames.incrementAndGet()
             runOnUiThreadFor(attempt) { renderStatistics() }
         }
         activeDecoder = decoder
 
-        val countingSink = object : Ic705AudioSink {
-            override fun acceptAudioBlock(buffer: ByteArray, offset: Int, length: Int) {
+        val countingSink = object : PcmSink {
+            override val format: PcmFormat get() = PcmFormat.MONO_48K
+            override fun write(buffer: ShortArray, offset: Int, length: Int) {
                 acceptedAudioBlocks.incrementAndGet()
-                acceptedAudioSamples.addAndGet((length / 2).toLong())
-                decoder.parse(buffer, offset, length)
+                acceptedAudioSamples.addAndGet(length.toLong())
+                decoder.write(buffer, offset, length)
             }
-            override fun resetAudio() {
-                audioResets.incrementAndGet()
+            override fun close() {
+                decoder.close()
             }
         }
 
-        val session = Ic705ReceiveOnlySession(
-            destinationAddress = parsedAddress,
-            destinationPort = targetPort,
-            username = targetUsername,
-            password = targetPassword,
-            sink = countingSink,
-            onConnecting = {
-                runOnUiThreadFor(attempt) {
-                    status.setText(R.string.ic705_rx_starting)
-                    status.setTextColor(getColor(R.color.md3_primary))
+        val socketFactory: Ic705DatagramSocketFactory = try {
+            val provider = Ic705AndroidSocketFactoryProvider(this)
+            provider.provide() ?: object : Ic705DatagramSocketFactory {
+                override fun create(localAddress: InetSocketAddress): DatagramSocket {
+                    return DatagramSocket(localAddress).apply { broadcast = true }
                 }
-            },
-            onConnected = {
-                runOnUiThreadFor(attempt) {
-                    status.setText(R.string.ic705_rx_running)
-                    status.setTextColor(getColor(R.color.md3_primary))
-                }
-            },
-            onDisconnected = { message ->
-                runOnUiThreadFor(attempt) {
-                    status.text = message
-                    status.setTextColor(getColor(R.color.md3_on_surface_variant))
-                    stopReceiveOnlySession(null)
-                }
-            },
-            onDiagnosticEvent = { event, phase, issue, channel, countName, count, packet, occurrence, reason, kind, expSeq, actSeq, missCount ->
-                recordEvent(
-                    attempt = attempt,
-                    event = event,
-                    phase = phase,
-                    issue = issue,
-                    channel = channel,
-                    countName = countName,
-                    count = count,
-                    packet = packet,
-                    occurrence = occurrence,
-                    resetReason = reason,
-                    discontinuityKind = kind,
-                    expectedSequence = expSeq,
-                    actualSequence = actSeq,
-                    missingPacketCount = missCount
-                )
             }
+        } catch (_: Exception) {
+            object : Ic705DatagramSocketFactory {
+                override fun create(localAddress: InetSocketAddress): DatagramSocket {
+                    return DatagramSocket(localAddress).apply { broadcast = true }
+                }
+            }
+        }
+
+        val config = try {
+            Ic705RxSessionConfig(
+                radioAddress = parsedAddress,
+                controlPort = targetPort,
+                username = targetUsername.ifBlank { "ic705" },
+                password = targetPassword,
+                clientName = "APRSdroid",
+                autoReconnect = false
+            )
+        } catch (e: Exception) {
+            Toast.makeText(this, "配置错误: ${e.message}", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val callbacks = Ic705RxSessionCallbacks(
+            onStateChanged = { state ->
+                runOnUiThreadFor(attempt) {
+                    when (state.phase) {
+                        Ic705RxSessionEngine.Phase.RECEIVING -> {
+                            status.setText(R.string.ic705_rx_running)
+                            status.setTextColor(getColor(R.color.md3_primary))
+                        }
+                        Ic705RxSessionEngine.Phase.STOPPED -> {
+                            status.setText(R.string.ic705_rx_stopped)
+                            status.setTextColor(getColor(R.color.md3_on_surface_variant))
+                            stopReceiveOnlySession(null)
+                        }
+                        Ic705RxSessionEngine.Phase.FAILED -> {
+                            status.text = state.failureReason ?: "连接失败"
+                            status.setTextColor(getColor(R.color.md3_on_surface_variant))
+                            stopReceiveOnlySession(null)
+                        }
+                        else -> {
+                            status.setText(R.string.ic705_rx_starting)
+                            status.setTextColor(getColor(R.color.md3_primary))
+                        }
+                    }
+                    recordEvent(attempt = attempt, event = "PHASE_${state.phase.name}")
+                }
+            },
+            onIssue = { issue ->
+                recordEvent(attempt = attempt, event = "ISSUE_${issue.code.name}", channel = issue.channel?.name)
+            },
+            onAudioReset = { reset ->
+                audioResets.incrementAndGet()
+                recordEvent(attempt = attempt, event = "AUDIO_RESET_${reset.reason.name}")
+            }
+        )
+
+        val session = Ic705RxSession(
+            config = config,
+            audioSink = countingSink,
+            callbacks = callbacks,
+            socketFactory = socketFactory
         )
 
         activeSession = session
@@ -255,19 +290,8 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
     private fun recordEvent(
         attempt: Long,
         event: String,
-        phase: String? = null,
-        issue: String? = null,
         channel: String? = null,
-        countName: String? = null,
-        count: Long? = null,
         counters: CounterSnapshot? = null,
-        packet: Ic705PacketDiagnostic? = null,
-        occurrence: Long? = null,
-        resetReason: String? = null,
-        discontinuityKind: String? = null,
-        expectedSequence: Int? = null,
-        actualSequence: Int? = null,
-        missingPacketCount: Int? = null,
     ) {
         if (activityDestroyed) return
         val elapsedMillis = (SystemClock.elapsedRealtime() - activityStartedAtMillis).coerceAtLeast(0L)
@@ -276,21 +300,7 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
             append(elapsedMillis)
             append("ms] att=").append(attempt)
             append(" ev=").append(event)
-            phase?.let { append(" ph=").append(it) }
-            issue?.let { append(" is=").append(it) }
             channel?.let { append(" ch=").append(it) }
-            occurrence?.let { append(" occ=").append(it) }
-            resetReason?.let { append(" rsn=").append(it) }
-            discontinuityKind?.let { append(" knd=").append(it) }
-            expectedSequence?.let { append(" exp=").append(it) }
-            actualSequence?.let { append(" act=").append(it) }
-            missingPacketCount?.let { append(" mis=").append(it) }
-            if (countName != null && count != null) append(' ').append(countName).append('=').append(count)
-            packet?.let {
-                append(" len=").append(it.length)
-                it.declaredLength?.let { value -> append(" dcl=").append(value) }
-                append(" rx=").append(it.receiverKind.name)
-            }
             counters?.let {
                 append(" blk=").append(it.audioBlocks)
                 append(" pcm=").append(it.pcmSamples)
@@ -304,13 +314,13 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
         }
         if (Looper.myLooper() == Looper.getMainLooper()) {
             renderEventLog()
-        } else if (::eventLog.isInitialized) {
-            eventLog.post(::renderEventLog)
+        } else {
+            runOnUiThread { renderEventLog() }
         }
     }
 
     private fun renderEventLog() {
-        if (activityDestroyed || !::eventLog.isInitialized) return
+        if (activityDestroyed) return
         val snapshot = synchronized(eventLogLock) { diagnosticEvents.joinToString(separator = "\n") }
         eventLog.text = if (snapshot.isEmpty()) getString(R.string.ic705_rx_log_empty) else snapshot
     }
