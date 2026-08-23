@@ -1,3 +1,16 @@
+## 🚀 [v1.4.0-ic705] - 2026-08-23
+
+### 💎 AndroidX Preference 全量现代化、构建链升级 (Gradle 8.8) 与丝滑 M3 共享轴转场动效
+* **Target API 36 (Android 16) 全面适配**：适配最新 Android 平台标准，提升系统级手势响应与安全性。
+* **构建链平滑升级**：升级构建系统至 **Gradle 8.8 + AGP 8.4.2 + Kotlin 1.9.24**，大幅提升增量编译与字节码生成效率。
+* **AndroidX Preference 深度重构**：
+  - 彻底淘汰已废弃的 `android.preference` 架构，全量迁移至 `androidx.preference:1.2.1`；
+  - 接入标准 `MaterialToolbar` 容器，彻底消除旧版双 Action Bar 冲突与顶部条目被遮挡的隐患；
+  - 修复「连接首选项」、「位置设置」、「APRS 符号」、「位置隐私」、「通知」点击秒级流畅跳转。
+* **转场动效全面现代化（告别生硬缩放）**：重构 Activity 切换动画为 **Material 3 共享轴（Shared-Axis X）** 平滑动效（280ms `fast_out_slow_in`），呈现如原生 Pixel / Android 14+ 设置般的丝滑操作手感。
+* **注释字段历史数据自动平滑迁移**：启动时自动将用户持久化存储中的旧版默认网址迁移更新为 `APRSDroid Mod`。
+* **溢出菜单与弹窗优化**：精细化调整右上角三点菜单背景与紧凑边距，去除多余留白。
+
 ## 🎨 [v1.3.4-ic705] - 2026-08-23
 
 ### 🛠️ 现代化子设置界面、Dialog 适配与默认信标注释更新
