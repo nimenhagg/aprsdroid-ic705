@@ -42,7 +42,7 @@ class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
 
         recyclerView = findViewById(R.id.recycler_view)
         emptyView = findViewById(R.id.empty)
-        emptyView.setText(R.string.empty_hubview)
+        emptyView.setText(R.string.empty_logview)
 
         adapter = StationRecyclerAdapter(
             context = this,
