@@ -107,21 +107,14 @@ class ConversationsActivity : BaseRecyclerActivity(), View.OnClickListener {
 
     private fun showDeleteConversationDialog(call: String) {
         MaterialAlertDialogBuilder(this)
-            .setTitle(call)
-            .setItems(arrayOf(getString(R.string.delete_conversation))) { _, which ->
-                if (which == 0) {
-                    MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.delete_conversation)
-                        .setMessage(getString(R.string.confirm_delete_messages, call))
-                        .setPositiveButton(android.R.string.ok) { _, _ ->
-                            storage.deleteMessages(call)
-                            loadData()
-                            Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
-                        }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show()
-                }
+            .setTitle(R.string.delete_conversation)
+            .setMessage(getString(R.string.confirm_delete_messages, call))
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                storage.deleteMessages(call)
+                loadData()
+                Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
             }
+            .setNegativeButton(android.R.string.cancel, null)
             .show()
     }
 
