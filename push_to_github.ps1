@@ -2,7 +2,7 @@ param (
     [string]$RemoteUrl = ""
 )
 
-$RepoDir = "C:\Users\Administrator\Documents\Codex\2026-08-20\android-1-ft8cn-https-github-com\work\sources\aprsdroid_repo"
+$RepoDir = $PSScriptRoot
 Set-Location $RepoDir
 
 Write-Host "====================================================" -ForegroundColor Cyan

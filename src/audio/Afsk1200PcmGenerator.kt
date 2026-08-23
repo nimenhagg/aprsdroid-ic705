@@ -4,8 +4,9 @@ import sivantoledo.ax25.Afsk1200Modulator
 import sivantoledo.ax25.Packet
 
 /**
- * Generates 48 kHz mono PCM16LE audio samples from AX.25 [Packet] frames
- * using [Afsk1200Modulator].
+ * Generates mono PCM16LE audio samples from AX.25 [Packet] frames
+ * using [Afsk1200Modulator]. Default sample rate is 12 kHz, matching
+ * the IC-705 LAN audio session rate ([DEFAULT_SAMPLE_RATE_HZ]).
  */
 class Afsk1200PcmGenerator(
     val sampleRateHz: Int = DEFAULT_SAMPLE_RATE_HZ,

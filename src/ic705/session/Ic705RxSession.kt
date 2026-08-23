@@ -327,8 +327,10 @@ class Ic705RxSession internal constructor(
     private val pendingCloseCallbacks = mutableListOf<() -> Unit>()
     private var closeComplete = false
     private val audioLifecycleLock = Any()
-    private val channels = EnumMap<Ic705ChannelRole, Ic705DatagramChannel>(Ic705ChannelRole::class.java)
-    private val channelRuntimes = EnumMap<Ic705ChannelRole, ChannelRuntime>(Ic705ChannelRole::class.java)
+    private val channels: MutableMap<Ic705ChannelRole, Ic705DatagramChannel> =
+        java.util.Collections.synchronizedMap(EnumMap<Ic705ChannelRole, Ic705DatagramChannel>(Ic705ChannelRole::class.java))
+    private val channelRuntimes: MutableMap<Ic705ChannelRole, ChannelRuntime> =
+        java.util.Collections.synchronizedMap(EnumMap<Ic705ChannelRole, ChannelRuntime>(Ic705ChannelRole::class.java))
     private val scheduledTasks = mutableMapOf<String, ScheduledFuture<*>>()
 
     private val txExecutor = Executors.newSingleThreadExecutor { runnable ->
@@ -339,8 +341,6 @@ class Ic705RxSession internal constructor(
     private var nextTxAudioSequence = 1
     @Volatile
     private var lastTxCompletedMonotonicMillis = 0L
-    @Volatile
-    private var pendingTxDatagrams: List<ByteArray>? = null
 
     private val pttStateMachine: Ic705PttStateMachine = Ic705PttStateMachine(
         actions = object : Ic705PttActions {

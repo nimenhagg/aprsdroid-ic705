@@ -54,7 +54,7 @@ fun interface Ic705DecoderFactory {
 }
 
 /**
- * Testable lifecycle logic for the IC-705 Wi-Fi receive-only backend.
+ * Testable lifecycle logic for the IC-705 Wi-Fi backend (full-duplex RX + TX).
  *
  * The radio session deliberately keeps its own reconnect disabled in production:
  * an Android Network handle is generation-specific and cannot safely be reused
@@ -63,7 +63,9 @@ fun interface Ic705DecoderFactory {
  * complete, backs off, then calls [socketFactoryProvider] again before creating
  * a new decoder/session pair.
  *
- * This is intentionally still RX-only. No TX audio or PTT path exists here.
+ * TX path: [update] encodes an APRS packet via AFSK modulation, then delegates
+ * to [Ic705RadioSession.transmit] which coordinates PTT ON → audio streaming →
+ * PTT OFF through the [Ic705PttStateMachine].
  */
 class Ic705WifiBackendController(
     private val service: Ic705BackendService,

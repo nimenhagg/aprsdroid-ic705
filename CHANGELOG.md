@@ -1,3 +1,25 @@
+## 🚀 [v1.5.3-ic705] - 2026-08-23
+
+### 🔧 代码审查修复与安全加固
+* **[H1] 诊断页采样率修复**：
+  - 修复 `Ic705RxDiagnosticActivity` 中硬编码 48kHz 与 `Ic705RxAudioReceiver` 要求 12kHz 不一致导致诊断页永远无法解码音频的 Bug；
+  - 修正 `Afsk1200PcmGenerator` 类注释（48kHz → 12kHz），与实际默认值一致。
+* **[H2] PTT 发射看门狗（Watchdog）实现**：
+  - 在 `Ic705PttStateMachine` 中实现绝对超时看门狗：PTT ON 后启动 5s 定时器，超时自动发 PTT OFF 强制释放，防止 Wi-Fi 丢包导致电台无限发射（频率占用/法规风险）；
+  - 补全 `handleAck()` 诊断日志记录。
+* **[M1] 并发安全修复**：
+  - 将 `channelRuntimes` 与 `channels`（EnumMap）包装为 `Collections.synchronizedMap`，消除 controlExecutor 写线程与 transmit/txExecutor 读线程之间的数据竞争。
+* **[M4] 死代码清理**：
+  - 移除未使用的 `Ic705RxSession.pendingTxDatagrams` 字段；
+  - 移除 `libs.versions.toml` 中残留的 `scala-library` / Scala 2.11.12 条目。
+* **[L5] 过时注释修正**：
+  - 更新 `Ic705WifiBackendController` 类注释（"RX-only" → 反映完整的 TX+RX 全双工能力）。
+* **[L6/L7] 工程文件清理**：
+  - 修复 `push_to_github.ps1` 中泄漏的开发者绝对路径（改用 `$PSScriptRoot`）；
+  - 删除已停服的 `.travis.yml`（CI 已迁移至 GitHub Actions）。
+* **文档修正**：
+  - 修正 `AI_CONTEXT.md` 中过时的版本号（Gradle 8.4→8.8, AGP 8.1.3→8.4.2, targetSdk 36/37→36, Kotlin 1.9.20+→1.9.24）。
+
 ## 🚀 [v1.5.2-ic705] - 2026-08-23
 
 ### 🛡️ 全局对话框 Material 3 确认按钮补全 & 过时权限清理 & 文档协作模型更新

@@ -17,11 +17,11 @@
 
 | 模块 / 组件 | 技术选型 | 说明 |
 | :--- | :--- | :--- |
-| **基础语言与框架** | **Kotlin 1.9.20+** | 全量纯 Kotlin 代码，无 Scala 依赖 |
+| **基础语言与框架** | **Kotlin 1.9.24** | 全量纯 Kotlin 代码，无 Scala 依赖 |
 | **直连扩展** | **Kotlin Coroutines / UDP** | IC-705 UDP 握手、PCM 音频流与网络管理 |
 | **JDK 版本** | **Java 17 (Temurin JDK 17)** | 标准构建运行环境 |
-| **Android SDK** | `compileSdk 36`, `targetSdk 36/37` | 适配 Android 14 ~ 17 现代系统 |
-| **构建系统** | **Gradle 8.4 + AGP 8.1.3** | 标准 Android Gradle 插件体系 |
+| **Android SDK** | `compileSdk 36`, `targetSdk 36` | 适配 Android 14 ~ 17 现代系统 |
+| **构建系统** | **Gradle 8.8 + AGP 8.4.2** | 标准 Android Gradle 插件体系 |
 
 ---
 

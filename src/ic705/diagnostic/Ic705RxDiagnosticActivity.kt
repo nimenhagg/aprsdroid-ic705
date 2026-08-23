@@ -16,6 +16,7 @@ import org.aprsdroid.app.audio.FeedableAfskDecoder
 import org.aprsdroid.app.audio.PcmFormat
 import org.aprsdroid.app.audio.PcmSink
 import org.aprsdroid.app.ic705.android.Ic705AndroidSocketFactoryProvider
+import org.aprsdroid.app.ic705.protocol.Ic705AudioPacketCodec
 import org.aprsdroid.app.ic705.session.Ic705RadioSession
 import org.aprsdroid.app.ic705.session.Ic705RxSession
 import org.aprsdroid.app.ic705.session.Ic705RxSessionCallbacks
@@ -119,7 +120,7 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
 
         val attempt = ++activeAttempt
 
-        val format = PcmFormat(48000, 1)
+        val format = PcmFormat(Ic705AudioPacketCodec.SAMPLE_RATE_HZ, 1)
         val decoder = FeedableAfskDecoder(format) {
             decodedAx25Frames.incrementAndGet()
             runOnUiThreadFor(attempt) { renderStatistics() }
