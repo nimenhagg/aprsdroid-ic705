@@ -7,7 +7,6 @@ import android.text.InputType;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 
 public class EditTextPreferenceWithValue extends EditTextPreference {
 	private CharSequence mInitialSummary = null;
@@ -41,24 +40,6 @@ public class EditTextPreferenceWithValue extends EditTextPreference {
 			et.setFilters(newFilters);
 		}
 	}
-	@Override
-	protected View onCreateDialogView() {
-		LinearLayout layout = new LinearLayout(getContext());
-		layout.setOrientation(LinearLayout.VERTICAL);
-		int paddingH = (int) (24 * getContext().getResources().getDisplayMetrics().density);
-		int paddingV = (int) (12 * getContext().getResources().getDisplayMetrics().density);
-		layout.setPadding(paddingH, paddingV, paddingH, paddingV);
-		EditText et = getEditText();
-		if (et.getParent() != null) {
-			((android.view.ViewGroup) et.getParent()).removeView(et);
-		}
-		layout.addView(et, new LinearLayout.LayoutParams(
-			LinearLayout.LayoutParams.MATCH_PARENT,
-			LinearLayout.LayoutParams.WRAP_CONTENT
-		));
-		return layout;
-	}
-
 	@Override
 	protected void onBindDialogView(View view) {
 		super.onBindDialogView(view);
