@@ -81,9 +81,11 @@
 		/>
 	<activity android:name=".PrefsAct" android:label="@string/app_prefs"
 		android:parentActivityName=".HubActivity"
+		android:theme="@style/PreferenceTheme"
 		/>
 	<activity android:name=".BackendPrefs" android:label="@string/p__connection"
 		android:parentActivityName=".PrefsAct"
+		android:theme="@style/PreferenceTheme"
 		/>
 	<activity
 		android:name=".ic705.diagnostic.Ic705RxDiagnosticActivity"
@@ -96,12 +98,15 @@
 	<activity android:name=".LocationPrefs" android:label="@string/p__location"
 		android:parentActivityName=".PrefsAct"
 		android:launchMode="singleTop"
+		android:theme="@style/PreferenceTheme"
 		/>
 	<activity android:name=".NotificationPrefs" android:label="@string/p__notification"
 		android:parentActivityName=".PrefsAct"
+		android:theme="@style/PreferenceTheme"
 		/>
 	<activity android:name=".PrivacyPrefs" android:label="@string/p_privacy"
 		android:parentActivityName=".PrefsAct"
+		android:theme="@style/PreferenceTheme"
 		/>
 	<activity android:name=".GoogleMapAct" android:label="@string/app_map"
 		android:launchMode="singleTop"
