@@ -36,6 +36,7 @@
 ## 🤖 制作说明 (Vibe Coding)
 
 本项目通过 **Vibe Coding（AI 辅助编程）** 协同开发，主要参与模型：
+- **Claude Opus 4.6**
 - **GPT-5.6 Sol**
 - **DeepSeek V4 Flash**
 - **Gemini 3.7 Flash**

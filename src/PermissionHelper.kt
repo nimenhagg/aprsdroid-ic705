@@ -58,7 +58,7 @@ interface PermissionHelper {
         for (p in permissions) {
             sb.append("- ").append(getPermissionName(p)).append("\n")
         }
-        AlertDialog.Builder(activity)
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(activity)
             .setTitle(getActionName(action))
             .setMessage(sb.toString())
             .setPositiveButton(R.string.preferences) { _, _ ->
@@ -70,7 +70,6 @@ interface PermissionHelper {
             .setNegativeButton(android.R.string.cancel) { _, _ ->
                 onPermissionsFailedCancel(action)
             }
-            .create()
             .show()
     }
 }

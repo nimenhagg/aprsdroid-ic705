@@ -23,6 +23,7 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.aprsdroid.app.adapter.MessageRecyclerAdapter
 import org.aprsdroid.app.model.MessageItem
 import java.util.concurrent.Executors
@@ -141,7 +142,7 @@ class MessageActivity : StationHelper(R.string.app_messages),
             getString(R.string.msg_to, targetcall)
         }
 
-        android.app.AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(title)
             .setItems(items.toTypedArray()) { _, which ->
                 when (items[which]) {
@@ -183,7 +184,7 @@ class MessageActivity : StationHelper(R.string.app_messages),
         return when (item.itemId) {
             R.id.messagesclear -> {
                 targetcall?.let { call ->
-                    android.app.AlertDialog.Builder(this)
+                    MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.app_messages_clear)
                         .setMessage(getString(R.string.confirm_delete_messages, call))
                         .setPositiveButton(android.R.string.ok) { _, _ ->

@@ -1,7 +1,6 @@
 package org.aprsdroid.app
 
 import android.annotation.SuppressLint
-import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
@@ -22,6 +21,7 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.aprsdroid.app.adapter.ConversationRecyclerAdapter
 import org.aprsdroid.app.model.ConversationItem
 import java.util.concurrent.Executors
@@ -106,11 +106,11 @@ class ConversationsActivity : BaseRecyclerActivity(), View.OnClickListener {
     }
 
     private fun showDeleteConversationDialog(call: String) {
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(call)
             .setItems(arrayOf(getString(R.string.delete_conversation))) { _, which ->
                 if (which == 0) {
-                    AlertDialog.Builder(this)
+                    MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.delete_conversation)
                         .setMessage(getString(R.string.confirm_delete_messages, call))
                         .setPositiveButton(android.R.string.ok) { _, _ ->
@@ -139,7 +139,7 @@ class ConversationsActivity : BaseRecyclerActivity(), View.OnClickListener {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.clear -> {
-                AlertDialog.Builder(this)
+                MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.clear_all_messages)
                     .setMessage(R.string.confirm_clear_all_messages)
                     .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
@@ -188,7 +188,7 @@ class ConversationsActivity : BaseRecyclerActivity(), View.OnClickListener {
         val nmText = nmView.findViewById<EditText>(R.id.message)
         nmCall.filters = arrayOf(InputFilter.AllCaps())
 
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.msg_send_new))
             .setView(nmView)
             .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->

@@ -1,3 +1,16 @@
+## 🚀 [v1.5.2-ic705] - 2026-08-23
+
+### 🛡️ 全局对话框 Material 3 确认按钮补全 & 过时权限清理 & 文档协作模型更新
+* **全量 Dialog 适配 MaterialAlertDialogBuilder**：
+  - 彻底将应用内所有 `android.app.AlertDialog` 迁移为 `MaterialAlertDialogBuilder` 与 `androidx.appcompat.app.AlertDialog`；
+  - 修复「删除会话」、「清空所有消息」、「清空日志」、「新建消息」及「证书导入」等弹窗在 AppCompat 下确认/取消按钮不显示的问题，全面提供圆角 M3 弹窗与醒目操作按钮。
+* **清理 Android 权限声明**：
+  - 移除已废弃且存在安全隐患的 `BROADCAST_STICKY` 权限；
+  - 规范声明 Android 12+ 运行时权限 `BLUETOOTH_CONNECT` 与 `BLUETOOTH_SCAN`（`neverForLocation`），并将旧版 `BLUETOOTH` / `BLUETOOTH_ADMIN` 限制在 `maxSdkVersion="30"`；
+  - 规范 `READ_EXTERNAL_STORAGE`（`maxSdkVersion="32"`）与 `WRITE_EXTERNAL_STORAGE`（`maxSdkVersion="28"`）。
+* **README 协作模型更新**：
+  - README 协同模型名单新增 **Claude Opus 4.6**。
+
 ## 🚀 [v1.5.1-ic705] - 2026-08-23
 
 ### 🎨 顶栏渲染修复与现代化「关于」对话框重构

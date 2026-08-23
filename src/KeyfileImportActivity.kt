@@ -41,7 +41,7 @@ class KeyfileImportActivity : Activity() {
                 finish()
             }
         }
-        AlertDialog.Builder(this)
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle(R.string.ssl_import_activity)
             .setMessage(R.string.ssl_import_password)
             .setView(pwd)

@@ -485,4 +485,5 @@
 <string name="ic705_rx_log_empty">暂时没有诊断事件。</string>
     <string name="p_google_maps_key">Google Maps API Key</string>
     <string name="p_google_maps_key_summary">Custom Google Maps API key (leave empty to use default)</string>
+    <string name="confirm_clear_log">Are you sure you want to clear the packet log and station list?</string>
 </resources>
