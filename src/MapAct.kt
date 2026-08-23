@@ -1,12 +1,9 @@
 package org.aprsdroid.app
 
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.Typeface
@@ -14,14 +11,18 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.Log
+import android.view.MenuItem
 import android.view.View
 import androidx.core.content.ContextCompat
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.mapsforge.v3.android.maps.MapActivity
 import org.mapsforge.v3.android.maps.MapView
 import org.mapsforge.v3.android.maps.Projection
 import org.mapsforge.v3.android.maps.overlay.ItemizedOverlay
 import org.mapsforge.v3.android.maps.overlay.OverlayItem
 import org.mapsforge.v3.core.GeoPoint
+import java.io.File
 import java.util.ArrayList
 
 class OSMStation(
@@ -95,10 +96,10 @@ class StationOverlay(
             isAntiAlias = true
         }
         val strokePaint = Paint(textPaint).apply {
-            color = 0xffc8ffc8.toInt()
+            color = 0xffffffff.toInt()
             style = Paint.Style.STROKE
-            strokeWidth = drawSize.toFloat() / 12.0f
-            setShadowLayer(10f, 0f, 0f, 0x80c8ffc8.toInt())
+            strokeWidth = drawSize.toFloat() / 8.0f
+            setShadowLayer(6f, 0f, 0f, 0x80000000.toInt())
         }
 
         val p = Point()
@@ -107,7 +108,7 @@ class StationOverlay(
         val ss = drawSize / 2
         for (s in stations) {
             proj.toPixels(s.pt, p)
-            if (p.x >= 0 && p.y >= 0 && p.x < width && p.y < height) {
+            if (p.x >= -ss && p.y >= -ss && p.x < width + ss && p.y < height + ss) {
                 val srcRect = symbol2rect(s.symbol)
                 val destRect = Rect(p.x - ss, p.y - ss, p.x + ss, p.y + ss)
                 if (zoom >= 10) {
@@ -125,8 +126,8 @@ class StationOverlay(
     override fun onTap(gp: GeoPoint, mv: MapView): Boolean {
         val proj = mv.projection
         val p = proj.toPixels(gp, null)
-        val botleft = proj.fromPixels(p.x - 16, p.y + 16)
-        val topright = proj.fromPixels(p.x + 16, p.y - 16)
+        val botleft = proj.fromPixels(p.x - 24, p.y + 24)
+        val topright = proj.fromPixels(p.x + 24, p.y - 24)
         val list = stations.filter { it.inArea(botleft, topright) }.map { it.call }
         return when {
             list.isEmpty() -> false
@@ -185,6 +186,7 @@ class MapAct : MapActivity(), LoadingIndicator {
     val db: StorageDatabase by lazy { StorageDatabase.open(this) }
     val staoverlay: StationOverlay by lazy { StationOverlay(allicons, this, db) }
     val loading: View by lazy { findViewById(R.id.loading) }
+    lateinit var toolbar: MaterialToolbar
 
     val locReceiver = LocationReceiver2(
         { staoverlay.load_stations(it) },
@@ -195,15 +197,148 @@ class MapAct : MapActivity(), LoadingIndicator {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.mapview)
+
+        toolbar = findViewById(R.id.toolbar)
+        toolbar.setNavigationOnClickListener { finish() }
+        toolbar.inflateMenu(R.menu.options_map)
+        toolbar.inflateMenu(R.menu.options_activities)
+        toolbar.inflateMenu(R.menu.options)
+
+        toolbar.setOnMenuItemClickListener { item ->
+            handleMenuItem(item)
+        }
+
+        // Hide crosshair and coordinate selection buttons when not in coordinate chooser mode
+        val isChooser = callingActivity != null
+        findViewById<View>(R.id.crosshair)?.visibility = if (isChooser) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.select)?.visibility = if (isChooser) View.VISIBLE else View.GONE
+
         mapview.setBuiltInZoomControls(true)
         mapview.overlays.add(staoverlay)
         mapview.setTextScale(resources.displayMetrics.density)
+
+        targetcall = intent.getStringExtra("call") ?: ""
+        showObjects = prefs.getBoolean("show_objects", false)
+
+        applyCurrentMapMode()
+        loadMapPosition()
         startLoading()
+    }
+
+    private fun applyCurrentMapMode() {
+        val mode = MapModes.defaultMapMode(this, prefs)
+        toolbar.title = mode.title ?: getString(R.string.map_amap)
+
+        when (mode.tileType) {
+            MapTileType.AMAP -> {
+                mapview.setMapGenerator(AMapTileDownloader())
+            }
+            MapTileType.OSM -> {
+                mapview.setMapGenerator(OsmTileDownloader())
+            }
+            MapTileType.CUSTOM -> {
+                val customUrl = prefs.getString("map_custom_url", "https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}")
+                val customSub = prefs.getString("map_custom_subdomains", "1234")
+                mapview.setMapGenerator(CustomTileDownloader(customUrl, customSub))
+            }
+            else -> {
+                val mapFile = prefs.getString("mapfile", "")
+                if (mapFile.isNotEmpty() && File(mapFile).exists()) {
+                    mapview.setMapFile(File(mapFile))
+                } else {
+                    mapview.setMapGenerator(AMapTileDownloader())
+                }
+            }
+        }
+    }
+
+    private fun loadMapPosition() {
+        val lat = prefs.prefs.getFloat("map_lat", 39.9042f)
+        val lon = prefs.prefs.getFloat("map_lon", 116.4074f)
+        val zoom = prefs.prefs.getFloat("map_zoom", 12f).toInt()
+        mapview.controller.setCenter(GeoPoint((lat * 1e6).toInt(), (lon * 1e6).toInt()))
+        mapview.controller.setZoom(zoom)
+    }
+
+    private fun saveMapPosition() {
+        val pos = mapview.mapPosition
+        if (pos != null && pos.isValid) {
+            val gp = pos.mapCenter
+            prefs.prefs.edit()
+                .putFloat("map_lat", (gp.latitudeE6 / 1e6).toFloat())
+                .putFloat("map_lon", (gp.longitudeE6 / 1e6).toFloat())
+                .putFloat("map_zoom", pos.zoomLevel.toFloat())
+                .apply()
+        }
+    }
+
+    private fun handleMenuItem(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.amap -> switchMode("amap")
+            R.id.osm -> switchMode("osm")
+            R.id.custom_tile -> switchMode("custom")
+            R.id.normal -> switchGoogleMap("google")
+            R.id.satellite -> switchGoogleMap("satellite")
+            R.id.objects -> {
+                showObjects = prefs.toggleBoolean("show_objects", true)
+                item.isChecked = showObjects
+                startLoading()
+            }
+            R.id.hub -> {
+                startActivity(Intent(this, HubActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                finish()
+            }
+            R.id.log -> {
+                startActivity(Intent(this, LogActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                finish()
+            }
+            R.id.conversations -> {
+                startActivity(Intent(this, ConversationsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                finish()
+            }
+            R.id.preferences -> {
+                startActivity(Intent(this, PrefsAct::class.java))
+            }
+            R.id.export -> {
+                onStartLoading()
+                LogExporter(this, StorageDatabase.open(this), null) { onStopLoading() }.execute()
+            }
+            R.id.clear -> {
+                onStartLoading()
+                StorageCleaner(this, StorageDatabase.open(this)) { onStopLoading() }.execute()
+            }
+            else -> return super.onOptionsItemSelected(item)
+        }
+        return true
+    }
+
+    private fun switchMode(tag: String) {
+        prefs.prefs.edit().putString("mapmode", tag).apply()
+        applyCurrentMapMode()
+        mapview.redrawTiles()
+    }
+
+    private fun switchGoogleMap(tag: String) {
+        prefs.prefs.edit().putString("mapmode", tag).apply()
+        saveMapPosition()
+        startActivity(Intent(this, GoogleMapAct::class.java).putExtras(intent))
+        finish()
     }
 
     fun startLoading() {
         locReceiver.startTask(Intent())
         ContextCompat.registerReceiver(this, locReceiver, android.content.IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mapview.onResume()
+    }
+
+    override fun onPause() {
+        saveMapPosition()
+        mapview.onPause()
+        super.onPause()
     }
 
     override fun onDestroy() {

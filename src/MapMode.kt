@@ -53,7 +53,7 @@ class TileMapMode(
     menu_id: Int,
     title: String?,
     tileType: MapTileType
-) : MapMode(tag, menu_id, title, GoogleMapAct::class.java, tileType)
+) : MapMode(tag, menu_id, title, MapAct::class.java, tileType)
 
 class MapsforgeOnlineMode(
     tag: String,
