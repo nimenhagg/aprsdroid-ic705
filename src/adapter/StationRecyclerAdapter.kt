@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.color.MaterialColors
 import org.aprsdroid.app.R
 import org.aprsdroid.app.SymbolView
 import org.aprsdroid.app.model.StationItem
@@ -57,21 +58,29 @@ class StationRecyclerAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
 
+        val primaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorPrimary)
+        val primaryContainer = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorPrimaryContainer)
+        val secondaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSecondary)
+        val secondaryContainer = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSecondaryContainer)
+        val onSurface = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurface)
+        val onSurfaceVariant = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant)
+
         when (item.call) {
-            mycall -> holder.itemView.setBackgroundColor(0x2600677d)
-            targetcall -> holder.itemView.setBackgroundColor(0x265b53a4)
+            mycall -> holder.itemView.setBackgroundColor((primaryContainer and 0x00ffffff) or 0x33000000)
+            targetcall -> holder.itemView.setBackgroundColor((secondaryContainer and 0x00ffffff) or 0x33000000)
             else -> holder.itemView.setBackgroundColor(0)
         }
 
         holder.callView.text = item.call
-        holder.callView.setTextColor(0xff00677d.toInt())
+        holder.callView.setTextColor(primaryColor)
 
         holder.commentView.text = item.comment ?: ""
+        holder.commentView.setTextColor(onSurface)
 
         if (!item.qrg.isNullOrEmpty()) {
             holder.qrgView.visibility = View.VISIBLE
             holder.qrgView.text = item.qrg
-            holder.qrgView.setTextColor(0xff006874.toInt())
+            holder.qrgView.setTextColor(secondaryColor)
         } else {
             holder.qrgView.visibility = View.GONE
         }
@@ -81,7 +90,7 @@ class StationRecyclerAdapter(
         val mcd = 1000000.0
         Location.distanceBetween(myLat / mcd, myLon / mcd, item.lat / mcd, item.lon / mcd, dist)
         holder.distAgeView.text = String.format(Locale.US, "%1.1f km %s\n%s", dist[0] / 1000.0, getBearing(dist[1].toDouble()), age)
-        holder.distAgeView.setTextColor(0xff40484c.toInt())
+        holder.distAgeView.setTextColor(onSurfaceVariant)
 
         holder.symbolView.setSymbol(item.symbol)
 

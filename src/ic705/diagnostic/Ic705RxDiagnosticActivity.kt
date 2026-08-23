@@ -92,7 +92,6 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
         activityDestroyed = true
         super.onDestroy()
         stopReceiveOnlySession(null)
-        saveConnectionFields()
     }
 
     private fun startReceiveOnlySession() {
@@ -108,7 +107,6 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
             return
         }
 
-        saveConnectionFields()
         stopReceiveOnlySession(null)
 
         acceptedAudioBlocks.set(0)
@@ -327,26 +325,10 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
     }
 
     private fun restoreConnectionFields() {
-        val defaultAddr = prefs.getString("ic705.address", "192.168.59.1")
-        val defaultPort = prefs.getString("ic705.control_port", "50001")
-        val defaultUser = prefs.getString("ic705.username", "")
-        val defaultPass = prefs.getString("ic705.password", "")
-
-        val shared = getSharedPreferences(CONNECTION_PREFERENCES, MODE_PRIVATE)
-        address.setText(shared.getString(KEY_ADDRESS, defaultAddr))
-        port.setText(shared.getString(KEY_PORT, defaultPort))
-        username.setText(shared.getString(KEY_USERNAME, defaultUser))
-        password.setText(shared.getString(KEY_PASSWORD, defaultPass))
-    }
-
-    private fun saveConnectionFields() {
-        getSharedPreferences(CONNECTION_PREFERENCES, MODE_PRIVATE)
-            .edit()
-            .putString(KEY_ADDRESS, address.text.toString().trim())
-            .putString(KEY_PORT, port.text.toString().trim())
-            .putString(KEY_USERNAME, username.text.toString())
-            .putString(KEY_PASSWORD, password.text.toString())
-            .apply()
+        address.setText(prefs.getString("ic705.address", "192.168.59.1"))
+        port.setText(prefs.getString("ic705.control_port", "50001"))
+        username.setText(prefs.getString("ic705.username", ""))
+        password.setText(prefs.getString("ic705.password", ""))
     }
 
     private fun renderStatistics() {
@@ -372,10 +354,5 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
     private companion object {
         const val STATISTICS_PERIOD_MILLIS = 1_000L
         const val MAX_DIAGNOSTIC_EVENTS = 100
-        const val CONNECTION_PREFERENCES = "ic705_connection"
-        const val KEY_ADDRESS = "address"
-        const val KEY_PORT = "control_port"
-        const val KEY_USERNAME = "username"
-        const val KEY_PASSWORD = "password"
     }
 }

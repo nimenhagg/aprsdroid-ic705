@@ -1,9 +1,9 @@
 package org.aprsdroid.app
 
-import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -135,7 +135,7 @@ class StationOverlay(
                 true
             }
             else -> {
-                AlertDialog.Builder(context)
+                MaterialAlertDialogBuilder(context)
                     .setTitle(R.string.map_select)
                     .setItems(list.toTypedArray()) { _, item ->
                         UIHelper.openCallsignDetails(context, list[item])

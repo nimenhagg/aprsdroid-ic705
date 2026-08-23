@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.color.MaterialColors
 import org.aprsdroid.app.R
 import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.model.LogPostItem
@@ -22,14 +23,6 @@ class LogRecyclerAdapter(
 ) : ListAdapter<LogPostItem, LogRecyclerAdapter.ViewHolder>(DiffCallback) {
 
     companion object {
-        val STATUS_COLORS = intArrayOf(
-            0xff006d44.toInt(), // POST / RX
-            0xff5b53a4.toInt(), // TX
-            0xffba1a1a.toInt(), // ERROR
-            0xff00677d.toInt(), // INFO
-            0xff006d44.toInt()
-        )
-
         private object DiffCallback : DiffUtil.ItemCallback<LogPostItem>() {
             override fun areItemsTheSame(oldItem: LogPostItem, newItem: LogPostItem): Boolean {
                 return oldItem.id == newItem.id
@@ -55,13 +48,28 @@ class LogRecyclerAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
 
+        val primaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorPrimary)
+        val secondaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSecondary)
+        val tertiaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorTertiary)
+        val onSurface = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurface)
+        val onSurfaceVariant = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant)
+        val errorColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorError)
+
         holder.tsView.text = item.tss
+        holder.tsView.setTextColor(onSurfaceVariant)
 
         holder.statusView.text = item.status ?: ""
-        if (item.type in STATUS_COLORS.indices) {
-            holder.statusView.setTextColor(STATUS_COLORS[item.type])
-        } else {
-            holder.statusView.setTextColor(0xff00677d.toInt())
+        when (item.type) {
+            StorageDatabase.Companion.Post.TYPE_POST, StorageDatabase.Companion.Post.TYPE_INCMG ->
+                holder.statusView.setTextColor(secondaryColor)
+            StorageDatabase.Companion.Post.TYPE_TX ->
+                holder.statusView.setTextColor(tertiaryColor)
+            StorageDatabase.Companion.Post.TYPE_ERROR ->
+                holder.statusView.setTextColor(errorColor)
+            StorageDatabase.Companion.Post.TYPE_INFO ->
+                holder.statusView.setTextColor(primaryColor)
+            else ->
+                holder.statusView.setTextColor(primaryColor)
         }
 
         val m = item.message
@@ -72,20 +80,20 @@ class LogRecyclerAdapter(
             val colonIdx = m.indexOf(':')
             val headerEnd = if (colonIdx > 0) colonIdx + 1 else m.length
 
-            ssb.setSpan(ForegroundColorSpan(0xff00677d.toInt()), 0, headerEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            ssb.setSpan(ForegroundColorSpan(primaryColor), 0, headerEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             ssb.setSpan(StyleSpan(Typeface.BOLD), 0, headerEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 
             if (headerEnd < m.length) {
-                ssb.setSpan(ForegroundColorSpan(0xff191c1e.toInt()), headerEnd, m.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                ssb.setSpan(ForegroundColorSpan(onSurface), headerEnd, m.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
             holder.messageView.text = ssb
             holder.messageView.typeface = Typeface.MONOSPACE
         } else {
             holder.messageView.text = m
             when (t) {
-                StorageDatabase.Companion.Post.TYPE_ERROR -> holder.messageView.setTextColor(0xffba1a1a.toInt())
-                StorageDatabase.Companion.Post.TYPE_INFO -> holder.messageView.setTextColor(0xff40484c.toInt())
-                else -> holder.messageView.setTextColor(0xff191c1e.toInt())
+                StorageDatabase.Companion.Post.TYPE_ERROR -> holder.messageView.setTextColor(errorColor)
+                StorageDatabase.Companion.Post.TYPE_INFO -> holder.messageView.setTextColor(onSurfaceVariant)
+                else -> holder.messageView.setTextColor(onSurface)
             }
             holder.messageView.typeface = if (t == StorageDatabase.Companion.Post.TYPE_POST || t == StorageDatabase.Companion.Post.TYPE_INCMG || t == StorageDatabase.Companion.Post.TYPE_TX) {
                 Typeface.MONOSPACE

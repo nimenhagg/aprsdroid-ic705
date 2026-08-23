@@ -112,4 +112,18 @@
 		<item>460800</item>
 		<item>921600</item>
 	</string-array>
+	<string-array name="p_map_source_e">
+		<item>@string/map_amap</item>
+		<item>@string/map_osm</item>
+		<item>@string/map_google</item>
+		<item>@string/map_satellite</item>
+		<item>@string/map_custom_tile</item>
+	</string-array>
+	<string-array name="p_map_source_ev">
+		<item>amap</item>
+		<item>osm</item>
+		<item>google</item>
+		<item>satellite</item>
+		<item>custom</item>
+	</string-array>
 </resources>

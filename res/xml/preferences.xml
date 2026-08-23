@@ -137,4 +137,32 @@
             android:title="@string/p_themefile"
             android:summary="@string/p_themefile_summary" />
     </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/p__map">
+        <de.duenndns.ListPreferenceWithValue
+            android:key="mapmode"
+            android:icon="@drawable/ic_pref_maps"
+            android:title="@string/p_map_source"
+            android:summary="@string/p_map_source_summary"
+            android:entries="@array/p_map_source_e"
+            android:entryValues="@array/p_map_source_ev"
+            android:defaultValue="amap"
+            android:dialogTitle="@string/p_map_source" />
+
+        <de.duenndns.EditTextPreferenceWithValue
+            android:key="map_custom_url"
+            android:icon="@drawable/ic_pref_maps"
+            android:title="@string/p_map_custom_url"
+            android:summary="@string/p_map_custom_url_summary"
+            android:defaultValue="https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&amp;size=1&amp;scale=1&amp;style=7&amp;x={x}&amp;y={y}&amp;z={z}"
+            android:dialogTitle="@string/p_map_custom_url" />
+
+        <de.duenndns.EditTextPreferenceWithValue
+            android:key="map_custom_subdomains"
+            android:icon="@drawable/ic_pref_maps"
+            android:title="@string/p_map_custom_subdomains"
+            android:summary="@string/p_map_custom_subdomains_summary"
+            android:defaultValue="1234"
+            android:dialogTitle="@string/p_map_custom_subdomains" />
+    </PreferenceCategory>
 </PreferenceScreen>

@@ -13,21 +13,6 @@
         <item name="android:windowActivityTransitions">true</item>
         <item name="android:windowAnimationStyle">@style/Animation.Material3.Activity</item>
 
-        <!-- Primary & Surface Colors -->
-        <item name="colorPrimary">@color/md3_primary</item>
-        <item name="colorOnPrimary">@color/md3_on_primary</item>
-        <item name="colorPrimaryContainer">@color/md3_primary_container</item>
-        <item name="colorOnPrimaryContainer">@color/md3_on_primary_container</item>
-        <item name="colorSecondary">@color/md3_secondary</item>
-        <item name="colorOnSecondary">@color/md3_on_secondary</item>
-        <item name="colorSecondaryContainer">@color/md3_secondary_container</item>
-        <item name="colorOnSecondaryContainer">@color/md3_on_secondary_container</item>
-        <item name="colorSurface">@color/md3_surface</item>
-        <item name="colorOnSurface">@color/md3_on_surface</item>
-        <item name="colorSurfaceVariant">@color/md3_surface_variant</item>
-        <item name="colorOnSurfaceVariant">@color/md3_on_surface_variant</item>
-        <item name="colorSurfaceContainer">@color/md3_surface_container</item>
-        <item name="colorOutlineVariant">@color/md3_outline_variant</item>
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
         <item name="android:dialogTheme">@style/Material3DialogTheme</item>
         <item name="android:alertDialogTheme">@style/Material3AlertDialogTheme</item>
@@ -39,33 +24,12 @@
         <item name="android:actionOverflowMenuStyle">@style/Material3PopupMenu</item>
     </style>
 
-    <style name="Widget.Material3.ActionBar" parent="Widget.AppCompat.ActionBar">
-        <item name="background">@color/md3_surface</item>
-        <item name="android:background">@color/md3_surface</item>
-        <item name="titleTextStyle">@style/TextAppearance.Material3.Title</item>
-        <item name="subtitleTextStyle">@style/TextAppearance.Material3.Subtitle</item>
-        <item name="elevation">0dp</item>
-        <item name="android:elevation">0dp</item>
-        <item name="displayOptions">showTitle</item>
-        <item name="icon">@android:color/transparent</item>
-        <item name="logo">@android:color/transparent</item>
-    </style>
-
-    <style name="ThemeOverlay.Material3.ActionBar" parent="">
-        <item name="android:textColorPrimary">@color/md3_on_surface</item>
-        <item name="android:textColorSecondary">@color/md3_on_surface_variant</item>
-        <item name="android:colorControlNormal">@color/md3_on_surface</item>
-        <item name="android:actionMenuTextColor">@color/md3_on_surface</item>
-    </style>
-
     <style name="TextAppearance.Material3.Title" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Title">
-        <item name="android:textColor">@color/md3_on_surface</item>
         <item name="android:textSize">20sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="TextAppearance.Material3.Subtitle" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Subtitle">
-        <item name="android:textColor">@color/md3_on_surface_variant</item>
         <item name="android:textSize">13sp</item>
         <item name="android:fontFamily">sans-serif</item>
     </style>

@@ -13,11 +13,20 @@ import android.view.MenuItem
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.maps.GoogleMap
 
+enum class MapTileType {
+    AMAP,
+    OSM,
+    GOOGLE_NORMAL,
+    GOOGLE_HYBRID,
+    CUSTOM,
+}
+
 open class MapMode(
     val tag: String,
     val menu_id: Int,
     val title: String?,
-    val viewClass: Class<*>
+    val viewClass: Class<*>,
+    val tileType: MapTileType = MapTileType.AMAP
 ) {
     open fun isAvailable(ctx: Context): Boolean = true
 }
@@ -26,8 +35,9 @@ class GoogleMapMode(
     tag: String,
     menu_id: Int,
     title: String?,
-    val mapType: Int
-) : MapMode(tag, menu_id, title, GoogleMapAct::class.java) {
+    val mapType: Int,
+    tileType: MapTileType
+) : MapMode(tag, menu_id, title, GoogleMapAct::class.java, tileType) {
     override fun isAvailable(ctx: Context): Boolean {
         return try {
             ctx.packageManager.getPackageInfo(GoogleApiAvailability.GOOGLE_PLAY_SERVICES_PACKAGE, 0)
@@ -38,19 +48,26 @@ class GoogleMapMode(
     }
 }
 
+class TileMapMode(
+    tag: String,
+    menu_id: Int,
+    title: String?,
+    tileType: MapTileType
+) : MapMode(tag, menu_id, title, GoogleMapAct::class.java, tileType)
+
 class MapsforgeOnlineMode(
     tag: String,
     menu_id: Int,
     title: String?,
     val foo: String
-) : MapMode(tag, menu_id, title, MapAct::class.java)
+) : MapMode(tag, menu_id, title, MapAct::class.java, MapTileType.OSM)
 
 class MapsforgeFileMode(
     tag: String,
     menu_id: Int,
     title: String?,
     val file: String
-) : MapMode(tag, menu_id, title, MapAct::class.java)
+) : MapMode(tag, menu_id, title, MapAct::class.java, MapTileType.OSM)
 
 object MapModes {
     val all_mapmodes = mutableListOf<MapMode>()
@@ -67,16 +84,18 @@ object MapModes {
         }
         if (all_mapmodes.isNotEmpty()) return
 
-        all_mapmodes.add(GoogleMapMode("google", R.id.normal, null, GoogleMap.MAP_TYPE_NORMAL))
-        all_mapmodes.add(GoogleMapMode("satellite", R.id.satellite, null, GoogleMap.MAP_TYPE_HYBRID))
-        all_mapmodes.add(MapsforgeOnlineMode("osm", R.id.mapsforge, null, "TODO"))
+        all_mapmodes.add(TileMapMode("amap", R.id.amap, ctx.getString(R.string.map_amap), MapTileType.AMAP))
+        all_mapmodes.add(TileMapMode("osm", R.id.osm, ctx.getString(R.string.map_osm), MapTileType.OSM))
+        all_mapmodes.add(GoogleMapMode("google", R.id.normal, ctx.getString(R.string.map_google), GoogleMap.MAP_TYPE_NORMAL, MapTileType.GOOGLE_NORMAL))
+        all_mapmodes.add(GoogleMapMode("satellite", R.id.satellite, ctx.getString(R.string.map_satellite), GoogleMap.MAP_TYPE_HYBRID, MapTileType.GOOGLE_HYBRID))
+        all_mapmodes.add(TileMapMode("custom", R.id.custom_tile, ctx.getString(R.string.map_custom_tile), MapTileType.CUSTOM))
     }
 
     fun reloadOfflineMaps(ctx: Context) {}
 
     fun defaultMapMode(ctx: Context, prefs: PrefsWrapper): MapMode {
         initialize(ctx)
-        val tag = prefs.getString("mapmode", "google")
+        val tag = prefs.getString("mapmode", "amap")
         var default: MapMode? = null
         for (mode in all_mapmodes) {
             if (default == null && mode.isAvailable(ctx)) default = mode

@@ -3,13 +3,11 @@
 	<item android:id="@+id/age"
 		android:title="@string/age"
 		android:alphabeticShortcut="a"
-		android:showAsAction="ifRoom"
 		app:showAsAction="ifRoom"
 		android:icon="@drawable/ic_action_today" />
 	<item android:id="@+id/overlays"
 		android:title="@string/map_overlays"
 		android:alphabeticShortcut="o"
-		android:showAsAction="ifRoom"
 		app:showAsAction="ifRoom"
 		android:icon="@drawable/ic_action_layers" >
 		<menu>
@@ -18,12 +16,16 @@
 					android:title="@string/map_objects" />
 			</group>
 			<group android:id="@+id/mapmodes" android:checkableBehavior="single">
+				<item android:id="@+id/amap"
+					android:title="@string/map_amap" />
+				<item android:id="@+id/osm"
+					android:title="@string/map_osm" />
 				<item android:id="@+id/normal"
 					android:title="@string/map_google" />
 				<item android:id="@+id/satellite"
 					android:title="@string/map_satellite" />
-				<item android:id="@+id/mapsforge"
-					android:title="@string/map_osm" />
+				<item android:id="@+id/custom_tile"
+					android:title="@string/map_custom_tile" />
 			</group>
 		</menu>
 	</item>

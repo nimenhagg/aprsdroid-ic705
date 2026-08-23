@@ -102,12 +102,20 @@
 
 <!-- map view -->
 <string name="map_overlays">图层</string>
-<string name="map_google">谷歌:地图</string>
-<string name="map_satellite">谷歌:卫星</string>
-<string name="map_osm">OpenStreetMap.org</string>
-<!-- intended use is in map style menu: "file name of offline map (Offline)" -->
+<string name="map_google">谷歌地图</string>
+<string name="map_satellite">谷歌卫星/混合</string>
+<string name="map_osm">OpenStreetMap</string>
+<string name="map_amap">高德地图</string>
+<string name="map_custom_tile">自定义瓦片源</string>
 <string name="map_offline">%s (离线)</string>
 <string name="map_objects">APRS 对象</string>
+<string name="p__map">地图设置</string>
+<string name="p_map_source">地图图层源</string>
+<string name="p_map_source_summary">选择在线地图所使用的瓦片服务</string>
+<string name="p_map_custom_url">自定义瓦片服务器 URL</string>
+<string name="p_map_custom_url_summary">支持 {x}, {y}, {z} 与可选的 {s} 占位符</string>
+<string name="p_map_custom_subdomains">瓦片分流子域名 ({s})</string>
+<string name="p_map_custom_subdomains_summary">替换 URL 中 {s} 的负载均衡字符，例如 1234 或 abc</string>
 
 <!-- map view -->
 <string name="age">显示最近...</string>

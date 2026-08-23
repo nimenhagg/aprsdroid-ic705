@@ -124,9 +124,18 @@
 <string name="map_overlays">Overlays</string>
 <string name="map_google">Google: Map</string>
 <string name="map_satellite">Google: Satellite</string>
-<string name="map_osm">OpenStreetMap.org</string>
-<!-- intended use is in map style menu: "file name of offline map (Offline)" -->
+<string name="map_osm">OpenStreetMap</string>
+<string name="map_amap">AutoNavi (AMap)</string>
+<string name="map_custom_tile">Custom Tile Source</string>
 <string name="map_offline"> %s (Offline)</string>
+<string name="map_objects">APRS Objects</string>
+<string name="p__map">Map Settings</string>
+<string name="p_map_source">Map Source</string>
+<string name="p_map_source_summary">Select tile provider for online map</string>
+<string name="p_map_custom_url">Custom Tile Server URL</string>
+<string name="p_map_custom_url_summary">URL template with {x}, {y}, {z}, and optional {s}</string>
+<string name="p_map_custom_subdomains">Tile Subdomains ({s})</string>
+<string name="p_map_custom_subdomains_summary">Subdomains for load balancing, e.g. 1234 or abc</string>
 <string name="map_objects">APRS Objects</string>
 
 <!-- map view -->

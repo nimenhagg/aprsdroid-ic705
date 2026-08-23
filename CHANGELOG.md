@@ -1,3 +1,22 @@
+## 🚀 [v1.5.4-ic705] - 2026-08-24
+
+### 🗺️ 多瓦片地图源支持 & 真·莫奈动态取色 & 安全加固与代码清理
+* **多瓦片地图源支持 (高德 / OSM / 谷歌 / 自定义)**：
+  - 新增 `OnlineTileProvider` 瓦片服务，支持标准 `{x}`, `{y}`, `{z}`, `{s}` 模板与分流子域解析；
+  - 内置支持**高德地图**瓦片 (`webrd0{s}.is.autonavi.com`)、**OpenStreetMap**、**谷歌标准**、**谷歌卫星**及**自定义瓦片源**；
+  - 地图界面右上角「图层」菜单与偏好设置页支持即时自由切换地图源，并可自定义瓦片 URL 与负载均衡子域。
+* **真·莫奈 (Material You / Dynamic Colors) 动态取色重构**：
+  - 移除 `themes.xml` 中写死的覆盖色，适配 Android 12+ 随系统壁纸动态变色的 Monet 调色板；
+  - 全量适配器（日志、会话、消息、台站）改用 `MaterialColors` 动态解析主题主色、次色与状态高亮，彻底消除写死 Hex 颜色。
+* **安全配置与凭据冗余清理**：
+  - 设置 `android:allowBackup="false"`，封堵系统与 ADB 备份导出凭据风险；
+  - 移除诊断页独立的二次 SharedPreferences 存储，统一使用主配置。
+* **古代残留全面清理**：
+  - 迁移 `MapAct.kt` 遗留的 `AlertDialog.Builder` 至 `MaterialAlertDialogBuilder`；
+  - 全面清退 `@android:drawable/ic_menu_*` Holo 图标，改用现代 Vector 矢量图标；
+  - 规范所有菜单文件的 `app:showAsAction` 命名空间；
+  - 清理 `UIHelper.kt` 未引用旧 API import 及 `themes.xml` 无用旧 ActionBar 样式。
+
 ## 🚀 [v1.5.3-ic705] - 2026-08-23
 
 ### 🔧 代码审查修复与安全加固

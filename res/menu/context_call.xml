@@ -1,35 +1,41 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 <group android:id="@+id/menu_context_call">
 	<item android:id="@+id/details"
 	      android:title="@string/app_sta"
-	      android:showAsAction="ifRoom"
+	      app:showAsAction="ifRoom"
 	      android:icon="@drawable/ic_action_info"
 	      />
 	<item android:id="@+id/message"
 	      android:title="@string/app_messages"
-	      android:showAsAction="ifRoom"
+	      app:showAsAction="ifRoom"
 	      android:icon="@drawable/ic_action_send"
 	      />
 	<item android:id="@+id/messagesclear"
 	      android:title="@string/app_messages_clear"
+	      app:showAsAction="never"
 	      android:icon="@drawable/ic_action_clear"
 	      />
 	<item android:id="@+id/map"
 	      android:title="@string/sta_map"
-	      android:showAsAction="ifRoom"
+	      app:showAsAction="ifRoom"
 	      android:icon="@drawable/ic_action_map"
 	      />
 	<item android:id="@+id/extmap"
 	      android:title="@string/sta_extmap"
+	      app:showAsAction="never"
 	      />
 	<item android:id="@+id/aprsfi"
 	      android:title="@string/sta_aprsfi"
+	      app:showAsAction="never"
 	      />
 	<item android:id="@+id/qrzcom"
 	      android:title="@string/sta_qrzcom"
+	      app:showAsAction="never"
 	      />
 	<item android:id="@+id/sta_export"
 	      android:title="@string/export_log"
+	      app:showAsAction="never"
 	      />
 </group>
 </menu>

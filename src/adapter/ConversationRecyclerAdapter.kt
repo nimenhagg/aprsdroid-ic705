@@ -9,6 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.color.MaterialColors
 import org.aprsdroid.app.R
 import org.aprsdroid.app.model.ConversationItem
 
@@ -44,14 +45,18 @@ class ConversationRecyclerAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
 
+        val primaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorPrimary)
+        val onSurfaceVariant = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant)
+
         holder.callView.text = item.call
-        holder.callView.setTextColor(0xff00677d.toInt())
+        holder.callView.setTextColor(primaryColor)
 
         holder.messageView.text = item.lastMessage
-        holder.messageView.setTextColor(0xff40484c.toInt())
+        holder.messageView.setTextColor(onSurfaceVariant)
 
         val age = DateUtils.getRelativeTimeSpanString(context, item.ts)
         holder.tsView.text = age
+        holder.tsView.setTextColor(onSurfaceVariant)
 
         holder.itemView.setOnClickListener { onItemClick(item) }
         holder.itemView.setOnLongClickListener { v -> onItemLongClick(item, v) }

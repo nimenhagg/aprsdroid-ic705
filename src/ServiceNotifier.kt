@@ -72,7 +72,7 @@ class ServiceNotifier {
         val exitTitle = ctx.getString(R.string.notification_action_exit)
 
         val exitAction = Notification.Action.Builder(
-            android.R.drawable.ic_menu_close_clear_cancel,
+            R.drawable.ic_action_clear,
             exitTitle,
             stopPendingIntent
         ).build()

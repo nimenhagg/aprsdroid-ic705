@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.color.MaterialColors
 import org.aprsdroid.app.R
 import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.model.MessageItem
@@ -22,14 +23,6 @@ class MessageRecyclerAdapter(
 ) : ListAdapter<MessageItem, MessageRecyclerAdapter.ViewHolder>(DiffCallback) {
 
     companion object {
-        val STATUS_COLORS = intArrayOf(
-            0,
-            0xff00677d.toInt(), // incoming (teal)
-            0xff5b53a4.toInt(), // new (indigo)
-            0xff006d44.toInt(), // acked (forest green)
-            0xffba1a1a.toInt(), // rejected (red)
-            0xff8c4f00.toInt()  // aborted (amber)
-        )
         const val NUM_OF_RETRIES = 7
 
         private object DiffCallback : DiffUtil.ItemCallback<MessageItem>() {
@@ -57,15 +50,33 @@ class MessageRecyclerAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
 
+        val primaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorPrimary)
+        val secondaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSecondary)
+        val tertiaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorTertiary)
+        val onSurface = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurface)
+        val onSurfaceVariant = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant)
+        val errorColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorError)
+
         holder.tsView.text = item.tss
+        holder.tsView.setTextColor(onSurfaceVariant)
+
         holder.messageView.text = item.text
-        holder.messageView.setTextColor(0xff191c1e.toInt())
+        holder.messageView.setTextColor(onSurface)
 
         val msgtype = item.type
-        if (msgtype in STATUS_COLORS.indices) {
-            holder.statusView.setTextColor(STATUS_COLORS[msgtype])
-        } else {
-            holder.statusView.setTextColor(0xff00677d.toInt())
+        when (msgtype) {
+            StorageDatabase.Companion.Message.TYPE_INCOMING ->
+                holder.statusView.setTextColor(primaryColor)
+            StorageDatabase.Companion.Message.TYPE_OUT_NEW ->
+                holder.statusView.setTextColor(tertiaryColor)
+            StorageDatabase.Companion.Message.TYPE_OUT_ACKED ->
+                holder.statusView.setTextColor(secondaryColor)
+            StorageDatabase.Companion.Message.TYPE_OUT_REJECTED ->
+                holder.statusView.setTextColor(errorColor)
+            StorageDatabase.Companion.Message.TYPE_OUT_ABORTED ->
+                holder.statusView.setTextColor(onSurfaceVariant)
+            else ->
+                holder.statusView.setTextColor(primaryColor)
         }
 
         val status = when (msgtype) {

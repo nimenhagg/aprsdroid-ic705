@@ -1,29 +1,35 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 <group android:id="@+id/menu_options">
 	<item android:id="@+id/startstopbtn"
 		android:title="@string/startlog"
 		android:alphabeticShortcut="t"
-		android:icon="@android:drawable/ic_menu_compass" />
+		app:showAsAction="never"
+		android:icon="@drawable/ic_pref_gps" />
 	<item android:id="@+id/singlebtn"
 		android:title="@string/singlelog"
 		android:alphabeticShortcut="s"
-		android:icon="@android:drawable/ic_menu_myplaces" />
+		app:showAsAction="never"
+		android:icon="@drawable/ic_pref_location" />
 	<item android:id="@+id/export"
 		android:title="@string/export_log"
 		android:alphabeticShortcut="x"
-		android:icon="@android:drawable/ic_menu_save" />
+		app:showAsAction="never"
+		android:icon="@drawable/ic_pref_log" />
 	<item android:id="@+id/clear"
 		android:title="@string/clear_log"
 		android:alphabeticShortcut="c"
-		android:icon="@android:drawable/ic_menu_delete" />
+		app:showAsAction="never"
+		android:icon="@drawable/ic_action_clear" />
 	<item android:id="@+id/preferences"
 		android:title="@string/preferences"
 		android:alphabeticShortcut="p"
-		android:icon="@android:drawable/ic_menu_preferences" />
+		app:showAsAction="never"
+		android:icon="@drawable/ic_pref_connection" />
 	<item android:id="@+id/about"
 		android:title="@string/about"
 		android:alphabeticShortcut="a"
-		android:icon="@android:drawable/ic_menu_info_details" />
+		app:showAsAction="never"
+		android:icon="@drawable/ic_action_info" />
 </group>
 </menu>
-
