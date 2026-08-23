@@ -39,7 +39,6 @@
         <item name="android:checkBoxPreferenceStyle">@style/Material3PreferenceCheckBox</item>
         <item name="android:editTextPreferenceStyle">@style/Material3PreferenceEditText</item>
         <item name="android:ringtonePreferenceStyle">@style/Material3PreferenceRingtone</item>
-        <item name="android:alertDialogTheme">@style/Material3PlatformDialogTheme</item>
 
         <!-- Material 3 Native TopAppBar styling (No Left App Icon) -->
         <item name="android:actionBarStyle">@style/Widget.Material3.ActionBar</item>
@@ -103,10 +102,5 @@
     </style>
     <style name="Material3PreferenceRingtone" parent="">
         <item name="android:layout">@layout/preference_m3</item>
-    </style>
-    <style name="Material3PlatformDialogTheme" parent="@android:style/Theme.DeviceDefault.Light.Dialog.Alert">
-        <item name="android:colorAccent">@color/md3_primary</item>
-        <item name="android:colorPrimary">@color/md3_primary</item>
-        <item name="android:textColorPrimary">@color/md3_on_surface</item>
     </style>
 </resources>
