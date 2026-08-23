@@ -135,12 +135,17 @@ class ServiceNotifier {
 	}
 
 	def start(ctx : Service, status : String) = {
-                // try set the right service type - AFSK needs microphone, GPS needs location, fallback to "special use"
-                var service_type = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) > -1)
-                        service_type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-                else if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) > -1)
-                        service_type = ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+		var service_type = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+		if (Build.VERSION.SDK_INT >= 29) {
+			var types = 0
+			if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+				types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+			if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+				ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+				types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+			if (types != 0)
+				service_type = types
+		}
 		ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), service_type)
 	}
 

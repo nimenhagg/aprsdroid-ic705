@@ -39,24 +39,31 @@ jobs:
 
       - name: Prepare and Sign Release APK
         id: sign_app
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           GIT_VER=$(git describe --tags --always 2>/dev/null || git rev-parse --short HEAD)
           APK_SRC=$(find build/outputs/apk/release/ -name "*.apk" | head -n 1)
           APK_DEST="APRSdroid-${GIT_VER}.apk"
           
-          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+          if [ -n "$KEYSTORE_BASE64" ]; then
             echo "Signing with repository secret keystore..."
-            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.jks
+            echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > release.jks
             $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
               --v1-signing-enabled true \
               --v2-signing-enabled true \
               --v3-signing-enabled true \
               --ks release.jks \
-              --ks-pass pass:"${{ secrets.KEYSTORE_PASSWORD }}" \
-              --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
-              --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
+              --ks-pass pass:"$KEYSTORE_PASSWORD" \
+              --ks-key-alias "$KEY_ALIAS" \
+              --key-pass pass:"$KEY_PASSWORD" \
               --out "${APK_DEST}" "${APK_SRC}"
             rm -f release.jks
+            echo "Verifying signature:"
+            $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose "${APK_DEST}"
           else
             echo "No custom secret keystore configured, using build APK..."
             cp "${APK_SRC}" "${APK_DEST}"

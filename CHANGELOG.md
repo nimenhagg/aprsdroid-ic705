@@ -1,3 +1,10 @@
+## 🌟 [v1.2.6-ic705] - 2026-08-23
+
+### 🛡️ Android 14+ 前台服务与生命周期安全防护 & CI 签名环境优化
+* **前台服务权限按位组合**：修复 `ServiceNotifier` 中定位与麦克风前台服务类型（FGS Types）互斥导致的 Android 14+ 后台 GPS 定位隐患，支持多重权限按位组合；
+* **广播安全保护**：为 `MainListActivity` 的接收器注销调用添加异常拦截保护；
+* **CI 签名流水线增强**：使用环境变量严格隔离 GitHub Secrets 私钥与密码传递，注入 `tr -d '\r\n'` 彻底杜绝 Base64 换行解码异常，并在 CI 构建中加入 `apksigner verify --verbose` 自动签名校验。
+
 ## 🌟 [v1.2.5-ic705] - 2026-08-23
 
 ### 🤖 交付 AI 协同开发交接文档 (AI Handover Context)

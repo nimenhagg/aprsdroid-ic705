@@ -47,8 +47,8 @@ class MainListActivity(actname : String, menuid : Int) extends LoadingListActivi
 	}
 	override def onPause() {
 		super.onPause()
-		unregisterReceiver(miclReceiver)
-		unregisterReceiver(linkOnOffReceiver)
+		try { unregisterReceiver(miclReceiver) } catch { case _ : Throwable => }
+		try { unregisterReceiver(linkOnOffReceiver) } catch { case _ : Throwable => }
 	}
 
 	def setupButtons(running : Boolean) {
