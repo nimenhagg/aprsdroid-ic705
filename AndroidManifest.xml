@@ -169,6 +169,8 @@
 		tools:ignore="ExportedService"
 		android:exported="true"
 		>
+	    <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+		          android:value="WLAN Connection to Amateur Radio (IC-705)" />
 	    <intent-filter>
 		<action android:name="org.aprsdroid.app.SERVICE" />
 		<action android:name="org.aprsdroid.app.ONCE" />

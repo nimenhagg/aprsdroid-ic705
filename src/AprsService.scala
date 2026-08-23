@@ -102,8 +102,10 @@ class AprsService extends Service {
 		if (i.getAction() == SERVICE_STOP) {
                         // explicitly disabled, remember this
                         prefs.setBoolean("service_running", false)
-			if (running)
+			if (running) {
+				ServiceNotifier.instance.stop(this)
 				stopSelf()
+			}
 			return
 		} else
 		if (i.getAction() == SERVICE_SEND_PACKET) {

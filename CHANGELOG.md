@@ -1,3 +1,11 @@
+## 🆕 [v1.2.8-ic705] - 2026-08-23
+
+### 🐛 修复重大崩溃与前台保活 Bug
+* **Android 14 FGS 崩溃修复**：在 `AndroidManifest.xml` 中补全了 `specialUse` 前台服务必须的 `PROPERTY_SPECIAL_USE_FGS_SUBTYPE` 属性声明，彻底解决 Android 14+ 下无权限启动时的 `SecurityException` 崩溃问题。
+* **前台服务类型覆盖修复**：在 `ServiceNotifier.scala` 中将 `service_type = types` 修正为按位或运算 `service_type |= types`，确保在拥有定位或麦克风权限时，不会丢失关键的 `specialUse` 标记，从而保证网络后台保活不受影响。
+* **内部广播安全性修复**：在 `MainListActivity.scala` 中，将内部生命周期广播的注册由 `Context.RECEIVER_EXPORTED` 改为 `Context.RECEIVER_NOT_EXPORTED`，防止被外部应用恶意干扰。
+* **退出功能通知栏残留修复**：在 `AprsService.scala` 的 `handleStart` 方法中，接收到 `SERVICE_STOP` 时，主动调用 `ServiceNotifier.instance.stop(this)` 撤销前台通知栏，解决 `stopSelf()` 无法立刻触发 `onDestroy()` 导致的通知栏残留问题。
+
 ## 🌟 [v1.2.7-ic705] - 2026-08-23
 
 ### 🛡️ 全面消除已知源码漏洞与多语言格式化隐患
@@ -76,3 +84,4 @@
 * **CI-V 自动控制**：实现 UDP 协议上的 PTT 自动置位与复位。
 * **独立 Wi-Fi 路由**：蜂窝流量与电台通信互不干扰。
 * **常驻通知优化**：增加一键「完全退出」按钮，移除开机自动拉起。
+

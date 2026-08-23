@@ -144,7 +144,7 @@ class ServiceNotifier {
 				ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED)
 				types |= ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
 			if (types != 0)
-				service_type = types
+				service_type |= types
 		}
 		ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), service_type)
 	}
