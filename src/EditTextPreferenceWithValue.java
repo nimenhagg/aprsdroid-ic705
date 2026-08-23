@@ -9,14 +9,24 @@ import android.view.View;
 import android.widget.EditText;
 
 public class EditTextPreferenceWithValue extends EditTextPreference {
-	CharSequence mSummary;
+	private CharSequence mInitialSummary = null;
+	private boolean mInitialSummaryInitialized = false;
 
 	public EditTextPreferenceWithValue(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		initSummary();
 	}
 
 	public EditTextPreferenceWithValue(Context context) {
 		super(context);
+		initSummary();
+	}
+
+	private void initSummary() {
+		if (!mInitialSummaryInitialized) {
+			mInitialSummary = getSummary();
+			mInitialSummaryInitialized = true;
+		}
 	}
 
 	private void fixupCaps() {
@@ -37,10 +47,9 @@ public class EditTextPreferenceWithValue extends EditTextPreference {
 	}
 
 	private void setSummaryToText(String text) {
-		if (mSummary == null)
-			mSummary = getSummary();
+		initSummary();
 		if (text == null || text.length() == 0) {
-			setSummary(mSummary);
+			setSummary(mInitialSummary);
 		} else {
 			String display = text;
 			if ((getEditText().getInputType() & InputType.TYPE_TEXT_VARIATION_PASSWORD) != 0 ||
@@ -48,10 +57,10 @@ public class EditTextPreferenceWithValue extends EditTextPreference {
 			    getEditText().getTransformationMethod() instanceof android.text.method.PasswordTransformationMethod) {
 				display = "••••••••";
 			}
-			if (mSummary == null || mSummary.length() == 0) {
+			if (mInitialSummary == null || mInitialSummary.length() == 0) {
 				setSummary(display);
 			} else {
-				setSummary(mSummary + ": " + display);
+				setSummary(mInitialSummary + ": " + display);
 			}
 		}
 	}

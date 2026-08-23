@@ -36,7 +36,7 @@ allprojects {
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = "1.3.2"
+	mod_version = "1.3.3"
 	base_version = "APRSdroid v1.7.0"
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"

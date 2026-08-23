@@ -6,23 +6,33 @@ import android.util.AttributeSet;
 import android.view.View;
 
 public class ListPreferenceWithValue extends ListPreference {
-	CharSequence mSummary;
+	private CharSequence mInitialSummary = null;
+	private boolean mInitialSummaryInitialized = false;
 
 	public ListPreferenceWithValue(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		initSummary();
 	}
 
 	public ListPreferenceWithValue(Context context) {
 		super(context);
+		initSummary();
+	}
+
+	private void initSummary() {
+		if (!mInitialSummaryInitialized) {
+			mInitialSummary = getSummary();
+			mInitialSummaryInitialized = true;
+		}
 	}
 
 	private void setSummaryToText(CharSequence text) {
-		if (mSummary == null)
-			mSummary = getSummary();
-		if (text == null || text.length() == 0)
-			setSummary(mSummary);
-		else
+		initSummary();
+		if (text == null || text.length() == 0) {
+			setSummary(mInitialSummary);
+		} else {
 			setSummary(text);
+		}
 	}
 	@Override
 	protected void onBindView(View view) {

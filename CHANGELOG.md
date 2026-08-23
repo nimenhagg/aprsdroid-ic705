@@ -1,3 +1,10 @@
+## ⚡ [v1.3.3-ic705] - 2026-08-23
+
+### 🚀 多线程编译优化与首选项点击无限重复 Bug 彻底修复
+* **首选项点击重复累加根治**：修复 `EditTextPreferenceWithValue`、`ListPreferenceWithValue` 与 `PreferenceWithValue` 在多次重新绑定/点击时，动态获取上一轮 summary 并造成 `192.168.1.143: 192.168.1.143: ...` 无限累加的严重 Bug，改为在构造期固化初始 summary，彻底根绝重复与排版崩溃。
+* **首选项图标统一容器与边距对齐**：为所有新生成的矢量图标（网络、端口、用户、密码、GPS、定时器等）统一封装 40x40 dp Material 3 浅青色圆角方块（Squircle）底板，提供 8dp 内边距与标准左侧外边距，彻底告别“图标太靠左”、“裸图标无底衬”的不协调感。
+* **多线程与多核增量构建提速**：在 `gradle.properties` 中开启 `org.gradle.parallel=true`、`kotlin.incremental=true`、增至 4GB 堆内存并启用多核并发 GC，大幅提升本地调试与打包推送速度。
+
 ## 🎨 [v1.3.2-ic705] - 2026-08-23
 
 ### ✨ 地图模式修复与全套 Material 3 现代图标与偏好设置美化

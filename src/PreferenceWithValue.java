@@ -6,25 +6,34 @@ import android.util.AttributeSet;
 import android.view.View;
 
 public class PreferenceWithValue extends Preference {
-	CharSequence mSummary;
+	private CharSequence mInitialSummary = null;
+	private boolean mInitialSummaryInitialized = false;
 
 	public PreferenceWithValue(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		initSummary();
 	}
 
 	public PreferenceWithValue(Context context) {
 		super(context);
+		initSummary();
+	}
+
+	private void initSummary() {
+		if (!mInitialSummaryInitialized) {
+			mInitialSummary = getSummary();
+			mInitialSummaryInitialized = true;
+		}
 	}
 
 	private void setSummaryToText(String text) {
-		if (mSummary == null)
-			mSummary = getSummary();
+		initSummary();
 		if (text == null || text.length() == 0) {
-			setSummary(mSummary);
-		} else if (mSummary == null || mSummary.length() == 0) {
+			setSummary(mInitialSummary);
+		} else if (mInitialSummary == null || mInitialSummary.length() == 0) {
 			setSummary(text);
 		} else {
-			setSummary(mSummary + ": " + text);
+			setSummary(mInitialSummary + ": " + text);
 		}
 	}
 	@Override
