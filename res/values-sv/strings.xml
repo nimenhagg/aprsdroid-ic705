@@ -384,7 +384,7 @@
 <string name="bt_client_connected">Client %s ansluten.</string>
 <string name="bt_connecting_to_spp">Ansluter till SPP-tjänst på %s...</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">Ansluter till %s kanal %d...</string>
+<string name="bt_connecting_to_channel" formatted="false">Ansluter till %s kanal %d...</string>
 <string name="bt_connected">Ansluten till TNC.</string>
 <string name="bt_reconnecting">Återansluter om 3 sekunder...</string>
 

@@ -385,7 +385,7 @@
 <string name="bt_client_connected">Ο πελάτης %s είναι συνδεδεμένος.</string>
 <string name="bt_connecting_to_spp">Σύνδεση στην υπηρεσία SPP στο %s…</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">Σύνδεση στο κανάλι %s %d…</string>
+<string name="bt_connecting_to_channel" formatted="false">Σύνδεση στο κανάλι %s %d…</string>
 <string name="bt_connected">Συνδεδεμένο με TNC.</string>
 <string name="bt_reconnecting">Επανασύνδεση σε 3 δευτερόλεπτα…</string>
 

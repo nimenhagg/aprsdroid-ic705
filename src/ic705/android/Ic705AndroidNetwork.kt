@@ -20,11 +20,27 @@ object Ic705WifiNetworkSelector {
     @TargetApi(21)
     fun find(context: Context): Network? {
         val connectivity = context.getSystemService(Context.CONNECTIVITY_SERVICE)
-            as ConnectivityManager
-        return connectivity.allNetworks.firstOrNull { network ->
-            connectivity.getNetworkCapabilities(network)
-                ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+            as? ConnectivityManager ?: return null
+
+        // 1. Prefer active network if it has Wi-Fi transport
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            val active = connectivity.activeNetwork
+            if (active != null) {
+                val caps = connectivity.getNetworkCapabilities(active)
+                if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
+                    return active
+                }
+            }
         }
+
+        // 2. Safe scan for attached Wi-Fi networks (e.g. IC-705 AP without internet)
+        return runCatching {
+            @Suppress("DEPRECATION")
+            connectivity.allNetworks.firstOrNull { network ->
+                connectivity.getNetworkCapabilities(network)
+                    ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+            }
+        }.getOrNull()
     }
 }
 

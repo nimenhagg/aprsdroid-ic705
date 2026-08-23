@@ -391,7 +391,7 @@
 <string name="bt_client_connected">Клиент %s подключен.</string>
 <string name="bt_connecting_to_spp">Подключяюсь службе SPP на %s…</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">Подключяюсь к %s на канале %d…</string>
+<string name="bt_connecting_to_channel" formatted="false">Подключяюсь к %s на канале %d…</string>
 <string name="bt_connected">Подключено к TNC.</string>
 <string name="bt_reconnecting">Повторное подключение через 3с...</string>
 

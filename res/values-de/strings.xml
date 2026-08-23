@@ -391,7 +391,7 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 <string name="bt_client_connected">Client %s verbunden.</string>
 <string name="bt_connecting_to_spp">Verbinde mit SPP-Dienst auf %s…</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">Verbinde mit %s auf Kanal %d…</string>
+<string name="bt_connecting_to_channel" formatted="false">Verbinde mit %s auf Kanal %d…</string>
 <string name="bt_connected">Verbunden mit TNC.</string>
 <string name="bt_reconnecting">Neue Verbindung in 3s…</string>
 

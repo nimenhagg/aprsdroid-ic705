@@ -389,7 +389,7 @@
 <string name="bt_client_connected">Laite %s yhdistynyt.</string>
 <string name="bt_connecting_to_spp">Yhdistää SPP-palveluun %s...</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">Yhdistää %s kanavaan %d...</string>
+<string name="bt_connecting_to_channel" formatted="false">Yhdistää %s kanavaan %d...</string>
 <string name="bt_connected">TNC yhdistetty.</string>
 <string name="bt_reconnecting">Yhdistää uudelleen 3s jälkeen...</string>
 

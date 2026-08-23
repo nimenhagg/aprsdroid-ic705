@@ -382,7 +382,7 @@
 <string name="bt_client_connected">Client %s connectéiert.</string>
 <string name="bt_connecting_to_spp">Connectéieren zum SPP Service op %s...</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">Connectéieren zum %s Kanal %d...</string>
+<string name="bt_connecting_to_channel" formatted="false">Connectéieren zum %s Kanal %d...</string>
 <string name="bt_connected">Mam TNC verbonnen.</string>
 <string name="bt_reconnecting">Verbannen nees an 3s...</string>
 

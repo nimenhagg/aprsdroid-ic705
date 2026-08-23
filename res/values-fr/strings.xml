@@ -400,7 +400,7 @@
 <string name="bt_client_connected">Client %s connecté.</string>
 <string name="bt_connecting_to_spp">Connexion au service SPP sur %s</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">Coneccté à %s sur le canal %d</string>
+<string name="bt_connecting_to_channel" formatted="false">Coneccté à %s sur le canal %d</string>
 <string name="bt_connected">Connecté au TNC</string>
 <string name="bt_reconnecting">Reconnexion dans 3s ...</string>
 

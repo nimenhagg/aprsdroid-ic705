@@ -386,7 +386,7 @@
 <string name="bt_client_connected">客户端 %s 已连接</string>
 <string name="bt_connecting_to_spp">连接到SPP服务到%s</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">连接到 %s 频道 %d</string>
+<string name="bt_connecting_to_channel" formatted="false">连接到 %s 频道 %d</string>
 <string name="bt_connected">连接到TNC</string>
 <string name="bt_reconnecting">3秒内重连...</string>
 

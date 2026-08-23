@@ -390,7 +390,7 @@
 <string name="bt_client_connected">Client %s terhubung.</string>
 <string name="bt_connecting_to_spp">Menghubunkan ke layanan SPP pada %s...</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">Menghubungkan ke %s saluran %d</string>
+<string name="bt_connecting_to_channel" formatted="false">Menghubungkan ke %s saluran %d</string>
 <string name="bt_connected">Terhubung ke TNC.</string>
 <string name="bt_reconnecting">Menghubungkan dalam 3detik...</string>
 

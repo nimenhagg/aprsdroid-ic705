@@ -381,7 +381,7 @@
 <string name="bt_client_connected">Client %s ເຊື່ອມຕໍ່ແລ້ວ.</string>
 <string name="bt_connecting_to_spp">ກຳລັງເຊື່ອມຕໍ່ຫາບໍລິການ SPP ເທິງ %s…</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel">ກຳລັງເຊື່ອມຕໍ່ຫາ %s ຊ່ອງ %d…</string>
+<string name="bt_connecting_to_channel" formatted="false">ກຳລັງເຊື່ອມຕໍ່ຫາ %s ຊ່ອງ %d…</string>
 <string name="bt_connected">ເຊື່ອມຕໍ່ກັບ TNC ແລ້ວ.</string>
 <string name="bt_reconnecting">ກຳລັງເຊື່ອມຕໍ່ໃໝ່ໃນ 3 ວິນາທີ…</string>
 
