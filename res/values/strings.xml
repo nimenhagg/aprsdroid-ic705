@@ -457,9 +457,13 @@
 <string name="ic705_rx_username">IC-705 网络用户名</string>
 <string name="ic705_rx_password">IC-705 网络密码</string>
 <string name="ic705_rx_connect">开始仅接收诊断</string>
+<string name="ic705_rx_start">开始接收诊断</string>
 <string name="ic705_rx_disconnect">停止诊断</string>
+<string name="ic705_rx_stop">停止诊断</string>
 <string name="ic705_rx_stopped">已停止</string>
 <string name="ic705_rx_starting">正在建立 Wi-Fi UDP 会话…</string>
+<string name="ic705_rx_running">正在接收与解码…</string>
+<string name="ic705_rx_log_empty">暂无事件记录</string>
 <string name="ic705_rx_requires_api_22">IC-705 Wi-Fi 功能需要 Android 5.1（API 22）或更高版本。</string>
 <string name="ic705_rx_no_wifi">未找到可用的 Wi-Fi 网络，请先连接到电台所在的 Wi-Fi。</string>
 <string name="ic705_rx_bad_address">请输入有效的电台 IP 地址。</string>

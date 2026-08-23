@@ -26,7 +26,7 @@
             android:dialogTitle="@string/ic705_rx_password" />
         <Preference
             android:key="ic705_diagnostic_launch"
-            android:icon="@drawable/ic_pref_gps_device"
+            android:icon="@drawable/ic_pref_ic705"
             android:title="@string/ic705_rx_title"
             android:summary="@string/ic705_rx_diagnostic_summary">
             <intent

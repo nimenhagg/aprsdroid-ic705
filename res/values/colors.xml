@@ -16,6 +16,7 @@
     <color name="md3_surface_variant">#DAE4E6</color>
     <color name="md3_on_surface_variant">#3F484A</color>
 
+    <color name="md3_surface_container_lowest">#FFFFFF</color>
     <color name="md3_surface_container_low">#F4F7F8</color>
     <color name="md3_surface_container">#EEF1F2</color>
     <color name="md3_surface_container_high">#E8EBEB</color>
