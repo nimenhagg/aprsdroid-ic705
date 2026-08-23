@@ -119,14 +119,15 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
 
         val attempt = ++activeAttempt
 
-        val decoder = FeedableAfskDecoder(PcmFormat.MONO_48K) {
+        val format = PcmFormat(48000, 1)
+        val decoder = FeedableAfskDecoder(format) {
             decodedAx25Frames.incrementAndGet()
             runOnUiThreadFor(attempt) { renderStatistics() }
         }
         activeDecoder = decoder
 
         val countingSink = object : PcmSink {
-            override val format: PcmFormat get() = PcmFormat.MONO_48K
+            override val format: PcmFormat get() = format
             override fun write(buffer: ShortArray, offset: Int, length: Int) {
                 acceptedAudioBlocks.incrementAndGet()
                 acceptedAudioSamples.addAndGet(length.toLong())
@@ -138,8 +139,7 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
         }
 
         val socketFactory: Ic705DatagramSocketFactory = try {
-            val provider = Ic705AndroidSocketFactoryProvider(this)
-            provider.provide() ?: object : Ic705DatagramSocketFactory {
+            Ic705AndroidSocketFactoryProvider.forCurrentWifi(this) ?: object : Ic705DatagramSocketFactory {
                 override fun create(localAddress: InetSocketAddress): DatagramSocket {
                     return DatagramSocket(localAddress).apply { broadcast = true }
                 }
