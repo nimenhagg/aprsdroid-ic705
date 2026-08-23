@@ -3,6 +3,7 @@ package org.aprsdroid.app
 import android.content.Context
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.TextView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
@@ -22,10 +23,15 @@ class AboutDialog(private val context: Context) {
             view.findViewById<TextView>(id)?.movementMethod = LinkMovementMethod.getInstance()
         }
 
-        MaterialAlertDialogBuilder(context)
+        val dialog = MaterialAlertDialogBuilder(context)
             .setTitle(R.string.about)
             .setView(view)
-            .setPositiveButton(android.R.string.ok, null)
-            .show()
+            .create()
+
+        view.findViewById<View>(R.id.about_ok)?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 }
