@@ -9,8 +9,6 @@ buildscript {
 		mavenLocal()
 	}
 	dependencies {
-		// NOTE: Do not place your application dependencies here; they belong
-		// in the individual module build.gradle files
 	}
 }
 
@@ -21,7 +19,6 @@ plugins {
 	id("com.github.triplet.play") version "3.13.0"
 	alias(libs.plugins.androidApplication)
 	alias(libs.plugins.kotlinAndroid)
-	id 'cash.bdo.scalroid'
 }
 
 allprojects {
@@ -37,7 +34,6 @@ allprojects {
 
 /////////////// APRSdroid specific build rules ///////////////
 
-
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
 	mod_version = "1.2.8"
@@ -46,20 +42,8 @@ ext {
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
 }
 
-tasks.withType(ScalaCompile) {
-	// Suppress deprecation warnings
-	scalaCompileOptions.deprecation = false
-}
-
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 	kotlinOptions.jvmTarget = '17'
-}
-
-// Scalroid's bidirectional Scala/Kotlin mode exposes Scala classes to Java-resource
-// processing but does not declare this ordering itself on Gradle 8.
-tasks.configureEach {
-	if (name == 'processDebugJavaRes') dependsOn 'compileDebugScala'
-	if (name == 'processReleaseJavaRes') dependsOn 'compileReleaseScala'
 }
 
 def versionCodeDate() {
@@ -75,17 +59,10 @@ def mapsApiKey() {
 	try {
 		properties.load(project.rootProject.file('local.properties').newDataInputStream())
 	} catch(Exception ex) {}
-	// the default google_maps_key is restricted to ge0rg's signing keys and can't be used by other builds!
 	properties.getProperty('mapsApiKey', "AIzaSyA12R_iI_upYQ33FWnPU_8GlMKrEmjDxiQ")
 }
 
-
 android {
-	scalroid {
-		scalaCodeReferToKt = true
-		ktCodeReferToScala = true
-		javaDirsExcludes = ['src']
-	}
 	namespace 'org.aprsdroid.app'
 	compileSdk = 36
 	defaultConfig {
@@ -97,7 +74,6 @@ android {
 		resValue "string", "build_revision", "$build_revision"
 		resValue "string", "build_date", "$build_date"
 		resValue "string", "build_version", "$build_version"
-
 		resValue "string", "google_maps_key", mapsApiKey()
 
 		testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -113,7 +89,7 @@ android {
 
 	buildTypes {
 		debug {
-			minifyEnabled true
+			minifyEnabled false
 			proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard.cfg'
 		}
 		release {
@@ -141,8 +117,6 @@ android {
 		main {
 			manifest.srcFile 'AndroidManifest.xml'
 			java.srcDirs = ['src']
-			scala.srcDirs = ['src']
-			scala.excludes = ["*.sw?"]
 			resources.srcDirs = ['src']
 			aidl.srcDirs = ['src']
 			renderscript.srcDirs = ['src']
@@ -163,7 +137,6 @@ android {
 	}
 	testOptions {
 		unitTests {
-			// The shared bad-frame logging path calls android.util.Log; JVM tests need it to no-op.
 			returnDefaultValues = true
 		}
 	}
@@ -175,21 +148,15 @@ play {
 }
 
 dependencies {
-	implementation(libs.scala.library)
 	implementation fileTree(include: ['*.jar'], dir: 'libs')
-	// Scalroid does not propagate optional useLibrary jars to the Scala classpath.
-	compileOnly files(new File(android.sdkDirectory,
-		"platforms/${android.compileSdkVersion}/optional/org.apache.http.legacy.jar"))
 	implementation 'com.google.android.gms:play-services-maps:17.0.0'
 	implementation 'com.google.maps.android:android-maps-utils:0.5'
 	implementation 'androidx.core:core:1.12.0'
 	implementation 'androidx.appcompat:appcompat:1.6.1'
 	implementation 'com.google.android.material:material:1.11.0'
 
-
 	implementation 'com.squareup.okio:okio:2.1.0'
 	androidTestImplementation 'com.android.support.test:runner:1.0.2'
 	androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 	testImplementation 'junit:junit:4.12'
 }
-
