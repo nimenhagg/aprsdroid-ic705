@@ -34,11 +34,6 @@
         <item name="colorSurfaceContainer">@color/md3_surface_container</item>
         <item name="colorSurfaceContainerHigh">@color/md3_surface_container_high</item>
         <item name="colorOutlineVariant">@color/md3_outline_variant</item>
-        <item name="android:preferenceCategoryStyle">@style/Material3PreferenceCategory</item>
-        <item name="android:preferenceStyle">@style/Material3PreferenceItem</item>
-        <item name="android:checkBoxPreferenceStyle">@style/Material3PreferenceCheckBox</item>
-        <item name="android:editTextPreferenceStyle">@style/Material3PreferenceEditText</item>
-        <item name="android:ringtonePreferenceStyle">@style/Material3PreferenceRingtone</item>
 
         <!-- Material 3 Native TopAppBar styling (No Left App Icon) -->
         <item name="android:actionBarStyle">@style/Widget.Material3.ActionBar</item>
@@ -86,22 +81,5 @@
 
     <style name="MapViewTheme" parent="DefaultTheme">
         <item name="android:windowActionBarOverlay">true</item>
-    </style>
-    <style name="Material3PreferenceCategory" parent="">
-        <item name="android:layout">@layout/preference_category_m3</item>
-    </style>
-    <style name="Material3PreferenceItem" parent="">
-        <item name="android:layout">@layout/preference_m3</item>
-    </style>
-    <style name="Material3PreferenceCheckBox" parent="">
-        <item name="android:layout">@layout/preference_m3</item>
-        <item name="android:widgetLayout">@layout/preference_widget_checkbox</item>
-    </style>
-    <style name="Material3PreferenceEditText" parent="">
-        <item name="android:layout">@layout/preference_m3</item>
-        
-    </style>
-    <style name="Material3PreferenceRingtone" parent="">
-        <item name="android:layout">@layout/preference_m3</item>
     </style>
 </resources>

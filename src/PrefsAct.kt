@@ -5,12 +5,13 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.preference.Preference
-import android.preference.PreferenceActivity
-import android.preference.PreferenceManager
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import org.json.JSONObject
 import java.io.File
 import java.io.PrintWriter
@@ -18,7 +19,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class PrefsAct : PreferenceActivity() {
+class PrefsAct : AppCompatActivity() {
     val db: StorageDatabase by lazy { StorageDatabase.open(this) }
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 
@@ -40,31 +41,13 @@ class PrefsAct : PreferenceActivity() {
         }
     }
 
-    fun fileChooserPreference(prefName: String, reqCode: Int, titleId: Int) {
-        @Suppress("DEPRECATION")
-        findPreference(prefName)?.setOnPreferenceClickListener {
-            val getFile = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*" }
-            startActivityForResult(Intent.createChooser(getFile, getString(titleId)), reqCode)
-            true
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        @Suppress("DEPRECATION")
-        addPreferencesFromResource(R.xml.preferences)
-        fileChooserPreference("mapfile", 123456, R.string.p_mapfile_choose)
-        fileChooserPreference("themefile", 123457, R.string.p_themefile_choose)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        @Suppress("DEPRECATION")
-        findPreference("p_connsetup")?.summary = prefs.getBackendName()
-        @Suppress("DEPRECATION")
-        findPreference("p_location")?.summary = prefs.getLocationSourceName()
-        @Suppress("DEPRECATION")
-        findPreference("p_symbol")?.summary = getString(R.string.p_symbol_summary) + ": " + prefs.getString("symbol", "/$")
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(android.R.id.content, PrefsFragment())
+                .commit()
+        }
     }
 
     fun resolveContentUri(uri: Uri): String {
@@ -117,6 +100,7 @@ class PrefsAct : PreferenceActivity() {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(reqCode: Int, resultCode: Int, data: Intent?) {
         if (resultCode == Activity.RESULT_OK && data != null) {
             when (reqCode) {
@@ -149,6 +133,7 @@ class PrefsAct : PreferenceActivity() {
         return when (item.itemId) {
             R.id.profile_load -> {
                 val getFile = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*" }
+                @Suppress("DEPRECATION")
                 startActivityForResult(Intent.createChooser(getFile, getString(R.string.profile_import_activity)), 123458)
                 true
             }
@@ -157,6 +142,33 @@ class PrefsAct : PreferenceActivity() {
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    class PrefsFragment : PreferenceFragmentCompat() {
+        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            setPreferencesFromResource(R.xml.preferences, rootKey)
+        }
+
+        override fun onResume() {
+            super.onResume()
+            val act = activity as? PrefsAct ?: return
+            findPreference<Preference>("p_connsetup")?.summary = act.prefs.getBackendName()
+            findPreference<Preference>("p_location")?.summary = act.prefs.getLocationSourceName()
+            findPreference<Preference>("p_symbol")?.summary = getString(R.string.p_symbol_summary) + ": " + act.prefs.getString("symbol", "/$")
+
+            findPreference<Preference>("mapfile")?.setOnPreferenceClickListener {
+                val getFile = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*" }
+                @Suppress("DEPRECATION")
+                act.startActivityForResult(Intent.createChooser(getFile, getString(R.string.p_mapfile_choose)), 123456)
+                true
+            }
+            findPreference<Preference>("themefile")?.setOnPreferenceClickListener {
+                val getFile = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*" }
+                @Suppress("DEPRECATION")
+                act.startActivityForResult(Intent.createChooser(getFile, getString(R.string.p_themefile_choose)), 123457)
+                true
+            }
         }
     }
 }

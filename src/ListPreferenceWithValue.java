@@ -1,63 +1,33 @@
 package de.duenndns;
 
 import android.content.Context;
-import android.preference.ListPreference;
 import android.util.AttributeSet;
-import android.view.View;
+
+import androidx.preference.ListPreference;
 
 public class ListPreferenceWithValue extends ListPreference {
-	private CharSequence mInitialSummary = null;
-	private boolean mInitialSummaryInitialized = false;
+
+	public ListPreferenceWithValue(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+		super(context, attrs, defStyleAttr, defStyleRes);
+		init();
+	}
+
+	public ListPreferenceWithValue(Context context, AttributeSet attrs, int defStyleAttr) {
+		super(context, attrs, defStyleAttr);
+		init();
+	}
 
 	public ListPreferenceWithValue(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		initSummary();
+		init();
 	}
 
 	public ListPreferenceWithValue(Context context) {
 		super(context);
-		initSummary();
+		init();
 	}
 
-	private void initSummary() {
-		if (!mInitialSummaryInitialized) {
-			mInitialSummary = getSummary();
-			mInitialSummaryInitialized = true;
-		}
+	private void init() {
+		setSummaryProvider(SimpleSummaryProvider.getInstance());
 	}
-
-	private void setSummaryToText(CharSequence text) {
-		initSummary();
-		if (text == null || text.length() == 0) {
-			setSummary(mInitialSummary);
-		} else {
-			setSummary(text);
-		}
-	}
-	@Override
-	protected void onBindView(View view) {
-		super.onBindView(view);
-		setSummaryToText(getEntry());
-	}
-
-	@Override
-	public void setValue(String text) {
-		super.setValue(text);
-		setSummaryToText(getEntry());
-	}
-
-	@Override
-	protected void showDialog(android.os.Bundle state) {
-		try {
-			super.showDialog(state);
-		} catch (Throwable t) {
-			try {
-				android.app.Dialog dialog = getDialog();
-				if (dialog != null && !dialog.isShowing()) {
-					dialog.show();
-				}
-			} catch (Throwable ignored) {}
-		}
-	}
-
 }

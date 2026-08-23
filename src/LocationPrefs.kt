@@ -7,13 +7,14 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.location.LocationManager
 import android.os.Bundle
-import android.preference.PreferenceActivity
 import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.PreferenceFragmentCompat
 import org.aprsdroid.app.location.LocationSource
 import org.aprsdroid.app.location.PeriodicGPS
 
-class LocationPrefs : PreferenceActivity(), SharedPreferences.OnSharedPreferenceChangeListener, PermissionHelper {
+class LocationPrefs : AppCompatActivity(), PermissionHelper {
 
     companion object {
         const val REQUEST_GPS = 101
@@ -22,34 +23,12 @@ class LocationPrefs : PreferenceActivity(), SharedPreferences.OnSharedPreference
 
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 
-    private fun loadXml() {
-        @Suppress("DEPRECATION")
-        addPreferencesFromResource(R.xml.location)
-        val prefRes = LocationSource.instanciatePrefsAct(prefs)
-        if (prefRes != 0) {
-            @Suppress("DEPRECATION")
-            addPreferencesFromResource(prefRes)
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        loadXml()
-        @Suppress("DEPRECATION")
-        preferenceScreen?.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        @Suppress("DEPRECATION")
-        preferenceScreen?.sharedPreferences?.unregisterOnSharedPreferenceChangeListener(this)
-    }
-
-    override fun onSharedPreferenceChanged(sp: SharedPreferences?, key: String?) {
-        if (key == "loc_source" || key == "manual_lat" || key == "manual_lon") {
-            @Suppress("DEPRECATION")
-            preferenceScreen = null
-            loadXml()
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(android.R.id.content, LocationPrefsFragment())
+                .commit()
         }
     }
 
@@ -64,6 +43,7 @@ class LocationPrefs : PreferenceActivity(), SharedPreferences.OnSharedPreference
             }
             "chooseOnMap" -> {
                 val mapmode = MapModes.defaultMapMode(this, prefs)
+                @Suppress("DEPRECATION")
                 startActivityForResult(
                     Intent(this, mapmode.viewClass).putExtra("info", R.string.p_source_from_map_save),
                     REQUEST_MAP
@@ -110,4 +90,36 @@ class LocationPrefs : PreferenceActivity(), SharedPreferences.OnSharedPreference
     }
 
     override fun onPermissionsFailedCancel(action: Int) {}
+
+    class LocationPrefsFragment : PreferenceFragmentCompat(), SharedPreferences.OnSharedPreferenceChangeListener {
+
+        private fun loadXml() {
+            val prefs = PrefsWrapper(requireContext())
+            setPreferencesFromResource(R.xml.location, null)
+            val prefRes = LocationSource.instanciatePrefsAct(prefs)
+            if (prefRes != 0) {
+                addPreferencesFromResource(prefRes)
+            }
+        }
+
+        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            loadXml()
+        }
+
+        override fun onResume() {
+            super.onResume()
+            preferenceScreen?.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
+        }
+
+        override fun onPause() {
+            super.onPause()
+            preferenceScreen?.sharedPreferences?.unregisterOnSharedPreferenceChangeListener(this)
+        }
+
+        override fun onSharedPreferenceChanged(sp: SharedPreferences?, key: String?) {
+            if (key == "loc_source" || key == "manual_lat" || key == "manual_lon") {
+                loadXml()
+            }
+        }
+    }
 }

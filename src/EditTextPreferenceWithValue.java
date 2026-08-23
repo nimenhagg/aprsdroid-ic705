@@ -1,94 +1,68 @@
 package de.duenndns;
 
 import android.content.Context;
-import android.preference.EditTextPreference;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.util.AttributeSet;
-import android.view.View;
-import android.widget.EditText;
+
+import androidx.preference.EditTextPreference;
 
 public class EditTextPreferenceWithValue extends EditTextPreference {
 	private CharSequence mInitialSummary = null;
 	private boolean mInitialSummaryInitialized = false;
 
+	public EditTextPreferenceWithValue(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+		super(context, attrs, defStyleAttr, defStyleRes);
+		init();
+	}
+
+	public EditTextPreferenceWithValue(Context context, AttributeSet attrs, int defStyleAttr) {
+		super(context, attrs, defStyleAttr);
+		init();
+	}
+
 	public EditTextPreferenceWithValue(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		initSummary();
+		init();
 	}
 
 	public EditTextPreferenceWithValue(Context context) {
 		super(context);
-		initSummary();
+		init();
 	}
 
-	private void initSummary() {
+	private void init() {
+		mInitialSummary = getSummary();
+		mInitialSummaryInitialized = true;
+
+		setOnBindEditTextListener(editText -> {
+			if ((editText.getInputType() & InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS) != 0) {
+				InputFilter[] filters = editText.getFilters();
+				InputFilter[] newFilters = new InputFilter[filters.length + 1];
+				System.arraycopy(filters, 0, newFilters, 0, filters.length);
+				newFilters[filters.length] = new InputFilter.AllCaps();
+				editText.setFilters(newFilters);
+			}
+		});
+
+		setSummaryProvider(pref -> {
+			EditTextPreferenceWithValue etp = (EditTextPreferenceWithValue) pref;
+			return etp.buildSummary(etp.getText());
+		});
+	}
+
+	private CharSequence buildSummary(String text) {
 		if (!mInitialSummaryInitialized) {
 			mInitialSummary = getSummary();
 			mInitialSummaryInitialized = true;
 		}
-	}
-
-	private void fixupCaps() {
-		EditText et = getEditText();
-		if ((et.getInputType() & InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS) != 0) {
-			// append AllCaps filter
-			InputFilter[] filters = et.getFilters();
-			InputFilter[] newFilters = new InputFilter[filters.length + 1];
-			System.arraycopy(filters, 0, newFilters, 0, filters.length);
-			newFilters[filters.length] = new InputFilter.AllCaps();
-			et.setFilters(newFilters);
-		}
-	}
-	@Override
-	protected void onBindDialogView(View view) {
-		super.onBindDialogView(view);
-		fixupCaps();
-	}
-
-	private void setSummaryToText(String text) {
-		initSummary();
 		if (text == null || text.length() == 0) {
-			setSummary(mInitialSummary);
-		} else {
-			String display = text;
-			if ((getEditText().getInputType() & InputType.TYPE_TEXT_VARIATION_PASSWORD) != 0 ||
-			    (getEditText().getInputType() & InputType.TYPE_NUMBER_VARIATION_PASSWORD) != 0 ||
-			    getEditText().getTransformationMethod() instanceof android.text.method.PasswordTransformationMethod) {
-				display = "••••••••";
-			}
-			if (mInitialSummary == null || mInitialSummary.length() == 0) {
-				setSummary(display);
-			} else {
-				setSummary(mInitialSummary + ": " + display);
-			}
+			return mInitialSummary;
 		}
-	}
-	@Override
-	protected void onBindView(View view) {
-		super.onBindView(view);
-		setSummaryToText(getText());
-	}
-
-	@Override
-	public void setText(String text) {
-		super.setText(text);
-		setSummaryToText(text);
-	}
-
-	@Override
-	protected void showDialog(android.os.Bundle state) {
-		try {
-			super.showDialog(state);
-		} catch (Throwable t) {
-			android.util.Log.w("EditTextPreference", "Safely caught showDialog exception", t);
-			try {
-				android.app.Dialog dialog = getDialog();
-				if (dialog != null && !dialog.isShowing()) {
-					dialog.show();
-				}
-			} catch (Throwable ignored) {}
+		String display = text;
+		if (mInitialSummary == null || mInitialSummary.length() == 0) {
+			return display;
 		}
+		return mInitialSummary + ": " + display;
 	}
-
 }
