@@ -17,9 +17,10 @@ class BackendPrefs : AppCompatActivity(), PermissionHelper {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_preference)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(android.R.id.content, BackendPrefsFragment())
+                .replace(R.id.preference_container, BackendPrefsFragment())
                 .commit()
         }
     }

@@ -7,9 +7,10 @@ import androidx.preference.PreferenceFragmentCompat
 class PrivacyPrefs : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_preference)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(android.R.id.content, PrivacyPrefsFragment())
+                .replace(R.id.preference_container, PrivacyPrefsFragment())
                 .commit()
         }
     }
