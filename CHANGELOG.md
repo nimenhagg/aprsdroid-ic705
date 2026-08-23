@@ -1,3 +1,17 @@
+## 🚀 [v1.5.5-ic705] - 2026-08-24
+
+### 📡 即时位置信标触发修复 & V1+V2+V3 全方案签名 & 原生地图脱壳
+* **即时位置信标（发送位置 / SERVICE_ONCE）修复**：
+  - 修复当后台跟踪服务正在运行时，点击「发送位置」因 `singleShot` 条件失效导致立即发包逻辑被跳过的 Bug；
+  - 新增多级位置回退机制（优先获取 GPS/Network/Passive 缓存位置立即上发；若无缓存则触发单次定位监听并在收到后立即上报）。
+* **全方案签名支持 (V1 + V2 + V3)**：
+  - 在 Release 签名配置中完整开启 `v1SigningEnabled`（JAR 签名）、`v2SigningEnabled`（APK 完整签名）与 `v3SigningEnabled`（密钥轮换签名）。
+* **高德地图 / OSM 原生脱壳**：
+  - 将高德地图、OpenStreetMap 与自定义瓦片源完全脱离 Google Play Services 容器，采用原生轻量 `MapAct` 渲染引擎，**100% 彻底去除左下角 Google 官方水印 Logo**；
+  - 升级地图顶栏为 MaterialToolbar，并优化十字准星显示逻辑。
+* **APRS-IS 默认服务器升级**：
+  - 默认 TCP 与 TCPTNC 后端服务器迁移为 `china.aprs2.net:14580`，并支持老配置平滑自动升级。
+
 ## 🚀 [v1.5.4-ic705] - 2026-08-24
 
 ### 🗺️ 多瓦片地图源支持 & 真·莫奈动态取色 & 安全加固与代码清理
