@@ -62,6 +62,11 @@ class BackendPrefs : AppCompatActivity(), PermissionHelper {
             val protoXml = AprsBackend.prefxml_proto(prefs)
             if (protoXml != 0) {
                 addPreferencesFromResource(protoXml)
+                findPreference<Preference>("ic705_diagnostic_launch")?.setOnPreferenceClickListener {
+                    val intent = android.content.Intent(requireContext(), org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
             }
             val additionalXml = AprsBackend.prefxml_backend(prefs)
             if (additionalXml != 0) {
