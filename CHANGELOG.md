@@ -1,3 +1,13 @@
+## 🚀 [v1.5.1-ic705] - 2026-08-23
+
+### 🎨 顶栏渲染修复与现代化「关于」对话框重构
+* **顶栏双重标题栏修复**：
+  - 彻底切换至 `Theme.Material3.DayNight.NoActionBar` + `MaterialToolbar` 标准架构；
+  - 修复顶栏图标在 AppCompat 下隐藏的问题，恢复显示报文日志、折叠地图、聊天会话等快捷图标。
+* **现代化「关于」卡片弹窗（AboutDialog）**：
+  - 采用嵌套可滚动 Material 3 弹窗布局，完整展示版本号、原作者版权（DO1GL）、GNU GPLv2 许可证法律声明、致谢与翻译者名单；
+  - 新增醒目的 Material 3 全宽主色胶囊「确定」确认按钮，并支持所有外链直接点击跳转。
+
 ## 🚀 [v1.5.0-ic705] - 2026-08-23
 
 ### ⚡ 核心列表架构全量现代化：RecyclerView + ListAdapter + DiffUtil 重构
