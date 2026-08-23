@@ -393,8 +393,16 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         return result
     }
 
+    fun deleteMessage(id: Long) {
+        writableDatabase.execSQL("DELETE FROM ${Message.TABLE} WHERE ${Message._ID} = ?", arrayOf(id.toString()))
+    }
+
     fun deleteMessages(call: String) {
         writableDatabase.execSQL("DELETE FROM ${Message.TABLE} WHERE ${Message.CALL} = ?", arrayOf(call))
+    }
+
+    fun deleteAllMessages() {
+        writableDatabase.execSQL("DELETE FROM ${Message.TABLE}")
     }
 
     fun getConversations(): Cursor {

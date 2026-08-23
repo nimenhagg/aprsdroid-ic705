@@ -74,6 +74,34 @@ class MessageActivity : StationHelper(R.string.app_messages),
         return listView.getItemAtPosition(info.position) as Cursor
     }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.messagesclear -> {
+                targetcall?.let { call ->
+                    android.app.AlertDialog.Builder(this)
+                        .setTitle(R.string.app_messages_clear)
+                        .setMessage(getString(R.string.confirm_delete_messages, call))
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                            storage.deleteMessages(call)
+                            pla.changeCursor(storage.getMessages(call))
+                            Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                }
+                true
+            }
+            R.id.sta_export -> {
+                targetcall?.let { call ->
+                    onStartLoading()
+                    LogExporter(this, storage, "call = '$call'") { onStopLoading() }.execute()
+                }
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
     fun messageAction(id: Int, c: Cursor): Boolean {
         val msgId = c.getLong(0)
         val msgType = c.getInt(StorageDatabase.Companion.Message.COLUMN_TYPE)
@@ -82,6 +110,19 @@ class MessageActivity : StationHelper(R.string.app_messages),
                 val clip = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 @Suppress("DEPRECATION")
                 clip.text = c.getString(StorageDatabase.Companion.Message.COLUMN_TEXT)
+                true
+            }
+            R.id.delete_msg -> {
+                android.app.AlertDialog.Builder(this)
+                    .setTitle(R.string.delete_message)
+                    .setMessage(R.string.confirm_delete_message)
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        storage.deleteMessage(msgId)
+                        targetcall?.let { pla.changeCursor(storage.getMessages(it)) }
+                        Toast.makeText(this, R.string.message_deleted, Toast.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
                 true
             }
             R.id.abort -> {

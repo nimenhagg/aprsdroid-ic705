@@ -49,6 +49,15 @@
 <string name="msg_restart">重新启动传送</string>
 <string name="msg_type_rejected">已拒绝</string>
 <string name="msg_type_aborted">已终止</string>
+<string name="delete">删除</string>
+<string name="delete_conversation">删除会话</string>
+<string name="delete_message">删除此消息</string>
+<string name="clear_all_messages">清空所有消息</string>
+<string name="confirm_delete_messages">确定要删除与 %s 的所有消息记录吗？</string>
+<string name="confirm_delete_message">确定要删除此条消息吗？</string>
+<string name="confirm_clear_all_messages">确定要清空所有聊天消息记录吗？</string>
+<string name="messages_cleared">消息已清除</string>
+<string name="message_deleted">消息已删除</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid 服务</string>

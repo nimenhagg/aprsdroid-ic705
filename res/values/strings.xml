@@ -51,6 +51,15 @@
 <string name="msg_restart">Restart transmission</string>
 <string name="msg_type_rejected">rejected</string>
 <string name="msg_type_aborted">aborted</string>
+<string name="delete">Delete</string>
+<string name="delete_conversation">Delete Conversation</string>
+<string name="delete_message">Delete Message</string>
+<string name="clear_all_messages">Clear All Messages</string>
+<string name="confirm_delete_messages">Are you sure you want to delete all messages with %s?</string>
+<string name="confirm_delete_message">Are you sure you want to delete this message?</string>
+<string name="confirm_clear_all_messages">Are you sure you want to delete all message history?</string>
+<string name="messages_cleared">Messages cleared</string>
+<string name="message_deleted">Message deleted</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid Service</string>
