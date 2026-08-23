@@ -89,34 +89,14 @@
         </PreferenceScreen>
 
         <PreferenceScreen
-            android:title="@string/p_privacy"
+            android:key="p_privacy"
             android:icon="@drawable/ic_pref_privacy"
+            android:title="@string/p_privacy"
             android:summary="@string/p_privacy_summary">
-            <PreferenceCategory android:title="@string/p_privacy">
-                <de.duenndns.ListPreferenceWithValue
-                    android:key="priv_ambiguity"
-                    android:icon="@drawable/ic_pref_privacy_blur"
-                    android:title="@string/p_priv_ambiguity"
-                    android:summary="@string/p_priv_ambiguity_summary"
-                    android:entries="@array/p_ambiguity_e"
-                    android:entryValues="@array/p_ambiguity_ev"
-                    android:defaultValue="0"
-                    android:dialogTitle="@string/p_priv_ambiguity" />
-
-                <CheckBoxPreference
-                    android:key="priv_spdbear"
-                    android:icon="@drawable/ic_pref_privacy_speed"
-                    android:title="@string/p_priv_spdbear"
-                    android:summary="@string/p_priv_spdbear_summary"
-                    android:defaultValue="true" />
-
-                <CheckBoxPreference
-                    android:key="priv_altitude"
-                    android:icon="@drawable/ic_pref_privacy_altitude"
-                    android:title="@string/p_priv_altitude"
-                    android:summary="@string/p_priv_altitude_summary"
-                    android:defaultValue="true" />
-            </PreferenceCategory>
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:targetPackage="me.nimenhagg.aprsdroidic705mod"
+                android:targetClass="org.aprsdroid.app.PrivacyPrefs" />
         </PreferenceScreen>
     </PreferenceCategory>
 
@@ -128,89 +108,14 @@
             android:summary="@string/p_keepscreen_summary" />
 
         <PreferenceScreen
-            android:title="@string/p__notification"
+            android:key="p_notification"
             android:icon="@drawable/ic_pref_notification"
+            android:title="@string/p__notification"
             android:summary="@string/p__notification_summary">
-            <PreferenceCategory android:title="@string/p_msg">
-                <CheckBoxPreference
-                    android:key="notify_led"
-                    android:icon="@drawable/ic_pref_led"
-                    android:title="@string/p_msg_led"
-                    android:summaryOn="@string/p_msg_led_on"
-                    android:summaryOff="@string/p_msg_led_off"
-                    android:defaultValue="true" />
-
-                <CheckBoxPreference
-                    android:key="notify_vibr"
-                    android:icon="@drawable/ic_pref_vibrate"
-                    android:title="@string/p_msg_vibr"
-                    android:summaryOn="@string/p_msg_vibr_on"
-                    android:summaryOff="@string/p_msg_vibr_off"
-                    android:defaultValue="true" />
-
-                <RingtonePreference
-                    android:key="notify_ringtone"
-                    android:icon="@drawable/ic_pref_ringtone"
-                    android:title="@string/p_msg_ring"
-                    android:summary="@string/p_msg_ring_summary"
-                    android:ringtoneType="notification"
-                    android:showDefault="true"
-                    android:showSilent="true" />
-            </PreferenceCategory>
-
-            <PreferenceCategory android:title="@string/p_pos">
-                <CheckBoxPreference
-                    android:key="pos_notify_led"
-                    android:icon="@drawable/ic_pref_led"
-                    android:title="@string/p_msg_led"
-                    android:summaryOn="@string/p_msg_led_on"
-                    android:summaryOff="@string/p_msg_led_off"
-                    android:defaultValue="false" />
-
-                <CheckBoxPreference
-                    android:key="pos_notify_vibr"
-                    android:icon="@drawable/ic_pref_vibrate"
-                    android:title="@string/p_msg_vibr"
-                    android:summaryOn="@string/p_msg_vibr_on"
-                    android:summaryOff="@string/p_msg_vibr_off"
-                    android:defaultValue="false" />
-
-                <RingtonePreference
-                    android:key="pos_notify_ringtone"
-                    android:icon="@drawable/ic_pref_ringtone"
-                    android:title="@string/p_pos_ring"
-                    android:summary="@string/p_pos_ring_summary"
-                    android:ringtoneType="notification"
-                    android:showDefault="true"
-                    android:showSilent="true" />
-            </PreferenceCategory>
-
-            <PreferenceCategory android:title="@string/p_dgp">
-                <CheckBoxPreference
-                    android:key="dgp_notify_led"
-                    android:icon="@drawable/ic_pref_led"
-                    android:title="@string/p_msg_led"
-                    android:summaryOn="@string/p_msg_led_on"
-                    android:summaryOff="@string/p_msg_led_off"
-                    android:defaultValue="false" />
-
-                <CheckBoxPreference
-                    android:key="dgp_notify_vibr"
-                    android:icon="@drawable/ic_pref_vibrate"
-                    android:title="@string/p_msg_vibr"
-                    android:summaryOn="@string/p_msg_vibr_on"
-                    android:summaryOff="@string/p_msg_vibr_off"
-                    android:defaultValue="false" />
-
-                <RingtonePreference
-                    android:key="dgp_notify_ringtone"
-                    android:icon="@drawable/ic_pref_ringtone"
-                    android:title="@string/p_dgp_ring"
-                    android:summary="@string/p_dgp_ring_summary"
-                    android:ringtoneType="notification"
-                    android:showDefault="true"
-                    android:showSilent="true" />
-            </PreferenceCategory>
+            <intent
+                android:action="android.intent.action.MAIN"
+                android:targetPackage="me.nimenhagg.aprsdroidic705mod"
+                android:targetClass="org.aprsdroid.app.NotificationPrefs" />
         </PreferenceScreen>
 
         <de.duenndns.EditTextPreferenceWithValue

@@ -97,6 +97,12 @@
 		android:parentActivityName=".PrefsAct"
 		android:launchMode="singleTop"
 		/>
+	<activity android:name=".NotificationPrefs" android:label="@string/p__notification"
+		android:parentActivityName=".PrefsAct"
+		/>
+	<activity android:name=".PrivacyPrefs" android:label="@string/p_privacy"
+		android:parentActivityName=".PrefsAct"
+		/>
 	<activity android:name=".GoogleMapAct" android:label="@string/app_map"
 		android:launchMode="singleTop"
 		android:parentActivityName=".HubActivity"

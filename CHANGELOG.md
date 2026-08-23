@@ -1,3 +1,11 @@
+## 🎨 [v1.3.4-ic705] - 2026-08-23
+
+### 🛠️ 现代化子设置界面、Dialog 适配与默认信标注释更新
+* **默认注释更新**：将默认状态注释字段由官方网页链接全面更新为 `APRSDroid Mod`。
+* **独立通知与隐私设置 Activity**：新建 `NotificationPrefs` 与 `PrivacyPrefs` 专属设置 Activity，彻底消除 Android 原生内嵌子 PreferenceScreen 无顶栏和背景底色偏紫偏粉的失真问题，统一浅色 Material 3 背景与返回导航栏。
+* **系统 Dialog 弹窗适配与防崩溃**：适配 `Material3PlatformDialogTheme`，并对 `EditTextPreference` / `ListPreference` 捕获 Android 14+ 系统的 `WindowInsetsController` 空指针崩溃隐患，确保呼号、SSID、中继路径等弹窗输入框与按钮完整渲染。
+* **关闭防反编译混淆（保留开源透明与性能）**：Release 构建配置 `-dontobfuscate` 并禁用 minify 混淆，保持 100% 原始源码结构与极速编译。
+
 ## ⚡ [v1.3.3-ic705] - 2026-08-23
 
 ### 🚀 多线程编译优化与首选项点击无限重复 Bug 彻底修复

@@ -76,4 +76,19 @@ public class EditTextPreferenceWithValue extends EditTextPreference {
 		setSummaryToText(text);
 	}
 
+	@Override
+	protected void showDialog(android.os.Bundle state) {
+		try {
+			super.showDialog(state);
+		} catch (Throwable t) {
+			android.util.Log.w("EditTextPreference", "Safely caught showDialog exception", t);
+			try {
+				android.app.Dialog dialog = getDialog();
+				if (dialog != null && !dialog.isShowing()) {
+					dialog.show();
+				}
+			} catch (Throwable ignored) {}
+		}
+	}
+
 }

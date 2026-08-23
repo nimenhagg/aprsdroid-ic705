@@ -46,4 +46,18 @@ public class ListPreferenceWithValue extends ListPreference {
 		setSummaryToText(getEntry());
 	}
 
+	@Override
+	protected void showDialog(android.os.Bundle state) {
+		try {
+			super.showDialog(state);
+		} catch (Throwable t) {
+			try {
+				android.app.Dialog dialog = getDialog();
+				if (dialog != null && !dialog.isShowing()) {
+					dialog.show();
+				}
+			} catch (Throwable ignored) {}
+		}
+	}
+
 }
