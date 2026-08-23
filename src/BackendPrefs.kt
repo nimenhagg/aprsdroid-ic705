@@ -110,6 +110,15 @@ class BackendPrefs : AppCompatActivity(), PermissionHelper {
             preferenceScreen?.sharedPreferences?.unregisterOnSharedPreferenceChangeListener(this)
         }
 
+        override fun onPreferenceTreeClick(preference: Preference): Boolean {
+            val intent = preference.intent
+            if (intent != null) {
+                startActivity(intent)
+                return true
+            }
+            return super.onPreferenceTreeClick(preference)
+        }
+
         override fun onSharedPreferenceChanged(sp: SharedPreferences?, key: String?) {
             if (key == "proto" || key == "link" || key == "aprsis") {
                 loadXml()

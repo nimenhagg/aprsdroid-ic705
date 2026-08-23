@@ -61,6 +61,7 @@
 <string name="messages_cleared">Messages cleared</string>
 <string name="message_deleted">Message deleted</string>
 <string name="text_copied">Copied to clipboard</string>
+<string name="ic705_rx_diagnostic_summary">Test IC-705 Wi-Fi handshake, audio stream, and AX.25 decoding</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid Service</string>

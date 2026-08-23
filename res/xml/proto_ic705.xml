@@ -24,5 +24,15 @@
             android:inputType="textPassword"
             android:title="@string/ic705_rx_password"
             android:dialogTitle="@string/ic705_rx_password" />
+        <Preference
+            android:key="ic705_diagnostic_launch"
+            android:icon="@drawable/ic_pref_gps_device"
+            android:title="@string/ic705_rx_title"
+            android:summary="@string/ic705_rx_diagnostic_summary">
+            <intent
+                android:action="android.intent.action.VIEW"
+                android:targetPackage="me.nimenhagg.aprsdroidic705mod"
+                android:targetClass="org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity" />
+        </Preference>
     </PreferenceCategory>
 </PreferenceScreen>

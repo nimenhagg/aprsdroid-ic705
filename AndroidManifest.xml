@@ -175,6 +175,10 @@
 			android:mimeType="application/x-pkcs12" />
 	    </intent-filter>
 	</activity>
+	<activity android:name=".ic705.diagnostic.Ic705RxDiagnosticActivity"
+		android:label="@string/ic705_rx_title"
+		android:theme="@style/PreferenceTheme"
+		android:exported="false" />
 	<service android:name=".AprsService" android:label="@string/aprsservice"
 		android:foregroundServiceType="location|microphone|specialUse"
 		tools:ignore="ExportedService"
