@@ -1,3 +1,17 @@
+## 🧹 [v1.4.3-ic705] - 2026-08-23
+
+### 🏛️ 全面清理历史包袱与“岁月史书” (Legacy Cleanup)
+* **清除 Scala 时代残留垫片**：彻底删除无用的 `MyAsyncTask.java` 历史兼容类；
+* **清理废弃构建插件**：删除早已停用的 `build-logic/scalroid` 遗留目录（42 个废弃 Scala-AGP 插件源码文件）；
+* **移除远古系统版本分支判断**：
+  - `UIHelper.kt`：剔除 `< KITKAT` (Android 4.4) 冗余分支，使用现代文档存储路径；
+  - `PermissionHelper.kt`：剔除 `< M` (Android 6.0) 兼容分支，采用现代化 Kotlin 集合过滤权限；
+  - `KenwoodProto.kt`：移除 2009 年 Android 2.0 (API 5) 的 `NmeaListenerR5` 与废弃回调，全面使用标准的 `OnNmeaMessageListener`；
+  - `BluetoothTnc.kt`：使用 `BluetoothManager` 获取适配器，消除 `BluetoothAdapter.getDefaultAdapter()` 废弃 API 调用；
+  - `ServiceNotifier.kt`：现代化震动与通知逻辑，适配 Android 12+ `VibratorManager` 与 `VibrationEffect`；
+  - `AudioBufferProcessor.java`：清理 2011 年硬编码 `/sdcard/` 调试文件路径及模板冗余注释；
+  - 合并并移除冗余根目录 `ChangeLog` 文件。
+
 ## 📡 [v1.4.2-ic705] - 2026-08-23
 
 ### 🎨 IC-705 Wi-Fi 诊断全量现代化与设置深度集成

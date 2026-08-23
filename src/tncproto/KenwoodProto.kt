@@ -30,22 +30,18 @@ class KenwoodProto(val service: AprsService, isStream: InputStream, osStream: Ou
     private val output: OutputStreamWriter? = OutputStreamWriter(osStream)
     private val executor = Executors.newSingleThreadExecutor()
 
-    private var listenerR5: NmeaListenerR5? = null
-    private var listenerR24: NmeaListenerR24? = null
+    private var nmeaListener: OnNmeaMessageListener? = null
 
     init {
         if (service.prefs.getBoolean("kenwood.gps", false)) {
             Handler(Looper.getMainLooper()).post {
                 try {
                     locMan.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, sinkhole)
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-                        listenerR5 = NmeaListenerR5()
-                        @Suppress("DEPRECATION")
-                        locMan.addNmeaListener(listenerR5 as GpsStatus.NmeaListener)
-                    } else {
-                        listenerR24 = NmeaListenerR24()
-                        locMan.addNmeaListener(listenerR24 as OnNmeaMessageListener)
+                    val listener = OnNmeaMessageListener { nmea, timestamp ->
+                        onNmeaReceived(timestamp, nmea)
                     }
+                    nmeaListener = listener
+                    locMan.addNmeaListener(listener)
                 } catch (e: Exception) {
                     Log.e(TAG, "GPS listener registration error: $e")
                 }
@@ -121,36 +117,16 @@ class KenwoodProto(val service: AprsService, isStream: InputStream, osStream: Ou
         }
     }
 
-    inner class NmeaListenerR5 : GpsStatus.NmeaListener {
-        override fun onNmeaReceived(timestamp: Long, nmea: String) {
-            this@KenwoodProto.onNmeaReceived(timestamp, nmea)
-        }
-    }
-
-    inner class NmeaListenerR24 : OnNmeaMessageListener {
-        override fun onNmeaMessage(nmea: String, timestamp: Long) {
-            this@KenwoodProto.onNmeaReceived(timestamp, nmea)
-        }
-    }
-
     class LocationSinkhole : LocationListener {
         override fun onLocationChanged(location: Location) {}
         override fun onProviderDisabled(provider: String) {}
         override fun onProviderEnabled(provider: String) {}
-        @Deprecated("Deprecated in Java")
-        override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
     }
 
     override fun stop() {
         try {
             locMan.removeUpdates(sinkhole)
-            if (listenerR5 != null) {
-                @Suppress("DEPRECATION")
-                locMan.removeNmeaListener(listenerR5 as GpsStatus.NmeaListener)
-            }
-            if (listenerR24 != null) {
-                locMan.removeNmeaListener(listenerR24 as OnNmeaMessageListener)
-            }
+            nmeaListener?.let { locMan.removeNmeaListener(it) }
             executor.shutdownNow()
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping KenwoodProto: $e")

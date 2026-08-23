@@ -17,24 +17,15 @@ interface PermissionHelper {
     fun onPermissionsFailedCancel(action: Int)
 
     fun checkPermissions(permissions: Array<String>, action: Int): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            onAllPermissionsGranted(action)
-            return true
+        val notGranted = permissions.filter {
+            activity.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
+        }
+        return if (notGranted.isNotEmpty()) {
+            activity.requestPermissions(notGranted.toTypedArray(), action)
+            false
         } else {
-            var needDialog = false
-            for (p in permissions) {
-                if (activity.checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) {
-                    needDialog = true
-                    break
-                }
-            }
-            return if (needDialog) {
-                activity.requestPermissions(permissions, action)
-                false
-            } else {
-                onAllPermissionsGranted(action)
-                true
-            }
+            onAllPermissionsGranted(action)
+            true
         }
     }
 

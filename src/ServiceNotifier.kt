@@ -111,16 +111,28 @@ class ServiceNotifier {
 
     fun setupNotification(n: Notification, ctx: Context, prefs: PrefsWrapper, default: Boolean, prefix: String) {
         if (prefs.getBoolean(prefix + "notify_led", default)) {
+            @Suppress("DEPRECATION")
             n.ledARGB = Color.YELLOW
+            @Suppress("DEPRECATION")
             n.ledOnMS = 300
+            @Suppress("DEPRECATION")
             n.ledOffMS = 1000
+            @Suppress("DEPRECATION")
             n.flags = n.flags or Notification.FLAG_SHOW_LIGHTS
         }
         if (prefs.getBoolean(prefix + "notify_vibr", default)) {
-            @Suppress("DEPRECATION")
-            val v = ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            @Suppress("DEPRECATION")
-            v?.vibrate(longArrayOf(0, 200, 200), -1)
+            val v = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                (ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager)?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                v?.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 200, 200), -1))
+            } else {
+                @Suppress("DEPRECATION")
+                v?.vibrate(longArrayOf(0, 200, 200), -1)
+            }
         }
         val sound = prefs.getString(prefix + "notify_ringtone", null)
         if (!sound.isNullOrEmpty()) {

@@ -33,12 +33,9 @@ object UIHelper {
 
     @JvmStatic
     fun getExportDirectory(ctx: Context): File {
-        val base = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-        } else {
-            @Suppress("DEPRECATION")
-            Environment.getExternalStorageDirectory()
-        }
+        val base = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+            ?: ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            ?: ctx.filesDir
         return File(base, "APRSdroid")
     }
 

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.content.Context
 import android.util.Log
 import net.ab0oo.aprs.parser.APRSPacket
 import java.util.UUID
@@ -31,8 +32,8 @@ class BluetoothTnc(
 
     @SuppressLint("MissingPermission")
     fun createConnection() {
-        Log.d(TAG, "BluetoothTnc.createConnection: $tncmac")
-        val adapter = BluetoothAdapter.getDefaultAdapter()
+        val bm = service.getSystemService(Context.BLUETOOTH_SERVICE) as? android.bluetooth.BluetoothManager
+        val adapter = bm?.adapter ?: @Suppress("DEPRECATION") BluetoothAdapter.getDefaultAdapter()
         if (adapter == null) {
             service.postAbort(service.getString(R.string.bt_error_unsupported))
             return
