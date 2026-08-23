@@ -1,5 +1,6 @@
 package org.aprsdroid.app
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -113,11 +114,25 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) {
-            finish()
-            return true
+        return when (item.itemId) {
+            android.R.id.home -> {
+                finish()
+                true
+            }
+            R.id.preferences -> {
+                startActivity(Intent(this, PrefsAct::class.java))
+                true
+            }
+            R.id.about -> {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.app_name)
+                    .setMessage(getString(R.string.build_version))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
-        return super.onOptionsItemSelected(item)
     }
 
     // PermissionHelper defaults
