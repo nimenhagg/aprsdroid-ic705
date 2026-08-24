@@ -265,18 +265,8 @@ object StationBottomSheetHelper {
         val station = items[0]
 
         val dialog = BottomSheetDialog(context)
-        (context as? androidx.lifecycle.LifecycleOwner)?.let {
-            dialog.window?.decorView?.let { decor ->
-                androidx.lifecycle.ViewTreeLifecycleOwner.set(decor, it)
-                (context as? androidx.lifecycle.ViewModelStoreOwner)?.let { vmOwner ->
-                    androidx.lifecycle.ViewTreeViewModelStoreOwner.set(decor, vmOwner)
-                }
-                (context as? androidx.savedstate.SavedStateRegistryOwner)?.let { savedOwner ->
-                    androidx.savedstate.ViewTreeSavedStateRegistryOwner.set(decor, savedOwner)
-                }
-            }
-        }
         val composeView = ComposeView(context).apply {
+            setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AprsTheme {
                     StationBottomSheetContent(

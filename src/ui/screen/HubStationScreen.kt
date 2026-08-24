@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MyLocation
@@ -87,6 +88,7 @@ fun HubStationScreen(
     onOpenAbout: () -> Unit
 ) {
     var showTopMenu by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     val appTitle = if (isRunning) {
         "${stringResource(R.string.app_name)} ($myCall)"
@@ -149,8 +151,10 @@ fun HubStationScreen(
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.about)) },
+                                leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
                                 onClick = {
                                     showTopMenu = false
+                                    showAboutDialog = true
                                     onOpenAbout()
                                 }
                             )
@@ -252,6 +256,17 @@ fun HubStationScreen(
                 }
             }
         }
+    }
+
+    if (showAboutDialog) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        org.aprsdroid.app.ui.component.AboutDialogContent(
+            onDismiss = { showAboutDialog = false },
+            onOpenGithub = {
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/nimenhagg/aprsdroid-ic705"))
+                context.startActivity(intent)
+            }
+        )
     }
 }
 
