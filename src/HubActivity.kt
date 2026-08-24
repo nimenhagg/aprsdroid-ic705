@@ -8,15 +8,13 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import android.widget.TextView
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import org.aprsdroid.app.adapter.StationRecyclerAdapter
 import org.aprsdroid.app.model.StationItem
+import org.aprsdroid.app.ui.screen.HubStationScreen
+import org.aprsdroid.app.ui.theme.AprsTheme
 import java.util.concurrent.Executors
 
 class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
@@ -25,9 +23,10 @@ class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var emptyView: TextView
-    private lateinit var adapter: StationRecyclerAdapter
+    private val stationsState = mutableStateOf<List<StationItem>>(emptyList())
+    private val isRunningState = mutableStateOf(false)
+    private val myLatState = mutableIntStateOf(0)
+    private val myLonState = mutableIntStateOf(0)
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -37,34 +36,50 @@ class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.main)
-        onContentViewLoaded()
 
-        recyclerView = findViewById(R.id.recycler_view)
-        emptyView = findViewById(R.id.empty)
-        emptyView.setText(R.string.empty_logview)
-
-        adapter = StationRecyclerAdapter(
-            context = this,
-            mycall = prefs.getCallSsid(),
-            targetcall = "",
-            onItemClick = { item -> openMessaging(item.call) },
-            onItemLongClick = { item, _ ->
-                openDetails(item.call)
-                true
+        setContent {
+            AprsTheme {
+                HubStationScreen(
+                    myCall = prefs.getCallSsid(),
+                    isRunning = isRunningState.value,
+                    stations = stationsState.value,
+                    myLat = myLatState.intValue,
+                    myLon = myLonState.intValue,
+                    onSendPosition = {
+                        startService(AprsService.intent(this, AprsService.SERVICE_ONCE))
+                        isRunningState.value = true
+                    },
+                    onToggleTracking = {
+                        val running = AprsService.running
+                        if (!running) {
+                            startService(AprsService.intent(this, AprsService.SERVICE))
+                            isRunningState.value = true
+                        } else {
+                            startService(AprsService.intent(this, AprsService.SERVICE_STOP))
+                            isRunningState.value = false
+                        }
+                    },
+                    onStationClick = { item -> openMessaging(item.call) },
+                    onStationLongClick = { item -> openDetails(item.call) },
+                    onOpenMap = {
+                        val mode = MapModes.defaultMapMode(this, prefs)
+                        replaceAct(mode.viewClass)
+                    },
+                    onOpenLogs = { replaceAct(LogActivity::class.java) },
+                    onOpenMessages = { startActivity(Intent(this, ConversationsActivity::class.java)) },
+                    onOpenSettings = { startActivity(Intent(this, PrefsAct::class.java)) },
+                    onOpenAbout = { startActivity(Intent(this, AboutActivity::class.java)) }
+                )
             }
-        )
+        }
 
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
-
-        onStartLoading()
         loadData()
     }
 
     @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
+        isRunningState.value = AprsService.running
         ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
         loadData()
     }
@@ -98,58 +113,11 @@ class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
             val items = StationItem.fromCursor(cursor)
 
             mainHandler.post {
-                adapter.myLat = myLat
-                adapter.myLon = myLon
-                adapter.submitList(items)
-                emptyView.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
-                onStopLoading()
+                myLatState.intValue = myLat
+                myLonState.intValue = myLon
+                isRunningState.value = AprsService.running
+                stationsState.value = items
             }
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.options_activities, menu)
-        menuInflater.inflate(R.menu.options_map, menu)
-        menuInflater.inflate(R.menu.options, menu)
-        menu.findItem(R.id.hub)?.isVisible = false
-        menu.findItem(R.id.age)?.isVisible = true
-        menu.findItem(R.id.overlays)?.isVisible = false
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.preferences -> {
-                startActivity(Intent(this, PrefsAct::class.java))
-                true
-            }
-            R.id.map -> {
-                MapModes.startMap(this, prefs, "")
-                true
-            }
-            R.id.log -> {
-                startActivity(Intent(this, LogActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-                true
-            }
-            R.id.conversations -> {
-                startActivity(Intent(this, ConversationsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-                true
-            }
-            R.id.export -> {
-                onStartLoading()
-                LogExporter(this, storage, null) { onStopLoading() }.execute()
-                true
-            }
-            R.id.clear -> {
-                onStartLoading()
-                StorageCleaner(this, storage) { onStopLoading() }.execute()
-                true
-            }
-            R.id.about -> {
-                AboutDialog(this).show()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
         }
     }
 }

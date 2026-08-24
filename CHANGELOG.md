@@ -1,3 +1,15 @@
+## 🚀 [v1.5.9-ic705] - 2026-08-24
+
+### 📱 主界面台站列表 & 消息会话总览全面 Compose 化 (Phase 2)
+* **台站主页（`HubActivity`）全量 Compose 重构**：
+  - 迁移至声明式 `HubStationScreen`：
+    - 置顶本机卡片 M3 主色高亮与圆角裁剪，彻底杜绝传统背景切角 Bug；
+    - 列表项无缝集成 `SymbolBadge` 高清矢量电台图标；
+    - 智能集成语音频率 Chip（`📻 439.500 MHz`）、距离、方位角与时间戳；
+    - 现代化沉浸式底栏：发信位置（单次）+ 开始/停止记录路径双大按钮。
+* **消息会话总览页（`ConversationsActivity`）Compose 重构**：
+  - 迁移至 `ConversationsScreen`，支持电台图标展示、最近一条消息摘要、删除会话确认与新建会话 FAB 弹窗。
+
 ## 🚀 [v1.5.8-ic705] - 2026-08-24
 
 ### 🎨 引入 Jetpack Compose 架构 & Material 3 现代化短消息会话
