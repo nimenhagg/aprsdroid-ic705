@@ -39,7 +39,8 @@
 
 <!-- Conversations activity -->
 <string name="msg_send_new">发信息给...</string>
-<string name="msg_message_text">信息内容</string>
+<string name="msg_send_hint">输入 APRS 消息...</string>
+<string name="msg_message_text">消息内容</string>
 <string name="msg_empty_list">没有存储的对话</string>
 <string name="msg_stored_offline">只要你开始跟踪记录该信息就开始发送。</string>
 <!-- Message activity -->

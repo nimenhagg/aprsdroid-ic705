@@ -36,7 +36,7 @@ allprojects {
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = "1.5.7"
+	mod_version = "1.5.8"
 	base_version = "APRSdroid v1.7.0"
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
@@ -85,6 +85,10 @@ android {
 	}
 	buildFeatures {
 		buildConfig = true
+		compose = true
+	}
+	composeOptions {
+		kotlinCompilerExtensionVersion = "1.5.14"
 	}
 
 	buildTypes {
@@ -160,6 +164,16 @@ dependencies {
 	implementation 'androidx.appcompat:appcompat:1.6.1'
 	implementation 'androidx.preference:preference-ktx:1.2.1'
 	implementation 'com.google.android.material:material:1.11.0'
+
+	def composeBom = platform('androidx.compose:compose-bom:2024.05.00')
+	implementation composeBom
+	implementation 'androidx.compose.ui:ui'
+	implementation 'androidx.compose.ui:ui-graphics'
+	implementation 'androidx.compose.ui:ui-tooling-preview'
+	implementation 'androidx.compose.material3:material3'
+	implementation 'androidx.activity:activity-compose:1.8.2'
+	implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.7.0'
+	implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
 
 	implementation 'com.squareup.okio:okio:2.1.0'
 	androidTestImplementation 'com.android.support.test:runner:1.0.2'

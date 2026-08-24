@@ -1,3 +1,19 @@
+## 🚀 [v1.5.8-ic705] - 2026-08-24
+
+### 🎨 引入 Jetpack Compose 架构 & Material 3 现代化短消息会话
+* **Jetpack Compose 现代化架构落地**：
+  - 引入 Jetpack Compose 2024.05.00 (BOM) + Compose Material 3 框架；
+  - 建立全局 `AprsTheme`，原生支持 Android 12+ Monet 壁纸动态取色（`dynamicLightColorScheme` / `dynamicDarkColorScheme`）；
+  - 封装 Compose 声明式高清 APRS 矢量图标组件 `SymbolBadge`。
+* **短消息聊天页（`MessageActivity`）全量 Compose 重构**：
+  - 重构为 `MessageChatScreen` 声明式聊天界面：
+    - 现代 Material 3 左右气泡布局与 Monospace 字体排版；
+    - 即时发送状态指示：`⏳ 发送中 (0/7)`、`✓✓ 已送达 (ACK)`、`✕ 对方拒绝 (REJ)`、`⊘ 发送失败/已中止`；
+    - 底部沉浸式 Material 3 圆角输入栏与发送交互；
+    - 长按消息快捷弹窗操作（复制文本、重发、中止、单条删除）。
+* **CI 构建流水线优化**：
+  - GitHub Actions 增加 `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`，消除 Node.js 20 运行时弃用警告。
+
 ## 🚀 [v1.5.7-ic705] - 2026-08-24
 
 ### 🗺️ 地图偏好设置动态联动 & 自定义瓦片源精简

@@ -41,6 +41,7 @@
 
 <!-- Conversations activity -->
 <string name="msg_send_new">Send message to...</string>
+<string name="msg_send_hint">Type APRS message...</string>
 <string name="msg_message_text">Message text</string>
 <string name="msg_empty_list">There are no stored conversations.</string>
 <string name="msg_stored_offline">The message will be sent as soon as you start tracking.</string>
