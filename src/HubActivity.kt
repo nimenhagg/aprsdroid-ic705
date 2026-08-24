@@ -70,9 +70,9 @@ class HubActivity : BaseRecyclerActivity() {
                     onStationLongClick = { item -> openDetails(item.call) },
                     onOpenMap = {
                         val mode = MapModes.defaultMapMode(this, prefs)
-                        replaceAct(mode.viewClass)
+                        startActivity(Intent(this, mode.viewClass))
                     },
-                    onOpenLogs = { replaceAct(LogActivity::class.java) },
+                    onOpenLogs = { startActivity(Intent(this, LogActivity::class.java)) },
                     onOpenMessages = { startActivity(Intent(this, ConversationsActivity::class.java)) },
                     onOpenSettings = { startActivity(Intent(this, PrefsAct::class.java)) },
                     onOpenAbout = { AboutDialog(this).show() }

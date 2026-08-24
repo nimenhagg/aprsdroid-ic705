@@ -128,31 +128,33 @@ fun HubStationScreen(
                             contentDescription = stringResource(R.string.app_messages)
                         )
                     }
-                    IconButton(onClick = { showTopMenu = true }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Menu"
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showTopMenu,
-                        onDismissRequest = { showTopMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.preferences)) },
-                            leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                            onClick = {
-                                showTopMenu = false
-                                onOpenSettings()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.about)) },
-                            onClick = {
-                                showTopMenu = false
-                                onOpenAbout()
-                            }
-                        )
+                    Box {
+                        IconButton(onClick = { showTopMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Menu"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showTopMenu,
+                            onDismissRequest = { showTopMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.preferences)) },
+                                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                onClick = {
+                                    showTopMenu = false
+                                    onOpenSettings()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.about)) },
+                                onClick = {
+                                    showTopMenu = false
+                                    onOpenAbout()
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
