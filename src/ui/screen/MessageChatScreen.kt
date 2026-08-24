@@ -150,7 +150,7 @@ fun MessageChatScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.sta_export)) },
+                            text = { Text(stringResource(R.string.export_log)) },
                             onClick = {
                                 showTopMenu = false
                                 onExportLogs()
