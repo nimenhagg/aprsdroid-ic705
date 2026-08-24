@@ -1,3 +1,13 @@
+## 🚀 [v1.6.3-ic705] - 2026-08-24
+
+### 🧹 现代 Activity Result、存储权限与零告警治理
+* 将地图坐标选择、通知铃声选择和运行时权限授权迁移到 AndroidX Activity Result launcher；在 Activity 重建时保存待处理动作，不再依赖 `startActivityForResult`、`onActivityResult` 或 `onRequestPermissionsResult`。
+* 日志与配置导出改用应用专属外部 Documents 目录并继续通过 `FileProvider` 分享，删除不再需要的外部存储读写权限声明。
+* 系统清理 Android Lint 的 1001 条报告：修复 KTX、字符串格式化、复数规则、无障碍描述、布局过绘制、调度器和版本恒真分支；精确保留既有兼容行为，不使用全局 Lint baseline 掩盖问题。
+* 删除 86 个无运行引用的资源标识及其各语言死翻译，保留默认资源与全部 58 个 locale 目录中的活动多语言资源；统一省略号、修正已确认的拼写问题，并补全复数分支。
+* IC-705 诊断、数字中继预设和关于界面的默认文案改为英文资源，简体中文使用独立翻译；清除 XML 与 Compose 中的硬编码中文。
+* 版本元数据更新为 `1.6.3-ic705`（`versionCode 2026082463`）；JVM 测试、Android Lint 和 Release 构建继续作为发布门禁。
+
 ## 🚀 [v1.6.2-ic705] - 2026-08-24
 
 ### 🌐 原生 HTTP 上传与现代文档访问

@@ -4,7 +4,8 @@ import android.app.Activity
 import androidx.appcompat.app.AlertDialog
 import android.content.DialogInterface
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
+import androidx.core.content.edit
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputFilter
@@ -12,6 +13,7 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 
@@ -26,7 +28,11 @@ class PasscodeDialog(
 
     val prefs: PrefsWrapper by lazy { PrefsWrapper(act) }
 
-    private val fr_view: View = LayoutInflater.from(act).inflate(R.layout.firstrunview, null, false)
+    private val fr_view: View = LayoutInflater.from(act).inflate(
+        R.layout.firstrunview,
+        act.findViewById<ViewGroup>(android.R.id.content),
+        false,
+    )
     private val inputCall: EditText = fr_view.findViewById(R.id.callsign)
     private val inputPass: EditText = fr_view.findViewById(R.id.passcode)
     private val okButton: Button? get() = getButton(DialogInterface.BUTTON_POSITIVE)
@@ -68,7 +74,7 @@ class PasscodeDialog(
             DialogInterface.BUTTON_POSITIVE -> saveFirstRun(true)
             DialogInterface.BUTTON_NEUTRAL -> {
                 saveFirstRun(false)
-                act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(act.getString(R.string.passcode_url))))
+                act.startActivity(Intent(Intent.ACTION_VIEW, act.getString(R.string.passcode_url).toUri()))
             }
             else -> cancelled()
         }
@@ -108,25 +114,22 @@ class PasscodeDialog(
     fun saveFirstRun(completed: Boolean) {
         val call = inputCall.text.toString()
         val passcode = inputPass.text.toString()
-        val pe = prefs.prefs.edit()
         val parts = call.split("-")
-        when (parts.size) {
-            1 -> pe.putString("callsign", parts[0])
-            2 -> {
-                pe.putString("callsign", parts[0])
-                pe.putString("ssid", parts[1])
-            }
-            else -> {
-                Log.d("PasscodeDialog", "could not split callsign")
-                act.finish()
-                return
-            }
+        if (parts.size !in 1..2) {
+            Log.d("PasscodeDialog", "could not split callsign")
+            act.finish()
+            return
         }
-        if (passOK(call, passcode)) {
-            pe.putString("passcode", passcode)
+        prefs.prefs.edit {
+            putString("callsign", parts[0])
+            if (parts.size == 2) {
+                putString("ssid", parts[1])
+            }
+            if (passOK(call, passcode)) {
+                putString("passcode", passcode)
+            }
+            putBoolean("firstrun", !completed)
         }
-        pe.putBoolean("firstrun", !completed)
-        pe.apply()
     }
 
     fun cancelled() {

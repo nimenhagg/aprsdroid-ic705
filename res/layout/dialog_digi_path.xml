@@ -12,7 +12,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="常用中继预设 (点击快速填入，自定义长按可删除):"
+        android:text="@string/digi_path_presets_hint"
         android:textSize="12sp"
         android:textColor="?android:attr/textColorSecondary"
         android:layout_marginBottom="6dp" />
@@ -50,6 +50,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="end"
         android:layout_marginTop="8dp"
-        android:text="➕ 存为预设"
+        android:text="@string/digi_path_save_preset"
         style="@style/Widget.Material3.Button.TonalButton" />
 </LinearLayout>

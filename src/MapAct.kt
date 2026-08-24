@@ -14,6 +14,7 @@ import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.mapsforge.v3.android.maps.MapActivity
@@ -314,11 +315,11 @@ class MapAct : MapActivity(), LoadingIndicator {
         val pos = mapview.mapPosition
         if (pos != null && pos.isValid) {
             val gp = pos.mapCenter
-            prefs.prefs.edit()
-                .putFloat("map_lat", (gp.latitudeE6 / 1e6).toFloat())
-                .putFloat("map_lon", (gp.longitudeE6 / 1e6).toFloat())
-                .putFloat("map_zoom", pos.zoomLevel.toFloat())
-                .apply()
+            prefs.prefs.edit {
+                putFloat("map_lat", (gp.latitudeE6 / 1e6).toFloat())
+                putFloat("map_lon", (gp.longitudeE6 / 1e6).toFloat())
+                putFloat("map_zoom", pos.zoomLevel.toFloat())
+            }
         }
     }
 
@@ -363,13 +364,13 @@ class MapAct : MapActivity(), LoadingIndicator {
     }
 
     private fun switchMode(tag: String) {
-        prefs.prefs.edit().putString("mapmode", tag).apply()
+        prefs.prefs.edit { putString("mapmode", tag) }
         applyCurrentMapMode()
         mapview.redrawTiles()
     }
 
     private fun switchGoogleMap(tag: String) {
-        prefs.prefs.edit().putString("mapmode", tag).apply()
+        prefs.prefs.edit { putString("mapmode", tag) }
         saveMapPosition()
         startActivity(Intent(this, GoogleMapAct::class.java).putExtras(intent))
         finish()

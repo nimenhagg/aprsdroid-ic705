@@ -1,11 +1,12 @@
 package org.aprsdroid.app
 
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.appbar.MaterialToolbar
@@ -21,20 +22,22 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
     private val loadingIndicator: View? get() = findViewById(R.id.loading)
     private var pendingServiceAction: String? = null
+    override var pendingPermissionAction: Int? = null
+    override var pendingPermissions: Set<String> = emptySet()
+    override val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants -> handlePermissionResult(grants) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        restorePermissionState(savedInstanceState)
         pendingServiceAction = savedInstanceState?.getString(STATE_PENDING_SERVICE_ACTION)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString(STATE_PENDING_SERVICE_ACTION, pendingServiceAction)
+        savePermissionState(outState)
         super.onSaveInstanceState(outState)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        handleRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     fun startAprsServiceWithPermissions(action: String): Boolean {
@@ -85,21 +88,21 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
 
     fun openDetails(call: String) {
         val i = Intent(this, StationActivity::class.java).apply {
-            data = Uri.parse(call)
+            data = call.toUri()
         }
         startActivity(i)
     }
 
     fun openMessaging(call: String) {
         val i = Intent(this, MessageActivity::class.java).apply {
-            data = Uri.parse(call)
+            data = call.toUri()
         }
         startActivity(i)
     }
 
     fun openMessageSend(call: String, message: String) {
         val i = Intent(this, MessageActivity::class.java).apply {
-            data = Uri.parse(call)
+            data = call.toUri()
             putExtra("message", message)
         }
         startActivity(i)

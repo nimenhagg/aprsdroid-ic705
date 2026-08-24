@@ -12,6 +12,7 @@ import android.media.AudioManager
 import androidx.preference.PreferenceManager
 import android.util.Log
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import java.util.Locale
 
 class PrefsWrapper(@JvmField val context: Context) {
@@ -21,11 +22,11 @@ class PrefsWrapper(@JvmField val context: Context) {
     init {
         val currentStatus = prefs.getString("status", null)
         if (currentStatus == null || currentStatus == "https://aprsdroid.org/" || currentStatus == "https://aprsdroid.org") {
-            prefs.edit().putString("status", "APRSDroid Mod").apply()
+            prefs.edit { putString("status", "APRSDroid Mod") }
         }
         val currentTcpServer = prefs.getString("tcp.server", null)
         if (currentTcpServer == null || currentTcpServer == "euro.aprs2.net" || currentTcpServer == "rotate.aprs.net" || currentTcpServer == "rotate.aprs2.net") {
-            prefs.edit().putString("tcp.server", "china.aprs2.net").apply()
+            prefs.edit { putString("tcp.server", "china.aprs2.net") }
         }
     }
 
@@ -73,12 +74,12 @@ class PrefsWrapper(@JvmField val context: Context) {
     }
 
     fun setBoolean(name: String, newVal: Boolean): Boolean {
-        prefs.edit().putBoolean(name, newVal).apply()
+        prefs.edit { putBoolean(name, newVal) }
         return newVal
     }
 
     fun set(name: String, newVal: String): String {
-        prefs.edit().putString(name, newVal).apply()
+        prefs.edit { putString(name, newVal) }
         return newVal
     }
 

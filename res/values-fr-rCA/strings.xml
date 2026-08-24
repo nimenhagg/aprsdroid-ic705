@@ -10,11 +10,9 @@
 <string name="app_messages">Messages</string>
 <string name="app_messages_clear">Effacer les messages</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">Vous devez configurer APRSdroid avec votre indicatif d\'appel et votre code!</string>
 <string name="wrongpasscode">Votre code ne correspond pas à votre indicatif d\'appel!</string>
 <string name="e_toolong_callsign">Your callsign is too long for Packet Radio!</string>
 <string name="anon_warning">Sans votre code, vos rapports ne seront pas diffusés!</string>
-<string name="mininterval">Le délai minimum d\'actualisation est d\'une minute!</string>
 <string name="singlelog">Send Position</string>
 <string name="startlog">Commencer la localisation</string>
 <string name="stoplog">Arrêter la localisation</string>
@@ -22,24 +20,19 @@
 <string name="empty_logview">Vous n\'avez pas encore envoyé ou reçu de paquets.\n\n Appuyez sur le bouton \"Menu\" pour envoyer un paquet unique ou pour commencer le suivi de votre position.\n\n Vous pouvez également modifier les préférences d\'application à partir du menu.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">Dernier rapport de %s</string>
-<string name="map_track_call">Suivi de %s...</string>
+<string name="map_track_call">Suivi de %s…</string>
 <string name="map_track_unknown">Position for %s unknown!</string>
 <string name="map_select">Sélectionner une station</string>
 
-<string name="map_loading">Chargement...</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">SSID des stations</string>
-<string name="sta_history">Historique de la station</string>
 <string name="sta_map">Carte</string>
 <string name="sta_extmap">External Map</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">Envoyer un message à...</string>
-<string name="msg_message_text">Texte du message</string>
+<string name="msg_send_new">Envoyer un message à…</string>
 <string name="msg_empty_list">Pas d\'historique de conversations sauvegardé</string>
 <string name="msg_stored_offline">Les messages seront envoyés dès le démarrage de la localisation</string>
 <!-- Message activity -->
@@ -47,22 +40,23 @@
 <string name="msg_to">Message à %s</string>
 <string name="msg_abort">Interrompre la transmission</string>
 <string name="msg_restart">Redémarrer la transmission</string>
-<string name="msg_type_rejected">rejeté</string>
-<string name="msg_type_aborted">interrompu</string>
 
 <!-- AprsService -->
 <string name="aprsservice">Service APRSdroid</string>
 <string name="service_once">Service APRS envoi unique: %1$s, %2$s.</string>
 <string name="service_start">Service APRS démarré: %1$s, %2$s.</string>
 <string name="service_stop">Service APRS arrêté.</string>
-<string name="service_no_location">Vous devez activer l\'option GPS ou localisation par le réseau cellulaire pour que APRSdroid fonctionne correctement!</string>
 <string name="service_sm_no_gps">SmartBeaconing™ requiert un GPS!</string>
 <!-- service result codes -->
 <string name="post_error">Erreur</string>
 <string name="post_incmg">Reçu</string>
 <string name="post_info"/>
-<string name="post_connecting">Connection à %1$s:%2$d...</string>
-<string name="post_reconnect">Connection perdue. Reconnection dans %d secondes...</string>
+<string name="post_connecting">Connection à %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="one">Connection perdue. Reconnection dans %d secondes…</item>
+    <item quantity="many">Connection perdue. Reconnection dans %d secondes…</item>
+    <item quantity="other">Connection perdue. Reconnection dans %d secondes…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">Bienvenue dans APRSdroid!</string>
@@ -71,23 +65,6 @@
 <string name="fr_text3">Only needed for APRS over the Internet:</string>
 
 <!-- about dialog -->
-<string name="ad_title">À propos d\'APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">Ce programme est un logiciel libre; vous pouvez le redistribuer et/ou le modifier selon les termes de la Licence Publique Générale GNU publiée par la Free Software Foundation; soit la version 2 de la Licence, ou (à votre choix) toute version ultérieure. \n\n Ce programme est distribué dans l\'espoir qu\'il sera utile, mais SANS AUCUNE GARANTIE: sans même la garantie implicite de COMMERCIALISATION ou D\'ADAPTATION A UN USAGE PARTICULIER. Voir la Licence Publique Générale GNU pour plus de détails. \n\n Vous devriez avoir reçu un exemplaire de la Licence Publique Générale GNU avec ce programme, sinon, écrivez à la Free Software Foundation, Inc, 51 rue Franklin, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">Remerciements à :</string>
-<string name="ad_thanks_0">Ma femme ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: idée</string>
-<string name="ad_thanks_2">Dirk, DB5OY: pour son support et sa motivation</string>
-<string name="ad_thanks_3">Bastian, DB1BM: implémentation AFSK</string>
-<string name="ad_thanks_4">Matti, OH2MQK et John, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: démodulateur AFSK, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ par HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\nTraduction:</string>
-<string name="ad_homepage">Page d\'accueil</string>
 
 <!-- map view -->
 <string name="map_overlays">Couches cartographiques</string>
@@ -95,16 +72,10 @@
 <string name="map_satellite">Google: Satellite</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline"> %s (Offline)</string>
 <string name="map_objects">Objets APRS</string>
 
 <!-- map view -->
-<string name="age">Afficher les dernières ...</string>
-<string name="age_30">30 minutes</string>
-<string name="age_2h">2 heures</string>
-<string name="age_12h">12 heures</string>
-<string name="age_1d">1 jour</string>
-<string name="age_2d">2 jours</string>
+<string name="age">Afficher les dernières …</string>
 
 
 <!-- options menu -->
@@ -115,12 +86,10 @@
 <string name="export_log">Export Log</string>
 <string name="export_empty">Nothing to export</string>
 <string name="clear_log">Effacer le journal</string>
-<string name="quit">Quitter</string>
 <string name="preferences">Préférences</string>
 <!-- preferences -->
-<string name="profile_load">Load profile...</string>
-<string name="profile_export">Export profile...</string>
-<string name="p__ham">Radioamateur</string>
+<string name="profile_load">Load profile…</string>
+<string name="profile_export">Export profile…</string>
 <string name="p_callsign">Indicatif d\'appel</string>
 <string name="p_callsign_nossid">Indicatif d\'appel (sans SSID)</string>
 <string name="p_callsign_summary">Votre indicatif d\'appel radioamateur</string>
@@ -142,8 +111,8 @@
 	<item>3: Station générique supplémentaire, Digi, Mobile, Météo, etc.</item>
 	<item>4: Station générique supplémentaire, Digi, Mobile, Météo, etc.</item>
 	<item>5: Autres réseaux (D-Star, Iphones, Android, Blackberry, etc.)</item>
-	<item>6: Activité spéciale, Satellite, Camping, 6 mètres ...</item>
-	<item>7: Portatif (Kenwood TH-D72, Icom D-Star, etc...) ou Station portable</item>
+	<item>6: Activité spéciale, Satellite, Camping, 6 mètres …</item>
+	<item>7: Portatif (Kenwood TH-D72, Icom D-Star, etc…) ou Station portable</item>
 	<item>8: Bateau, voilier, VR ou second mobile</item>
 	<item>9: Mobile</item>
 	<item>10: Internet, Igates, Echolink, Winlink, AVRS, APRN, etc.</item>
@@ -155,8 +124,6 @@
 </string-array>
 <string name="p_symbol">Symbole APRS</string>
 <string name="p_symbol_summary">Symbole affiché sur la carte</string>
-<string name="p_symbol_overlay">Overlay:</string>
-<string name="p_symbol_result">Result:</string>
 <string name="p_frequency">Voice frequency</string>
 <string name="p_frequency_summary">Your voice frequency [MHz]</string>
 <string name="p_status">Champ commentaire</string>
@@ -207,7 +174,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">Confidentialité de la Position</string>
-<string name="p_privacy_summary">Ambiguïté de la position et plus</string>
 <string name="p_priv_ambiguity">Ambiguïté de la position</string>
 <string name="p_priv_ambiguity_summary">Rapports de position à précision réduite</string>
 <string name="p_ambiguity_off">Arrêt: (DD° MM.mm\')</string>
@@ -230,7 +196,6 @@
 <string name="p_locsource_summary">Manuel, Périodique ou SmartBeaconing™</string>
 <string name="p__location">Paramètres de localisation</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">Assistant SmartBeaconing™</string>
 <string name="p_sb_fast_speed">Vitesse Rapide [km/h]</string>
 <string name="p_sb_fast_speed_summary">Vitesse mini pour m.à.j. position rapide</string>
@@ -255,8 +220,6 @@
 <string name="p_distance">Distance minimum de mise à jour</string>
 <string name="p_distance_summary">Kilomètres avant l\'envoi de balises (0 pour pour envoi à intervalle de temps uniquement)</string>
 <string name="p_distance_entry">Entrez la distance de rafraîchissement [km]</string>
-<string name="p_speedbrg">Attendre vitesse &amp; direction</string>
-<string name="p_speedbrg_summary">Laisser le GPS actif plus longtemps pour des données plus précises</string>
 <string name="p_netloc">Utiliser la localisation réseau</string>
 <string name="p_netloc_summary">Acquérir la position par le réseau celullaire</string>
 <string name="p_gps">Précision GPS</string>
@@ -295,14 +258,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">Chemin du digi APRS</string>
-<string name="p_aprs_path_hint">saut 1, saut 2</string>
 <string name="p_aprs_path_summary">Séquence des digis</string>
 <string name="p_aprs_path_entry">Entrez le chemin des Digi, séparés par des virgules</string>
 <string name="p_afsk_prefix">Préfixe de la trame Sync</string>
 <string name="p_afsk_prefix_summary">Préambule No-Op (par ex. pour contrôle par Vox)</string>
 <string name="p_afsk_prefix_entry">Durée du préfixe [ms]</string>
-<string name="p_afsk_hqdemod">Démodulateur haute qualité</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: CPU 800 MHz requis</string>
 <string name="p_afsk_btsco">Casque Bluetooth</string>
 <string name="p_afsk_btsco_summary">Utiliser un casque Bluetooth (SCO) pour AFSK</string>
 <string name="p_afsk_output">Sortie audio</string>
@@ -319,7 +279,7 @@
 <string name="p_filterdist_summary">Recevoir les paquets des stations dans ce rayon</string>
 <string name="p_filterdist_entry">Rayon de surveillance des paquets autour de vous [km]</string>
 <string name="p_filter">Filtrage paquets</string>
-<string name="p_filter_hint">b/AMI o/OBJET ...</string>
+<string name="p_filter_hint">b/AMI o/OBJET …</string>
 <string name="p_filter_summary">Filtrage des paquets entrants</string>
 <string name="p_filter_entry">Entrez un filtre de paquets entrants</string>
 
@@ -331,18 +291,7 @@
 <string name="p_sotimeout_entry">Valeur d\'expiration en secondes (0 = désactiver)</string>
 
 
-<string name="kbdnav_title">Keyboard Navigation</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>move map</item>
-	<item>zoom</item>
-	<item>menu</item>
-	<item>select</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Georg Lukas https://launchpad.net/~ge0rg
-  Michel Robichaud https://launchpad.net/~mike-1103</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">Mode client</string>
@@ -356,14 +305,13 @@
 
 <string name="p_tnc_init">Chaîne d\'initialisation TNC</string>
 <string name="p_tnc_init_summary">Initialization commands for TNC (URL-encoded, Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">URL-encoded string (Esc=%1B, \"%\"=%25), delay after each line:</string>
 
 <string name="p_tnc_delay">Délai d\'initialisation TNC</string>
 <string name="p_tnc_delay_summary">Temps d\'attente entre chaque ligne</string>
 <string name="p_tnc_delay_entry">Délai d\'initialisation TNC [ms]</string>
 
 <string name="p_bt_prefs">Paramètres Bluetooth</string>
-<string name="p_bt_prefs_summary">Activez Bluetooth, détection des modules...</string>
+<string name="p_bt_prefs_summary">Activez Bluetooth, détection des modules…</string>
 
 <string name="bt_error_unsupported">Bluetooth n\'est pas supporté!</string>
 <string name="bt_error_disabled">Activez Bluetooth SVP!</string>
@@ -378,12 +326,11 @@
 <string name="bt_reconnecting">Reconnecting in 3s…</string>
 
 
-<string name="afsk_info_sco_req">Requête d\'un lien bluetooth SCO...</string>
+<string name="afsk_info_sco_req">Requête d\'un lien bluetooth SCO…</string>
 <string name="afsk_info_sco_est">Lien bluetooth SCO établi.</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">Server KISS TCP à contacter</string>
-<string name="p_tcptnc_entry">Entrez le hostname du serveur KISS</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">Importation de certificat SSL</string>
@@ -391,8 +338,6 @@
 <string name="ssl_no_keyfile">No certificate for %s! Using passcode authentication.</string>
 <string name="ssl_import_ok">Certificat importé pour  %s.</string>
 <string name="ssl_import_error">Erreur d\'importation de certificat: %s!</string>
-<string name="ssl_expired">Votre certificat est expiré !</string>
-<string name="ssl_expire_in">Votre certificat va expirer dans %d jours !</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Profile import</string>

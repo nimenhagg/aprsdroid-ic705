@@ -8,7 +8,8 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Rect
-import android.net.Uri
+import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
 import android.view.MenuItem
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.maps.GoogleMap
@@ -92,7 +93,7 @@ object MapModes {
         val mm = defaultMapMode(ctx, prefs)
         val intent = Intent(ctx, mm.viewClass)
         if (!targetcall.isNullOrEmpty()) {
-            intent.data = Uri.parse(targetcall)
+            intent.data = targetcall.toUri()
         } else {
             intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
         }
@@ -128,7 +129,7 @@ object MapModes {
     }
 
     fun symbol2bitmap(symbol: String, size: Int): Bitmap {
-        val b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val b = createBitmap(size, size)
         b.eraseColor(Color.TRANSPARENT)
         val c = Canvas(b)
         val rect = Rect(0, 0, size, size)

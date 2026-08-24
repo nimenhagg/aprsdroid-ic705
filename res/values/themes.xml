@@ -22,7 +22,9 @@
         <item name="android:actionOverflowMenuStyle">@style/Material3PopupMenu</item>
     </style>
 
-    <style name="DefaultTheme" parent="DefaultThemeBase" />
+    <style name="DefaultTheme" parent="DefaultThemeBase">
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
 
     <style name="TextAppearance.Material3.Title" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Title">
         <item name="android:textSize">20sp</item>

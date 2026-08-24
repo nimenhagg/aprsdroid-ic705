@@ -10,11 +10,9 @@
 <string name="app_messages">メッセージ</string>
 <string name="app_messages_clear">メッセージ消去</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">APRSdroidの使用前にコールサインとパスコードの設定が必要です</string>
 <string name="wrongpasscode">コールサインとパスコードが一致しません</string>
 <string name="e_toolong_callsign">Your callsign is too long for Packet Radio!</string>
 <string name="anon_warning">パスコードを入力しないと位置情報は送信されません</string>
-<string name="mininterval">GPS測位間隔は１分以下に設定できません</string>
 <string name="singlelog">位置送信</string>
 <string name="startlog">連続送信開始</string>
 <string name="stoplog">送信停止</string>
@@ -22,16 +20,12 @@
 <string name="empty_logview">まだ位置情報を送受信していません。\n\n \"メニュー\"ボタンを押した後、「１回のみ送信」もしくは「連続送信開始」を選び位置情報を送信してください。\n\nまた、メニューより設定の変更が可能です。</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">%s 最終受信情報</string>
-<string name="map_track_call">%sを追跡...</string>
+<string name="map_track_call">%sを追跡…</string>
 <string name="map_track_unknown">%s の位置は不明!</string>
 <string name="map_select">局 選択</string>
 
-<string name="map_loading">読み込み中...</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">局 SSID</string>
-<string name="sta_history">局 受信情報履歴</string>
 <string name="sta_map">地図表示</string>
 <string name="sta_extmap">外部マップ</string>
 <string name="sta_aprsfi">aprs.fiで表示</string>
@@ -39,7 +33,6 @@
 
 <!-- Conversations activity -->
 <string name="msg_send_new">メッセージ送信</string>
-<string name="msg_message_text">内容</string>
 <string name="msg_empty_list">まだ格納された会話はありません。</string>
 <string name="msg_stored_offline">あなたがトラッキングを始めると、メッセージが送信されます。</string>
 <!-- Message activity -->
@@ -47,22 +40,21 @@
 <string name="msg_to">%s さんへ送信</string>
 <string name="msg_abort">送信中止</string>
 <string name="msg_restart">送信再開</string>
-<string name="msg_type_rejected">拒否された</string>
-<string name="msg_type_aborted">不達</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroidサービス</string>
 <string name="service_once">APRSサービス１回のみ送信: %1$s, %2$s.</string>
 <string name="service_start">APRSサービス開始: %1$s, %2$s.</string>
 <string name="service_stop">APRSサービス停止</string>
-<string name="service_no_location">GPS又はネットワーク・ロケーションの何れかの動作を可能にする必要があります!</string>
 <string name="service_sm_no_gps">SmartBeaconing™GPS!要求</string>
 <!-- service result codes -->
 <string name="post_error">エラー</string>
 <string name="post_incmg">受信</string>
 <string name="post_info"/>
-<string name="post_connecting">接続中 %1$s:%2$d...</string>
-<string name="post_reconnect">接続を失いました。 %d 秒後に再接続を試みます...</string>
+<string name="post_connecting">接続中 %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="other">接続を失いました。 %d 秒後に再接続を試みます…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">ようこそAPRSdroidへ！</string>
@@ -71,23 +63,6 @@
 <string name="fr_text3">Only needed for APRS over the Internet:</string>
 
 <!-- about dialog -->
-<string name="ad_title">APRSdroidについて v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">このプログラムはフリー・ソフトウェアです。; 再分配あるいはフリー・ソフトウェア・ファウンデーションによって公表されるようなGNU一般ライセンスの条件下で修正する事が出来ます。ライセンスver.2あるいは(貴方のオプションで)以降のバージョンの何れか。\n\n このプログラムは有用であることを願い,しかし一切の保証なしに提供されています。;特定の目的に対する商品性もしくは適合性についての暗黙の保証すらありません。 詳細についてはGNU一般ライセンスを参照してください。 \n\n あなたはこのプログラムと共にGNU一般公衆利用許諾契約書のコピーを受け取り承諾しているはずです。; そうでなければ、フリー・ソフトウェア財団に手紙を書いてください。, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">協力:</string>
-<string name="ad_thanks_0">私の彼女♥♥♥</string>
-<string name="ad_thanks_1">マイケル, DO3BOX: アイデア</string>
-<string name="ad_thanks_2">Dirk, DB5OY: モチベーション と サポート</string>
-<string name="ad_thanks_3">Bastian, DB1BM: AFSK機能充足</string>
-<string name="ad_thanks_4">マティ, OH2MQK and ジョーン, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: AFSK復調, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ by HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">翻訳:</string>
-<string name="ad_homepage">ホームページ</string>
 
 <!-- map view -->
 <string name="map_overlays">オーバーレイ</string>
@@ -95,16 +70,10 @@
 <string name="map_satellite">Google: Satellite</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline"> %s (Offline)</string>
 <string name="map_objects">APRS オブジェクト</string>
 
 <!-- map view -->
 <string name="age">情報表示期間</string>
-<string name="age_30">30 分</string>
-<string name="age_2h">2時間</string>
-<string name="age_12h">12時間</string>
-<string name="age_1d">1日</string>
-<string name="age_2d">2日</string>
 
 
 <!-- options menu -->
@@ -115,12 +84,10 @@
 <string name="export_log">ログ出力</string>
 <string name="export_empty">出力するログがありません</string>
 <string name="clear_log">ログ消去</string>
-<string name="quit">終了</string>
 <string name="preferences">設定</string>
 <!-- preferences -->
-<string name="profile_load">プロファイルを読み込む...</string>
-<string name="profile_export">プロファイルをエクスポートする...</string>
-<string name="p__ham">無線局情報設定</string>
+<string name="profile_load">プロファイルを読み込む…</string>
+<string name="profile_export">プロファイルをエクスポートする…</string>
 <string name="p_callsign">コールサイン</string>
 <string name="p_callsign_nossid">コールサイン (SSID抜き)</string>
 <string name="p_callsign_summary">利用者のアマチュア無線局コールサイン</string>
@@ -155,8 +122,6 @@
 </string-array>
 <string name="p_symbol">APRSシンボル</string>
 <string name="p_symbol_summary">地図上に表示するシンボル</string>
-<string name="p_symbol_overlay">オーバーレイ:</string>
-<string name="p_symbol_result">結果:</string>
 <string name="p_frequency">音声周波数</string>
 <string name="p_frequency_summary">貴局の音声交信周波数 [MHz]</string>
 <string name="p_status">送信コメント文</string>
@@ -207,7 +172,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">位置プライバシー</string>
-<string name="p_privacy_summary">位置を曖昧にする設定</string>
 <string name="p_priv_ambiguity">位置を曖昧に</string>
 <string name="p_priv_ambiguity_summary">減少精度させた独自ポジションレポート</string>
 <string name="p_ambiguity_off">Off (度度° 分分.mm\')形式</string>
@@ -230,7 +194,6 @@
 <string name="p_locsource_summary">固定,周期的 又は SmartBeaconing™</string>
 <string name="p__location">位置情報設定</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">SmartBeaconing™ヘルプ</string>
 <string name="p_sb_fast_speed">速い速度 [km/h]</string>
 <string name="p_sb_fast_speed_summary">低速時に早く位置を更新</string>
@@ -255,8 +218,6 @@
 <string name="p_distance">ビーコン送信距離間隔</string>
 <string name="p_distance_summary">前回送信からこの距離以上移動したらビーコン送信（0で測位を行うごとに毎回送信）</string>
 <string name="p_distance_entry">送信する距離間隔[km]を入力</string>
-<string name="p_speedbrg">速度・進路を取得</string>
-<string name="p_speedbrg_summary">位置情報取得の時間が長くなります</string>
 <string name="p_netloc">基地局位置情報の使用</string>
 <string name="p_netloc_summary">携帯電話網の基地局位置情報（誤差大）を使用します</string>
 <string name="p_gps">GPS測位精度</string>
@@ -295,14 +256,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRSデジピートパス</string>
-<string name="p_aprs_path_hint">ホップ1, ホップ2, ...</string>
 <string name="p_aprs_path_summary">デジピーター経路の設定</string>
 <string name="p_aprs_path_entry">デジピートパスをカンマ区切りで入力</string>
 <string name="p_afsk_prefix">フレーム同期送信時間</string>
 <string name="p_afsk_prefix_summary">データの前に付加する同期信号の送信時間（VOX制御など頭切れの防止）</string>
 <string name="p_afsk_prefix_entry">同期信号送信時間[ミリ秒]</string>
-<string name="p_afsk_hqdemod">高品質復調</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib：800 MHz以上のCPU必須</string>
 <string name="p_afsk_btsco">Bluetoothヘッドセット</string>
 <string name="p_afsk_btsco_summary">Bluetooth(SCO)ﾍｯﾄﾞｾｯﾄをAFSK出力に使用</string>
 <string name="p_afsk_output">信号出力先選択</string>
@@ -319,7 +277,7 @@
 <string name="p_filterdist_summary">ここで指定した範囲内にある局のビーコンを受信表示する</string>
 <string name="p_filterdist_entry">ビーコンを受信する範囲[km]を指定</string>
 <string name="p_filter">パケットフィルター</string>
-<string name="p_filter_hint">b/仲間 o/オブジェクト ...</string>
+<string name="p_filter_hint">b/仲間 o/オブジェクト …</string>
 <string name="p_filter_summary">受信パケットをフィルタリングする</string>
 <string name="p_filter_entry">受信パケットのフィルター設定</string>
 
@@ -331,20 +289,7 @@
 <string name="p_sotimeout_entry">タイムアウト時間[秒]を入力 (0でタイムアウトしない）</string>
 
 
-<string name="kbdnav_title">Keyboard Navigation</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>move map</item>
-	<item>zoom</item>
-	<item>menu</item>
-	<item>select</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Georg Lukas https://launchpad.net/~ge0rg
-  Yoshihisa Tanda https://launchpad.net/~jn4oqt
-  Yoshikazu AKAGI https://launchpad.net/~7k4owm
-  scratch3644583 https://launchpad.net/~scratch3644583</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">クライアント(子機)モード</string>
@@ -358,7 +303,6 @@
 
 <string name="p_tnc_init">TNC初期化設定</string>
 <string name="p_tnc_init_summary">初期設定コマンド for TNC (URL-encoded, Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">URLエンコード (Esc=%1B, \"%\"=%25) :</string>
 
 <string name="p_tnc_delay">TNC初期化遅れ</string>
 <string name="p_tnc_delay_summary">各ラインの待ち時間</string>
@@ -385,7 +329,6 @@
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP サーバー接続先</string>
-<string name="p_tcptnc_entry">KISSサーバーホスト名</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">SSL証明書をインポート</string>
@@ -393,8 +336,6 @@
 <string name="ssl_no_keyfile">%s! 無証明 / パスコード認証使用</string>
 <string name="ssl_import_ok">%s 証明書を読込完了。</string>
 <string name="ssl_import_error">証明書読込エラー: %s!</string>
-<string name="ssl_expired">証明書の有効期限が終了しています!</string>
-<string name="ssl_expire_in">あなたの証明書はあと %d日で終了します!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Profile import</string>

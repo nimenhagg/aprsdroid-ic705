@@ -10,11 +10,9 @@
 <string name="app_messages">訊息</string>
 <string name="app_messages_clear">清除訊息</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">你需要在APRSdroid設定你的呼號及驗證碼!</string>
 <string name="wrongpasscode">你的呼號與驗證碼不正確!</string>
 <string name="e_toolong_callsign">你的呼號對於封包模式來說太長了!</string>
 <string name="anon_warning">沒有設置驗證碼，你的數據將不會被發出!</string>
-<string name="mininterval">最小的更新時間是1分鐘!</string>
 <string name="singlelog">發送位置</string>
 <string name="startlog">開始記錄路徑</string>
 <string name="stoplog">停止紀錄路徑</string>
@@ -22,24 +20,19 @@
 <string name="empty_logview">您還沒有發送或接收任何數據包。 \n\n 按​​ \“菜單\”按鈕發送一個報告或開始記錄你的位置。 \n\n 您也可以從菜單更改應用程序首選項。</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">近期報告%s</string>
-<string name="map_track_call">紀錄中%s...</string>
+<string name="map_track_call">紀錄中%s…</string>
 <string name="map_track_unknown">未知%s的位置!</string>
 <string name="map_select">選擇站台</string>
 
-<string name="map_loading">正在載入…</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">站台SSID</string>
-<string name="sta_history">站台歷史紀錄</string>
 <string name="sta_map">地圖</string>
 <string name="sta_extmap">外部地圖</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">發送訊息給...</string>
-<string name="msg_message_text">訊息內容</string>
+<string name="msg_send_new">發送訊息給…</string>
 <string name="msg_empty_list">沒有存儲的對話</string>
 <string name="msg_stored_offline">只要你開始跟踪記錄該信息就開始發送。</string>
 <!-- Message activity -->
@@ -47,22 +40,21 @@
 <string name="msg_to">發送信息到 %s</string>
 <string name="msg_abort">中斷传送</string>
 <string name="msg_restart">重新啟動傳送</string>
-<string name="msg_type_rejected">已拒絕</string>
-<string name="msg_type_aborted">已終止</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid 服務</string>
 <string name="service_once">APRS服務單次發射: %1$s, %2$s.</string>
 <string name="service_start">APRS服務已啟動: %1$s, %2$s.</string>
 <string name="service_stop">APRS 服務已停止。</string>
-<string name="service_no_location">你需要啟用GPS定位或網路位置定位才能使APRSdroid 正常工作！</string>
 <string name="service_sm_no_gps">智能信标™需要GPS支持！</string>
 <!-- service result codes -->
 <string name="post_error">錯誤</string>
 <string name="post_incmg">已收到</string>
 <string name="post_info"/>
 <string name="post_connecting">连接到 %1$s:%2$d ..</string>
-<string name="post_reconnect">连接失败。%d 秒后重新连接...</string>
+<plurals name="post_reconnect">
+    <item quantity="other">连接失败。%d 秒后重新连接…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">歡迎使用 APRSdroid！</string>
@@ -71,23 +63,6 @@
 <string name="fr_text3">只有通過網際網路的APRS才需要：</string>
 
 <!-- about dialog -->
-<string name="ad_title">關於 APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">這是一個免費軟件;你可以在GNU 通用公共授權(或第二版授權)的條款下進行修改. \n\n 希望這個程序的發布是有用的,但是它是沒有任何承諾性擔保或保證的，甚至沒有商業或其它特定目的而隱含的擔保。有關詳細信息，請參閱GNU通用公共許可證。 \n\n 您應該已經收到隨著這項計劃的GNU通用公共許可證的副本，如果沒有，寫信給自由軟件基金會,51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">感謝：</string>
-<string name="ad_thanks_0">My YL ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: 創意</string>
-<string name="ad_thanks_2">Dirk, DB5OY: 鼓勵和支持</string>
-<string name="ad_thanks_3">Bastian, DB1BM: AFSK 协议实施</string>
-<string name="ad_thanks_4">Matti, OH2MQK and John, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: AFSK 解碼, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™(智慧信標) by HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\n 翻譯:</string>
-<string name="ad_homepage">首頁</string>
 
 <!-- map view -->
 <string name="map_overlays">圖層</string>
@@ -95,16 +70,10 @@
 <string name="map_satellite">Google: 衛星</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline">%s (離線)</string>
 <string name="map_objects">APRS 對象</string>
 
 <!-- map view -->
-<string name="age">顯示最近...</string>
-<string name="age_30">30 分鐘</string>
-<string name="age_2h">2 小時</string>
-<string name="age_12h">12 小時</string>
-<string name="age_1d">1 天</string>
-<string name="age_2d">2 天</string>
+<string name="age">顯示最近…</string>
 
 
 <!-- options menu -->
@@ -115,12 +84,10 @@
 <string name="export_log">導出日誌</string>
 <string name="export_empty">没有東西可匯出</string>
 <string name="clear_log">清除日誌</string>
-<string name="quit">退出</string>
 <string name="preferences">偏好設定</string>
 <!-- preferences -->
 <string name="profile_load">載入配置</string>
 <string name="profile_export">導出配置</string>
-<string name="p__ham">業餘無線電</string>
 <string name="p_callsign">呼號</string>
 <string name="p_callsign_nossid">呼號(無後綴符號)</string>
 <string name="p_callsign_summary">您的業餘無線電呼號</string>
@@ -148,15 +115,13 @@
 	<item>9: 移動基站</item>
 	<item>10: APRS-IS (非無線電台)</item>
 	<item>11: 氣球，飛機，航天器</item>
-	<item>12: APRStt, DTMF, ... (單路)</item>
+	<item>12: APRStt, DTMF, … (單路)</item>
 	<item>13:氣象站</item>
 	<item>14:貨運車輛</item>
 	<item>15: 通用增設台站</item>
 </string-array>
 <string name="p_symbol">APRS 符號</string>
 <string name="p_symbol_summary">您用作在地圖中顯示的符號</string>
-<string name="p_symbol_overlay">覆蓋:</string>
-<string name="p_symbol_result">結果:</string>
 <string name="p_frequency">語音頻率</string>
 <string name="p_frequency_summary">您的語音頻率[MHz]</string>
 <string name="p_status">註釋字段</string>
@@ -207,7 +172,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">位置隱私</string>
-<string name="p_privacy_summary">定位精準度及其他</string>
 <string name="p_priv_ambiguity">定位精準度</string>
 <string name="p_priv_ambiguity_summary">使用低精度的位置報告</string>
 <string name="p_ambiguity_off">Off (DD° MM.mm\')</string>
@@ -230,7 +194,6 @@
 <string name="p_locsource_summary">手動,定時或智能信標™</string>
 <string name="p__location">位置設定</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™(智慧信標™)</string>
 <string name="p_sb_help">智慧信標™ 幫助</string>
 <string name="p_sb_fast_speed">高速度[km/h]</string>
 <string name="p_sb_fast_speed_summary">中等速度時快速更新位置</string>
@@ -255,8 +218,6 @@
 <string name="p_distance">最小更新距離</string>
 <string name="p_distance_summary">公里信標傳送間隔（設置為0則以時間設置為準）</string>
 <string name="p_distance_entry">輸入更新距離［公里］</string>
-<string name="p_speedbrg">等待速度 &amp; 方位</string>
-<string name="p_speedbrg_summary">保持 GPS 開啟以獲得更多預設數據</string>
 <string name="p_netloc">使用網路位置定位</string>
 <string name="p_netloc_summary">從電話基地台中請求位置信息</string>
 <string name="p_gps">GPS 定位精確度</string>
@@ -295,14 +256,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS 中繼路徑</string>
-<string name="p_aprs_path_hint">hop 1, hop 2, ...</string>
 <string name="p_aprs_path_summary">中繼順序</string>
 <string name="p_aprs_path_entry">輸入逗號分隔的Digi路徑</string>
 <string name="p_afsk_prefix">幀同步前綴</string>
 <string name="p_afsk_prefix_summary">No-Op Preamble (比如:聲控發射)</string>
 <string name="p_afsk_prefix_entry">輸入同步前綴時間</string>
-<string name="p_afsk_hqdemod">高質量解碼</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: 需要 800 MHz 以上 CPU</string>
 <string name="p_afsk_btsco">藍牙耳機</string>
 <string name="p_afsk_btsco_summary">使用藍牙(SCO)耳機發射AFSK</string>
 <string name="p_afsk_output">音效輸出</string>
@@ -319,7 +277,7 @@
 <string name="p_filterdist_summary">接收此范围内的台站信息数据包</string>
 <string name="p_filterdist_entry">過濾以您為中心範圍內的數據包[單位:公里]</string>
 <string name="p_filter">數據包過濾器</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">過濾收到的數據包</string>
 <string name="p_filter_entry">為收到的數據包輸入一個過濾條件</string>
 
@@ -331,17 +289,7 @@
 <string name="p_sotimeout_entry">超時值(0為關閉，單位:秒)</string>
 
 
-<string name="kbdnav_title">鍵盤導航</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>移動地圖</item>
-	<item>縮放</item>
-	<item>選單</item>
-	<item>選取</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  BM4LOG(LUO  YI CHENG) https://launchpad.net/~bm4log</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">客戶端模式</string>
@@ -355,14 +303,13 @@
 
 <string name="p_tnc_init">TNC初始化字符串</string>
 <string name="p_tnc_init_summary">TNC的初始化命令（URL編碼，Esc = %% 1B，“%%”= %% 25）</string>
-<string name="p_tnc_init_msg" formatted="false">URL編碼字符串（Esc =％1B，\“％\”=％25），每行後延遲：</string>
 
 <string name="p_tnc_delay">TNC 初始化延遲</string>
 <string name="p_tnc_delay_summary">每次连线后等待时间</string>
 <string name="p_tnc_delay_entry">TNC 初始化延遲[毫秒]</string>
 
 <string name="p_bt_prefs">藍牙設置</string>
-<string name="p_bt_prefs_summary">打開藍牙，配對設備...</string>
+<string name="p_bt_prefs_summary">打開藍牙，配對設備…</string>
 
 <string name="bt_error_unsupported">藍牙未被支持!</string>
 <string name="bt_error_disabled">請啟用藍牙!</string>
@@ -374,15 +321,14 @@
 <!-- connecting to [device name] channel [bluetooth channel id] -->
 <string name="bt_connecting_to_channel" formatted="false">連接到 %s 頻道 %d</string>
 <string name="bt_connected">連接到TNC</string>
-<string name="bt_reconnecting">3秒內重連...</string>
+<string name="bt_reconnecting">3秒內重連…</string>
 
 
-<string name="afsk_info_sco_req">正在請求藍牙SCO連接...</string>
+<string name="afsk_info_sco_req">正在請求藍牙SCO連接…</string>
 <string name="afsk_info_sco_est">藍牙SCO鏈路已建立。</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP 伺服器</string>
-<string name="p_tcptnc_entry">輸入KISS伺服器名稱</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">SSL證書導入</string>
@@ -390,8 +336,6 @@
 <string name="ssl_no_keyfile">沒有%s的證書! 使用密碼驗證。</string>
 <string name="ssl_import_ok">%s證書已導入.</string>
 <string name="ssl_import_error">錯誤導入證書:%s!</string>
-<string name="ssl_expired">您的證書已逾期!</string>
-<string name="ssl_expire_in">您的證書已逾期%d天!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">配置導入</string>

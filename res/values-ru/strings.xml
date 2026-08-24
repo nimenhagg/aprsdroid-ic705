@@ -10,11 +10,9 @@
 <string name="app_messages">Сообщения</string>
 <string name="app_messages_clear">Очистить сообщения</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">Необходимо настроить APRSdroid с вашим позывным и паролем</string>
 <string name="wrongpasscode">Ваш пароль не соответствует вашему позывному</string>
 <string name="e_toolong_callsign">Ваш позывной слишком длинный для Пакетного Радио!</string>
 <string name="anon_warning">Ваши рапорты не будут распространяться без пароля!</string>
-<string name="mininterval">Минимальное время обновления 1 минута!</string>
 <string name="singlelog">Отправить местоположение</string>
 <string name="startlog">Начать трекинг</string>
 <string name="stoplog">Остановить слежение</string>
@@ -22,16 +20,12 @@
 <string name="empty_logview">Вы еще не отправили и не получили какие-либо данные. \n\n Нажмите кнопку \"Меню\", чтобы отправить единичный рапорт с вашей позицией и комментарием или начать трекинг. \n\n Также через меню можно менять и другие настройки программы.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">%s последний рапорт</string>
-<string name="map_track_call">Трекинг %s...</string>
+<string name="map_track_call">Трекинг %s…</string>
 <string name="map_track_unknown">Неизвестное местоположение для %s</string>
 <string name="map_select">Выбор станции</string>
 
-<string name="map_loading">Загрузка...</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">SSID-идентификаторы станции</string>
-<string name="sta_history">История по станции</string>
 <string name="sta_map">Карта</string>
 <string name="sta_extmap">Внешняя карта</string>
 <string name="sta_aprsfi">aprs.fi</string>
@@ -39,7 +33,6 @@
 
 <!-- Conversations activity -->
 <string name="msg_send_new">Отправить сообщение</string>
-<string name="msg_message_text">Текст сообщения</string>
 <string name="msg_empty_list">Нет сохраненных связей</string>
 <string name="msg_stored_offline">Сообщение будет отправлено сразу после того,  как вы запустите трекинг.</string>
 <!-- Message activity -->
@@ -47,22 +40,24 @@
 <string name="msg_to">Сообщение для %s</string>
 <string name="msg_abort">Прекратить передачу</string>
 <string name="msg_restart">Продолжить передачу</string>
-<string name="msg_type_rejected">отклонено</string>
-<string name="msg_type_aborted">прервано</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid сервис</string>
 <string name="service_once">Одиночный кадр службы APRS: %1$s, %2$s.</string>
 <string name="service_start">Служба APRS запущена: %1$s, %2$s.</string>
 <string name="service_stop">Служба APRS остановлена.</string>
-<string name="service_no_location">Необходимо включить навигацию GPS или сетевое позиционирование для нормальной работы APRSdroid!</string>
 <string name="service_sm_no_gps">SmartBeaconing™ требует наличие GPS!</string>
 <!-- service result codes -->
 <string name="post_error">Oшибка</string>
 <string name="post_incmg">получено</string>
 <string name="post_info"/>
-<string name="post_connecting">Соединение c %1$s:%2$d...</string>
-<string name="post_reconnect">Соединение потеряно. Восстановление через %d секунд...</string>
+<string name="post_connecting">Соединение c %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="one">Соединение потеряно. Восстановление через %d секунд…</item>
+    <item quantity="few">Соединение потеряно. Восстановление через %d секунд…</item>
+    <item quantity="many">Соединение потеряно. Восстановление через %d секунд…</item>
+    <item quantity="other">Соединение потеряно. Восстановление через %d секунд…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">Добро пожаловать в APRSdroid!</string>
@@ -71,23 +66,6 @@
 <string name="fr_text3">Только нужно для APRS по Интернету:</string>
 
 <!-- about dialog -->
-<string name="ad_title">Об APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">Эта программа является свободным программным обеспечением, вы можете распространять и/или модифицировать его на условиях GNU General Public License, опубликованной Free Software Foundation; либо 2-ой версией лицензии, либо (по вашему выбору) любой более поздней версией.  \n\n Эта программа распространяется в надежде, что она будет полезной, но БЕЗ ВСЯКИХ ГАРАНТИЙ. Совершенно не подразумевается гарантия КОММЕРЧЕСКОЙ ЦЕННОСТИ или ПРИГОДНОСТИ ДЛЯ КОНКРЕТНЫХ ЦЕЛЕЙ. Смотрите общественную лицензию GNU General для получения более подробной информации.\n\n Вы должны были получить копию GNU General Public License вместе с этой программой. Если в не получили копии, напишите письмо по адресу Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">Благодарности:</string>
-<string name="ad_thanks_0">Моей YL ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: идея</string>
-<string name="ad_thanks_2">Dirk, DB5OY: мотивация и поддержка</string>
-<string name="ad_thanks_3">Bastian, DB1BM: AFSK реализация</string>
-<string name="ad_thanks_4">Matti, OH2MQK и John, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: AFSK демодулятор, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ с помощью HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\nПеревод:</string>
-<string name="ad_homepage">Вебсайт проекта</string>
 
 <!-- map view -->
 <string name="map_overlays">Слои данных карты</string>
@@ -95,16 +73,10 @@
 <string name="map_satellite">Google: Спутник</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline">%s (Оффлайн)</string>
 <string name="map_objects">Объекты APRS</string>
 
 <!-- map view -->
 <string name="age">История объектов за :</string>
-<string name="age_30">30 минут</string>
-<string name="age_2h">2 часа</string>
-<string name="age_12h">12 часов</string>
-<string name="age_1d">1 день</string>
-<string name="age_2d">2 дня</string>
 
 
 <!-- options menu -->
@@ -115,12 +87,10 @@
 <string name="export_log">Экспорт журнала</string>
 <string name="export_empty">Нечего экспортировать</string>
 <string name="clear_log">Очистить журнал</string>
-<string name="quit">Выход</string>
 <string name="preferences">Параметры</string>
 <!-- preferences -->
-<string name="profile_load">Загрузить профиль...</string>
-<string name="profile_export">Экспортировать профиль...</string>
-<string name="p__ham">Любительское радио</string>
+<string name="profile_load">Загрузить профиль…</string>
+<string name="profile_export">Экспортировать профиль…</string>
 <string name="p_callsign">Позывной</string>
 <string name="p_callsign_nossid">Позывной (без SSID)</string>
 <string name="p_callsign_summary">Ваш позывной</string>
@@ -148,15 +118,13 @@
 	<item>Подвижная станция</item>
 	<item>10: APRS-IS (без радио)</item>
 	<item>11: Воздушный шар, самолет, космический аппарат</item>
-	<item>12: APRStt, DTMF, ... (на прием)</item>
+	<item>12: APRStt, DTMF, … (на прием)</item>
 	<item>Метеостанция</item>
 	<item>Грузовой автомобиль</item>
 	<item>15: Общие дополнительные станции</item>
 </string-array>
 <string name="p_symbol">APRS символ</string>
 <string name="p_symbol_summary">Ваш символ для отображения на карте</string>
-<string name="p_symbol_overlay">Отображение карты:</string>
-<string name="p_symbol_result">Результат:</string>
 <string name="p_frequency">Голосовая частота</string>
 <string name="p_frequency_summary">Частота Вашего голоса [MHz]</string>
 <string name="p_status">Комментарий</string>
@@ -207,7 +175,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">Конфиденциальность месторасположения</string>
-<string name="p_privacy_summary">Многозначность местоположения и многое другое</string>
 <string name="p_priv_ambiguity">Многозначность местоположения</string>
 <string name="p_priv_ambiguity_summary">Уменьшить точность Вашего местоположения</string>
 <string name="p_ambiguity_off">выкл. (DD° MM.mm\')</string>
@@ -230,7 +197,6 @@
 <string name="p_locsource_summary">Вручную, периодически или с SmartBeaconing™</string>
 <string name="p__location">Установки местоположения</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">SmartBeaconing™ помощь</string>
 <string name="p_sb_fast_speed">Высокая скорость [км/ч]</string>
 <string name="p_sb_fast_speed_summary">Минимальная скорость для быстрого обновления позиции</string>
@@ -255,8 +221,6 @@
 <string name="p_distance">Минимальное расстояние обновления</string>
 <string name="p_distance_summary">Километры до передачи маяка (0 для передачи по времени)</string>
 <string name="p_distance_entry">Введите расстояние для обновления [км]</string>
-<string name="p_speedbrg">Ждите скорость &amp; курс</string>
-<string name="p_speedbrg_summary">GPS постоянно вкл. для большей точности</string>
 <string name="p_netloc">Использование сетевого расположения</string>
 <string name="p_netloc_summary">Запрос местонаходжения через сотовую сеть</string>
 <string name="p_gps">GPS точность</string>
@@ -295,14 +259,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS путь</string>
-<string name="p_aprs_path_hint">путь 1, путь 2, ...</string>
 <string name="p_aprs_path_summary">Последовательность дигипитеров</string>
 <string name="p_aprs_path_entry">Введите путь, разделяя запятой</string>
 <string name="p_afsk_prefix">Префикс синхронизации кадра</string>
 <string name="p_afsk_prefix_summary">Преамбула (для отработки VOX)</string>
 <string name="p_afsk_prefix_entry">Введите длительность звучания префикса [мс]</string>
-<string name="p_afsk_hqdemod">Качественный декодер</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: Необходим процессор 800 MHz или более</string>
 <string name="p_afsk_btsco">Гарнитура Bluetooth</string>
 <string name="p_afsk_btsco_summary">Использовать гарнитуру Bluetooth (SCO) для AFSK</string>
 <string name="p_afsk_output">Аудиовыход</string>
@@ -319,7 +280,7 @@
 <string name="p_filterdist_summary">Получить пакеты от станций в этом радиусе</string>
 <string name="p_filterdist_entry">Наблюдать станции в радиусе [км]</string>
 <string name="p_filter">Пакетный фильтр</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">Фильтр входящих пакетов</string>
 <string name="p_filter_entry">Введите фильтр для входящих пакетов</string>
 
@@ -331,27 +292,7 @@
 <string name="p_sotimeout_entry">Тайм-аут в секундах (0 = отключить)</string>
 
 
-<string name="kbdnav_title">Навигация клавиатурой</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>переместить карту</item>
-	<item>увеличить</item>
-	<item>меню</item>
-	<item>выбрать</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Aleksey Kabanov https://launchpad.net/~ak099
-  Andriy Tymchenko https://launchpad.net/~silpol
-  Christopher Mironov https://launchpad.net/~zje8p67bbg8hv
-  Dmitriy Kiryanov https://launchpad.net/~kagaminep
-  Georg Lukas https://launchpad.net/~ge0rg
-  Mikhail Mikhaylov https://launchpad.net/~mimiknn
-  R1AIT https://launchpad.net/~l-keo-d
-  RN3DLL https://launchpad.net/~rn3dll
-  Sergey N. Belinsky https://launchpad.net/~sergeybe
-  Sergey Shilov https://launchpad.net/~sss-s-s-s
-  UT2UU https://launchpad.net/~andr-x</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">Режим клиента</string>
@@ -365,34 +306,32 @@
 
 <string name="p_tnc_init">Строка инициализации TNC</string>
 <string name="p_tnc_init_summary">Команды инициализации для TNC (URL-encoded, Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">URL-encoded строки (Esc=%1B, \"%\"=%25), задержка после каждой линии:</string>
 
 <string name="p_tnc_delay">Задержка запуска TNC</string>
 <string name="p_tnc_delay_summary">Время ожидания после каждой строки</string>
 <string name="p_tnc_delay_entry">Задержка запуска TNC [мс]</string>
 
 <string name="p_bt_prefs">Настройки Bluetooth</string>
-<string name="p_bt_prefs_summary">Разрешить Bluetooth, связать устройства...</string>
+<string name="p_bt_prefs_summary">Разрешить Bluetooth, связать устройства…</string>
 
 <string name="bt_error_unsupported">Bluetooth не поддерживается!</string>
 <string name="bt_error_disabled">Пожалуйста включите Bluetooth!</string>
 <string name="bt_error_no_tnc">Пожалуйста настройте Bluetooth TNC!</string>
 <string name="bt_error_connect">Не могу связаться с %s! Пожалуйста включите устройство и закройте все другие соединения Bluetooth.</string>
-<string name="bt_awaiting">В ожидании клиента...</string>
+<string name="bt_awaiting">В ожидании клиента…</string>
 <string name="bt_client_connected">Клиент %s подключен.</string>
 <string name="bt_connecting_to_spp">Подключяюсь службе SPP на %s…</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
 <string name="bt_connecting_to_channel" formatted="false">Подключяюсь к %s на канале %d…</string>
 <string name="bt_connected">Подключено к TNC.</string>
-<string name="bt_reconnecting">Повторное подключение через 3с...</string>
+<string name="bt_reconnecting">Повторное подключение через 3с…</string>
 
 
-<string name="afsk_info_sco_req">Запрос соединения Bluetooth...</string>
+<string name="afsk_info_sco_req">Запрос соединения Bluetooth…</string>
 <string name="afsk_info_sco_est">Соединение Bluetooth установлено.</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP сервер для соединения</string>
-<string name="p_tcptnc_entry">Введите имя сервера KISS</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">Импорт SSL-сертификата</string>
@@ -400,8 +339,6 @@
 <string name="ssl_no_keyfile">Не найден сертификат для %s! Будет использовать авторизация через код-пароль.</string>
 <string name="ssl_import_ok">Сертификат для %s импортирован.</string>
 <string name="ssl_import_error">Ошибка импорта сетификата: %s!</string>
-<string name="ssl_expired">Ваш сертификат просрочен!</string>
-<string name="ssl_expire_in">Ваш сертификат заканчивается через %d дней!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Настройки импорта</string>

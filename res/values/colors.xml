@@ -2,25 +2,10 @@
 <resources>
     <!-- Material 3 Baseline Fallback Palette (Used only when Dynamic Color is disabled/unavailable) -->
     <color name="md3_primary">#6750A4</color>
-    <color name="md3_on_primary">#FFFFFF</color>
     <color name="md3_primary_container">#EADDFF</color>
-    <color name="md3_on_primary_container">#21005D</color>
 
-    <color name="md3_secondary">#625B71</color>
-    <color name="md3_on_secondary">#FFFFFF</color>
-    <color name="md3_secondary_container">#E8DEF8</color>
-    <color name="md3_on_secondary_container">#1D192B</color>
 
-    <color name="md3_surface">#FEF7FF</color>
-    <color name="md3_on_surface">#1D1B20</color>
-    <color name="md3_surface_variant">#E7E0EC</color>
     <color name="md3_on_surface_variant">#49454F</color>
 
-    <color name="md3_surface_container_lowest">#FFFFFF</color>
-    <color name="md3_surface_container_low">#F7F2FA</color>
-    <color name="md3_surface_container">#F3EDF7</color>
-    <color name="md3_surface_container_high">#ECE6F0</color>
 
-    <color name="md3_outline">#79747E</color>
-    <color name="md3_outline_variant">#CAC4D0</color>
 </resources>

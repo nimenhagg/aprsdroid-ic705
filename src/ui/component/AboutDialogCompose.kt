@@ -1,8 +1,5 @@
 package org.aprsdroid.app.ui.component
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,12 +15,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -32,15 +27,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.aprsdroid.app.R
 import org.aprsdroid.app.ui.theme.AprsTheme
 
@@ -56,7 +48,7 @@ fun AboutDialogContent(
                 onClick = onDismiss,
                 shape = RoundedCornerShape(20.dp)
             ) {
-                Text("关闭")
+                Text(stringResource(R.string.about_close))
             }
         },
         dismissButton = {
@@ -70,7 +62,7 @@ fun AboutDialogContent(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("开源主页")
+                Text(stringResource(R.string.about_open_source))
             }
         },
         title = null,
@@ -96,7 +88,7 @@ fun AboutDialogContent(
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = "APRSdroid IC-705",
+                            contentDescription = stringResource(R.string.about_title),
                             modifier = Modifier.size(56.dp)
                         )
                     }
@@ -105,7 +97,7 @@ fun AboutDialogContent(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "APRSdroid IC-705",
+                    text = stringResource(R.string.about_title),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -141,15 +133,27 @@ fun AboutDialogContent(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "✨ 核心定制特性",
+                            text = stringResource(R.string.about_features_heading),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
 
-                        FeatureItem("📻", "IC-705 Wi-Fi 原生直连", "内置 Wi-Fi UDP 音频/PTT/CI-V 双向通信协议栈")
-                        FeatureItem("🎨", "Jetpack Compose M3", "全新声明式 UI 与 Material You 动态主题色彩")
-                        FeatureItem("🗺️", "多源现代地图", "集成高德地图、OpenStreetMap 与 Google Maps 矢量源")
+                        FeatureItem(
+                            "📻",
+                            stringResource(R.string.about_feature_ic705_title),
+                            stringResource(R.string.about_feature_ic705_desc),
+                        )
+                        FeatureItem(
+                            "🎨",
+                            stringResource(R.string.about_feature_ui_title),
+                            stringResource(R.string.about_feature_ui_desc),
+                        )
+                        FeatureItem(
+                            "🗺️",
+                            stringResource(R.string.about_feature_maps_title),
+                            stringResource(R.string.about_feature_maps_desc),
+                        )
                     }
                 }
 
@@ -167,14 +171,14 @@ fun AboutDialogContent(
                             .padding(12.dp)
                     ) {
                         Text(
-                            text = "📜 开源与致谢",
+                            text = stringResource(R.string.about_license_heading),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "基于 Georg Lukas (DO1GL) 原创 APRSdroid 项目二次开发。\n遵循 GNU General Public License v2 (GPL-2.0) 开源协议。\n致谢全球业余无线电爱好者（HAM）与开源社区贡献者！",
+                            text = stringResource(R.string.about_license_body),
                             fontSize = 11.sp,
                             lineHeight = 15.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

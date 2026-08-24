@@ -8,6 +8,7 @@ import android.util.AttributeSet;
 
 import androidx.preference.Preference;
 import androidx.preference.PreferenceManager;
+import org.aprsdroid.app.R;
 
 public class RingtonePreference extends Preference {
 
@@ -38,7 +39,7 @@ public class RingtonePreference extends Preference {
 				return pref.getContext().getString(android.R.string.untitled);
 			}
 			if (uriStr.isEmpty()) {
-				return "Silent";
+				return pref.getContext().getString(R.string.ringtone_silent);
 			}
 			try {
 				Uri uri = Uri.parse(uriStr);
@@ -49,5 +50,9 @@ public class RingtonePreference extends Preference {
 			} catch (Exception ignored) {}
 			return uriStr;
 		});
+	}
+
+	public void refreshSummary() {
+		notifyChanged();
 	}
 }

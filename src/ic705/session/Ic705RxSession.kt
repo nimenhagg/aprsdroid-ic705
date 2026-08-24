@@ -1508,7 +1508,7 @@ class Ic705RxSession internal constructor(
     ) {
         replaceTask(
             key,
-            controlExecutor.scheduleAtFixedRate(
+            controlExecutor.scheduleWithFixedDelay(
                 {
                     if (generation == expectedGeneration && !closed.get()) {
                         try {

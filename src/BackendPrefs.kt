@@ -3,6 +3,7 @@ package org.aprsdroid.app
 import android.Manifest
 import android.content.SharedPreferences
 import android.os.Bundle
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.CheckBoxPreference
 import androidx.preference.Preference
@@ -15,8 +16,15 @@ class BackendPrefs : AppCompatActivity(), PermissionHelper {
         const val REQUEST_GPS = 1010
     }
 
+    override var pendingPermissionAction: Int? = null
+    override var pendingPermissions: Set<String> = emptySet()
+    override val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants -> handlePermissionResult(grants) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        restorePermissionState(savedInstanceState)
         setContentView(R.layout.activity_preference)
         findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.preference_toolbar)?.let { toolbar ->
             setSupportActionBar(toolbar)
@@ -29,17 +37,17 @@ class BackendPrefs : AppCompatActivity(), PermissionHelper {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        savePermissionState(outState)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             finish()
             return true
         }
         return super.onOptionsItemSelected(item)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        handleRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     override fun getActionName(action: Int): Int = R.string.p_conn_kwd_gps

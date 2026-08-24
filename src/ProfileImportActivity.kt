@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.preference.PreferenceManager
+import androidx.core.content.edit
 import android.util.Log
 import android.widget.Toast
 import org.json.JSONObject
@@ -25,22 +26,21 @@ class ProfileImportActivity : Activity() {
                 input.bufferedReader(Charsets.UTF_8).readText()
             } ?: throw IllegalArgumentException("Cannot open stream for $dataUri")
             val config = JSONObject(configString)
-            val prefsedit = PreferenceManager.getDefaultSharedPreferences(this).edit()
+            PreferenceManager.getDefaultSharedPreferences(this).edit {
+                val keys = config.keys()
+                while (keys.hasNext()) {
+                    val item = keys.next()
+                    val value = config.get(item)
+                    Log.d(TAG, "reading: " + item + " = " + value + "/" + value.javaClass.simpleName)
 
-            val keys = config.keys()
-            while (keys.hasNext()) {
-                val item = keys.next()
-                val value = config.get(item)
-                Log.d(TAG, "reading: " + item + " = " + value + "/" + value.javaClass.simpleName)
-
-                when (value) {
-                    is String -> prefsedit.putString(item, value)
-                    is Boolean -> prefsedit.putBoolean(item, value)
-                    is Int -> prefsedit.putInt(item, value)
-                    is Number -> prefsedit.putFloat(item, value.toFloat())
+                    when (value) {
+                        is String -> putString(item, value)
+                        is Boolean -> putBoolean(item, value)
+                        is Int -> putInt(item, value)
+                        is Number -> putFloat(item, value.toFloat())
+                    }
                 }
             }
-            prefsedit.apply()
             val msg = getString(R.string.profile_import_done, dataUri.path)
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
             db.addPost(System.currentTimeMillis(), StorageDatabase.Companion.Post.TYPE_INFO, getString(R.string.profile_import_activity), msg)

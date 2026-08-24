@@ -44,6 +44,8 @@ class AfskUploader(
         output.setVolume(AudioTrack.getMaxVolume())
     }
 
+    // Bluetooth SCO remains the compatibility path for legacy radio audio routing.
+    @Suppress("DEPRECATION")
     private val btScoReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context, i: Intent) {
             val state = i.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
@@ -67,12 +69,12 @@ class AfskUploader(
     }
 
     @SuppressLint("WrongConstant")
+    @Suppress("DEPRECATION")
     override fun start(): Boolean {
         if (!isCallsignAX25Valid()) return false
         return if (useBt) {
             log(service.getString(R.string.afsk_info_sco_req))
             val am = service.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            @Suppress("DEPRECATION")
             am.startBluetoothSco()
             ContextCompat.registerReceiver(
                 service, btScoReceiver,

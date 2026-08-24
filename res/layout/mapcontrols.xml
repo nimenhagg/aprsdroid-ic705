@@ -17,6 +17,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:contentDescription="@string/map_crosshair"
         android:src="@drawable/ic_crosshair"
         android:visibility="gone" />
 
@@ -42,7 +43,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="OK"
+            android:text="@android:string/ok"
             android:visibility="gone" />
     </LinearLayout>
 
@@ -74,6 +75,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_gravity="center"
+                android:contentDescription="@string/map_my_location"
                 android:src="@drawable/ic_my_location" />
         </com.google.android.material.card.MaterialCardView>
 
@@ -107,6 +109,7 @@
                         android:layout_width="22dp"
                         android:layout_height="22dp"
                         android:layout_gravity="center"
+                        android:contentDescription="@string/map_zoom_in"
                         android:src="@drawable/ic_zoom_in" />
                 </FrameLayout>
 
@@ -129,6 +132,7 @@
                         android:layout_width="22dp"
                         android:layout_height="22dp"
                         android:layout_gravity="center"
+                        android:contentDescription="@string/map_zoom_out"
                         android:src="@drawable/ic_zoom_out" />
                 </FrameLayout>
             </LinearLayout>

@@ -10,11 +10,9 @@
 <string name="app_messages">Berichten</string>
 <string name="app_messages_clear">Berichten wissen</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">Je moet APRSdroid configureren met je callsign en passcode!</string>
 <string name="wrongpasscode">Je passcode komt niet overeen met je callsign!</string>
 <string name="e_toolong_callsign">Uw Callsign is te lang voor Packet Radio!</string>
 <string name="anon_warning">Zonder een wachtwoord zullen uw rapporten niet verzonden worden</string>
-<string name="mininterval">Minimum update tijd is 1 minuut!</string>
 <string name="singlelog">Stuur locatie</string>
 <string name="startlog">Tracking starten</string>
 <string name="stoplog">Tracking stoppen</string>
@@ -24,24 +22,19 @@ Druk de \"Menu\" knop om een positie te verzenden of om de tracking te starten.
 Je kan ook je voorkeuren aanpassen via het menu.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">%s Laatst ontvangen pakket</string>
-<string name="map_track_call">Tracking %s...</string>
+<string name="map_track_call">Tracking %s…</string>
 <string name="map_track_unknown">Geen positie voor %s bekend!</string>
 <string name="map_select">Station selecteren</string>
 
-<string name="map_loading">Bezig met laden...</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">Station SSIDs</string>
-<string name="sta_history">Station historiek</string>
 <string name="sta_map">Kaart</string>
 <string name="sta_extmap">Externe kaart</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">Bericht verzenden aan...</string>
-<string name="msg_message_text">Bericht txt</string>
+<string name="msg_send_new">Bericht verzenden aan…</string>
 <string name="msg_empty_list">Er zijn geen berichten opgeslagen.</string>
 <string name="msg_stored_offline">Dit bericht zal verzonden worden zodra je de tracking start</string>
 <!-- Message activity -->
@@ -49,22 +42,22 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="msg_to">Bericht naar %s</string>
 <string name="msg_abort">Stop verzenden</string>
 <string name="msg_restart">Herstart verzenden</string>
-<string name="msg_type_rejected">geweigerd</string>
-<string name="msg_type_aborted">afgebroken</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid Service</string>
 <string name="service_once">APRS Service enkel baken: %1$s, %2$s.</string>
 <string name="service_start">APRS Service gestart: %1$s, %2$s.</string>
 <string name="service_stop">APRS Service is gestopt.</string>
-<string name="service_no_location">GPS of Netwerk locatie aanzetten voor de goede werking van APRSdroid!</string>
 <string name="service_sm_no_gps">SmartBeaconing™ heeft GPS nodig!</string>
 <!-- service result codes -->
 <string name="post_error">FOUT</string>
 <string name="post_incmg">ontvangen</string>
 <string name="post_info"/>
-<string name="post_connecting">verbinden met %1$s:%2$d...</string>
-<string name="post_reconnect">Verbinding verbroken. Herverbinden in %d seconden...</string>
+<string name="post_connecting">verbinden met %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="one">Verbinding verbroken. Herverbinden in %d seconden…</item>
+    <item quantity="other">Verbinding verbroken. Herverbinden in %d seconden…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">Welkom bij APRSdroid!</string>
@@ -73,23 +66,6 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="fr_text3">Only needed for APRS over the Internet:</string>
 
 <!-- about dialog -->
-<string name="ad_title">Over APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version. \n\n This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. \n\n You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">Met dank aan:</string>
-<string name="ad_thanks_0">Mijn YL ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: idee</string>
-<string name="ad_thanks_2">Dirk, DB5OY: motivatie en ondersteuning</string>
-<string name="ad_thanks_3">Bastian, DB1BM: AFSK implementation</string>
-<string name="ad_thanks_4">Matti, OH2MQK and John, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: AFSK demodulator, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ by HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\nVertaling:</string>
-<string name="ad_homepage">Startpagina</string>
 
 <!-- map view -->
 <string name="map_overlays">Dekking</string>
@@ -97,16 +73,10 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="map_satellite">Google: Satellite</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline">%s (Offline)</string>
 <string name="map_objects">APRS voorwerp</string>
 
 <!-- map view -->
-<string name="age">Laatst onvangen...</string>
-<string name="age_30">30 minuten</string>
-<string name="age_2h">2 uur</string>
-<string name="age_12h">12 uur</string>
-<string name="age_1d">1 dag</string>
-<string name="age_2d">2 dagen</string>
+<string name="age">Laatst onvangen…</string>
 
 
 <!-- options menu -->
@@ -117,12 +87,10 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="export_log">Exporteer logbestand</string>
 <string name="export_empty">Niets te exporteren</string>
 <string name="clear_log">Logbestand wissen</string>
-<string name="quit">afsluiten</string>
 <string name="preferences">Voorkeuren</string>
 <!-- preferences -->
-<string name="profile_load">Profiel laden...</string>
-<string name="profile_export">Profiel exporteren...</string>
-<string name="p__ham">Amateur Radio</string>
+<string name="profile_load">Profiel laden…</string>
+<string name="profile_export">Profiel exporteren…</string>
 <string name="p_callsign">Callsign</string>
 <string name="p_callsign_nossid">Callsign (zonder SSID)</string>
 <string name="p_callsign_summary">Je Amateur Radio callsign</string>
@@ -150,15 +118,13 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 	<item>9: Mobiel station</item>
 	<item>10: IGate</item>
 	<item>11: Luchtballon, vliegtuig, ruimtetuig</item>
-	<item>12: APRStt, DTMF, ... (éénweg)</item>
+	<item>12: APRStt, DTMF, … (éénweg)</item>
 	<item>13: Weerstation</item>
 	<item>14: Vrachtwagen</item>
 	<item>16: Bijkomend station</item>
 </string-array>
 <string name="p_symbol">APRS symbool</string>
 <string name="p_symbol_summary">Jouw symbool voor map weergave</string>
-<string name="p_symbol_overlay">Dekking:</string>
-<string name="p_symbol_result">Resultaat:</string>
 <string name="p_frequency">Spraakfrequentie</string>
 <string name="p_frequency_summary">Uw spraakfrequentie [MHz]</string>
 <string name="p_status">Commentaar venster</string>
@@ -209,7 +175,6 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 
 <!-- privacy settings -->
 <string name="p_privacy">Private positie</string>
-<string name="p_privacy_summary">Naukeurigheid van positie en meer...</string>
 <string name="p_priv_ambiguity">Positie naukeurigheid</string>
 <string name="p_priv_ambiguity_summary">Verminderde precisie van de eigen reporten</string>
 <string name="p_ambiguity_off">UIT (DD° MM.mm\')</string>
@@ -232,7 +197,6 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="p_locsource_summary">Manueel, Periodiek of SmartBeaconing™</string>
 <string name="p__location">Lokatie instellingen</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">SmartBeaconing™ help</string>
 <string name="p_sb_fast_speed">Hoge snelheid [km/h]</string>
 <string name="p_sb_fast_speed_summary">Minimum snelheid voor snelle positie updates</string>
@@ -257,8 +221,6 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="p_distance">Minimum update afstand</string>
 <string name="p_distance_summary">Kilometers voor baken uitzending (0 voor enkel op tijd gebaseerd)</string>
 <string name="p_distance_entry">Geef de update afstand [km]</string>
-<string name="p_speedbrg">Verwachte snelheid &amp; richting</string>
-<string name="p_speedbrg_summary">Laat GPS langer actief voor meer preciese data</string>
 <string name="p_netloc">Gebruik netwerk locatie</string>
 <string name="p_netloc_summary">Verkrijg positie van het GSM netwerk</string>
 <string name="p_gps">GPS juistheid</string>
@@ -297,14 +259,11 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS digi path</string>
-<string name="p_aprs_path_hint">hop 1, hop 2, ...</string>
 <string name="p_aprs_path_summary">Opeenvolging van de digipeaters</string>
 <string name="p_aprs_path_entry">Geef een comma in om het digi pad te scheiden</string>
 <string name="p_afsk_prefix">Frame Sync Prefix</string>
 <string name="p_afsk_prefix_summary">No-Op Voorversterker (e.g. voor VOX controle)</string>
 <string name="p_afsk_prefix_entry">Geef de prefix in [ms]</string>
-<string name="p_afsk_hqdemod">Hoge kwaliteits Demodulator</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: 800 MHz CPU vereist</string>
 <string name="p_afsk_btsco">Bluetooth Headset</string>
 <string name="p_afsk_btsco_summary">Gebruik de Bluetooth (SCO) headset voor AFSK</string>
 <string name="p_afsk_output">Geluidsweergave</string>
@@ -321,7 +280,7 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="p_filterdist_summary">Ontvangen packets van stations in deze radius</string>
 <string name="p_filterdist_entry">Radius om je heen om op packets te monitoren [km]</string>
 <string name="p_filter">Packet filter</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">Filter voor inkomende pakketten</string>
 <string name="p_filter_entry">Geef filter in voor inkomende pakketten</string>
 
@@ -333,26 +292,7 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="p_sotimeout_entry">Timout waarde in seconden (0 = uit)</string>
 
 
-<string name="kbdnav_title">Keyboard Navigation</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>move map</item>
-	<item>zoomen</item>
-	<item>menu</item>
-	<item>selecteren</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Eddy Vaesen https://launchpad.net/~a-eddy-n
-  Georg Lukas https://launchpad.net/~ge0rg
-  H.F.P. Pit https://launchpad.net/~pd5dp
-  Jaakko Petrelius https://launchpad.net/~operaserver
-  Jeroen https://launchpad.net/~pd1ode
-  Michel Smits https://launchpad.net/~micsmithel
-  Robbie De Lise https://launchpad.net/~robbie-delise
-  Selly https://launchpad.net/~salpatxot
-  doomer https://launchpad.net/~doomer
-  xatr0z https://launchpad.net/~xatr0z</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">Client Mode</string>
@@ -366,7 +306,6 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 
 <string name="p_tnc_init">TNC init string</string>
 <string name="p_tnc_init_summary">Initialisatieopdrachten voor TNC (URL-encoded, Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">URL-gecodeerde string (Esc=%1B, \"%\"=%25), vertraging na elke regel:</string>
 
 <string name="p_tnc_delay">TNC init vertraging</string>
 <string name="p_tnc_delay_summary">vertragingstijd na elke regel</string>
@@ -388,12 +327,11 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="bt_reconnecting">Reconnecting in 3s…</string>
 
 
-<string name="afsk_info_sco_req">Maken van bleutooth SCO link...</string>
+<string name="afsk_info_sco_req">Maken van bleutooth SCO link…</string>
 <string name="afsk_info_sco_est">Bleutooth SCO link verbonden.</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">Geeef de KISS TCP server in</string>
-<string name="p_tcptnc_entry">Geef de KISS server hostname in</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">Importeer SSL certificaat</string>
@@ -401,8 +339,6 @@ Je kan ook je voorkeuren aanpassen via het menu.</string>
 <string name="ssl_no_keyfile">Geen certificaat voor %s! Gebruikt toegangscode gebaseerde authenticatie.</string>
 <string name="ssl_import_ok">Importeer het certificaat voor %s.</string>
 <string name="ssl_import_error">Fout bij het importeren van het certificaat: %s!</string>
-<string name="ssl_expired">Je certificaat is verlopen!</string>
-<string name="ssl_expire_in">Je certificaat verloop over %d dagen!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Profiel importeren</string>

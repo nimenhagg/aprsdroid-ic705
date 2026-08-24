@@ -13,6 +13,7 @@ import android.hardware.usb.UsbManager
 import android.os.Parcelable
 import android.util.Log
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import com.felhr.usbserial.SerialInputStream
 import com.felhr.usbserial.SerialOutputStream
 import com.felhr.usbserial.UsbSerialDevice
@@ -40,7 +41,10 @@ class UsbTnc(
         fun checkDeviceHandle(prefs: SharedPreferences, devP: Parcelable?): Boolean {
             if (devP !is UsbDevice) return false
             val lastUse = prefs.getString(deviceHandle(devP), null) ?: return false
-            prefs.edit().putString("proto", lastUse).putString("link", "usb").apply()
+            prefs.edit {
+                putString("proto", lastUse)
+                putString("link", "usb")
+            }
             return true
         }
     }
@@ -173,7 +177,7 @@ class UsbTnc(
             serialDevice.setParity(UsbSerialInterface.PARITY_NONE)
             serialDevice.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF)
 
-            prefs.prefs.edit().putString(deviceHandle(d), prefs.getString("proto", "kiss")).apply()
+            prefs.prefs.edit { putString(deviceHandle(d), prefs.getString("proto", "kiss")) }
 
             log("Opened " + serialDevice.javaClass.simpleName + " at " + baudrate + "bd")
             val inputStream = SerialInputStream(serialDevice)

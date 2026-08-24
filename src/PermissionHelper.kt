@@ -6,8 +6,13 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.result.ActivityResultLauncher
 
 interface PermissionHelper {
+    var pendingPermissionAction: Int?
+    var pendingPermissions: Set<String>
+    val permissionLauncher: ActivityResultLauncher<Array<String>>
+
     val activity: Activity
         get() = this as Activity
 
@@ -20,25 +25,47 @@ interface PermissionHelper {
             activity.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
         }
         return if (notGranted.isNotEmpty()) {
-            activity.requestPermissions(notGranted.toTypedArray(), action)
+            pendingPermissionAction = action
+            pendingPermissions = notGranted.toSet()
+            permissionLauncher.launch(notGranted.toTypedArray())
             false
         } else {
+            pendingPermissionAction = null
+            pendingPermissions = emptySet()
             onAllPermissionsGranted(action)
             true
         }
     }
 
-    fun handleRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        val failedPerms = mutableSetOf<String>()
-        for (i in permissions.indices) {
-            if (grantResults.getOrNull(i) != PackageManager.PERMISSION_GRANTED) {
-                failedPerms.add(permissions[i])
-            }
+    fun handlePermissionResult(grants: Map<String, Boolean>) {
+        val action = pendingPermissionAction ?: return
+        pendingPermissionAction = null
+        val requestedPermissions = pendingPermissions.ifEmpty { grants.keys }
+        pendingPermissions = emptySet()
+        val failedPerms = requestedPermissions.filterTo(mutableSetOf()) { permission ->
+            grants[permission] != true
         }
         if (failedPerms.isNotEmpty()) {
-            onPermissionsFailed(requestCode, failedPerms)
+            onPermissionsFailed(action, failedPerms)
         } else {
-            onAllPermissionsGranted(requestCode)
+            onAllPermissionsGranted(action)
+        }
+    }
+
+    fun restorePermissionState(savedInstanceState: android.os.Bundle?) {
+        pendingPermissionAction = savedInstanceState
+            ?.takeIf { it.containsKey(STATE_PENDING_PERMISSION_ACTION) }
+            ?.getInt(STATE_PENDING_PERMISSION_ACTION)
+        pendingPermissions = savedInstanceState
+            ?.getStringArrayList(STATE_PENDING_PERMISSIONS)
+            ?.toSet()
+            .orEmpty()
+    }
+
+    fun savePermissionState(outState: android.os.Bundle) {
+        pendingPermissionAction?.let { action ->
+            outState.putInt(STATE_PENDING_PERMISSION_ACTION, action)
+            outState.putStringArrayList(STATE_PENDING_PERMISSIONS, ArrayList(pendingPermissions))
         }
     }
 
@@ -70,5 +97,10 @@ interface PermissionHelper {
                 onPermissionsFailedCancel(action)
             }
             .show()
+    }
+
+    companion object {
+        private const val STATE_PENDING_PERMISSION_ACTION = "pending_permission_action"
+        private const val STATE_PENDING_PERMISSIONS = "pending_permissions"
     }
 }

@@ -4,22 +4,22 @@
 	<item android:id="@+id/hub"
 		android:title="@string/show_hub"
 		android:alphabeticShortcut="h"
-		app:showAsAction="always"
+		app:showAsAction="ifRoom"
 		android:icon="@drawable/ic_action_hub" />
 	<item android:id="@+id/log"
 		android:title="@string/show_log"
 		android:alphabeticShortcut="l"
-		app:showAsAction="always"
+		app:showAsAction="ifRoom"
 		android:icon="@drawable/ic_action_log" />
 	<item android:id="@+id/map"
 		android:title="@string/show_map"
 		android:alphabeticShortcut="m"
-		app:showAsAction="always"
+		app:showAsAction="ifRoom"
 		android:icon="@drawable/ic_action_map" />
 	<item android:id="@+id/conversations"
 		android:title="@string/app_messages"
 		android:alphabeticShortcut="c"
-		app:showAsAction="always"
+		app:showAsAction="ifRoom"
 		android:icon="@drawable/ic_action_messages" />
 </group>
 </menu>

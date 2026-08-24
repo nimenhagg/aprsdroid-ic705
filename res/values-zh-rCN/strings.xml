@@ -10,11 +10,9 @@
 <string name="app_messages">信息</string>
 <string name="app_messages_clear">清除消息</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">您需要在APRSdroid中配置您的呼号和验证码!</string>
 <string name="wrongpasscode">您的呼号验证码不正确!</string>
 <string name="e_toolong_callsign">您的呼号对于数据模式来说太长了！</string>
 <string name="anon_warning">没有验证码，您的数据包将不会被发出！</string>
-<string name="mininterval">最小的更新时间是1分钟！</string>
 <string name="singlelog">发送位置</string>
 <string name="startlog">开始记录路径</string>
 <string name="stoplog">停止记录路径</string>
@@ -22,25 +20,20 @@
 <string name="empty_logview">您还没有发送或接收任何数据包。\n\n 按​​ \“菜单\”按钮发送一个报告或开始记录你的位置。\n\n 您也可以从菜单更改应用程序首选项。</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">近期报告%s</string>
-<string name="map_track_call">记录中%s...</string>
+<string name="map_track_call">记录中%s…</string>
 <string name="map_track_unknown">未知%s的位置!</string>
 <string name="map_select">选择台站</string>
 
-<string name="map_loading">加载中...</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">台站SSID</string>
-<string name="sta_history">台站历史</string>
 <string name="sta_map">地图</string>
 <string name="sta_extmap">外部地图</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">发信息给...</string>
-<string name="msg_send_hint">输入 APRS 消息...</string>
-<string name="msg_message_text">消息内容</string>
+<string name="msg_send_new">发信息给…</string>
+<string name="msg_send_hint">输入 APRS 消息…</string>
 <string name="msg_empty_list">没有存储的对话</string>
 <string name="msg_stored_offline">只要你开始跟踪记录该信息就开始发送。</string>
 <!-- Message activity -->
@@ -48,36 +41,31 @@
 <string name="msg_to">发信息到 %s</string>
 <string name="msg_abort">中止传送</string>
 <string name="msg_restart">重新启动传送</string>
-<string name="msg_type_rejected">已拒绝</string>
-<string name="msg_type_aborted">已终止</string>
 <string name="delete">删除</string>
 <string name="delete_conversation">删除会话</string>
 <string name="delete_message">删除此消息</string>
 <string name="clear_all_messages">清空所有消息</string>
 <string name="confirm_delete_messages">确定要删除与 %s 的所有消息记录吗？</string>
-<string name="confirm_delete_message">确定要删除此条消息吗？</string>
 <string name="confirm_clear_all_messages">确定要清空所有聊天消息记录吗？</string>
 <string name="messages_cleared">消息已清除</string>
 <string name="message_deleted">消息已删除</string>
 <string name="text_copied">已复制到剪贴板</string>
 <string name="ic705_rx_diagnostic_summary">查看实时双通道状态、控制报文日志及音频统计</string>
-<string name="ic705_reset_defaults_title">恢复 IC-705 默认配置</string>
-<string name="ic705_reset_defaults_summary">将 IP、端口、用户名和密码还原为初始值</string>
-<string name="ic705_reset_defaults_done">已恢复 IC-705 默认配置</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid 服务</string>
 <string name="service_once">APRS服务单次发射: %1$s, %2$s.</string>
 <string name="service_start">APRS服务已启动: %1$s, %2$s.</string>
 <string name="service_stop">APRS 服务已停止。</string>
-<string name="service_no_location">你需要打开GPS或基站定位才能正常工作!</string>
 <string name="service_sm_no_gps">智能信标™需要GPS支持！</string>
 <!-- service result codes -->
 <string name="post_error">错误</string>
 <string name="post_incmg">已收到</string>
 <string name="post_info"/>
-<string name="post_connecting">连接到 %1$s:%2$d ...</string>
-<string name="post_reconnect">连接失败。%d 后重新连接...</string>
+<string name="post_connecting">连接到 %1$s:%2$d …</string>
+<plurals name="post_reconnect">
+    <item quantity="other">连接失败。%d 后重新连接…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">欢迎使用 APRSdroid！</string>
@@ -86,23 +74,6 @@
 <string name="fr_text3">只有通过互联网 APRS-IS 传输才需要：</string>
 
 <!-- about dialog -->
-<string name="ad_title">关于 APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">这是一个免费软件;你可以在GNU 通用公共授权(或第二版授权)的条款下进行修改. \n\n 希望这个程序的发布是有用的,但是它是没有任何承诺性担保或保证的，甚至没有商业或其它特定目的而隐含的担保。有关详细信息，请参阅GNU通用公共许可证。 \n\n 您应该已经收到随着这项计划的GNU通用公共许可证的副本，如果没有，写信给自由软件基金会,51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">感谢:</string>
-<string name="ad_thanks_0">My YL ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: 创意</string>
-<string name="ad_thanks_2">Dirk, DB5OY: 鼓励和支持</string>
-<string name="ad_thanks_3">Bastian, DB1BM: AFSK 协议实施</string>
-<string name="ad_thanks_4">Matti, OH2MQK and John, AB0OO: Java  APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: AFSK 解码, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™(智慧信标) by HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\n 翻译:</string>
-<string name="ad_homepage">首页</string>
 
 <!-- map view -->
 <string name="map_overlays">图层</string>
@@ -111,7 +82,6 @@
 <string name="map_osm">OpenStreetMap</string>
 <string name="map_amap">高德地图</string>
 <string name="map_custom_tile">自定义瓦片源</string>
-<string name="map_offline">%s (离线)</string>
 <string name="map_objects">APRS 对象</string>
 <string name="p__map">地图设置</string>
 <string name="p_map_source">地图图层源</string>
@@ -122,12 +92,7 @@
 <string name="p_map_custom_subdomains_summary">替换 URL 中 {s} 的负载均衡字符，例如 1234 或 abc</string>
 
 <!-- map view -->
-<string name="age">显示最近...</string>
-<string name="age_30">30 分钟</string>
-<string name="age_2h">2 小时</string>
-<string name="age_12h">12 小时</string>
-<string name="age_1d">1 天</string>
-<string name="age_2d">2 天</string>
+<string name="age">显示最近…</string>
 
 
 <!-- options menu -->
@@ -138,12 +103,10 @@
 <string name="export_log">导出日志</string>
 <string name="export_empty">没有输出</string>
 <string name="clear_log">清除日志</string>
-<string name="quit">退出</string>
 <string name="preferences">偏好设置</string>
 <!-- preferences -->
 <string name="profile_load">载入配置文件</string>
 <string name="profile_export">导出配置文件</string>
-<string name="p__ham">业余无线电</string>
 <string name="p_callsign">呼号</string>
 <string name="p_callsign_nossid">呼号(无后缀符号)</string>
 <string name="p_callsign_summary">您的业余无线电呼号</string>
@@ -171,15 +134,13 @@
 	<item>移动基站</item>
 	<item>APRS-IS (非无线电台)</item>
 	<item>气球，飞机，航天器</item>
-	<item>12: APRStt, DTMF, ... (单路)</item>
+	<item>12: APRStt, DTMF, … (单路)</item>
 	<item>气象站</item>
 	<item>货运车辆</item>
 	<item>通用增设台站</item>
 </string-array>
 <string name="p_symbol">APRS 符号</string>
 <string name="p_symbol_summary">您用作在地图中显示的符号</string>
-<string name="p_symbol_overlay">覆盖：</string>
-<string name="p_symbol_result">结果:</string>
 <string name="p_frequency">语音频率</string>
 <string name="p_frequency_summary">您的语音频率[MHz]</string>
 <string name="p_status">注释字段</string>
@@ -230,7 +191,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">位置隐私</string>
-<string name="p_privacy_summary">定位精准度及其他</string>
 <string name="p_priv_ambiguity">定位精准度</string>
 <string name="p_priv_ambiguity_summary">使用降低精度的位置报告</string>
 <string name="p_ambiguity_off">Off (DD° MM.mm\')</string>
@@ -253,7 +213,6 @@
 <string name="p_locsource_summary">手动,定时或智能信标™</string>
 <string name="p__location">位置设置</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™(智慧信标™)</string>
 <string name="p_sb_help">智能信标™ 帮助</string>
 <string name="p_sb_fast_speed">高速度[km/h]</string>
 <string name="p_sb_fast_speed_summary">中等速度时快速更新位置</string>
@@ -278,8 +237,6 @@
 <string name="p_distance">最小更新距离</string>
 <string name="p_distance_summary">公里信标传送间隔（设置为0则以时间设置为准）</string>
 <string name="p_distance_entry">输入更新距离［公里］</string>
-<string name="p_speedbrg">等待速度 &amp; 方位</string>
-<string name="p_speedbrg_summary">保持 GPS 开启以获得更多预设数据</string>
 <string name="p_netloc">使用基站位置</string>
 <string name="p_netloc_summary">从移动电话网络中请求位置信息</string>
 <string name="p_gps">GPS 精确度</string>
@@ -318,14 +275,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS 中继路径</string>
-<string name="p_aprs_path_hint">hop 1, hop 2, ...</string>
 <string name="p_aprs_path_summary">中继顺序</string>
 <string name="p_aprs_path_entry">输入逗号分隔的Digi路径</string>
 <string name="p_afsk_prefix">帧同步前缀</string>
 <string name="p_afsk_prefix_summary">No-Op Preamble (比如:声控发射)</string>
 <string name="p_afsk_prefix_entry">输入同步前缀时间</string>
-<string name="p_afsk_hqdemod">高质量解码</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: 需要 800 MHz 以上 CPU</string>
 <string name="p_afsk_btsco">蓝牙耳机</string>
 <string name="p_afsk_btsco_summary">使用蓝牙(SCO)耳机发射AFSK</string>
 <string name="p_afsk_output">音频输出</string>
@@ -342,7 +296,7 @@
 <string name="p_filterdist_summary">接收此范围内的台站信息数据包</string>
 <string name="p_filterdist_entry">过滤以您为中心范围内的数据包[单位:公里]</string>
 <string name="p_filter">数据包过滤器</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">过滤收到的数据包</string>
 <string name="p_filter_entry">为收到的数据包输入一个过滤条件</string>
 
@@ -354,22 +308,7 @@
 <string name="p_sotimeout_entry">超时值(0为关闭，单位:秒)</string>
 
 
-<string name="kbdnav_title">键盘导航</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>移动地图</item>
-	<item>缩放</item>
-	<item>菜单</item>
-	<item>选择</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  BG5DNS https://launchpad.net/~zihe
-  BG6JJI https://launchpad.net/~bg6jji
-  BG7NQF https://launchpad.net/~nijia
-  BM4LOG(LUO  YI CHENG) https://launchpad.net/~bm4log
-  Georg Lukas https://launchpad.net/~ge0rg
-  zhuye https://launchpad.net/~zhuye</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">客户端模式</string>
@@ -383,14 +322,13 @@
 
 <string name="p_tnc_init">TNC初始化字符串</string>
 <string name="p_tnc_init_summary">TNC的初始化命令（URL编码，Esc = %% 1B，“%%”= %% 25）</string>
-<string name="p_tnc_init_msg" formatted="false">URL编码字符串（Esc =％1B，\“％\”=％25），每行后延迟：</string>
 
 <string name="p_tnc_delay">TNC 初始化延迟</string>
 <string name="p_tnc_delay_summary">每次连线后等待时间</string>
 <string name="p_tnc_delay_entry">TNC 初始化延迟[毫秒]</string>
 
 <string name="p_bt_prefs">蓝牙设置</string>
-<string name="p_bt_prefs_summary">打开蓝牙，配对设备...</string>
+<string name="p_bt_prefs_summary">打开蓝牙，配对设备…</string>
 
 <string name="bt_error_unsupported">蓝牙未被支持!</string>
 <string name="bt_error_disabled">请启用蓝牙!</string>
@@ -402,15 +340,14 @@
 <!-- connecting to [device name] channel [bluetooth channel id] -->
 <string name="bt_connecting_to_channel" formatted="false">连接到 %s 频道 %d</string>
 <string name="bt_connected">连接到TNC</string>
-<string name="bt_reconnecting">3秒内重连...</string>
+<string name="bt_reconnecting">3秒内重连…</string>
 
 
-<string name="afsk_info_sco_req">正在请求蓝牙SCO连接...</string>
+<string name="afsk_info_sco_req">正在请求蓝牙SCO连接…</string>
 <string name="afsk_info_sco_est">蓝牙SCO链路已建立。</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP 服务器</string>
-<string name="p_tcptnc_entry">输入KISS服务器名</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">SSL证书导入</string>
@@ -418,8 +355,6 @@
 <string name="ssl_no_keyfile">没有%s的证书! 使用密码验证。</string>
 <string name="ssl_import_ok">%s证书已导入.</string>
 <string name="ssl_import_error">错误导入证书:%s!</string>
-<string name="ssl_expired">您的证书已过期!</string>
-<string name="ssl_expire_in">您的证书已过期%d天!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">配置导入</string>
@@ -440,36 +375,52 @@
     <!-- IC-705 Wi-Fi 模块与设置 -->
     <string name="p_conn_ic705">IC-705 Wi-Fi</string>
     <string name="ic705_rx_title">IC-705 Wi-Fi 诊断</string>
-    <string name="ic705_rx_instructions">请先将手机连接到 IC-705 所在的 Wi-Fi 网络。本页面用于接收与通信测试。</string>
     <string name="ic705_rx_address">电台 IP 地址</string>
-    <string name="ic705_rx_default_address">192.168.59.1</string>
     <string name="ic705_rx_port">控制 UDP 端口</string>
     <string name="ic705_rx_username">IC-705 用户名</string>
     <string name="ic705_rx_password">IC-705 网络密码</string>
-    <string name="ic705_rx_connect">开始仅接收诊断</string>
-    <string name="ic705_rx_disconnect">停止诊断</string>
     <string name="ic705_rx_stopped">已停止</string>
     <string name="ic705_rx_starting">正在建立 Wi-Fi UDP 会话…</string>
-    <string name="ic705_rx_requires_api_22">IC-705 Wi-Fi 功能需要 Android 5.1（API 22）或更高版本。</string>
-    <string name="ic705_rx_no_wifi">未找到可用的 Wi-Fi 网络，请先连接到电台所在的 Wi-Fi。</string>
-    <string name="ic705_rx_bad_address">请输入有效的电台 IP 地址。</string>
-    <string name="ic705_rx_bad_port">请输入 1 至 65535 范围内的 UDP 端口。</string>
-    <string name="ic705_rx_bad_credentials">用户名、密码或客户端名称不符合协议要求。</string>
-    <string name="ic705_rx_phase">会话阶段：%1$s</string>
-    <string name="ic705_rx_issue">发生问题：%1$s（%2$s）</string>
-    <string name="ic705_rx_issue_restart">发生问题：%1$s（%2$s）。请点击“停止诊断”，确认手机仍连接到 IC-705 所在的 Wi-Fi，然后重新开始。</string>
-    <string name="ic705_rx_failed_restart">会话失败。请点击“停止诊断”，确认手机已连接到 IC-705 所在的 Wi-Fi，然后重新开始。</string>
     <string name="ic705_backend_requires_api_22">IC-705 Wi-Fi 需要 Android 5.1 或更高版本。</string>
     <string name="ic705_backend_no_wifi">未找到可用于连接 IC-705 的 Wi-Fi 网络。</string>
     <string name="ic705_backend_invalid_settings">IC-705 Wi-Fi 设置无效，请检查地址、端口、用户名和密码。</string>
     <string name="ic705_backend_failed">IC-705 Wi-Fi 会话失败，请检查网络并重新启动服务。</string>
-    <string name="ic705_backend_tx_disabled">IC-705 Wi-Fi 发射尚未启用</string>
     <string name="ic705_backend_tx_ok">IC-705 OK</string>
     <string name="ic705_backend_tx_busy">IC-705 忙</string>
     <string name="ic705_backend_not_connected">IC-705 未连接</string>
-    <string name="ic705_rx_statistics">已接收音频块：%1$d\nPCM 采样数：%2$d\n已解码 AX.25 帧：%3$d\n音频重置次数：%4$d</string>
-    <string name="ic705_rx_log_title">内存诊断事件（最近 100 条）</string>
     <string name="ic705_rx_log_empty">暂时没有诊断事件。</string>
+    <string name="ic705_rx_connection_parameters">电台连接参数</string>
+    <string name="ic705_rx_live_statistics">实时数据统计</string>
+    <string name="ic705_rx_audio_blocks_received">已接收音频块</string>
+    <string name="ic705_rx_pcm_samples">PCM 采样点数</string>
+    <string name="ic705_rx_ax25_frames_decoded">已解码 AX.25 帧</string>
+    <string name="ic705_rx_audio_resets">音频重置次数</string>
+    <string name="ic705_rx_event_log_recent">内存诊断事件流（最近 100 条）</string>
+    <string name="digi_path_presets_hint">常用中继预设（点击快速填入，自定义项长按可删除）：</string>
+    <string name="digi_path_save_preset">＋ 存为预设</string>
+    <string name="digi_path_direct">DIRECT（直发）</string>
+    <string name="digi_path_summary_format">%1$s：%2$s</string>
+    <string name="digi_path_custom_chip">%1$s ✕</string>
+    <string name="digi_path_preset_deleted">已删除预设：%1$s</string>
+    <string name="digi_path_preset_saved">已存为预设：%1$s（长按可删除）</string>
+    <string name="map_crosshair">已选地图位置</string>
+    <string name="map_my_location">我的位置</string>
+    <string name="map_zoom_in">放大</string>
+    <string name="map_zoom_out">缩小</string>
+    <string name="about_title">APRSdroid IC-705</string>
+    <string name="about_close">关闭</string>
+    <string name="about_open_source">开源主页</string>
+    <string name="about_message">APRSdroid IC-705 Edition\n%1$s\n\n专为 ICOM IC-705 与现代无线电爱好者深度定制。\n\n• IC-705 Wi-Fi 原生直连通信协议栈\n• Jetpack Compose Material 3 现代化界面\n• 多源矢量与瓦片地图支持\n• APRS 短消息与送达状态追踪\n\n遵循 GNU GPLv2 开源协议。\n致谢所有为 APRS 与业余无线电生态做出贡献的朋友。</string>
+    <string name="about_features_heading">✨ 核心定制特性</string>
+    <string name="about_feature_ic705_title">IC-705 Wi-Fi 原生直连</string>
+    <string name="about_feature_ic705_desc">内置 Wi-Fi UDP 音频、PTT 与 CI-V 双向通信协议栈</string>
+    <string name="about_feature_ui_title">Jetpack Compose M3</string>
+    <string name="about_feature_ui_desc">全新声明式 UI 与 Material You 动态主题色彩</string>
+    <string name="about_feature_maps_title">多源现代地图</string>
+    <string name="about_feature_maps_desc">集成高德地图、OpenStreetMap 与 Google Maps 地图源</string>
+    <string name="about_license_heading">📜 开源与致谢</string>
+    <string name="about_license_body">基于 Georg Lukas 原创 APRSdroid 项目二次开发。\n遵循 GNU General Public License v2 (GPL-2.0) 开源协议。\n致谢全球业余无线电爱好者与开源社区贡献者。</string>
+    <string name="ringtone_silent">静音</string>
 
     <string name="p_google_maps_key">Google 地图 API Key</string>
     <string name="p_google_maps_key_summary">自定义 Google Maps 秘钥（留空使用默认内置秘钥）</string>

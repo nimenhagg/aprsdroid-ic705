@@ -60,6 +60,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.compose.ui.unit.sp
 import org.aprsdroid.app.R
 import org.aprsdroid.app.model.StationItem
@@ -262,7 +263,10 @@ fun HubStationScreen(
         org.aprsdroid.app.ui.component.AboutDialogContent(
             onDismiss = { showAboutDialog = false },
             onOpenGithub = {
-                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://github.com/nimenhagg/aprsdroid-ic705"))
+                val intent = android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    "https://github.com/nimenhagg/aprsdroid-ic705".toUri(),
+                )
                 context.startActivity(intent)
             }
         )

@@ -2,24 +2,10 @@
 <resources>
     <!-- Material 3 Expressive Dark Tonal Palette -->
     <color name="md3_primary">#4FD8EB</color>
-    <color name="md3_on_primary">#00363D</color>
     <color name="md3_primary_container">#004F58</color>
-    <color name="md3_on_primary_container">#97F0FF</color>
 
-    <color name="md3_secondary">#B1CBD0</color>
-    <color name="md3_on_secondary">#1B3438</color>
-    <color name="md3_secondary_container">#334B4F</color>
-    <color name="md3_on_secondary_container">#CDE7EC</color>
 
-    <color name="md3_surface">#0E1415</color>
-    <color name="md3_on_surface">#DEE3E4</color>
-    <color name="md3_surface_variant">#3F484A</color>
     <color name="md3_on_surface_variant">#BFC8CA</color>
 
-    <color name="md3_surface_container_low">#171D1E</color>
-    <color name="md3_surface_container">#1B2122</color>
-    <color name="md3_surface_container_high">#252B2C</color>
 
-    <color name="md3_outline">#899295</color>
-    <color name="md3_outline_variant">#3F484A</color>
 </resources>

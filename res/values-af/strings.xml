@@ -10,11 +10,9 @@
 <string name="app_messages">Boodskappe</string>
 <string name="app_messages_clear">Wis Boodskappe Uit</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">Jy moet APRSdroid instel met jou roepsein en toegangs kode!</string>
 <string name="wrongpasscode">Jou toegangs kode stem nie ooreen met jou roepsein nie!</string>
 <string name="e_toolong_callsign">Your callsign is too long for Packet Radio!</string>
 <string name="anon_warning">Sonder \'n toegangs kode sal jou berigte nie propageer nie!</string>
-<string name="mininterval">Minimum opdateer tydperk is 1 minuut!</string>
 <string name="singlelog">Stuur Posisie</string>
 <string name="startlog">Begin Nasporing</string>
 <string name="stoplog">Eindig Nasporing</string>
@@ -22,24 +20,19 @@
 <string name="empty_logview">Jy het nog geen pakkette gestuur of ontvang nie.\n\n Druk die \"Menu\" knoppie om \'n enkele berig te stuur of om nasporing van jou posisie te begin.\n\nJy kan ook program voorkeure verander deur die menu.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">%s Laaste Berig</string>
-<string name="map_track_call">Nasporing %s...</string>
+<string name="map_track_call">Nasporing %s…</string>
 <string name="map_track_unknown">Posisie van %s onbekend!</string>
 <string name="map_select">Kies stasie</string>
 
-<string name="map_loading">Laai...</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">Stasie SSID</string>
-<string name="sta_history">Stasie Geskiedenis</string>
 <string name="sta_map">Kaart</string>
 <string name="sta_extmap">Externe Kaart</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">Stuur boodskap aan...</string>
-<string name="msg_message_text">Boodskap teks</string>
+<string name="msg_send_new">Stuur boodskap aan…</string>
 <string name="msg_empty_list">Daar is geen gestoorde gesprekke nie.</string>
 <string name="msg_stored_offline">Die boodskap sal gestuur word sodra nasporing begin word.</string>
 <!-- Message activity -->
@@ -47,22 +40,22 @@
 <string name="msg_to">Boodskap aan %s</string>
 <string name="msg_abort">Aborteer transmissie</string>
 <string name="msg_restart">Begin weer transmissie</string>
-<string name="msg_type_rejected">verwerp</string>
-<string name="msg_type_aborted">geaborteer</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid Diens</string>
 <string name="service_once">APRS Diens enkele skoot: %1$s, %2$s</string>
 <string name="service_start">APRS Diens het begin: %1$s, %2$s</string>
 <string name="service_stop">APRS Diens gestop.</string>
-<string name="service_no_location">GPS of Netwerk Lokasie moet eers geaktiveer word voordat APRSDroid behoorlik sal werk!</string>
 <string name="service_sm_no_gps">SmartBeaconing™ benodig GPS!</string>
 <!-- service result codes -->
 <string name="post_error">Fout</string>
 <string name="post_incmg">ontvang</string>
 <string name="post_info"/>
-<string name="post_connecting">Verbind met %1$s:%2$d...</string>
-<string name="post_reconnect">Konneksie verloor. Herverbind in %d sekondes...</string>
+<string name="post_connecting">Verbind met %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="one">Konneksie verloor. Herverbind in %d sekondes…</item>
+    <item quantity="other">Konneksie verloor. Herverbind in %d sekondes…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">Welkom by APRSdroid!</string>
@@ -71,23 +64,6 @@
 <string name="fr_text3">Only needed for APRS over the Internet:</string>
 
 <!-- about dialog -->
-<string name="ad_title">Oor APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">Hierdie program is gratis sagteware; jy kan dit herverdeel en / of verander onder die bepalings van die GNU General Public License soos gepubliseer deur die Free Software Foundation; óf weergawe 2 van die lisensie, of (na u keuse) enige latere weergawe. \ n \ n Hierdie program word versprei in die hoop dat dit nuttig sal wees, maar SONDER ENIGE WAARBORG; sonder selfs die geïmpliseerde waarborg van VERKOOPBAARHEID of GESKIKTHEID VIR \'N SPESIFIEKE DOEL. Sien die GNU General Public License vir meer besonderhede. \ n \ n U moes \'n kopie van die GNU General Public License saam met hierdie program ontvang het; indien nie, skryf aan die Free Software Foundation, Inc., Franklinstraat 51, Vyfde Vloer, Boston, MA 02110-1301, VSA. \ n \ n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">Te danke aan:</string>
-<string name="ad_thanks_0">My YL ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: idea</string>
-<string name="ad_thanks_2">Dirk, DB5OY: motivering en ondersteuning</string>
-<string name="ad_thanks_3">Bastian, DB1BM: AFSK implementasie</string>
-<string name="ad_thanks_4">Matti, OH2MQK and John, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: AFSK demodulator, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ deur HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\nVertaling:</string>
-<string name="ad_homepage">Tuisblad</string>
 
 <!-- map view -->
 <string name="map_overlays">Oorleggings</string>
@@ -95,16 +71,10 @@
 <string name="map_satellite">Google: Satellite</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline"> %s (Offline)</string>
 <string name="map_objects">APRS Voorwerpe</string>
 
 <!-- map view -->
-<string name="age">Wys laaste...</string>
-<string name="age_30">30 minute</string>
-<string name="age_2h">2 ure</string>
-<string name="age_12h">12 ure</string>
-<string name="age_1d">1 dag</string>
-<string name="age_2d">2 dae</string>
+<string name="age">Wys laaste…</string>
 
 
 <!-- options menu -->
@@ -115,12 +85,10 @@
 <string name="export_log">Voer Log Uit</string>
 <string name="export_empty">Niks om uit te voer nie</string>
 <string name="clear_log">Wis Log Uit</string>
-<string name="quit">Laat Vaar</string>
 <string name="preferences">Voorkeure</string>
 <!-- preferences -->
-<string name="profile_load">Laai profiel...</string>
-<string name="profile_export">Voer profiel uit...</string>
-<string name="p__ham">Amateur Radio</string>
+<string name="profile_load">Laai profiel…</string>
+<string name="profile_export">Voer profiel uit…</string>
 <string name="p_callsign">Roepsein</string>
 <string name="p_callsign_nossid">Roepsein (sonder SSID)</string>
 <string name="p_callsign_summary">Jou ham radio-roepsein</string>
@@ -148,15 +116,13 @@
 	<item>9: Mobiele stasie</item>
 	<item>10: APRS-IS (geen radio nie)</item>
 	<item>11: Ballon, vliegtuig, ruimtetuig</item>
-	<item>12: APRStt, DTMF, ... (eenrigting)</item>
+	<item>12: APRStt, DTMF, … (eenrigting)</item>
 	<item>13: Weer stasie</item>
 	<item>14: Vragvoertuig</item>
 	<item>15: Generiese addisionele stasie</item>
 </string-array>
 <string name="p_symbol">APRS simbool</string>
 <string name="p_symbol_summary">Jou simbool vir kaartvertoning</string>
-<string name="p_symbol_overlay">Oorlegsel:</string>
-<string name="p_symbol_result">Resultaat:</string>
 <string name="p_frequency">Praat frekwensie</string>
 <string name="p_frequency_summary">Jou praat frekwensie [MHz]</string>
 <string name="p_status">Kommentaar veld</string>
@@ -207,7 +173,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">Posisie privaatheid</string>
-<string name="p_privacy_summary">Posisie dubbelsinnigheid en meer</string>
 <string name="p_priv_ambiguity">Posisie Dubbelsinnigheid</string>
 <string name="p_priv_ambiguity_summary">Verminderde presisie vir eie posverslae</string>
 <string name="p_ambiguity_off">Af (DD° MM.mm\')</string>
@@ -230,7 +195,6 @@
 <string name="p_locsource_summary">Met die hand, Periodiek of SmartBeaconing™</string>
 <string name="p__location">Ligging Instellings</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">SmartBeaconing™ hulp</string>
 <string name="p_sb_fast_speed">Vinnige Spoed [km/h]</string>
 <string name="p_sb_fast_speed_summary">Minimum spoed vir vinnige posisie opdateering</string>
@@ -255,8 +219,6 @@
 <string name="p_distance">Minimum opdateerings afstand</string>
 <string name="p_distance_summary">Kilometers voor baken transmissie (stel na 0 vir slegs tyd)</string>
 <string name="p_distance_entry">Voer die opdateerings afstand in [km]</string>
-<string name="p_speedbrg">Wag op spoed &amp; rigting</string>
-<string name="p_speedbrg_summary">Hou GPS langer aan om meer presiese data te verkry</string>
 <string name="p_netloc">Gebruik netwerk posisie</string>
 <string name="p_netloc_summary">Verkry posisie van sellulêre netwerk af</string>
 <string name="p_gps">GPS Presisie</string>
@@ -295,14 +257,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS digi-pad</string>
-<string name="p_aprs_path_hint">sprong 1, sprong 2, ...</string>
 <string name="p_aprs_path_summary">Volgorde van digipeaters</string>
 <string name="p_aprs_path_entry">Voer die komma-geskeide digi-pad in</string>
 <string name="p_afsk_prefix">Raam Sync Voorvoegsel</string>
 <string name="p_afsk_prefix_summary">No-Op Preambule (bv. Vir VOX beheer)</string>
 <string name="p_afsk_prefix_entry">Tik die voorvoegsel tyd [ms]</string>
-<string name="p_afsk_hqdemod">Hoë Gehalte Demodulator</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: 800 MHz CPU benodig</string>
 <string name="p_afsk_btsco">Bluetooth Kopstuk</string>
 <string name="p_afsk_btsco_summary">Gebruik Bluetooth (SCO) kopstuk vir AFSK</string>
 <string name="p_afsk_output">Oudio-uitvoer</string>
@@ -319,7 +278,7 @@
 <string name="p_filterdist_summary">Ontvang pakkette van stasies in hierdie radius</string>
 <string name="p_filterdist_entry">Radius om jou om te monitor vir pakkette [km]</string>
 <string name="p_filter">Pakkette filter</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">Filtreer vir inkomende pakkette</string>
 <string name="p_filter_entry">Voer \'n filter vir inkomende pakkette in</string>
 
@@ -331,18 +290,7 @@
 <string name="p_sotimeout_entry">Time-out-waarde in sekondes (0 = deaktiveer)</string>
 
 
-<string name="kbdnav_title">Keyboard Navigation</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>move map</item>
-	<item>zoom</item>
-	<item>menu</item>
-	<item>select</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Georg Lukas https://launchpad.net/~ge0rg
-  Robin Pringle https://launchpad.net/~pringlerobin</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">Kliënt Wyse</string>
@@ -356,14 +304,13 @@
 
 <string name="p_tnc_init">TNC init string</string>
 <string name="p_tnc_init_summary">Initialisering opdragte vir TNC (URL-geïnkripteer, Esc = %% 1B, "%%" = %% 25)</string>
-<string name="p_tnc_init_msg" formatted="false">URL-gekodeerde string (Esc =% 1B, \ "% \" =% 25), vertraag na elke reël:</string>
 
 <string name="p_tnc_delay">TNC init vertraging</string>
 <string name="p_tnc_delay_summary">Tydperk om te wag na elke lyn</string>
 <string name="p_tnc_delay_entry">TNC init vertraging [ms]</string>
 
 <string name="p_bt_prefs">Bluetooth-instellings</string>
-<string name="p_bt_prefs_summary">Aktiveer Bluetooth, paar toestelle ...</string>
+<string name="p_bt_prefs_summary">Aktiveer Bluetooth, paar toestelle …</string>
 
 <string name="bt_error_unsupported">Bluetooth word nie ondersteun nie!</string>
 <string name="bt_error_disabled">Aktiveer asseblief Bluetooth!</string>
@@ -378,12 +325,11 @@
 <string name="bt_reconnecting">Reconnecting in 3s…</string>
 
 
-<string name="afsk_info_sco_req">Versoek Bluetooth SCO skakel ...</string>
+<string name="afsk_info_sco_req">Versoek Bluetooth SCO skakel …</string>
 <string name="afsk_info_sco_est">Bluetooth SCO skakel ingestel.</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP bediener om te kontak</string>
-<string name="p_tcptnc_entry">Voer die KISS-bedienernaam in</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">SSL-sertifikaat invoer</string>
@@ -391,8 +337,6 @@
 <string name="ssl_no_keyfile">Geen sertifikaat vir %s! Gebruik wagwoord-verifikasie.</string>
 <string name="ssl_import_ok">Ingevoerde sertifikaat vir %s.</string>
 <string name="ssl_import_error">Kon nie sertifikaat invoer nie: %s!</string>
-<string name="ssl_expired">Jou sertifikaat het verval!</string>
-<string name="ssl_expire_in">Jou sertifikaat verval binne %d dae!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Profiel invoer</string>

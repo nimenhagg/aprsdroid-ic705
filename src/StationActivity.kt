@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.core.net.toUri
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -69,11 +70,11 @@ class StationActivity : AppCompatActivity() {
                     },
                     onOpenQrz = { call ->
                         val baseCall = call.split("-")[0]
-                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.qrz.com/db/$baseCall"))
+                        val intent = Intent(Intent.ACTION_VIEW, "https://www.qrz.com/db/$baseCall".toUri())
                         startActivity(intent)
                     },
                     onOpenAprsFi = { call ->
-                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://aprs.fi/info/a/$call"))
+                        val intent = Intent(Intent.ACTION_VIEW, "https://aprs.fi/info/a/$call".toUri())
                         startActivity(intent)
                     },
                     onSelectSsid = { call ->

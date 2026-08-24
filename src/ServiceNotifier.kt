@@ -12,11 +12,11 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.graphics.drawable.Icon
-import android.net.Uri
 import android.os.Build
 import android.os.Vibrator
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 
 class ServiceNotifier {
     companion object {
@@ -30,24 +30,17 @@ class ServiceNotifier {
     val callIdMap = mutableMapOf<String, Int>()
 
     fun setupChannels(ctx: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val nm = ctx.getSystemService(NotificationManager::class.java)
-            nm?.createNotificationChannel(
-                NotificationChannel("status", ctx.getString(R.string.aprsservice), NotificationManager.IMPORTANCE_LOW)
-            )
-            nm?.createNotificationChannel(
-                NotificationChannel("msg", ctx.getString(R.string.p_msg), NotificationManager.IMPORTANCE_DEFAULT)
-            )
-        }
+        val nm = ctx.getSystemService(NotificationManager::class.java)
+        nm?.createNotificationChannel(
+            NotificationChannel("status", ctx.getString(R.string.aprsservice), NotificationManager.IMPORTANCE_LOW)
+        )
+        nm?.createNotificationChannel(
+            NotificationChannel("msg", ctx.getString(R.string.p_msg), NotificationManager.IMPORTANCE_DEFAULT)
+        )
     }
 
     fun newNotificationBuilder(ctx: Service, channel: String): Notification.Builder {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(ctx, channel)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(ctx)
-        }
+        return Notification.Builder(ctx, channel)
     }
 
     fun newNotification(ctx: Service, status: String): Notification {
@@ -93,7 +86,7 @@ class ServiceNotifier {
     fun newMessageNotification(ctx: Service, call: String, message: String): Notification {
         val i = Intent(ctx, MessageActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            data = Uri.parse(call)
+            data = call.toUri()
         }
         return newNotificationBuilder(ctx, "msg")
             .setContentTitle(call)
@@ -128,17 +121,12 @@ class ServiceNotifier {
                 @Suppress("DEPRECATION")
                 ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                v?.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 200, 200), -1))
-            } else {
-                @Suppress("DEPRECATION")
-                v?.vibrate(longArrayOf(0, 200, 200), -1)
-            }
+            v?.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 200, 200), -1))
         }
         val sound = prefs.getString(prefix + "notify_ringtone", null)
         if (!sound.isNullOrEmpty()) {
             @Suppress("DEPRECATION")
-            n.sound = Uri.parse(sound)
+            n.sound = sound.toUri()
         }
     }
 
@@ -160,10 +148,16 @@ class ServiceNotifier {
     }
 
     fun start(ctx: Service, status: String) {
-        var serviceType = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        var serviceType = if (Build.VERSION.SDK_INT >= 34) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        } else {
+            0
+        }
         if (Build.VERSION.SDK_INT >= 29) {
             var types = 0
-            if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+            ) {
                 types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
             }
             if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||

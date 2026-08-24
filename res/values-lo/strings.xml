@@ -10,11 +10,9 @@
 <string name="app_messages">ຂໍ້ຄວາມ</string>
 <string name="app_messages_clear">ລຶບຂໍ້ຄວາມ</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">ທ່ານຕ້ອງຕັ້ງຄ່າ APRSdroid ດ້ວຍສັນຍານເອີ້ນຂານ ແລະ ລະຫັດຜ່ານຂອງທ່ານ!</string>
 <string name="wrongpasscode">ລະຫັດຜ່ານຂອງທ່ານບໍ່ກົງກັບສັນຍານເອີ້ນຂານ!</string>
 <string name="e_toolong_callsign">ສັນຍານເອີ້ນຂານຂອງທ່ານຍາວເກີນໄປສຳລັບ Packet Radio!</string>
 <string name="anon_warning">ຖ້າບໍ່ມີລະຫັດຜ່ານ, ລາຍງານຂອງທ່ານຈະບໍ່ຖືກເຜີຍແຜ່!</string>
-<string name="mininterval">ເວລາອັບເດດຕໍ່າສຸດແມ່ນ 1 ນາທີ!</string>
 <string name="singlelog">ສົ່ງຕຳແໜ່ງ</string>
 <string name="startlog">ເລີ່ມຕິດຕາມ</string>
 <string name="stoplog">ຢຸດຕິດຕາມ</string>
@@ -22,24 +20,19 @@
 <string name="empty_logview">ທ່ານຍັງບໍ່ໄດ້ສົ່ງ ຫຼື ຮັບແພັກເກັດໃດໆເທື່ອ.\n\n ກົດປຸ່ມ \"ເມນູ\" ເພື່ອສົ່ງລາຍງານດຽວ ຫຼື ເພື່ອເລີ່ມຕິດຕາມຕຳແໜ່ງຂອງທ່ານ.\n\n ທ່ານຍັງສາມາດປ່ຽນການຕັ້ງຄ່າຂອງແອັບໄດ້ຈາກເມນູ.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">ລາຍງານຫຼ້າສຸດຂອງ %s</string>
-<string name="map_track_call">ກຳລັງຕິດຕາມ %s...</string>
+<string name="map_track_call">ກຳລັງຕິດຕາມ %s…</string>
 <string name="map_track_unknown">ບໍ່ຮູ້ຕຳແໜ່ງຂອງ %s!</string>
 <string name="map_select">ເລືອກສະຖານີ</string>
 
-<string name="map_loading">ກຳລັງໂຫຼດ...</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">SSID ຂອງສະຖານີ</string>
-<string name="sta_history">ປະຫວັດສະຖານີ</string>
 <string name="sta_map">ແຜນທີ່</string>
 <string name="sta_extmap">ແຜນທີ່ພາຍນອກ</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">ສົ່ງຂໍ້ຄວາມຫາ...</string>
-<string name="msg_message_text">ເນື້ອໃນຂໍ້ຄວາມ</string>
+<string name="msg_send_new">ສົ່ງຂໍ້ຄວາມຫາ…</string>
 <string name="msg_empty_list">ບໍ່ມີການສົນທະນາທີ່ບັນທຶກໄວ້.</string>
 <string name="msg_stored_offline">ຂໍ້ຄວາມຈະຖືກສົ່ງທັນທີທີ່ທ່ານເລີ່ມຕິດຕາມ.</string>
 <!-- Message activity -->
@@ -47,22 +40,21 @@
 <string name="msg_to">ຂໍ້ຄວາມຫາ %s</string>
 <string name="msg_abort">ຍົກເລີກການສົ່ງ</string>
 <string name="msg_restart">ເລີ່ມການສົ່ງໃໝ່</string>
-<string name="msg_type_rejected">ຖືກປະຕິເສດ</string>
-<string name="msg_type_aborted">ຍົກເລີກແລ້ວ</string>
 
 <!-- AprsService -->
 <string name="aprsservice">ບໍລິການ APRSdroid</string>
 <string name="service_once">ບໍລິການ APRS ສົ່ງຄັ້ງດຽວ: %1$s, %2$s.</string>
 <string name="service_start">ເລີ່ມບໍລິການ APRS ແລ້ວ: %1$s, %2$s.</string>
 <string name="service_stop">ຢຸດບໍລິການ APRS ແລ້ວ.</string>
-<string name="service_no_location">ທ່ານຕ້ອງເປີດ GPS ຫຼື ຕຳແໜ່ງເຄືອຂ່າຍ ເພື່ອໃຫ້ APRSdroid ເຮັດວຽກໄດ້ຢ່າງຖືກຕ້ອງ!</string>
 <string name="service_sm_no_gps">SmartBeaconing™ ຕ້ອງການ GPS!</string>
 <!-- service result codes -->
 <string name="post_error">ຜິດພາດ</string>
 <string name="post_incmg">ໄດ້ຮັບແລ້ວ</string>
 <string name="post_info"/>
-<string name="post_connecting">ກຳລັງເຊື່ອມຕໍ່ຫາ %1$s:%2$d...</string>
-<string name="post_reconnect">ການເຊື່ອມຕໍ່ຂາດ. ຈະເຊື່ອມຕໍ່ໃໝ່ໃນອີກ %d ວິນາທີ...</string>
+<string name="post_connecting">ກຳລັງເຊື່ອມຕໍ່ຫາ %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="other">ການເຊື່ອມຕໍ່ຂາດ. ຈະເຊື່ອມຕໍ່ໃໝ່ໃນອີກ %d ວິນາທີ…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">ຍິນດີຕ້ອນຮັບສູ່ APRSdroid!</string>
@@ -71,23 +63,6 @@
 <string name="fr_text3">ຈຳເປັນສະເພາະ APRS ຜ່ານອິນເຕີເນັດ:</string>
 
 <!-- about dialog -->
-<string name="ad_title">ກ່ຽວກັບ APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">ໂປຣແກຣມນີ້ແມ່ນຊັອຟແວເສລີ; ທ່ານສາມາດແຈກຢາຍຕໍ່ ແລະ/ຫຼື ແກ້ໄຂມັນໄດ້ພາຍໃຕ້ເງື່ອນໄຂຂອງສັນຍາອະນຸຍາດສາທາລະນະທົ່ວໄປຂອງ GNU ຕາມທີ່ເຜີຍແຜ່ໂດຍ Free Software Foundation; ບໍ່ວ່າຈະເປັນເວີຊັນ 2 ຂອງສັນຍາອະນຸຍາດ, ຫຼື (ຕາມທາງເລືອກຂອງທ່ານ) ເວີຊັນໃດກໍ່ໄດ້ທີ່ໃໝ່ກວ່າ. \n\n ໂປຣແກຣມນີ້ຖືກແຈກຢາຍໂດຍຫວັງວ່າມັນຈະເປັນປະໂຫຍດ, ແຕ່ບໍ່ມີການຮັບປະກັນໃດໆ; ແມ່ນແຕ່ບໍ່ມີການຮັບປະກັນໂດຍທີ່ກ່ຽວກັບການຄ້າ ຫຼື ຄວາມເໝາະສົມສຳລັບຈຸດປະສົງສະເພາະໃດໜຶ່ງ. ເບິ່ງສັນຍາອະນຸຍາດສາທາລະນະທົ່ວໄປຂອງ GNU ສຳລັບລາຍລະອຽດເພີ່ມເຕີມ. \n\n ທ່ານຄວນຈະໄດ້ຮັບສຳເນົາຂອງສັນຍາອະນຸຍາດສາທາລະນະທົ່ວໄປຂອງ GNU ພ້ອມກັບໂປຣແກຣມນີ້; ຖ້າບໍ່, ໃຫ້ຂຽນເຖິງ Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">ຂອບໃຈ:</string>
-<string name="ad_thanks_0">YL ຂອງຂ້ອຍ ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: ແນວຄວາມຄິດ</string>
-<string name="ad_thanks_2">Dirk, DB5OY: ແຮງຈູງໃຈ ແລະ ການສະໜັບສະໜູນ</string>
-<string name="ad_thanks_3">Bastian, DB1BM: ການນຳໃຊ້ AFSK</string>
-<string name="ad_thanks_4">Matti, OH2MQK ແລະ John, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: ຕົວຖອດລະຫັດ AFSK, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ ໂດຍ HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\nການແປ:</string>
-<string name="ad_homepage">ໜ້າຫຼັກ</string>
 
 <!-- map view -->
 <string name="map_overlays">ຊັ້ນຂໍ້ມູນ</string>
@@ -95,16 +70,10 @@
 <string name="map_satellite">Google: ດາວທຽມ</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline">%s (ອັອຟລາຍ)</string>
 <string name="map_objects">ວັດຖຸ APRS</string>
 
 <!-- map view -->
-<string name="age">ສະແດງຫຼ້າສຸດ...</string>
-<string name="age_30">30 ນາທີ</string>
-<string name="age_2h">2 ຊົ່ວໂມງ</string>
-<string name="age_12h">12 ຊົ່ວໂມງ</string>
-<string name="age_1d">1 ມື້</string>
-<string name="age_2d">2 ມື້</string>
+<string name="age">ສະແດງຫຼ້າສຸດ…</string>
 
 
 <!-- options menu -->
@@ -115,12 +84,10 @@
 <string name="export_log">ສົ່ງອອກບັນທຶກ</string>
 <string name="export_empty">ບໍ່ມີຫຍັງໃຫ້ສົ່ງອອກ</string>
 <string name="clear_log">ລຶບບັນທຶກ</string>
-<string name="quit">ອອກ</string>
 <string name="preferences">ການຕັ້ງຄ່າ</string>
 <!-- preferences -->
-<string name="profile_load">ໂຫຼດໂປຣໄຟລ໌...</string>
-<string name="profile_export">ສົ່ງອອກໂປຣໄຟລ໌...</string>
-<string name="p__ham">ວິທະຍຸສະໝັກຫຼິ້ນ</string>
+<string name="profile_load">ໂຫຼດໂປຣໄຟລ໌…</string>
+<string name="profile_export">ສົ່ງອອກໂປຣໄຟລ໌…</string>
 <string name="p_callsign">ສັນຍານເອີ້ນຂານ</string>
 <string name="p_callsign_nossid">ສັນຍານເອີ້ນຂານ (ບໍ່ມີ SSID)</string>
 <string name="p_callsign_summary">ສັນຍານເອີ້ນຂານວິທະຍຸສະໝັກຫຼິ້ນຂອງທ່ານ</string>
@@ -148,15 +115,13 @@
 	<item>9: ສະຖານີເຄື່ອນທີ່</item>
 	<item>10: APRS-IS (ບໍ່ມີວິທະຍຸ)</item>
 	<item>11: ບານລູນ, ຍານອາກາດ, ຍານອະວະກາດ</item>
-	<item>12: APRStt, DTMF, ... (ທາງດຽວ)</item>
+	<item>12: APRStt, DTMF, … (ທາງດຽວ)</item>
 	<item>13: ສະຖານີອາກາດ</item>
 	<item>14: ຍານພາຫະນະຂົນສົ່ງ</item>
 	<item>15: ສະຖານີເພີ່ມເຕີມທົ່ວໄປ</item>
 </string-array>
 <string name="p_symbol">ສັນຍາລັກ APRS</string>
 <string name="p_symbol_summary">ສັນຍາລັກຂອງທ່ານສຳລັບການສະແດງເທິງແຜນທີ່</string>
-<string name="p_symbol_overlay">ຊ້ອນທັບ:</string>
-<string name="p_symbol_result">ຜົນລັບ:</string>
 <string name="p_frequency">ຄວາມຖີ່ສຽງ</string>
 <string name="p_frequency_summary">ຄວາມຖີ່ສຽງຂອງທ່ານ [MHz]</string>
 <string name="p_status">ຊ່ອງຄຳເຫັນ</string>
@@ -207,7 +172,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">ຄວາມເປັນສ່ວນຕົວຂອງຕຳແໜ່ງ</string>
-<string name="p_privacy_summary">ຄວາມບໍ່ຊັດເຈນຂອງຕຳແໜ່ງ ແລະ ອື່ນໆ</string>
 <string name="p_priv_ambiguity">ຄວາມບໍ່ຊັດເຈນຂອງຕຳແໜ່ງ</string>
 <string name="p_priv_ambiguity_summary">ຫຼຸດຄວາມແມ່ນຍຳສຳລັບລາຍງານຕຳແໜ່ງຂອງຕົນເອງ</string>
 <string name="p_ambiguity_off">ປິດ (DD° MM.mm\')</string>
@@ -230,7 +194,6 @@
 <string name="p_locsource_summary">ດ້ວຍຕົນເອງ, ເປັນໄລຍະ ຫຼື SmartBeaconing™</string>
 <string name="p__location">ການຕັ້ງຄ່າຕຳແໜ່ງ</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">ຊ່ວຍເຫຼືອ SmartBeaconing™</string>
 <string name="p_sb_fast_speed">ຄວາມໄວສູງ [ກມ/ຊມ]</string>
 <string name="p_sb_fast_speed_summary">ຄວາມໄວຕໍ່າສຸດສຳລັບການອັບເດດຕຳແໜ່ງໄວ</string>
@@ -255,8 +218,6 @@
 <string name="p_distance">ໄລຍະທາງອັບເດດຕໍ່າສຸດ</string>
 <string name="p_distance_summary">ກິໂລແມັດກ່ອນການສົ່ງບີຄອນ (ຕັ້ງເປັນ 0 ສຳລັບຕາມເວລາເທົ່ານັ້ນ)</string>
 <string name="p_distance_entry">ໃສ່ໄລຍະທາງອັບເດດ [ກມ]</string>
-<string name="p_speedbrg">ລໍຖ້າຄວາມໄວ ແລະ ທິດທາງ</string>
-<string name="p_speedbrg_summary">ເປີດ GPS ໄວ້ດົນຂຶ້ນເພື່ອໃຫ້ໄດ້ຂໍ້ມູນທີ່ແມ່ນຍຳກວ່າ</string>
 <string name="p_netloc">ໃຊ້ຕຳແໜ່ງເຄືອຂ່າຍ</string>
 <string name="p_netloc_summary">ຮັບຕຳແໜ່ງຈາກເຄືອຂ່າຍມືຖື</string>
 <string name="p_gps">ຄວາມແມ່ນຍຳຂອງ GPS</string>
@@ -295,14 +256,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">ເສັ້ນທາງດິຈິ APRS</string>
-<string name="p_aprs_path_hint">ຮອບ 1, ຮອບ 2, ...</string>
 <string name="p_aprs_path_summary">ລຳດັບຂອງຕົວສົ່ງຕໍ່</string>
 <string name="p_aprs_path_entry">ໃສ່ເສັ້ນທາງດິຈິໂດຍຂັ້ນດ້ວຍເຄື່ອງໝາຍຈຸດ</string>
 <string name="p_afsk_prefix">ຄຳນຳໜ້າ Frame Sync</string>
 <string name="p_afsk_prefix_summary">No-Op Preamble (ຕົວຢ່າງ: ສຳລັບການຄວບຄຸມ VOX)</string>
 <string name="p_afsk_prefix_entry">ໃສ່ເວລາຄຳນຳໜ້າ [ມິລລິວິນາທີ]</string>
-<string name="p_afsk_hqdemod">ຕົວຖອດລະຫັດຄຸນນະພາບສູງ</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: ຕ້ອງການ CPU 800 MHz</string>
 <string name="p_afsk_btsco">ຫູຟັງ Bluetooth</string>
 <string name="p_afsk_btsco_summary">ໃຊ້ຫູຟັງ Bluetooth (SCO) ສຳລັບ AFSK</string>
 <string name="p_afsk_output">ສຽງອອກ</string>
@@ -319,7 +277,7 @@
 <string name="p_filterdist_summary">ຮັບແພັກເກັດຈາກສະຖານີໃນລັດສະໝີນີ້</string>
 <string name="p_filterdist_entry">ລັດສະໝີອ້ອມຮອບທ່ານເພື່ອຕິດຕາມແພັກເກັດ [ກມ]</string>
 <string name="p_filter">ຕົວກອງແພັກເກັດ</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">ຕົວກອງສຳລັບແພັກເກັດເຂົ້າ</string>
 <string name="p_filter_entry">ໃສ່ຕົວກອງສຳລັບແພັກເກັດເຂົ້າ</string>
 
@@ -331,17 +289,7 @@
 <string name="p_sotimeout_entry">ຄ່າໝົດເວລາເປັນວິນາທີ (0 = ປິດ)</string>
 
 
-<string name="kbdnav_title">ການນຳທາງດ້ວຍຄີບອດ</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>ຍ້າຍແຜນທີ່</item>
-	<item>ຊູມ</item>
-	<item>ເມນູ</item>
-	<item>ເລືອກ</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  boneni https://launchpad.net/~boneni2025</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">ໂໝດ Client</string>
@@ -355,14 +303,13 @@
 
 <string name="p_tnc_init">ສະຕຣິງເລີ່ມຕົ້ນ TNC</string>
 <string name="p_tnc_init_summary">ຄຳສັ່ງເລີ່ມຕົ້ນສຳລັບ TNC (ເຂົ້າລະຫັດ URL, Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">ສະຕຣິງທີ່ເຂົ້າລະຫັດ URL (Esc=%1B, \"%\"=%25), ໜ່ວງເວລາຫຼັງແຕ່ລະແຖວ:</string>
 
 <string name="p_tnc_delay">ໜ່ວງເວລາເລີ່ມຕົ້ນ TNC</string>
 <string name="p_tnc_delay_summary">ເວລາທີ່ຕ້ອງລໍຖ້າຫຼັງແຕ່ລະແຖວ</string>
 <string name="p_tnc_delay_entry">ໜ່ວງເວລາເລີ່ມຕົ້ນ TNC [ມິລລິວິນາທີ]</string>
 
 <string name="p_bt_prefs">ການຕັ້ງຄ່າ Bluetooth</string>
-<string name="p_bt_prefs_summary">ເປີດ Bluetooth, ຈັບຄູ່ອຸປະກອນ...</string>
+<string name="p_bt_prefs_summary">ເປີດ Bluetooth, ຈັບຄູ່ອຸປະກອນ…</string>
 
 <string name="bt_error_unsupported">ບໍ່ຮອງຮັບ Bluetooth!</string>
 <string name="bt_error_disabled">ກະລຸນາເປີດ Bluetooth!</string>
@@ -377,12 +324,11 @@
 <string name="bt_reconnecting">ກຳລັງເຊື່ອມຕໍ່ໃໝ່ໃນ 3 ວິນາທີ…</string>
 
 
-<string name="afsk_info_sco_req">ກຳລັງຮ້ອງຂໍການເຊື່ອມຕໍ່ bluetooth SCO...</string>
+<string name="afsk_info_sco_req">ກຳລັງຮ້ອງຂໍການເຊື່ອມຕໍ່ bluetooth SCO…</string>
 <string name="afsk_info_sco_est">ສ້າງການເຊື່ອມຕໍ່ bluetooth SCO ສຳເລັດແລ້ວ.</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">ເຊີບເວີ KISS TCP ເພື່ອຕິດຕໍ່</string>
-<string name="p_tcptnc_entry">ໃສ່ຊື່ໂຮສຂອງເຊີບເວີ KISS</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">ນຳເຂົ້າໃບຮັບຮອງ SSL</string>
@@ -390,8 +336,6 @@
 <string name="ssl_no_keyfile">ບໍ່ມີໃບຮັບຮອງສຳລັບ %s! ກຳລັງໃຊ້ການຢືນຢັນດ້ວຍລະຫັດຜ່ານ.</string>
 <string name="ssl_import_ok">ນຳເຂົ້າໃບຮັບຮອງສຳລັບ %s ສຳເລັດແລ້ວ.</string>
 <string name="ssl_import_error">ນຳເຂົ້າໃບຮັບຮອງຜິດພາດ: %s!</string>
-<string name="ssl_expired">ໃບຮັບຮອງຂອງທ່ານໝົດອາຍຸແລ້ວ!</string>
-<string name="ssl_expire_in">ໃບຮັບຮອງຂອງທ່ານຈະໝົດອາຍຸໃນອີກ %d ມື້!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">ນຳເຂົ້າໂປຣໄຟລ໌</string>

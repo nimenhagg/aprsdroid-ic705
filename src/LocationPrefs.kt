@@ -9,6 +9,8 @@ import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.edit
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceFragmentCompat
 import org.aprsdroid.app.location.LocationSource
@@ -18,13 +20,30 @@ class LocationPrefs : AppCompatActivity(), PermissionHelper {
 
     companion object {
         const val REQUEST_GPS = 101
-        const val REQUEST_MAP = 102
     }
 
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
+    override var pendingPermissionAction: Int? = null
+    override var pendingPermissions: Set<String> = emptySet()
+    override val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants -> handlePermissionResult(grants) }
+    private val mapLocationPicker = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val data = result.data
+        Log.d("LocationPrefs", "map result=${result.resultCode} $data")
+        if (result.resultCode == Activity.RESULT_OK && data != null) {
+            prefs.prefs.edit {
+                putString("manual_lat", data.getFloatExtra("lat", 0.0f).toString())
+                putString("manual_lon", data.getFloatExtra("lon", 0.0f).toString())
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        restorePermissionState(savedInstanceState)
         setContentView(R.layout.activity_preference)
         findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.preference_toolbar)?.let { toolbar ->
             setSupportActionBar(toolbar)
@@ -35,6 +54,11 @@ class LocationPrefs : AppCompatActivity(), PermissionHelper {
                 .replace(R.id.preference_container, LocationPrefsFragment())
                 .commit()
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        savePermissionState(outState)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
@@ -56,31 +80,11 @@ class LocationPrefs : AppCompatActivity(), PermissionHelper {
             }
             "chooseOnMap" -> {
                 val mapmode = MapModes.defaultMapMode(this, prefs)
-                @Suppress("DEPRECATION")
-                startActivityForResult(
+                mapLocationPicker.launch(
                     Intent(this, mapmode.viewClass).putExtra("info", R.string.p_source_from_map_save),
-                    REQUEST_MAP
                 )
             }
         }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(reqCode: Int, resultCode: Int, data: Intent?) {
-        Log.d("LocationPrefs", "onActResult: request=$reqCode result=$resultCode $data")
-        if (resultCode == Activity.RESULT_OK && reqCode == REQUEST_MAP && data != null) {
-            prefs.prefs.edit()
-                .putString("manual_lat", data.getFloatExtra("lat", 0.0f).toString())
-                .putString("manual_lon", data.getFloatExtra("lon", 0.0f).toString())
-                .apply()
-        } else {
-            super.onActivityResult(reqCode, resultCode, data)
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        handleRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     override fun getActionName(action: Int): Int = R.string.p_source_get_last
@@ -94,10 +98,10 @@ class LocationPrefs : AppCompatActivity(), PermissionHelper {
         }
 
         if (l != null) {
-            prefs.prefs.edit()
-                .putString("manual_lat", l.latitude.toString())
-                .putString("manual_lon", l.longitude.toString())
-                .apply()
+            prefs.prefs.edit {
+                putString("manual_lat", l.latitude.toString())
+                putString("manual_lon", l.longitude.toString())
+            }
         } else {
             Toast.makeText(this, getString(R.string.map_track_unknown, prefs.getCallsign()), Toast.LENGTH_SHORT).show()
         }

@@ -26,6 +26,7 @@ import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.text.NumberFormat
 import java.util.ArrayDeque
 import java.util.concurrent.atomic.AtomicLong
 
@@ -332,10 +333,11 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
     }
 
     private fun renderStatistics() {
-        statAudioBlocks.text = acceptedAudioBlocks.get().toString()
-        statPcmSamples.text = acceptedAudioSamples.get().toString()
-        statAx25Frames.text = decodedAx25Frames.get().toString()
-        statAudioResets.text = audioResets.get().toString()
+        val numberFormat = NumberFormat.getIntegerInstance()
+        statAudioBlocks.text = numberFormat.format(acceptedAudioBlocks.get())
+        statPcmSamples.text = numberFormat.format(acceptedAudioSamples.get())
+        statAx25Frames.text = numberFormat.format(decodedAx25Frames.get())
+        statAudioResets.text = numberFormat.format(audioResets.get())
     }
 
     private fun runOnUiThreadFor(attempt: Long, block: () -> Unit) {

@@ -39,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.compose.ui.unit.sp
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import org.aprsdroid.app.MessageActivity
@@ -287,7 +288,7 @@ object StationBottomSheetHelper {
                             dialog.dismiss()
                             val lat = station.lat / 1000000.0
                             val lon = station.lon / 1000000.0
-                            val uri = Uri.parse("geo:$lat,$lon?q=$lat,$lon(${Uri.encode(station.call)})")
+                            val uri = "geo:$lat,$lon?q=$lat,$lon(${Uri.encode(station.call)})".toUri()
                             val intent = Intent(Intent.ACTION_VIEW, uri)
                             context.startActivity(intent)
                         }

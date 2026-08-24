@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import androidx.preference.PreferenceManager
+import androidx.core.content.edit
 import android.text.InputType
 import android.util.Log
 import android.widget.EditText
@@ -80,7 +81,7 @@ class KeyfileImportActivity : Activity() {
                 fos.close()
 
                 PreferenceManager.getDefaultSharedPreferences(this)
-                    .edit().putString("callsign", callsign).apply()
+                    .edit { putString("callsign", callsign) }
 
                 val msg = getString(R.string.ssl_import_ok, callsign)
                 Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()

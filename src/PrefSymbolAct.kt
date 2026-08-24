@@ -3,6 +3,7 @@ package org.aprsdroid.app
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
 import org.aprsdroid.app.ui.screen.SymbolPickerScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 
@@ -20,7 +21,7 @@ class PrefSymbolAct : AppCompatActivity() {
                 SymbolPickerScreen(
                     initialSymbol = currentSymbol,
                     onSaveSymbol = { chosenSym ->
-                        prefs.prefs.edit().putString("symbol", chosenSym).apply()
+                        prefs.prefs.edit { putString("symbol", chosenSym) }
                         finish()
                     },
                     onCancel = {

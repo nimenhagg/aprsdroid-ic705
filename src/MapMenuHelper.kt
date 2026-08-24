@@ -2,7 +2,6 @@ package org.aprsdroid.app
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -14,6 +13,10 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
+import androidx.core.net.toUri
+import androidx.core.view.get
+import androidx.core.view.size
 
 abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, LoadingIndicator {
     open val TAG = "APRSdroid.MapMenu"
@@ -61,8 +64,8 @@ abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, Loadin
         menuInflater.inflate(R.menu.options, menu)
         menu.findItem(R.id.map)?.isVisible = false
         if (isCoordinateChooser) {
-            for (idx in 0 until menu.size()) {
-                menu.getItem(idx).isVisible = false
+            for (idx in 0 until menu.size) {
+                menu[idx].isVisible = false
             }
         }
         return true
@@ -125,7 +128,7 @@ abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, Loadin
         if (cls != this::class.java) {
             val intent = Intent(this, cls)
             if (targetcall.isNotEmpty()) {
-                intent.data = Uri.parse(targetcall)
+                intent.data = targetcall.toUri()
             }
             startActivity(intent)
             finish()
@@ -207,11 +210,11 @@ abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, Loadin
     abstract fun loadMapViewPosition(lat: Float, lon: Float, zoom: Float)
 
     fun saveMapViewPosition(lat: Float, lon: Float, zoom: Float) {
-        prefs.prefs.edit()
-            .putFloat("map_lat", lat)
-            .putFloat("map_lon", lon)
-            .putFloat("map_zoom", zoom)
-            .apply()
+        prefs.prefs.edit {
+            putFloat("map_lat", lat)
+            putFloat("map_lon", lon)
+            putFloat("map_zoom", zoom)
+        }
     }
 
     fun loadMapViewPosition() {
@@ -224,7 +227,7 @@ abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, Loadin
     fun updateCoordinateInfo(lat: Float, lon: Float) {
         resultIntent.putExtra("lat", lat).putExtra("lon", lon)
         val coords = AprsPacket.formatCoordinates(lat, lon)
-        infoText.text = coords.first + "\n" + coords.second
+        infoText.text = getString(R.string.map_coordinates_two_lines, coords.first, coords.second)
         accept.isEnabled = true
     }
 }

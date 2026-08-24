@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
@@ -30,8 +30,7 @@ object UIHelper {
 
     @JvmStatic
     fun getExportDirectory(ctx: Context): File {
-        val base = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-            ?: ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+        val base = ctx.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
             ?: ctx.filesDir
         return File(base, "APRSdroid")
     }
@@ -98,7 +97,7 @@ object UIHelper {
 
     @JvmStatic
     fun openCallsignDetails(context: Context, callsign: String) {
-        val uri = Uri.parse(callsign)
+        val uri = callsign.toUri()
         val intent = Intent(context, StationActivity::class.java).apply {
             data = uri
         }
@@ -107,7 +106,7 @@ object UIHelper {
 
     @JvmStatic
     fun openMessageChat(context: Context, callsign: String) {
-        val uri = Uri.parse(callsign)
+        val uri = callsign.toUri()
         val intent = Intent(context, MessageActivity::class.java).apply {
             data = uri
         }
@@ -127,7 +126,7 @@ object UrlOpener {
     @JvmStatic
     fun open(ctx: Context, url: String) {
         try {
-            ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            ctx.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
         } catch (e: Exception) {
             Toast.makeText(ctx, e.localizedMessage, Toast.LENGTH_SHORT).show()
         }

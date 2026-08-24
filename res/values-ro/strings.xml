@@ -10,11 +10,9 @@
 <string name="app_messages">Mesaje</string>
 <string name="app_messages_clear">Sterge mesajele</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">Activitate APRSdroid</string>
 <string name="wrongpasscode">Parola dvs. nu se potriveste cu indicativul dvs.!</string>
 <string name="e_toolong_callsign">Indicativul dvs este prea lung pentru Pachetul Radio!</string>
 <string name="anon_warning">Fara parola rapoartele nu se propaga!</string>
-<string name="mininterval">Timpul minim pentru actualizare este de 1 min.!</string>
 <string name="singlelog">Trimite pozitia</string>
 <string name="startlog">Start Tx</string>
 <string name="stoplog">Stop Tx</string>
@@ -22,24 +20,19 @@
 <string name="empty_logview">Nu ai transmis sau receptionat nimic.\n\n Apasa butonul \"Menu \" pentru a transmite un raport sau pentru a porni trasmisia automata a pozitiei tale. \n\n Poti modifica si optiunile aplicatiei din menu.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">%s Ultimul raport</string>
-<string name="map_track_call">Urmarire %s...</string>
+<string name="map_track_call">Urmarire %s…</string>
 <string name="map_track_unknown">Pozitia pentru %s este necunoscuta!</string>
 <string name="map_select">Selecteaza statia</string>
 
-<string name="map_loading">Se încarcă...</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">SSIDuri statie</string>
-<string name="sta_history">Istoric statie</string>
 <string name="sta_map">Harta</string>
 <string name="sta_extmap">Harta externa</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">Trimite mesaj catre...</string>
-<string name="msg_message_text">Text mesaj</string>
+<string name="msg_send_new">Trimite mesaj catre…</string>
 <string name="msg_empty_list">Nu există conversaţii stocate.</string>
 <string name="msg_stored_offline">Mesajul va fi trimis de îndată ce începe Urmărirea.</string>
 <!-- Message activity -->
@@ -47,22 +40,23 @@
 <string name="msg_to">Mesaj catre %s</string>
 <string name="msg_abort">Opreste transmisia</string>
 <string name="msg_restart">Reporneste transmisia</string>
-<string name="msg_type_rejected">respinsa</string>
-<string name="msg_type_aborted">abandonat</string>
 
 <!-- AprsService -->
 <string name="aprsservice">Serviciu APRSdroid</string>
 <string name="service_once">Serviciu APRS singur sut: %1$s, %2$s.</string>
 <string name="service_start">Serviciu APRS pornit: %1$s, %2$s.</string>
 <string name="service_stop">Serviciu APRS oprit.</string>
-<string name="service_no_location">Trebuie sa activati GPS-ul sau Localizarea pentru buna functionare a APRSdroid-ului.</string>
 <string name="service_sm_no_gps">SmartBeaconing necesita GPS!</string>
 <!-- service result codes -->
 <string name="post_error">Eroare</string>
 <string name="post_incmg">receptionat</string>
 <string name="post_info"/>
-<string name="post_connecting">Conectare la %1$s:%2$d...</string>
-<string name="post_reconnect">Conexiune pierduta. Reconectare in %d secunde...</string>
+<string name="post_connecting">Conectare la %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="one">Conexiune pierduta. Reconectare in %d secunde…</item>
+    <item quantity="few">Conexiune pierduta. Reconectare in %d secunde…</item>
+    <item quantity="other">Conexiune pierduta. Reconectare in %d secunde…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">Bine ai venit la APRSdroid!</string>
@@ -71,23 +65,6 @@
 <string name="fr_text3">Necesar doar pentru APRS prin internet:</string>
 
 <!-- about dialog -->
-<string name="ad_title">Despre APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">Acest program este gratuit; il puteti redistribui si/sau modifica sub termenii GNU General Public License dupa cum este publicat de catre Free Software Foundation; ori versiunea 2 a Licentei, ori (la discretia dumneavoastra) orice versiune ulterioara. \n\n Acest program este distribuit in speranta ca va fi folositor, dar FARA NICI O GARANTIE;inclusiv fara garantei implicata a MERCANTABILITATII sau A UNEI DESTINATII PENTRU UN SCOP ANUME. Consultati GNU General Public License pentru mai multe detalii. \n\n Trebuie sa fi primit o copie a GNU General Public License impreuna cu acest program; daca nu, adresati-va catre Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">Thanks to:</string>
-<string name="ad_thanks_0">YL ♥♥♥ Meu</string>
-<string name="ad_thanks_1">Michael, DO3BOX: idee</string>
-<string name="ad_thanks_2">Dirk, DB5OY: motivatie si sustinere</string>
-<string name="ad_thanks_3">Bastian, DB1BM: implementarea AFSK</string>
-<string name="ad_thanks_4">Matti, OH2MQK and John, AB0OO: APRS Java</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: demodulator AFSK, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ de catre HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\nTraducere:</string>
-<string name="ad_homepage">Pagină de start</string>
 
 <!-- map view -->
 <string name="map_overlays">Overlay-uri</string>
@@ -95,16 +72,10 @@
 <string name="map_satellite">Google: Satelit</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline">%s (Offline)</string>
 <string name="map_objects">Obiecte APRS</string>
 
 <!-- map view -->
-<string name="age">Arata ultimele...</string>
-<string name="age_30">30 minute</string>
-<string name="age_2h">2 ore</string>
-<string name="age_12h">12 ore</string>
-<string name="age_1d">1 zi</string>
-<string name="age_2d">2 zile</string>
+<string name="age">Arata ultimele…</string>
 
 
 <!-- options menu -->
@@ -115,12 +86,10 @@
 <string name="export_log">Exporta Log</string>
 <string name="export_empty">Nimic de exportat</string>
 <string name="clear_log">Sterge Jurnal</string>
-<string name="quit">Închide</string>
 <string name="preferences">Configurare</string>
 <!-- preferences -->
-<string name="profile_load">Incarca profil...</string>
-<string name="profile_export">Exporta profil...</string>
-<string name="p__ham">Radioamator</string>
+<string name="profile_load">Incarca profil…</string>
+<string name="profile_export">Exporta profil…</string>
 <string name="p_callsign">Indicativ</string>
 <string name="p_callsign_nossid">Indicativ (fara SSID)</string>
 <string name="p_callsign_summary">Indicativul dvs. de radioamator</string>
@@ -148,15 +117,13 @@
 	<item>9: Statie mobila</item>
 	<item>10: APRS-IS (fara radio)</item>
 	<item>11: Balon, avion, nava spatiala</item>
-	<item>12: APRStt, DTMF, ... (o cale)</item>
+	<item>12: APRStt, DTMF, … (o cale)</item>
 	<item>13: Statie meteo</item>
 	<item>14: Vehicul marfa</item>
 	<item>15: Statie generica aditionala</item>
 </string-array>
 <string name="p_symbol">Simbol APRS</string>
 <string name="p_symbol_summary">Simbolul dvs. pentru afisarea pe Harta</string>
-<string name="p_symbol_overlay">Overlay</string>
-<string name="p_symbol_result">Rezultat:</string>
 <string name="p_frequency">Frecventa voce</string>
 <string name="p_frequency_summary">Frecventa dvs de voce [MHz]</string>
 <string name="p_status">Camp comentariu</string>
@@ -207,7 +174,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">Confidentialitate pozitie</string>
-<string name="p_privacy_summary">Ambiguitate pozitie si altele</string>
 <string name="p_priv_ambiguity">Ambiguitate Pozitie</string>
 <string name="p_priv_ambiguity_summary">Precizie redusa pentru rapoartele de pozitie proprii</string>
 <string name="p_ambiguity_off">Oprit (DD° MM.mm\')</string>
@@ -230,7 +196,6 @@
 <string name="p_locsource_summary">Manual, Periodic sau SmartBeaconing™</string>
 <string name="p__location">Configurari locatie</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">Ajutor SmartBeaconing™</string>
 <string name="p_sb_fast_speed">Viteza Mare [km/h]</string>
 <string name="p_sb_fast_speed_summary">Viteza minima pentru actualizari rapide ale pozitiei</string>
@@ -255,8 +220,6 @@
 <string name="p_distance">Minimum update distance</string>
 <string name="p_distance_summary">Kilometers before beacon transmission (set to 0 for time-only)</string>
 <string name="p_distance_entry">Enter the update distance [km]</string>
-<string name="p_speedbrg">Await speed &amp; bearing</string>
-<string name="p_speedbrg_summary">Keep GPS on longer to get more precise data</string>
 <string name="p_netloc">Use network location</string>
 <string name="p_netloc_summary">Acquire position from the cellular network</string>
 <string name="p_gps">GPS Precision</string>
@@ -295,14 +258,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS digi path</string>
-<string name="p_aprs_path_hint">hop 1, hop 2, ...</string>
 <string name="p_aprs_path_summary">Sequence of digipeaters</string>
 <string name="p_aprs_path_entry">Enter the comma separated digi path</string>
 <string name="p_afsk_prefix">Frame Sync Prefix</string>
 <string name="p_afsk_prefix_summary">No-Op Preamble (e.g. for VOX control)</string>
 <string name="p_afsk_prefix_entry">Enter the prefix time [ms]</string>
-<string name="p_afsk_hqdemod">High-Quality Demodulator</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: 800 MHz CPU required</string>
 <string name="p_afsk_btsco">Bluetooth Headset</string>
 <string name="p_afsk_btsco_summary">Use Bluetooth (SCO) headset for AFSK</string>
 <string name="p_afsk_output">Audio Output</string>
@@ -319,7 +279,7 @@
 <string name="p_filterdist_summary">Receive packets from stations in this radius</string>
 <string name="p_filterdist_entry">Radius around you to monitor for packets [km]</string>
 <string name="p_filter">Packet filter</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">Filter for incoming packets</string>
 <string name="p_filter_entry">Enter a filter for incoming packets</string>
 
@@ -331,20 +291,7 @@
 <string name="p_sotimeout_entry">Timeout value in seconds (0 = disable)</string>
 
 
-<string name="kbdnav_title">Keyboard Navigation</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>move map</item>
-	<item>zoom</item>
-	<item>menu</item>
-	<item>select</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Adrian SAVU (YO8RXT) https://launchpad.net/~asavu
-  Georg Lukas https://launchpad.net/~ge0rg
-  RN3DLL https://launchpad.net/~rn3dll
-  devianc3 https://launchpad.net/~devianc3</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">Client Mode</string>
@@ -358,14 +305,13 @@
 
 <string name="p_tnc_init">TNC init string</string>
 <string name="p_tnc_init_summary">Initialization commands for TNC (URL-encoded, Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">URL-encoded string (Esc=%1B, \"%\"=%25), delay after each line:</string>
 
 <string name="p_tnc_delay">TNC init delay</string>
 <string name="p_tnc_delay_summary">Time to wait after each line</string>
 <string name="p_tnc_delay_entry">TNC init delay [ms]</string>
 
 <string name="p_bt_prefs">Bluetooth settings</string>
-<string name="p_bt_prefs_summary">Enable Bluetooth, pair devices...</string>
+<string name="p_bt_prefs_summary">Enable Bluetooth, pair devices…</string>
 
 <string name="bt_error_unsupported">Bluetooth is not supported!</string>
 <string name="bt_error_disabled">Please enable Bluetooth!</string>
@@ -380,12 +326,11 @@
 <string name="bt_reconnecting">Reconnecting in 3s…</string>
 
 
-<string name="afsk_info_sco_req">Requesting bluetooth SCO link...</string>
+<string name="afsk_info_sco_req">Requesting bluetooth SCO link…</string>
 <string name="afsk_info_sco_est">Bluetooth SCO link established.</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP server to contact</string>
-<string name="p_tcptnc_entry">Enter the KISS server hostname</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">SSL certificate import</string>
@@ -393,8 +338,6 @@
 <string name="ssl_no_keyfile">No certificate for %s! Using passcode authentication.</string>
 <string name="ssl_import_ok">Imported certificate for %s.</string>
 <string name="ssl_import_error">Error importing certificate: %s!</string>
-<string name="ssl_expired">Your certificate has expired!</string>
-<string name="ssl_expire_in">Your certificate will expire in %d days!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Profile import</string>

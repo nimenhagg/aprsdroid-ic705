@@ -10,11 +10,9 @@
 <string name="app_messages">Съобщения</string>
 <string name="app_messages_clear">Изчистване на съобщенията</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">Трябва да настроите APRSdroid с Вашия инициал и passcode!</string>
 <string name="wrongpasscode">Вашия passcode не съответства на Вашия инициал!</string>
 <string name="e_toolong_callsign">Your callsign is too long for Packet Radio!</string>
 <string name="anon_warning">Без passcode, вашите рапорти няма да бъдат предавани!</string>
-<string name="mininterval">Минималното време за обновяване е 1 минута!</string>
 <string name="singlelog">Изпрати Позиция</string>
 <string name="startlog">Започни проследяване</string>
 <string name="stoplog">Спри проследяване</string>
@@ -22,24 +20,19 @@
 <string name="empty_logview">Не сте предавали или приемали някакви пакети до сега.\n\n Натиснете \"Меню\" бутона за да предадете единична позиция или стартиране на проследяването.\n\n Също така можете да промените настройките от менюто.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">%s Последен рапорт</string>
-<string name="map_track_call">Проследяване %s...</string>
+<string name="map_track_call">Проследяване %s…</string>
 <string name="map_track_unknown">Не е намерена позиция за %s</string>
 <string name="map_select">Изберете станция</string>
 
-<string name="map_loading">Зареждане…</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">SSID на станцията</string>
-<string name="sta_history">История на станцията</string>
 <string name="sta_map">Карта</string>
 <string name="sta_extmap">Външна карта</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">Изпращане на съобшение до ...</string>
-<string name="msg_message_text">Текст на съобщението</string>
+<string name="msg_send_new">Изпращане на съобшение до …</string>
 <string name="msg_empty_list">Нямате записани разговори.</string>
 <string name="msg_stored_offline">Съобщението ще бъде изпратено веднага след стартиране на проследяването.</string>
 <!-- Message activity -->
@@ -47,22 +40,22 @@
 <string name="msg_to">Съобщение за %s</string>
 <string name="msg_abort">Спри излъчването</string>
 <string name="msg_restart">Рестартирай излъчването</string>
-<string name="msg_type_rejected">отхвърлен</string>
-<string name="msg_type_aborted">прекъснат</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid Услуга</string>
 <string name="service_once">APRS услуга една позиция: %1$s, %2$s.</string>
 <string name="service_start">APRS услугата е старитрана: %1$s, %2$s.</string>
 <string name="service_stop">APRS услугата е спряна</string>
-<string name="service_no_location">Трябва да включите GPS или Network Location за да може APRSdroid да работи правилно!</string>
 <string name="service_sm_no_gps">SmartBeaconing™ изисква GPS!</string>
 <!-- service result codes -->
 <string name="post_error">Грешка</string>
 <string name="post_incmg">получено</string>
 <string name="post_info"/>
-<string name="post_connecting">Свързване към %1$s:%2$d...</string>
-<string name="post_reconnect">Загуба на връзка. Повторен опит след %d секунди...</string>
+<string name="post_connecting">Свързване към %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="one">Загуба на връзка. Повторен опит след %d секунди…</item>
+    <item quantity="other">Загуба на връзка. Повторен опит след %d секунди…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">Добре дошли в APRSdroid!</string>
@@ -71,23 +64,6 @@
 <string name="fr_text3">Only needed for APRS over the Internet:</string>
 
 <!-- about dialog -->
-<string name="ad_title">Относно APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version. \n\n This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. \n\n You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">Благодаря на:</string>
-<string name="ad_thanks_0">Моята YL ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: за идеята</string>
-<string name="ad_thanks_2">Dirk, DB5OY: за мотивацията и подкрепата</string>
-<string name="ad_thanks_3">Bastian, DB1BM: за AFSK имплементацията</string>
-<string name="ad_thanks_4">Matti, OH2MQK and John, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: AFSK demodulator, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ by HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\nПревод:</string>
-<string name="ad_homepage">Уеб страница</string>
 
 <!-- map view -->
 <string name="map_overlays">Слоеве</string>
@@ -95,16 +71,10 @@
 <string name="map_satellite">Google: Satellite</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline"> %s (Offline)</string>
 <string name="map_objects">APRS обекти</string>
 
 <!-- map view -->
-<string name="age">Покажи последните...</string>
-<string name="age_30">30 минути</string>
-<string name="age_2h">2 часа</string>
-<string name="age_12h">12 часа</string>
-<string name="age_1d">1 ден</string>
-<string name="age_2d">2 дни</string>
+<string name="age">Покажи последните…</string>
 
 
 <!-- options menu -->
@@ -115,12 +85,10 @@
 <string name="export_log">Export Log</string>
 <string name="export_empty">Nothing to export</string>
 <string name="clear_log">Изчистване на Лога</string>
-<string name="quit">Изход</string>
 <string name="preferences">Настройки</string>
 <!-- preferences -->
-<string name="profile_load">Load profile...</string>
-<string name="profile_export">Export profile...</string>
-<string name="p__ham">Любителско радио</string>
+<string name="profile_load">Load profile…</string>
+<string name="profile_export">Export profile…</string>
 <string name="p_callsign">Инициал</string>
 <string name="p_callsign_nossid">Инициал (без SSID)</string>
 <string name="p_callsign_summary">Вашия радиолюбителски инициал</string>
@@ -148,15 +116,13 @@
 	<item>9: Мобилна станция</item>
 	<item>10: APRS-IS (без радио)</item>
 	<item>11: Балон,  самолет, космически кораб</item>
-	<item>12: APRStt, DTMF, ... (еднопосочно)</item>
+	<item>12: APRStt, DTMF, … (еднопосочно)</item>
 	<item>13: Метео станция</item>
 	<item>14: товарно транспортно средство</item>
 	<item>15: Допълнителна станция</item>
 </string-array>
 <string name="p_symbol">APRS символ</string>
 <string name="p_symbol_summary">Вашият символ за изобразяване на картата</string>
-<string name="p_symbol_overlay">Overlay:</string>
-<string name="p_symbol_result">Резултат:</string>
 <string name="p_frequency">Честота за разговор</string>
 <string name="p_frequency_summary">Вашата честота за разговор [MHz]</string>
 <string name="p_status">Поле за коментар</string>
@@ -207,7 +173,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">Неприкосновенност на позицията</string>
-<string name="p_privacy_summary">Неопределеност на позицията и други</string>
 <string name="p_priv_ambiguity">Неопределеност на позицията</string>
 <string name="p_priv_ambiguity_summary">Намаляване на прецизността за собствените рапорти на позицията</string>
 <string name="p_ambiguity_off">Изключено (DD° MM.mm\')</string>
@@ -230,7 +195,6 @@
 <string name="p_locsource_summary">Ръчно, Периодично или SmartBeaconing™</string>
 <string name="p__location">Настройки на местоположението</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">SmartBeaconing™ помощ</string>
 <string name="p_sb_fast_speed">Висока скорост [km/h]</string>
 <string name="p_sb_fast_speed_summary">Минимална скорост за високоскоростни обновявания</string>
@@ -255,8 +219,6 @@
 <string name="p_distance">Минимално разстояние за обновяване</string>
 <string name="p_distance_summary">Километри преди предаване на beacon (сложете 0 само за време)</string>
 <string name="p_distance_entry">Въведете разстоянието за обновяване [km]</string>
-<string name="p_speedbrg">Изчакай скорост и посока</string>
-<string name="p_speedbrg_summary">Дръж GPS включен по-дълго за да получи по-прецизни данни</string>
 <string name="p_netloc">Използвай Network Location</string>
 <string name="p_netloc_summary">Вземи позиция от клетъчната мрежа</string>
 <string name="p_gps">GPS прецизност</string>
@@ -295,14 +257,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS digi път</string>
-<string name="p_aprs_path_hint">hop 1, hop 2, ...</string>
 <string name="p_aprs_path_summary">Последователност на диджипитрите</string>
 <string name="p_aprs_path_entry">Въведете digi път разделен със запетая</string>
 <string name="p_afsk_prefix">Префикс за Frame Sync</string>
 <string name="p_afsk_prefix_summary">No-Op преамбюл (например за VOX контрол)</string>
 <string name="p_afsk_prefix_entry">Въведете време за префикс [ms]</string>
-<string name="p_afsk_hqdemod">Висококачествен демодулатор</string>
-<string name="p_afsk_hqdemod_summary">avAX25lib: изисква 800 MHz CPU</string>
 <string name="p_afsk_btsco">Bluetooth слушалка</string>
 <string name="p_afsk_btsco_summary">Използвай Bluetooth (SCO) слушалка за AFSK</string>
 <string name="p_afsk_output">Звуков изход</string>
@@ -319,7 +278,7 @@
 <string name="p_filterdist_summary">Приемане на пакети от станции в този радиус</string>
 <string name="p_filterdist_entry">Радиус около Вас за мониторинг на пакети [km]</string>
 <string name="p_filter">Пакетен филтър</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">Филтър за входящи пакети</string>
 <string name="p_filter_entry">Въведете филтър за входящи пакети</string>
 
@@ -331,20 +290,7 @@
 <string name="p_sotimeout_entry">Таймаут стойност в секунди (0=изключен)</string>
 
 
-<string name="kbdnav_title">Keyboard Navigation</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>move map</item>
-	<item>zoom</item>
-	<item>menu</item>
-	<item>select</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Christopher Mironov https://launchpad.net/~zje8p67bbg8hv
-  Georg Lukas https://launchpad.net/~ge0rg
-  HackMan https://launchpad.net/~mm-yuhu
-  Zlatan Dimitrov https://launchpad.net/~z-dimitrov</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">Клиент Режим</string>
@@ -358,14 +304,13 @@
 
 <string name="p_tnc_init">TNC инициализиращ стринг</string>
 <string name="p_tnc_init_summary">Инициализационни команди за TNC (URL-кодирани,  Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">URL-кодиран низ  (Esc=%1B, \"%\"=%25), забавяне след всяка линия:</string>
 
 <string name="p_tnc_delay">TNC инициализационно забавяне</string>
 <string name="p_tnc_delay_summary">Време за изчакване след всеки ред</string>
 <string name="p_tnc_delay_entry">TNC инициализационно забавяне [ms]</string>
 
 <string name="p_bt_prefs">Bluetooth настройки</string>
-<string name="p_bt_prefs_summary">Включване на Bluetooth, сдвояване на устройства...</string>
+<string name="p_bt_prefs_summary">Включване на Bluetooth, сдвояване на устройства…</string>
 
 <string name="bt_error_unsupported">Bluetooth не се поддържа!</string>
 <string name="bt_error_disabled">Моля включете Bluetooth!</string>
@@ -380,12 +325,11 @@
 <string name="bt_reconnecting">Reconnecting in 3s…</string>
 
 
-<string name="afsk_info_sco_req">Искане на bluetooth SCO връзка...</string>
+<string name="afsk_info_sco_req">Искане на bluetooth SCO връзка…</string>
 <string name="afsk_info_sco_est">Връзката с Bluetooth SCO е установена.</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP сървър за контакт</string>
-<string name="p_tcptnc_entry">Въведете hostname на KISS сървър</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">SSL сертификат за въвеждане</string>
@@ -393,8 +337,6 @@
 <string name="ssl_no_keyfile">Не е намерен сертификат за %s! Използвайки passcode оторизацият</string>
 <string name="ssl_import_ok">Въведен сертификат за %s.</string>
 <string name="ssl_import_error">Грешка при въвеждането на сертификат: %s!</string>
-<string name="ssl_expired">Вашият сертификат е изтекъл!</string>
-<string name="ssl_expire_in">Вашият сертификат ще изтече до %d дни!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Profile import</string>

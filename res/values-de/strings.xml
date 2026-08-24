@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- APRSdroid strings.xml - this file contains strings which need to be translated -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 <string name="app_name">APRSdroid IC-705</string>
 <string name="app_prefs">APRSdroid-Einstellungen</string>
 <string name="app_map">APRSdroid-Karte</string>
@@ -10,11 +10,9 @@
 <string name="app_messages">Nachrichten</string>
 <string name="app_messages_clear">Nachrichten löschen</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">Sie müssen Ihr Rufzeichen und den dazugehörigen Passcode eingeben!</string>
 <string name="wrongpasscode">Der Passcode für Ihr Rufzeichen ist nicht korrekt!</string>
-<string name="e_toolong_callsign">Ihr Rufzeichen ist zu lang für Packet Radio!</string>
+<string name="e_toolong_callsign" tools:ignore="Typos">Ihr Rufzeichen ist zu lang für Packet Radio!</string>
 <string name="anon_warning">Ohne Passcode-Angabe werden Ihre Meldungen nicht weitergeleitet!</string>
-<string name="mininterval">Minimale Update-Zeit ist 1 Minute!</string>
 <string name="singlelog">Position senden</string>
 <string name="startlog">Tracking starten</string>
 <string name="stoplog">Tracking beenden</string>
@@ -24,16 +22,12 @@ Drücken Sie den \"Menü\"-Knopf, um eine Positionsmeldung abzusetzen oder das T
 Über das Menü lassen sich auch die Programmeinstellungen verändern.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">%s: Letzte Meldung</string>
 <string name="map_track_call">Verfolge %s…</string>
 <string name="map_track_unknown">Position für %s unbekannt!</string>
 <string name="map_select">Station wählen</string>
 
-<string name="map_loading">Wird geladen …</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">Stations-SSIDs</string>
-<string name="sta_history">Stationsgeschichte</string>
 <string name="sta_map">Karte</string>
 <string name="sta_extmap">Externe Karte</string>
 <string name="sta_aprsfi">aprs.fi</string>
@@ -41,7 +35,6 @@ Drücken Sie den \"Menü\"-Knopf, um eine Positionsmeldung abzusetzen oder das T
 
 <!-- Conversations activity -->
 <string name="msg_send_new">Sende Nachricht an…</string>
-<string name="msg_message_text">Nachrichtentext</string>
 <string name="msg_empty_list">Keine gespeicherten Gespräche.</string>
 <string name="msg_stored_offline">Die Nachricht wird versendet, wenn Sie das Tracking starten.</string>
 <!-- Message activity -->
@@ -49,53 +42,30 @@ Drücken Sie den \"Menü\"-Knopf, um eine Positionsmeldung abzusetzen oder das T
 <string name="msg_to">Nachricht an %s</string>
 <string name="msg_abort">Versand abbrechen</string>
 <string name="msg_restart">Versand wiederholen</string>
-<string name="msg_type_rejected">abgelehnt</string>
-<string name="msg_type_aborted">abgebrochen</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid-Dienst</string>
 <string name="service_once">APRS-Dienst Einzelmeldung: %1$s, %2$s.</string>
 <string name="service_start">APRS-Dienst gestartet: %1$s, %2$s.</string>
 <string name="service_stop">APRS-Dienst beendet.</string>
-<string name="service_no_location">Sie müssen entweder GPS oder Netzwerklokalisierung einschalten, damit APRSdroid vollständig funktioniert.</string>
 <string name="service_sm_no_gps">SmartBeaconing™ benötigt GPS!</string>
 <!-- service result codes -->
 <string name="post_error">Fehler</string>
 <string name="post_incmg">empfangen</string>
 <string name="post_info"/>
 <string name="post_connecting">Verbinde mit %1$s:%2$d…</string>
-<string name="post_reconnect">Verbindung getrennt. Neue Verbindung in %d Sekunden…</string>
+<plurals name="post_reconnect">
+    <item quantity="one">Verbindung getrennt. Neue Verbindung in %d Sekunden…</item>
+    <item quantity="other">Verbindung getrennt. Neue Verbindung in %d Sekunden…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">Willkommen zu APRSdroid!</string>
-<string name="fr_text">Diese Software darf nur von lizensierten Funkamateuren verwendet werden!</string>
+<string name="fr_text">Diese Software darf nur von lizenzierten Funkamateuren verwendet werden!</string>
 <string name="fr_text2">Sie müssen Ihr Rufzeichen eingeben, um diese Software nutzen zu können. Damit Ihre Pakete weitergeleitet werden, ist weiterhin ein APRS-IS-Passcode erforderlich.</string>
 <string name="fr_text3">Nur für APRS über das Internet notwendig:</string>
 
 <!-- about dialog -->
-<string name="ad_title">Über APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">Dieses Programm ist freie Software. Sie können es unter den Bedingungen der GNU General Public License, wie von der Free Software Foundation veröffentlicht, weitergeben und/oder modifizieren, entweder gemäß Version 2 der Lizenz oder (nach Ihrer Option) jeder späteren Version.
-\n\n
-Die Veröffentlichung dieses Programms erfolgt in der Hoffnung, daß es Ihnen von Nutzen sein wird, aber OHNE IRGENDEINE GARANTIE, sogar ohne die implizite Garantie der MARKTREIFE oder der VERWENDBARKEIT FÜR EINEN BESTIMMTEN ZWECK. Details finden Sie in der GNU General Public License.
-\n\n
-Sie sollten ein Exemplar der GNU General Public License zusammen mit diesem Programm erhalten haben. Falls nicht, schreiben Sie an die Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110, USA.
-\n\n
-http://www.gnu.de/documents/gpl-2.0.de.html</string>
-<string name="ad_thanks">Dank an:</string>
-<string name="ad_thanks_0">Meine YL ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: Idee</string>
-<string name="ad_thanks_2">Dirk, DB5OY: Motivation und Unterstützung</string>
-<string name="ad_thanks_3">Bastian, DB1BM: AFSK-Implementierung</string>
-<string name="ad_thanks_4">Matti, OH2MQK and John, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: AFSK-Demodulator, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ von HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\nÜbersetzung:</string>
-<string name="ad_homepage">Homepage</string>
 
 <!-- map view -->
 <string name="map_overlays">Ebenen</string>
@@ -103,16 +73,10 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 <string name="map_satellite">Google: Satellit</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline">%s (Offline)</string>
 <string name="map_objects">APRS-Objekte</string>
 
 <!-- map view -->
 <string name="age">Zeige letzte…</string>
-<string name="age_30">30 Minuten</string>
-<string name="age_2h">2 Stunden</string>
-<string name="age_12h">12 Stunden</string>
-<string name="age_1d">1 Tag</string>
-<string name="age_2d">2 Tage</string>
 
 
 <!-- options menu -->
@@ -123,12 +87,10 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 <string name="export_log">Log exportieren</string>
 <string name="export_empty">Nichts zu exportieren</string>
 <string name="clear_log">Protokoll leeren</string>
-<string name="quit">Beenden</string>
 <string name="preferences">Einstellungen</string>
 <!-- preferences -->
-<string name="profile_load">Profil laden...</string>
-<string name="profile_export">Profil exportieren...</string>
-<string name="p__ham">Amateurfunk</string>
+<string name="profile_load">Profil laden…</string>
+<string name="profile_export">Profil exportieren…</string>
 <string name="p_callsign">Rufzeichen</string>
 <string name="p_callsign_nossid">Rufzeichen (ohne SSID)</string>
 <string name="p_callsign_summary">Ihr Amateurfunk-Rufzeichen</string>
@@ -163,8 +125,6 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 </string-array>
 <string name="p_symbol">APRS-Symbol</string>
 <string name="p_symbol_summary">Symbol für die Kartenanzeige</string>
-<string name="p_symbol_overlay">Overlay:</string>
-<string name="p_symbol_result">Ergebnis:</string>
 <string name="p_frequency">Anruffrequenz</string>
 <string name="p_frequency_summary">Ihre Sprechfunk-Frequenz [MHz]</string>
 <string name="p_status">Kommentarfeld</string>
@@ -215,7 +175,6 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 
 <!-- privacy settings -->
 <string name="p_privacy">Privatsphäre</string>
-<string name="p_privacy_summary">Positionsungenauigkeit und mehr</string>
 <string name="p_priv_ambiguity">Positionsungenauigkeit</string>
 <string name="p_priv_ambiguity_summary">Verringerte Genauigkeit für eigene Positionsmeldungen</string>
 <string name="p_ambiguity_off">Aus (DD° MM.mm\')</string>
@@ -238,7 +197,6 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 <string name="p_locsource_summary">Manuell, periodisch oder SmartBeaconing™</string>
 <string name="p__location">Standorteinstellungen</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">SmartBeaconing™-Hilfe</string>
 <string name="p_sb_fast_speed">Fast Speed [km/h]</string>
 <string name="p_sb_fast_speed_summary">Mindestgeschwindigkeit für schnelle Positionsbaken</string>
@@ -263,8 +221,6 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 <string name="p_distance">Minimaler Update-Abstand</string>
 <string name="p_distance_summary">Kilometer zwischen Baken (0 für zeitbasierte Updates)</string>
 <string name="p_distance_entry">Geben Sie den Update-Abstand ein [km]</string>
-<string name="p_speedbrg">Auf Geschwindigkeit &amp; Richtung warten</string>
-<string name="p_speedbrg_summary">GPS für präzisere Daten länger aktivieren</string>
 <string name="p_netloc">Netzwerk-Lokalisierung</string>
 <string name="p_netloc_summary">Position über drahtloses Netzwerk beziehen</string>
 <string name="p_gps">GPS-Genauigkeit</string>
@@ -303,14 +259,11 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS-Digi-Pfad</string>
-<string name="p_aprs_path_hint">Hop 1, Hop 2, …</string>
 <string name="p_aprs_path_summary">Digipeater-Abfolge</string>
 <string name="p_aprs_path_entry">Digi-Pfad (getrennt durch Kommas) eingeben</string>
 <string name="p_afsk_prefix">Frame-Sync-Präfix</string>
 <string name="p_afsk_prefix_summary">No-Op-Präambel (z.B. für VOX-Steuerung)</string>
 <string name="p_afsk_prefix_entry">Präfix-Zeit eingeben [ms]</string>
-<string name="p_afsk_hqdemod">Hochqualitativer Demodulator</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: 800-MHz-CPU erforderlich</string>
 <string name="p_afsk_btsco">Bluetooth-Headset</string>
 <string name="p_afsk_btsco_summary">Bluetooth-Headset (SCO) für AFSK nutzen</string>
 <string name="p_afsk_output">Audio-Ausgabe</string>
@@ -339,19 +292,7 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 <string name="p_sotimeout_entry">Timeout-Wert in Sekunden (0 = deaktiviert)</string>
 
 
-<string name="kbdnav_title">Tastatursteuerung</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>Karte bewegen</item>
-	<item>Zoom</item>
-	<item>Menü</item>
-	<item>Auswählen</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Dennis Baudys https://launchpad.net/~thecondordb
-  Georg Lukas https://launchpad.net/~ge0rg
-  Tobias Bannert https://launchpad.net/~toba</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">Client-Modus</string>
@@ -365,7 +306,6 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 
 <string name="p_tnc_init">TNC Init-String</string>
 <string name="p_tnc_init_summary">Initialisierungskommandos für TNC (URL-kodiert, Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">URL-kodierter String (Esc=%1B, \"%\"=%25), Pause nach jeder Zeile:</string>
 
 <string name="p_tnc_delay">TNC Init-Delay</string>
 <string name="p_tnc_delay_summary">Wartezeit nach jeder Init-Zeile</string>
@@ -392,7 +332,6 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP-Server zum verbinden</string>
-<string name="p_tcptnc_entry">KISS-TCP-Servername eingeben</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">SSL-Zertifikat-Import</string>
@@ -400,8 +339,6 @@ http://www.gnu.de/documents/gpl-2.0.de.html</string>
 <string name="ssl_no_keyfile">Kein Zertifikat für %s! Benutze Passcode-Authentifizierung.</string>
 <string name="ssl_import_ok">SSL-Zertifikat für %s importiert.</string>
 <string name="ssl_import_error">Fehler beim Zertifikat-Import: %s!</string>
-<string name="ssl_expired">Ihr Zertifikat ist abgelaufen!</string>
-<string name="ssl_expire_in">Ihr Zertifikat läuft in %d Tagen ab!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Profil-Import</string>

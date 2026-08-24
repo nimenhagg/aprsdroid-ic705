@@ -10,11 +10,9 @@
 <string name="app_messages">Μηνύματα</string>
 <string name="app_messages_clear">Εκκαθάριση μηνυμάτων</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">Πρέπει να διαμορφώσετε το APRSdroid με το διακριτικό κλήσης και τον κωδικό πρόσβασής σας!</string>
 <string name="wrongpasscode">Ο κωδικός πρόσβασής σας δεν ταιριάζει με το διακριτικό σας!</string>
 <string name="e_toolong_callsign">Το διακριτικό σας είναι πολύ μεγάλο για το Packet Radio!</string>
 <string name="anon_warning">Χωρίς κωδικό πρόσβασης, οι αναφορές σας δεν θα μεταδοθούν!</string>
-<string name="mininterval">Ελάχιστος χρόνος ενημέρωσης είναι 1 λεπτό!</string>
 <string name="singlelog">Αποστολή θέσης</string>
 <string name="startlog">Έναρξη Παρακολούθησης</string>
 <string name="stoplog">Διακοπή Παρακολούθησης</string>
@@ -22,24 +20,19 @@
 <string name="empty_logview">Δεν έχετε στείλει ακόμη ή λάβει πακέτα. \n\n Πατήστε το κουμπί \"Μενού\" για να στείλετε μια ενιαία αναφορά ή να αρχίσετε να παρακολουθείτε την τοποθεσία σας. \n\n Μπορείτε επίσης να αλλάξετε τις προτιμήσεις εφαρμογής από το μενού.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">%s Τελευταία Αναφορά</string>
 <string name="map_track_call">Παρακολούθηση %s</string>
 <string name="map_track_unknown">Θέση για %s άγνωστη</string>
 <string name="map_select">Επιλέξτε σταθμό</string>
 
-<string name="map_loading">Φόρτωση…</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">SSIDs Σταθμού</string>
-<string name="sta_history">Ιστορικό Σταθμού</string>
 <string name="sta_map">Χάρτης</string>
 <string name="sta_extmap">Εξωτερικός Χάρτης</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">Αποστολή μηνύματος σε...</string>
-<string name="msg_message_text">Κείμενο μηνύματος</string>
+<string name="msg_send_new">Αποστολή μηνύματος σε…</string>
 <string name="msg_empty_list">Δεν υπάρχουν αποθηκευμένες συνομιλίες.</string>
 <string name="msg_stored_offline">Το μήνυμα θα σταλεί αμέσως μόλις ξεκινήσετε την παρακολούθηση.</string>
 <!-- Message activity -->
@@ -47,22 +40,22 @@
 <string name="msg_to">Μήνυμα σε %s</string>
 <string name="msg_abort">Ματαίωση μετάδοσης</string>
 <string name="msg_restart">Επανεκκίνηση μετάδοσης</string>
-<string name="msg_type_rejected">απορρίφθηκε</string>
-<string name="msg_type_aborted">ματαιώθηκε</string>
 
 <!-- AprsService -->
 <string name="aprsservice">Υπηρεσία APRSdroid</string>
 <string name="service_once">Υπηρεσία APRS μεμονωμένη μετάδοση: %1$s, %2$s.</string>
 <string name="service_start">Η Υπηρεσία APRS ξεκίνησε: %1$s, %2$s.</string>
 <string name="service_stop">Διακοπή υπηρεσίας APRS.</string>
-<string name="service_no_location">Χρειάζεται να ενεργοποιήσετε το GPS ή την Χρήση Ασύρματων Δικτύων για να λειτουργήσει σωστά το APRSdroid!</string>
 <string name="service_sm_no_gps">Το SmartBeaconing™ απαιτεί GPS!</string>
 <!-- service result codes -->
 <string name="post_error">Σφάλμα</string>
 <string name="post_incmg">ελήφθη</string>
 <string name="post_info"/>
-<string name="post_connecting">Σύνδεση με %1$s:%2$d...</string>
-<string name="post_reconnect">Η σύνδεση διεκόπηκε. Επανασύνδεση σε %d δευτερόλεπτα...</string>
+<string name="post_connecting">Σύνδεση με %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="one">Η σύνδεση διεκόπηκε. Επανασύνδεση σε %d δευτερόλεπτα…</item>
+    <item quantity="other">Η σύνδεση διεκόπηκε. Επανασύνδεση σε %d δευτερόλεπτα…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">Καλώς ήλθατε στο APRSdroid!</string>
@@ -71,23 +64,6 @@
 <string name="fr_text3">Απαιτείται μόνο για APRS μέσω Διαδικτύου:</string>
 
 <!-- about dialog -->
-<string name="ad_title">Σχετικά με APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">Αυτό το πρόγραμμα είναι ελεύθερο λογισμικό; Μπορείτε να το αναδιανέμετε ή/και να το τροποποιήσετε υπό τους όρους της GNU General Public License όπως αυτή δημοσιεύεται από το Ίδρυμα Ελεύθερου Λογισμικού; είτε της έκδοσης 2 της Άδειας, είτε (κατ\'επιλογή σας) οποιαδήποτε μεταγενέστερη έκδοση. \n\n Αυτό το πρόγραμμα διανέμεται με την ελπίδα ότι θα είναι χρήσιμο, αλλά ΧΩΡΙΣ ΚΑΜΙΑ ΕΓΓΥΗΣΗ; χωρίς καν την υπονοούμενη εγγύηση της ΕΜΠΟΡΕΥΣΙΜΟΤΗΤΑΣ ή ΚΑΤΑΛΛΗΛΟΤΗΤΑΣ ΓΙΑ ΣΥΓΚΕΚΡΙΜΕΝΟ ΣΚΟΠΟ. Δείτε την GNU Γενική Άδεια Δημόσιας Χρήσης για περισσότερες λεπτομέρειες. \n\n Θα πρέπει να έχετε λάβει ένα αντίγραφο της GNU General Public License μαζί με αυτό το πρόγραμμα; αν όχι, γράψτε στο Ίδρυμα Ελεύθερου Λογισμικού, Inc, 51 Franklin Street, πέμπτο όροφο, Boston, MA 02110-1301, ΗΠΑ. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">Ευχαριστίες σε:</string>
-<string name="ad_thanks_0">Η YL μου ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: ιδέα</string>
-<string name="ad_thanks_2">Dirk, DB5OY: κίνητρα και υποστήριξη</string>
-<string name="ad_thanks_3">Bastian, DB1BM: AFSK εκτέλεση</string>
-<string name="ad_thanks_4">Matti, OH2MQK and John, AB0OO: Java APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: αποδιαμορφωτής AFSK, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ by HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\nΜετάφραση:</string>
-<string name="ad_homepage">Αρχική Σελίδα</string>
 
 <!-- map view -->
 <string name="map_overlays">Επικαλύψεις</string>
@@ -95,16 +71,10 @@
 <string name="map_satellite">Google: Δορυφόρος</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline">%s (Offline)</string>
 <string name="map_objects">Αντικείμενα APRS</string>
 
 <!-- map view -->
-<string name="age">Εμφάνιση των τελευταίων...</string>
-<string name="age_30">30 λεπτά</string>
-<string name="age_2h">2 ώρες</string>
-<string name="age_12h">12 ώρες</string>
-<string name="age_1d">1 ημέρα</string>
-<string name="age_2d">2 ημέρες</string>
+<string name="age">Εμφάνιση των τελευταίων…</string>
 
 
 <!-- options menu -->
@@ -115,12 +85,10 @@
 <string name="export_log">Εξαγωγή αρχείου καταγραφής</string>
 <string name="export_empty">Τίποτα για εξαγωγή</string>
 <string name="clear_log">Καθαρισμός αρχείου Καταγραφής</string>
-<string name="quit">Έξοδος</string>
 <string name="preferences">Προτιμήσεις</string>
 <!-- preferences -->
-<string name="profile_load">Φόρτωση προφίλ...</string>
-<string name="profile_export">Εξαγωγή προφίλ...</string>
-<string name="p__ham">Ραδιοερασιτεχνισμός</string>
+<string name="profile_load">Φόρτωση προφίλ…</string>
+<string name="profile_export">Εξαγωγή προφίλ…</string>
 <string name="p_callsign">Διακριτικό Κλήσης</string>
 <string name="p_callsign_nossid">Διακριτικό Κλήσης (χωρίς SSID)</string>
 <string name="p_callsign_summary">Το ραδιοερασιτεχνικό διακριτικό κλήσης σας</string>
@@ -148,15 +116,13 @@
 	<item>9: Κινητός σταθμός</item>
 	<item>10: APRS-IS (χωρίς ραδιοσύστημα)</item>
 	<item>11: Αερόστατο, αεροσκάφος, διαστημόπλοιο</item>
-	<item>12: APRStt, DTMF, ... (μονής διαδρομής)</item>
+	<item>12: APRStt, DTMF, … (μονής διαδρομής)</item>
 	<item>13: Μετεωρολογικός σταθμός</item>
 	<item>14: Όχημα εμπορευματικών</item>
 	<item>15: Γενικός επιπλέον σταθμός</item>
 </string-array>
 <string name="p_symbol">Σύμβολο APRS</string>
 <string name="p_symbol_summary">Το εικονίδιό σας για εμφάνιση στο χάρτη</string>
-<string name="p_symbol_overlay">Επικάλυμμα:</string>
-<string name="p_symbol_result">Αποτέλεσμα:</string>
 <string name="p_frequency">Συχνότητα φωνής</string>
 <string name="p_frequency_summary">Συχνότητα φωνής σε MHZ</string>
 <string name="p_status">Πεδίο περιγραφής</string>
@@ -207,7 +173,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">Προστασία τοποθεσίας</string>
-<string name="p_privacy_summary">Ασάφεια τοποθεσίας και περισσότερα</string>
 <string name="p_priv_ambiguity">Ασάφεια Τοποθεσίας</string>
 <string name="p_priv_ambiguity_summary">Μειωμένη ακριβεία για τις αναφορές της τοποθεσίας σας</string>
 <string name="p_ambiguity_off">Off (DD° MM.mm\')</string>
@@ -230,7 +195,6 @@
 <string name="p_locsource_summary">Χειροκίνητο, Περιοδικό ή SmartBeaconing™</string>
 <string name="p__location">Ρυθμίσεις Τοποθεσίας</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">SmartBeaconing™ βοήθεια</string>
 <string name="p_sb_fast_speed">Γρήγορη Ταχύτητα [km/h]</string>
 <string name="p_sb_fast_speed_summary">Ελάχιστη ταχύτητα για γρήγορες ενημερώσεις θέσης</string>
@@ -255,8 +219,6 @@
 <string name="p_distance">Ελάχιστη απόσταση ενημέρωσης</string>
 <string name="p_distance_summary">Χιλιόμετρα πριν από τη μετάδοση του beacon (ορίστε σε 0 για χρόνο-μόνο)</string>
 <string name="p_distance_entry">Εισάγετε την απόσταση ενημέρωσης [km]</string>
-<string name="p_speedbrg">Ταχύτητα αναμονής &amp; Κατεύθυνση</string>
-<string name="p_speedbrg_summary">Κρατήστε το GPS ενεργό περισσότερο χρόνο για να πάρετε πιο ακριβή δεδομένα</string>
 <string name="p_netloc">Χρήση τοποθεσίας δικτύου</string>
 <string name="p_netloc_summary">Αποκτήστε την τοποθεσία από το δίκτυο κινητής τηλεφωνίας</string>
 <string name="p_gps">Ακρίβεια GPS</string>
@@ -295,14 +257,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS digi path</string>
-<string name="p_aprs_path_hint">hop 1, hop 2, ...</string>
 <string name="p_aprs_path_summary">Ακολουθία ψηφιακών αναμεταδοτών</string>
 <string name="p_aprs_path_entry">Πληκτρολογήστε με κόμμα, χωριστά τα digi path</string>
 <string name="p_afsk_prefix">Συγχρονισμένο Πλαίσιο Προθέματος</string>
 <string name="p_afsk_prefix_summary">Εισαγωγή No-Op (π.χ. για τον έλεγχο του VOX)</string>
 <string name="p_afsk_prefix_entry">Εισάγετε το πρόθεμα ώρας [ms]</string>
-<string name="p_afsk_hqdemod">Υψηλής-Ποιότητας Αποδιαμορφωτής</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: απαιτείται 800 MHz CPU</string>
 <string name="p_afsk_btsco">Ακουστικό Bluetooth</string>
 <string name="p_afsk_btsco_summary">Χρήση Bluetooth (SCO), ακουστικά για AFSK</string>
 <string name="p_afsk_output">Έξοδος Ήχου</string>
@@ -319,7 +278,7 @@
 <string name="p_filterdist_summary">Λάβετε πακέτα από σταθμούς σε αυτή την ακτίνα δράσης</string>
 <string name="p_filterdist_entry">Ακτίνα δράσης γύρω σας για παρακολούθηση πακέτων [km]</string>
 <string name="p_filter">Φίλτρο πακέτων</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">Φίλτρο εισερχόμενων πακέτων</string>
 <string name="p_filter_entry">Εισάγετε ένα φίλτρο για τα εισερχόμενα πακέτα</string>
 
@@ -331,21 +290,7 @@
 <string name="p_sotimeout_entry">Τιμή χρονικού ορίου σε δευτερόλεπτα (0 = απενεργοποίηση)</string>
 
 
-<string name="kbdnav_title">Πλοήγηση με πληκτρολόγιο</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>μετακίνηση χάρτη</item>
-	<item>μεγέθυνση</item>
-	<item>μενού</item>
-	<item>επιλέγω</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Athanasios B. https://launchpad.net/~sv2ctv
-  Demetre Valaris https://launchpad.net/~dvalaris
-  Efstathios Iosifidis https://launchpad.net/~iosifidis
-  Georg Lukas https://launchpad.net/~ge0rg
-  Ioannis K https://launchpad.net/~kioan20</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">Λειτουργία Πελάτη</string>
@@ -359,14 +304,13 @@
 
 <string name="p_tnc_init">TNC init σειρά</string>
 <string name="p_tnc_init_summary">Εντολές εκκίνησης για TNC (URL-encoded, Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">Κωδικοποιημένη συμβολοσειρά URL (Esc =% 1B, \ "% \" =% 25), καθυστέρηση μετά από κάθε γραμμή:</string>
 
 <string name="p_tnc_delay">TNC init καθυστέρηση</string>
 <string name="p_tnc_delay_summary">Χρόνος αναμονής μετά από κάθε γραμμή</string>
 <string name="p_tnc_delay_entry">TNC init καθυστέρηση [ms]</string>
 
 <string name="p_bt_prefs">Ρυθμίσεις Bluetooth</string>
-<string name="p_bt_prefs_summary">Ενεργοποίηση Bluetooth, αντιστοίχιση συσκευών...</string>
+<string name="p_bt_prefs_summary">Ενεργοποίηση Bluetooth, αντιστοίχιση συσκευών…</string>
 
 <string name="bt_error_unsupported">Το Bluetooth δεν υποστηρίζεται!</string>
 <string name="bt_error_disabled">Παρακαλούμε ενεργοποιήστε το Bluetooth!</string>
@@ -381,12 +325,11 @@
 <string name="bt_reconnecting">Επανασύνδεση σε 3 δευτερόλεπτα…</string>
 
 
-<string name="afsk_info_sco_req">Αίτηση SCO σύνδεσης Bluetooth...</string>
+<string name="afsk_info_sco_req">Αίτηση SCO σύνδεσης Bluetooth…</string>
 <string name="afsk_info_sco_est">SCO σύνδεση Bluetooth επιβεβαιώθηκε.</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP διακομιστής επικοινωνίας</string>
-<string name="p_tcptnc_entry">Πληκτρολογήστε το όνομα του διακομιστή KISS</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">Εισαγωγή πιστοποιητικού SSL</string>
@@ -394,8 +337,6 @@
 <string name="ssl_no_keyfile">Δεν υπάρχει πιστοποιητικό για τον %s! Θα χρησιμοποιηθεί  πιστοποίηση με τον κωδικό APRS.</string>
 <string name="ssl_import_ok">Εισαγόμενα πιστοποιητικού για %s.</string>
 <string name="ssl_import_error">Σφάλμα πιστοποιητικού εισαγωγής: %s!</string>
-<string name="ssl_expired">Το πιστοποιητικό σας έχει λήξει!</string>
-<string name="ssl_expire_in">Το πιστοποιητικό σας θα λήξει σε %d ημέρες:</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Εισαγωγή προφίλ</string>

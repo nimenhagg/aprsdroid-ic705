@@ -10,11 +10,9 @@
 <string name="app_messages">Meddelanden</string>
 <string name="app_messages_clear">Rensa meddelanden</string>
 <!-- APRSdroid activity -->
-<string name="firstrun">Du måste konfigurera APRSdroid med anropssignal och lösen!</string>
 <string name="wrongpasscode">Ditt lösen stämmer inte med anropssignalen</string>
 <string name="e_toolong_callsign">Din anropssignal är för lång för Packet Radio</string>
 <string name="anon_warning">Utan lösenord kommer inte dina positioneringar att routas</string>
-<string name="mininterval">Lägsta tiden för uppdateringar är 1 minut</string>
 <string name="singlelog">Skicka position</string>
 <string name="startlog">Starta spårning</string>
 <string name="stoplog">Stoppa spårning</string>
@@ -22,24 +20,19 @@
 <string name="empty_logview">Du har inte skickat eller tagit emot några paket ännu.\n\n\ Tryck på \"Meny\" knappen för att skicka ett paket eller för att starta spårningen.\n\n Du kan också ändra programmets parametrar från menyn.</string>
 
 <!-- Maps activity -->
-<string name="sta_lastreport">%s Senaste rapporten</string>
-<string name="map_track_call">Spårar %s...</string>
+<string name="map_track_call">Spårar %s…</string>
 <string name="map_track_unknown">Position för %s okänd</string>
 <string name="map_select">Välj station</string>
 
-<string name="map_loading">Laddar...</string>
 
 <!-- StationInfo activity -->
-<string name="sta_ssids">Stationens SSID</string>
-<string name="sta_history">Stationshistorik</string>
 <string name="sta_map">Karta</string>
 <string name="sta_extmap">Extern karta</string>
 <string name="sta_aprsfi">aprs.fi</string>
 <string name="sta_qrzcom">QRZ.com</string>
 
 <!-- Conversations activity -->
-<string name="msg_send_new">Skicka meddelande till...</string>
-<string name="msg_message_text">Meddelandetext</string>
+<string name="msg_send_new">Skicka meddelande till…</string>
 <string name="msg_empty_list">Det finns inga sparade konversationer.</string>
 <string name="msg_stored_offline">Meddelandet kommer skickas så snart du börjar spåra.</string>
 <!-- Message activity -->
@@ -47,22 +40,22 @@
 <string name="msg_to">Meddelande till %s</string>
 <string name="msg_abort">Avbryt sändning</string>
 <string name="msg_restart">Starta om sändning</string>
-<string name="msg_type_rejected">avvisad</string>
-<string name="msg_type_aborted">avbruten</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid Service</string>
 <string name="service_once">APRS-tjänst enstaka bild: %1$s, %2$s.</string>
 <string name="service_start">APRS-tjänst startad: %1$s, %2$s.</string>
 <string name="service_stop">APRS service stoppad.</string>
-<string name="service_no_location">Du måste aktivera antingen GPS eller nätverkslokalisering för att APRSdroid ska kunna fungera.</string>
 <string name="service_sm_no_gps">SmartBeaconing™ kräver GPS.</string>
 <!-- service result codes -->
 <string name="post_error">Fel</string>
 <string name="post_incmg">mottaget</string>
 <string name="post_info"/>
-<string name="post_connecting">Ansluter till %1$s:%2$d...</string>
-<string name="post_reconnect">Anslutning förlorad. Ansluter igen om %d sekunder...</string>
+<string name="post_connecting">Ansluter till %1$s:%2$d…</string>
+<plurals name="post_reconnect">
+    <item quantity="one">Anslutning förlorad. Ansluter igen om %d sekunder…</item>
+    <item quantity="other">Anslutning förlorad. Ansluter igen om %d sekunder…</item>
+</plurals>
 
 <!-- first run dialog -->
 <string name="fr_title">Välkommer till APRSdroid!</string>
@@ -71,23 +64,6 @@
 <string name="fr_text3">Behövs endast för APRS över internet:</string>
 
 <!-- about dialog -->
-<string name="ad_title">Om APRSdroid v%s</string>
-<string name="ad_copyright">Copyright © 2009-2025 Georg Lukas (DO1GL)\n
-	https://aprsdroid.org
-	\n\n
-	APRS® is a registered trademark of Bob Bruninga (WB4APR)
-</string>
-<string name="ad_gpl">Detta program är fri mjukvara; du kan omdistribuera det och/eller ändra det enligt villkoren i GNU General Public License som publicerats av Free Software Foundation; antingen version 2 av licensen, eller (om du så önskar) en senare version. \n\n Detta program distruberas med förhoppningen att det ska göra nytta, men UTAN NÅGRA GARANTIER; utan ens den implicita garantin om SÄLJBARHET eller DUGLIGHET FÖR ETT SÄRSKILT SYFTE. Se GNU General Public License för fler detaljer. \n\n Du bör ha tagit emot en kopia av GNU General Public License tillsammans med programmet; skriv annars till Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA. \n\n http://www.gnu.org/licenses/old-licenses/gpl-2.0.html</string>
-<string name="ad_thanks">Tack till:</string>
-<string name="ad_thanks_0">My YL ♥♥♥</string>
-<string name="ad_thanks_1">Michael, DO3BOX: idé</string>
-<string name="ad_thanks_2">Dirk, DB5OY: motivation och stöd</string>
-<string name="ad_thanks_3">Bastian, DB1BM: AFSK-implementering</string>
-<string name="ad_thanks_4">Matti, OH2MQK och John, AB0OO: Java-APRS</string>
-<string name="ad_thanks_5">Sivan, 4X6IZ: AFSK-demodulator, https://github.com/sivantoledo/javAX25</string>
-<string name="ad_thanks_6">SmartBeaconing™ från HamHUD Nichetronix, LLC, http://hamhud.net</string>
-<string name="ad_trans">\n\n Översättning:</string>
-<string name="ad_homepage">Hemsida</string>
 
 <!-- map view -->
 <string name="map_overlays">Lager</string>
@@ -95,16 +71,10 @@
 <string name="map_satellite">Google: Satellite</string>
 <string name="map_osm">OpenStreetMap.org</string>
 <!-- intended use is in map style menu: "file name of offline map (Offline)" -->
-<string name="map_offline">%s (off-line)</string>
 <string name="map_objects">APRS Objekt</string>
 
 <!-- map view -->
-<string name="age">Visa senaste...</string>
-<string name="age_30">30 minuter</string>
-<string name="age_2h">2 timmar</string>
-<string name="age_12h">12 timmar</string>
-<string name="age_1d">1 dag</string>
-<string name="age_2d">2 dagar</string>
+<string name="age">Visa senaste…</string>
 
 
 <!-- options menu -->
@@ -115,12 +85,10 @@
 <string name="export_log">Exportera logg</string>
 <string name="export_empty">Inget att exportera</string>
 <string name="clear_log">Rensa logg</string>
-<string name="quit">Avsluta</string>
 <string name="preferences">Egenskaper</string>
 <!-- preferences -->
-<string name="profile_load">Ladda profil...</string>
-<string name="profile_export">Exportera profil...</string>
-<string name="p__ham">Amatörradio</string>
+<string name="profile_load">Ladda profil…</string>
+<string name="profile_export">Exportera profil…</string>
 <string name="p_callsign">Anropssignal</string>
 <string name="p_callsign_nossid">Anropssignal (utan SSID)</string>
 <string name="p_callsign_summary">Din amatörradiosignal</string>
@@ -148,15 +116,13 @@
 	<item>Mobil station</item>
 	<item>APRS-IS (ingen radio)</item>
 	<item>11: Luftballong, flygplan, rymdfarkost</item>
-	<item>12: APRStt, DTMF, ... (enkelriktat)</item>
+	<item>12: APRStt, DTMF, … (enkelriktat)</item>
 	<item>13: Väderstation</item>
 	<item>Fraktfordon</item>
 	<item>15: Allmän extrastation</item>
 </string-array>
 <string name="p_symbol">APRS symbol</string>
 <string name="p_symbol_summary">Din symbol på kartan</string>
-<string name="p_symbol_overlay">Överlägg</string>
-<string name="p_symbol_result">Resultat:</string>
 <string name="p_frequency">Röstfrekvens</string>
 <string name="p_frequency_summary">Din röstfrekvens [MHz]</string>
 <string name="p_status">Kommentarfält</string>
@@ -207,7 +173,6 @@
 
 <!-- privacy settings -->
 <string name="p_privacy">Enskildhet för position</string>
-<string name="p_privacy_summary">Tvetydig position och annat</string>
 <string name="p_priv_ambiguity">Tvetydig position</string>
 <string name="p_priv_ambiguity_summary">Minskad precision för egna positionrapporter</string>
 <string name="p_ambiguity_off">Av (DD° MM.mm\')</string>
@@ -230,7 +195,6 @@
 <string name="p_locsource_summary">Manuell, periodisk, eller SmartBeaconing™</string>
 <string name="p__location">Platsinställningar</string>
 
-<string name="p_smartbeaconing">SmartBeaconing™</string>
 <string name="p_sb_help">SmartBeaconing™ hjälp</string>
 <string name="p_sb_fast_speed">Snabb hastighet [km/h]</string>
 <string name="p_sb_fast_speed_summary">Lägsta hastighet för snabba positionsuppdateringar</string>
@@ -255,8 +219,6 @@
 <string name="p_distance">Längsta distansen för uppdatering</string>
 <string name="p_distance_summary">Kilometer mellan sändning av beacon (Ange 0 för enbart tid)</string>
 <string name="p_distance_entry">Ange distans för uppdatering [km]</string>
-<string name="p_speedbrg">Invänta hastighet &amp; kurs</string>
-<string name="p_speedbrg_summary">Håll GPSen längre för mer exakt data</string>
 <string name="p_netloc">Använd nätverksposition</string>
 <string name="p_netloc_summary">Positionera via GSM-nätverket</string>
 <string name="p_gps">GPS noggrannhet</string>
@@ -295,14 +257,11 @@
 
 <!-- AFSK settings -->
 <string name="p_aprs_path">APRS digi väg</string>
-<string name="p_aprs_path_hint">hopp 1, hopp 2, ...</string>
 <string name="p_aprs_path_summary">Sekvens av digipeatrar</string>
 <string name="p_aprs_path_entry">Ange en komma-separerad digi väg</string>
 <string name="p_afsk_prefix">Frame Sync Prefix</string>
 <string name="p_afsk_prefix_summary">No-Op Preamble (t.ex. för VOX-kontroll)</string>
 <string name="p_afsk_prefix_entry">Ange prefixtiden [ms]</string>
-<string name="p_afsk_hqdemod">Högkvalitativ demodulator</string>
-<string name="p_afsk_hqdemod_summary">javAX25lib: 800 MHz CPU nötvändig</string>
 <string name="p_afsk_btsco">Blåtandsheadset</string>
 <string name="p_afsk_btsco_summary">Använd Blåtand (SCO) headset för AFSK</string>
 <string name="p_afsk_output">Ljudutmatning</string>
@@ -319,7 +278,7 @@
 <string name="p_filterdist_summary">Ta emot paket från stationer inom denna radie</string>
 <string name="p_filterdist_entry">Radie runt dig för monitorering av paket [km]</string>
 <string name="p_filter">Paketfilter</string>
-<string name="p_filter_hint">b/BUDDY o/OBJECT ...</string>
+<string name="p_filter_hint">b/BUDDY o/OBJECT …</string>
 <string name="p_filter_summary">Filter för inkommande paket</string>
 <string name="p_filter_entry">Ange ett filter för inkommande paket</string>
 
@@ -331,20 +290,7 @@
 <string name="p_sotimeout_entry">Timeoutvärde i sekunder (0 = inaktivera)</string>
 
 
-<string name="kbdnav_title">Tangentbordsnavigering</string>
 <!-- keyboard navigation info -->
-<string-array name="kbdnav_lines">
-	<item>Flytta kartan</item>
-	<item>zoom</item>
-	<item>meny</item>
-	<item>välj</item>
-</string-array>
-
-<string name="translator_credits">Launchpad Contributions:
-  Arve Eriksson https://launchpad.net/~031299870-telia
-  Georg Lukas https://launchpad.net/~ge0rg
-  Helge Hartz https://launchpad.net/~sa7sky
-  Mikael Karlsson https://launchpad.net/~mr-lima</string>
 
 <!-- Bluetooth TNC settings -->
 <string name="p_bt_client">Client Mode</string>
@@ -358,34 +304,32 @@
 
 <string name="p_tnc_init">TNC init sträng</string>
 <string name="p_tnc_init_summary">Initieringskommandon för TNC (URL-kodad, Esc=%%1B, "%%"=%%25)</string>
-<string name="p_tnc_init_msg" formatted="false">URL-kodad sträng (Esc=%1B, \"%\"=%25), fördröjning efter varje rad:</string>
 
 <string name="p_tnc_delay">TNC init fördröjning</string>
 <string name="p_tnc_delay_summary">Tid att vänta efter varje rad</string>
 <string name="p_tnc_delay_entry">TNC init fördröjning [ms]</string>
 
 <string name="p_bt_prefs">Blåtand inställningar</string>
-<string name="p_bt_prefs_summary">Aktivera Blåtand, koppla ihop enheter...</string>
+<string name="p_bt_prefs_summary">Aktivera Blåtand, koppla ihop enheter…</string>
 
 <string name="bt_error_unsupported">Blåtand stöds inte!</string>
 <string name="bt_error_disabled">Vänligen aktivera Blåtand!</string>
 <string name="bt_error_no_tnc">Vänligen konfigurera en Blåtand TNC!</string>
 <string name="bt_error_connect">Kunde inte ansluta till %s! Slå på enheten och stäng andra Blåtand-anslutningar.</string>
-<string name="bt_awaiting">Väntar på client...</string>
+<string name="bt_awaiting">Väntar på client…</string>
 <string name="bt_client_connected">Client %s ansluten.</string>
-<string name="bt_connecting_to_spp">Ansluter till SPP-tjänst på %s...</string>
+<string name="bt_connecting_to_spp">Ansluter till SPP-tjänst på %s…</string>
 <!-- connecting to [device name] channel [bluetooth channel id] -->
-<string name="bt_connecting_to_channel" formatted="false">Ansluter till %s kanal %d...</string>
+<string name="bt_connecting_to_channel" formatted="false">Ansluter till %s kanal %d…</string>
 <string name="bt_connected">Ansluten till TNC.</string>
-<string name="bt_reconnecting">Återansluter om 3 sekunder...</string>
+<string name="bt_reconnecting">Återansluter om 3 sekunder…</string>
 
 
-<string name="afsk_info_sco_req">Begär Blåtand SCO-länk...</string>
+<string name="afsk_info_sco_req">Begär Blåtand SCO-länk…</string>
 <string name="afsk_info_sco_est">Blåtand SCO-länk upprättad.</string>
 
 <!-- TCP/IP TNC settings -->
 <string name="p_tcptnc_server_summary">KISS TCP-server att kontakta</string>
-<string name="p_tcptnc_entry">Ange KISS-serverns hostname</string>
 
 <!-- SSL strings -->
 <string name="ssl_import_activity">SSL-certifikatimport</string>
@@ -393,8 +337,6 @@
 <string name="ssl_no_keyfile">Inget certifikat för %s! Använder autentisering med lösenord.</string>
 <string name="ssl_import_ok">Importerat certifikat för %s.</string>
 <string name="ssl_import_error">Fel vid import av certifikat: %s!</string>
-<string name="ssl_expired">Ditt certifikat har gått ut!</string>
-<string name="ssl_expire_in">Ditt certifikat upphör att gälla om %d dagar!</string>
 
 <!-- Config import -->
 <string name="profile_import_activity">Profilimport</string>

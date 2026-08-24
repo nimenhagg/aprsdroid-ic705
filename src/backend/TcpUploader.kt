@@ -1,5 +1,6 @@
 package org.aprsdroid.app
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -159,7 +160,11 @@ class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(p
                         Log.d(TAG, "reconnecting in ${RECONNECT}s")
                         service.postAddPost(
                             StorageDatabase.Companion.Post.TYPE_INFO, R.string.post_info,
-                            service.getString(R.string.post_reconnect, RECONNECT)
+                            service.resources.getQuantityString(
+                                R.plurals.post_reconnect,
+                                RECONNECT,
+                                RECONNECT,
+                            )
                         )
                         shutdown()
                         sleep((RECONNECT * 1000).toLong())
@@ -224,9 +229,11 @@ class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(p
         }
     }
 
+    // Legacy certificate mode is an explicit compatibility option for existing APRS endpoints.
+    @SuppressLint("CustomX509TrustManager", "TrustAllX509TrustManager")
     class NaiveTrustManager : X509TrustManager {
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
         override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-        override fun getAcceptedIssuers(): Array<X509Certificate>? = null
+        override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
     }
 }

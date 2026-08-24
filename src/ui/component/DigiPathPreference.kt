@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.edit
 import androidx.preference.Preference
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -46,8 +47,12 @@ class DigiPathPreference @JvmOverloads constructor(
     }
 
     private fun updateSummary(path: String) {
-        val display = if (path.isEmpty()) "DIRECT (直发)" else path
-        summary = "${context.getString(R.string.p_aprs_path_summary)}: $display"
+        val display = if (path.isEmpty()) context.getString(R.string.digi_path_direct) else path
+        summary = context.getString(
+            R.string.digi_path_summary_format,
+            context.getString(R.string.p_aprs_path_summary),
+            display,
+        )
     }
 
     private fun getUserPresets(): MutableSet<String> {
@@ -56,7 +61,7 @@ class DigiPathPreference @JvmOverloads constructor(
     }
 
     private fun saveUserPresets(presets: Set<String>) {
-        sharedPreferences?.edit()?.putStringSet(customPresetsKey, presets)?.apply()
+        sharedPreferences?.edit { putStringSet(customPresetsKey, presets) }
     }
 
     private fun showDialog() {
@@ -88,7 +93,7 @@ class DigiPathPreference @JvmOverloads constructor(
             // Built-in presets
             defaultPresets.forEach { preset ->
                 val chip = Chip(context).apply {
-                    text = if (preset.isEmpty()) "DIRECT (直发)" else preset
+                    text = if (preset.isEmpty()) context.getString(R.string.digi_path_direct) else preset
                     isCheckable = false
                     setOnClickListener {
                         customInput.setText(preset)
@@ -100,7 +105,7 @@ class DigiPathPreference @JvmOverloads constructor(
             // User custom presets
             customPresets.forEach { preset ->
                 val chip = Chip(context).apply {
-                    text = "$preset ✕"
+                    text = context.getString(R.string.digi_path_custom_chip, preset)
                     isCheckable = false
                     setOnClickListener {
                         customInput.setText(preset)
@@ -109,7 +114,11 @@ class DigiPathPreference @JvmOverloads constructor(
                         customPresets.remove(preset)
                         saveUserPresets(customPresets)
                         populateChips()
-                        Toast.makeText(context, "已删除预设: $preset", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.digi_path_preset_deleted, preset),
+                            Toast.LENGTH_SHORT,
+                        ).show()
                         true
                     }
                 }
@@ -125,7 +134,11 @@ class DigiPathPreference @JvmOverloads constructor(
                 customPresets.add(text)
                 saveUserPresets(customPresets)
                 populateChips()
-                Toast.makeText(context, "已存为预设: $text (长按可删除)", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.digi_path_preset_saved, text),
+                    Toast.LENGTH_SHORT,
+                ).show()
             }
         }
 
@@ -134,7 +147,7 @@ class DigiPathPreference @JvmOverloads constructor(
             .setView(dialogView)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 val chosen = customInput.text.toString().trim().uppercase()
-                sharedPreferences?.edit()?.putString(key, chosen)?.apply()
+                sharedPreferences?.edit { putString(key, chosen) }
                 updateSummary(chosen)
             }
             .setNegativeButton(android.R.string.cancel, null)
