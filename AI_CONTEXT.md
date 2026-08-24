@@ -6,15 +6,15 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 版本 | `1.6.0-ic705` |
-| Android versionCode | `2026082460` |
+| 版本 | `1.6.1-ic705` |
+| Android versionCode | `2026082461` |
 | 上游基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 24`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
 | 语言/编译器 | AGP 9 内置 Kotlin `2.2.10`，Compose Compiler `2.2.10`，Java `17` |
 | UI | Compose BOM `2026.08.00` + Material 3；部分旧页面仍为 View/XML |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
-| 发布标签 | `v1.6.0-ic705` |
+| 发布标签 | `v1.6.1-ic705` |
 
 Java 17 是 AGP 9.3 的默认与最低 JDK 基线。没有明确需求和完整兼容性验证时，不要仅为提高版本号切换 Java 21。
 
@@ -29,7 +29,7 @@ Java 17 是 AGP 9.3 的默认与最低 JDK 基线。没有明确需求和完整�
 
 ### 明确的非目标
 
-- IC-705 LAN 和用户指定的 APRS 服务器可能使用明文 UDP/TCP。`android:usesCleartextTraffic="true"` 是当前兼容性决定；1.6.0 未改变传输协议或加入 TLS。除非维护者明确要求并能提供服务器/电台测试条件，不要擅自强制 TLS、删除明文能力或改变证书逻辑。
+- IC-705 LAN 和用户指定的 APRS 服务器可能使用明文 UDP/TCP。`android:usesCleartextTraffic="true"` 是当前兼容性决定；1.6.1 未改变传输协议或加入 TLS。除非维护者明确要求并能提供服务器/电台测试条件，不要擅自强制 TLS、删除明文能力或改变证书逻辑。
 - 不保证在模拟器中完成无线电硬件验证。协议单测、构建和 Lint 通过不能替代真机、真电台、低功率/假负载测试。
 
 ## 3. 目录与构建特点
@@ -44,7 +44,6 @@ Java 17 是 AGP 9.3 的默认与最低 JDK 基线。没有明确需求和完整�
 | `res/` | Android XML、字符串、主题和图标 |
 | `test/java/` | JVM 单元测试 |
 | `androidTest/java/` | Android 仪器测试 |
-| `PacketDroid/` | 原有 JNI/相关代码边界，非必要不要重构 |
 | `.github/workflows/` | 测试、Lint、Release APK 与 GitHub Release 流水线 |
 
 AGP 9 使用 built-in Kotlin：不要重新应用 `org.jetbrains.kotlin.android`。Compose 编译器插件版本应与 Kotlin 版本一致。
@@ -129,11 +128,13 @@ Windows PowerShell 使用 `./gradlew.bat`。API 37 SDK 未安装但许可证已�
 
 CI 的 `verifyReleaseVersion` 会在 Tag 构建中检查标签是否等于 `v${mod_version}-ic705`。工作流随后测试、Lint、构建、签名（若 secrets 可用）并创建 GitHub Release。
 
-## 10. 1.6.0 交接状态
+## 10. 1.6.1 交接状态
 
 - 构建链已迁移到 Gradle 9.5.0 / AGP 9.3.2 / built-in Kotlin 2.2.10 / API 37。
 - Java 源与字节码目标保持 17。
 - Android 17 本地网络权限已按 IC-705 与 LAN TNC 后端接入统一服务启动链。
 - README 已重写为中英双语用户/开发指南。
+- Compose 迁移后无引用的 RecyclerView 外壳、旧 XML 布局和未参与构建的 `PacketDroid` 子模块已移除；根目录中实际使用的 AFSK/AX.25 路径保留。
+- 已移除与 `minSdk 24` 冲突的恒真 API 分支、旧 `requestLegacyExternalStorage` 属性及失效的 Scala/`AsyncTask`/`android.preference` ProGuard 规则。
 - TLS 未修改，明文兼容行为保持不变。
-- 发布前仍需完整执行单测、Lint、Release 构建，并在具备硬件时补做 Android 17 + IC-705 真机验证。
+- 1.6.1 已完成 126 项 JVM 测试、Android Lint、Release APK 和 instrumentation APK 编译；仍需在具备硬件时补做 Android 17 + IC-705 真机验证。

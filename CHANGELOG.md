@@ -1,3 +1,12 @@
+## 🚀 [v1.6.1-ic705] - 2026-08-24
+
+### 🧹 移除迁移遗留与 Android 兼容层化石
+* 删除 Compose 页面接管后已无引用的 5 个 RecyclerView Activity/Adapter 源文件和 13 个旧 View/XML 布局，减少重复 UI 实现与资源噪声。
+* 移除未参与 Gradle 构建的 Android 2.x `PacketDroid` Git 子模块；应用当前使用的根目录 AFSK/AX.25 实现保持不变。
+* 清理 ProGuard 中已失效的 Scala、`AsyncTask` 与 `android.preference` 规则，以及无用 `AlertDialog` 导入。
+* 依据 `minSdk 24` 移除 IC-705 Wi-Fi 网络选择器中恒真的旧 API 分支和 `@TargetApi` 标注，并删除已被现代 target SDK 忽略的 `requestLegacyExternalStorage` 属性。
+* 版本元数据更新为 `1.6.1-ic705`（`versionCode 2026082461`）；TLS、Apache HTTP、Mapsforge、IC-705 协议和射频收发行为均未改动。
+
 ## 🚀 [v1.6.0-ic705] - 2026-08-24
 
 ### 📱 Android 17、现代构建链与双语文档

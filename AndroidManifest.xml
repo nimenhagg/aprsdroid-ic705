@@ -34,7 +34,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
 	    android:name=".APRSdroidApplication"
 	    android:usesCleartextTraffic="true"
-	    android:requestLegacyExternalStorage="true"
 	    android:allowBackup="false"
 	    android:supportsRtl="false"
 	    android:theme="@style/DefaultTheme" >

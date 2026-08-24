@@ -1,6 +1,5 @@
 package org.aprsdroid.app.ic705.android
 
-import android.annotation.TargetApi
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -17,19 +16,16 @@ import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
  * it as the default network because the IC-705 access point has no Internet.
  */
 object Ic705WifiNetworkSelector {
-    @TargetApi(21)
     fun find(context: Context): Network? {
         val connectivity = context.getSystemService(Context.CONNECTIVITY_SERVICE)
             as? ConnectivityManager ?: return null
 
         // 1. Prefer active network if it has Wi-Fi transport
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            val active = connectivity.activeNetwork
-            if (active != null) {
-                val caps = connectivity.getNetworkCapabilities(active)
-                if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
-                    return active
-                }
+        val active = connectivity.activeNetwork
+        if (active != null) {
+            val caps = connectivity.getNetworkCapabilities(active)
+            if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
+                return active
             }
         }
 
@@ -48,7 +44,6 @@ object Ic705WifiNetworkSelector {
  * Creates a UDP socket routed only through the selected Wi-Fi [Network]. Process-wide routing is
  * deliberately avoided so APRS-IS and map traffic can continue using cellular.
  */
-@TargetApi(22)
 class Ic705AndroidNetworkSocketFactory(
     private val network: Network,
     private val wifiIpv4Address: InetAddress? = null,
@@ -81,7 +76,6 @@ class Ic705AndroidNetworkSocketFactory(
 
 /** API-isolated entry point whose signature contains only project-owned types. */
 object Ic705AndroidSocketFactoryProvider {
-    @TargetApi(22)
     fun forCurrentWifi(context: Context): Ic705DatagramSocketFactory? {
         val applicationContext = context.applicationContext
         val connectivity = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE)
