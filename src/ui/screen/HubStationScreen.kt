@@ -139,7 +139,7 @@ fun HubStationScreen(
                         onDismissRequest = { showTopMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.menu_settings)) },
+                            text = { Text(stringResource(R.string.preferences)) },
                             leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
                             onClick = {
                                 showTopMenu = false
@@ -147,7 +147,7 @@ fun HubStationScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.menu_about)) },
+                            text = { Text(stringResource(R.string.about)) },
                             onClick = {
                                 showTopMenu = false
                                 onOpenAbout()

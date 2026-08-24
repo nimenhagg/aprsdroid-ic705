@@ -51,7 +51,7 @@ class ConversationsActivity : BaseRecyclerActivity() {
                         Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                     },
                     onClearAllConversations = {
-                        storage.deleteMessages()
+                        storage.deleteAllMessages()
                         loadData()
                         Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                     },
