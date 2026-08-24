@@ -9,8 +9,9 @@ import org.maplibre.android.module.http.HttpRequestUtil
 class APRSdroidApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        MapLibre.getInstance(this)
         val releaseVersion = BuildConfig.VERSION_NAME.substringBefore(' ')
-        val mapUserAgent = "APRSdroid-IC705/$releaseVersion MapLibre/13.5.1 " +
+        val mapUserAgent = "APRSdroid-IC705/$releaseVersion MapLibre/11.8.6 " +
             "(+https://github.com/nimenhagg/aprsdroid-ic705)"
         val mapHttpClient = OkHttpClient.Builder()
             .addNetworkInterceptor { chain ->
@@ -21,7 +22,6 @@ class APRSdroidApplication : Application() {
             }
             .build()
         HttpRequestUtil.setOkHttpClient(mapHttpClient)
-        MapLibre.getInstance(this)
         DynamicColors.applyToActivitiesIfAvailable(this)
         ServiceNotifier.instance.setupChannels(this)
     }
