@@ -49,7 +49,7 @@ abstract class MapLoaderBase : MapMenuHelper() {
     @SuppressLint("WrongConstant")
     fun startLoading() {
         locReceiver.startTask(Intent())
-        ContextCompat.registerReceiver(this, locReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, locReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     fun load_stations(i: Intent): ArrayList<Station> {

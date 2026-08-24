@@ -66,7 +66,7 @@ class PeriodicGPS(
         ContextCompat.registerReceiver(
             service, receiver,
             IntentFilter(ALARM_ACTION),
-            ContextCompat.RECEIVER_EXPORTED
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
         if (!started) {
             startGPS()

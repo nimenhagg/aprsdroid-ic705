@@ -1,6 +1,10 @@
 package org.aprsdroid.app;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -22,5 +26,24 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         assertEquals("me.nimenhagg.aprsdroidic705mod", appContext.getPackageName());
+    }
+
+    @Test
+    public void privateBroadcastTargetsInstalledApp() {
+        Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Intent intent = AprsService.privateIntent(appContext, AprsService.MESSAGE);
+
+        assertEquals(appContext.getPackageName(), intent.getPackage());
+        assertEquals(AprsService.MESSAGE, intent.getAction());
+    }
+
+    @SuppressWarnings("deprecation")
+    @Test
+    public void aprsServiceIsNotExported() throws PackageManager.NameNotFoundException {
+        Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        ComponentName component = new ComponentName(appContext, AprsService.class);
+        ServiceInfo service = appContext.getPackageManager().getServiceInfo(component, 0);
+
+        assertFalse(service.exported);
     }
 }

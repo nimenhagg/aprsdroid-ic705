@@ -47,7 +47,7 @@ class FixedPosition(
         ContextCompat.registerReceiver(
             service, receiver,
             IntentFilter(ALARM_ACTION),
-            ContextCompat.RECEIVER_EXPORTED
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
         val periodic = prefs.getBoolean("periodicposition", true)
         Log.d(TAG, "start: periodic=$periodic single=$singleShot")

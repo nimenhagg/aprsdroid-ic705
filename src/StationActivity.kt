@@ -93,7 +93,7 @@ class StationActivity : AppCompatActivity() {
     @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
-        ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_NOT_EXPORTED)
         loadData()
     }
 

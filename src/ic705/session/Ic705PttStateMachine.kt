@@ -33,7 +33,9 @@ interface Ic705PttActions {
  *   [absoluteWatchdogMs], the state machine automatically force-releases to
  *   prevent indefinite transmission (e.g. due to Wi-Fi packet loss).
  * - **NAK handling**: a CI-V NAK from the radio triggers immediate force-release.
- * - **ACK logging**: CI-V ACKs are logged for diagnostics.
+ * - **Reliable release**: PTT OFF is retried while waiting for a CI-V ACK. If
+ *   every local send fails, the state remains asserted instead of reporting a
+ *   false idle state.
  */
 class Ic705PttStateMachine(
     private val actions: Ic705PttActions,
@@ -41,6 +43,7 @@ class Ic705PttStateMachine(
     val controllerAddress: Int = Ic705CivCommands.DEFAULT_CONTROLLER_ADDRESS,
     val ackTimeoutMs: Long = DEFAULT_ACK_TIMEOUT_MS,
     val absoluteWatchdogMs: Long = DEFAULT_WATCHDOG_MS,
+    val maxReleaseAttempts: Int = DEFAULT_RELEASE_ATTEMPTS,
     private val watchdogExecutor: ScheduledExecutorService = defaultWatchdogExecutor,
 ) {
     @Volatile
@@ -49,6 +52,16 @@ class Ic705PttStateMachine(
 
     private val isPttAsserted = AtomicBoolean(false)
     private var watchdogFuture: ScheduledFuture<*>? = null
+    private var releaseFuture: ScheduledFuture<*>? = null
+    private var pendingCommand: PendingPttCommand? = null
+    private var releaseAttempts = 0
+    private var lastReleaseSendSucceeded = false
+
+    init {
+        require(ackTimeoutMs > 0L) { "ackTimeoutMs must be positive" }
+        require(absoluteWatchdogMs > 0L) { "absoluteWatchdogMs must be positive" }
+        require(maxReleaseAttempts > 0) { "maxReleaseAttempts must be positive" }
+    }
 
     val isTransmitting: Boolean
         get() = state != Ic705PttState.RX_IDLE
@@ -77,7 +90,14 @@ class Ic705PttStateMachine(
     fun beginTransmission(): Boolean {
         if (state != Ic705PttState.RX_IDLE) return false
 
-        sendPttCommand(true)
+        cancelReleaseTimer()
+        pendingCommand = PendingPttCommand.ON
+        try {
+            sendPttCommand(true)
+        } catch (error: Exception) {
+            pendingCommand = null
+            throw error
+        }
         isPttAsserted.set(true)
         scheduleWatchdog()
         transitionTo(Ic705PttState.TX_STREAMING)
@@ -101,15 +121,10 @@ class Ic705PttStateMachine(
     fun finishTransmission() {
         if (state == Ic705PttState.RX_IDLE) return
         cancelWatchdog()
-        try {
-            sendPttCommand(false)
-        } catch (error: Exception) {
-            Log.e(TAG, "PTT OFF command failed; keeping the watchdog armed", error)
-            scheduleWatchdog()
-            throw error
+        if (state == Ic705PttState.TX_STREAMING) {
+            transitionTo(Ic705PttState.DRAINING)
         }
-        isPttAsserted.set(false)
-        transitionTo(Ic705PttState.RX_IDLE)
+        startRelease("Transmission finished")
     }
 
     @Synchronized
@@ -117,18 +132,109 @@ class Ic705PttStateMachine(
         cancelWatchdog()
         if (isPttAsserted.get() || state != Ic705PttState.RX_IDLE) {
             Log.w(TAG, "forceRelease: $reason (state=$state, pttAsserted=${isPttAsserted.get()})")
-            runCatching { sendPttCommand(false) }
-            isPttAsserted.set(false)
+            if (state == Ic705PttState.TX_STREAMING) {
+                transitionTo(Ic705PttState.DRAINING)
+            }
+            startRelease(reason)
         }
-        transitionTo(Ic705PttState.RX_IDLE)
     }
 
     private fun handleAck() {
-        Log.d(TAG, "CI-V ACK received (state=$state)")
+        when (pendingCommand) {
+            PendingPttCommand.ON -> {
+                pendingCommand = null
+                Log.d(TAG, "CI-V PTT ON ACK received (state=$state)")
+            }
+            PendingPttCommand.OFF -> {
+                Log.d(TAG, "CI-V PTT OFF ACK received after $releaseAttempts attempt(s)")
+                completeRelease()
+            }
+            null -> Log.d(TAG, "CI-V ACK received with no pending PTT command (state=$state)")
+        }
     }
 
     private fun handleNak() {
-        forceRelease("Radio rejected PTT command (NAK)")
+        when (pendingCommand) {
+            PendingPttCommand.OFF -> {
+                Log.e(TAG, "Radio rejected PTT OFF attempt $releaseAttempts (NAK)")
+                cancelReleaseTimer()
+                lastReleaseSendSucceeded = false
+                if (releaseAttempts < maxReleaseAttempts) {
+                    attemptRelease("Radio rejected PTT OFF command (NAK)")
+                } else {
+                    pendingCommand = null
+                    Log.e(TAG, "PTT OFF rejected after $releaseAttempts attempts; retaining asserted state")
+                }
+            }
+            PendingPttCommand.ON -> forceRelease("Radio rejected PTT ON command (NAK)")
+            null -> {
+                if (isTransmitting) {
+                    forceRelease("Radio returned an unexpected NAK while transmitting")
+                } else {
+                    Log.w(TAG, "CI-V NAK received with no pending PTT command")
+                }
+            }
+        }
+    }
+
+    private fun startRelease(reason: String) {
+        cancelReleaseTimer()
+        releaseAttempts = 0
+        lastReleaseSendSucceeded = false
+        attemptRelease(reason)
+    }
+
+    private fun attemptRelease(reason: String) {
+        if (!isPttAsserted.get() && state == Ic705PttState.RX_IDLE) return
+
+        releaseAttempts += 1
+        pendingCommand = PendingPttCommand.OFF
+        lastReleaseSendSucceeded = try {
+            sendPttCommand(false)
+            true
+        } catch (error: Exception) {
+            pendingCommand = null
+            Log.e(TAG, "PTT OFF attempt $releaseAttempts/$maxReleaseAttempts failed: $reason", error)
+            false
+        }
+
+        if (releaseAttempts < maxReleaseAttempts || lastReleaseSendSucceeded) {
+            scheduleReleaseTimer(reason)
+        } else {
+            Log.e(TAG, "All $releaseAttempts PTT OFF sends failed; retaining asserted state")
+        }
+    }
+
+    private fun scheduleReleaseTimer(reason: String) {
+        cancelReleaseTimer()
+        releaseFuture = watchdogExecutor.schedule(
+            {
+                synchronized(this@Ic705PttStateMachine) {
+                    releaseFuture = null
+                    if (!isPttAsserted.get() && state == Ic705PttState.RX_IDLE) {
+                        return@synchronized
+                    }
+                    if (releaseAttempts < maxReleaseAttempts) {
+                        Log.w(TAG, "No PTT OFF ACK after ${ackTimeoutMs}ms; retrying")
+                        attemptRelease(reason)
+                    } else if (lastReleaseSendSucceeded) {
+                        Log.w(TAG, "No PTT OFF ACK after $releaseAttempts sends; assuming release for compatibility")
+                        completeRelease()
+                    }
+                }
+            },
+            ackTimeoutMs,
+            TimeUnit.MILLISECONDS,
+        )
+    }
+
+    private fun completeRelease() {
+        cancelReleaseTimer()
+        pendingCommand = null
+        releaseAttempts = 0
+        lastReleaseSendSucceeded = false
+        isPttAsserted.set(false)
+        transitionTo(Ic705PttState.RX_IDLE)
     }
 
     private fun sendPttCommand(pttOn: Boolean) {
@@ -161,7 +267,13 @@ class Ic705PttStateMachine(
         watchdogFuture = null
     }
 
+    private fun cancelReleaseTimer() {
+        releaseFuture?.cancel(false)
+        releaseFuture = null
+    }
+
     private fun transitionTo(newState: Ic705PttState) {
+        if (state == newState) return
         Log.i(TAG, "PttStateMachine: $state -> $newState")
         state = newState
         actions.onStateChanged(newState)
@@ -173,6 +285,12 @@ class Ic705PttStateMachine(
         const val CIV_NAK = 0xfa
         const val DEFAULT_ACK_TIMEOUT_MS = 500L
         const val DEFAULT_WATCHDOG_MS = 5_000L
+        const val DEFAULT_RELEASE_ATTEMPTS = 3
+
+        private enum class PendingPttCommand {
+            ON,
+            OFF,
+        }
 
         private val defaultWatchdogExecutor: ScheduledExecutorService by lazy {
             Executors.newSingleThreadScheduledExecutor { r ->

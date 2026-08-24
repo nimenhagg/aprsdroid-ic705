@@ -67,11 +67,6 @@ class AprsService : Service() {
         const val API_VERSION_CODE = 1
 
         @JvmField
-        val MSG_PRIV_INTENT = Intent(MESSAGE).setPackage(PACKAGE)
-        @JvmField
-        val MSG_TX_PRIV_INTENT = Intent(MESSAGETX).setPackage(PACKAGE)
-
-        @JvmField
         var running = false
         @JvmField
         var link_error = 0
@@ -79,6 +74,11 @@ class AprsService : Service() {
         @JvmStatic
         fun intent(ctx: Context, action: String): Intent {
             return Intent(action, null, ctx, AprsService::class.java)
+        }
+
+        @JvmStatic
+        fun privateIntent(ctx: Context, action: String): Intent {
+            return Intent(action).setPackage(ctx.packageName)
         }
     }
 
@@ -167,7 +167,7 @@ class AprsService : Service() {
             ContextCompat.registerReceiver(
                 this, msgNotifier,
                 IntentFilter(MESSAGETX),
-                ContextCompat.RECEIVER_EXPORTED
+                ContextCompat.RECEIVER_NOT_EXPORTED
             )
         } else {
             onPosterStarted()
@@ -260,7 +260,7 @@ class AprsService : Service() {
         msgService.sendPendingMessages()
 
         sendBroadcast(
-            Intent(SERVICE_STARTED)
+            privateIntent(this, SERVICE_STARTED)
                 .putExtra(API_VERSION, API_VERSION_CODE)
                 .putExtra(CALLSIGN, callssid)
         )
@@ -286,7 +286,7 @@ class AprsService : Service() {
         poster?.let {
             it.stop()
             showToast(getString(R.string.service_stop))
-            sendBroadcast(Intent(SERVICE_STOPPED))
+            sendBroadcast(privateIntent(this, SERVICE_STOPPED))
         }
         msgService.stop()
         locSource.stop()
@@ -400,7 +400,7 @@ class AprsService : Service() {
         db.addPosition(ts, ap, pos, cse, objectname)
 
         sendBroadcast(
-            Intent(POSITION)
+            privateIntent(this, POSITION)
                 .putExtra(SOURCE, ap.sourceCall)
                 .putExtra(LOCATION, AprsPacket.position2location(ts, pos, cse) as android.os.Parcelable)
                 .putExtra(CALLSIGN, objectname ?: ap.sourceCall)
@@ -417,7 +417,7 @@ class AprsService : Service() {
             Log.d(TAG, "addPost: $status - $message")
         }
         sendBroadcast(
-            Intent(UPDATE)
+            privateIntent(this, UPDATE)
                 .putExtra(TYPE, t)
                 .putExtra(STATUS, message)
         )
@@ -455,14 +455,14 @@ class AprsService : Service() {
 
     fun postLinkOn(link: Int) {
         link_error = 0
-        sendBroadcast(Intent(LINK_ON).putExtra(LINK_INFO, link))
+        sendBroadcast(privateIntent(this, LINK_ON).putExtra(LINK_INFO, link))
         val message = getString(R.string.status_linkon, getString(link))
         ServiceNotifier.instance.start(this, message)
     }
 
     fun postLinkOff(link: Int) {
         link_error = link
-        sendBroadcast(Intent(LINK_OFF).putExtra(LINK_INFO, link))
+        sendBroadcast(privateIntent(this, LINK_OFF).putExtra(LINK_INFO, link))
         val message = getString(R.string.status_linkoff, getString(link))
         ServiceNotifier.instance.start(this, message)
     }

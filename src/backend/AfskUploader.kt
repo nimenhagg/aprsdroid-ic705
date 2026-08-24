@@ -79,6 +79,7 @@ class AfskUploader(
             ContextCompat.registerReceiver(
                 service, btScoReceiver,
                 IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_CHANGED),
+                // Bluetooth SCO state is emitted by a privileged system component.
                 ContextCompat.RECEIVER_EXPORTED
             )
             false

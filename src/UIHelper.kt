@@ -149,7 +149,7 @@ class StorageCleaner(private val context: Context, private val storage: StorageD
             storage.trimPosts(Long.MAX_VALUE)
             handler.post {
                 Log.d("StorageCleaner", "broadcasting...")
-                context.sendBroadcast(Intent(AprsService.UPDATE))
+                context.sendBroadcast(AprsService.privateIntent(context, AprsService.UPDATE))
                 onPost()
             }
         }
@@ -166,7 +166,7 @@ class MessageCleaner(private val context: Context, private val storage: StorageD
             storage.deleteMessages(call)
             handler.post {
                 Log.d("MessageCleaner", "broadcasting...")
-                context.sendBroadcast(AprsService.MSG_PRIV_INTENT)
+                context.sendBroadcast(AprsService.privateIntent(context, AprsService.MESSAGE))
             }
         }
     }

@@ -60,12 +60,12 @@ class MessageActivity : StationHelper(R.string.app_messages) {
                             put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
                         }
                         storage.updateMessage(item.id, cv)
-                        sendBroadcast(Intent(AprsService.MSG_TX_PRIV_INTENT))
+                        sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGETX))
                         loadData()
                     },
                     onAbortMessage = { item ->
                         storage.updateMessageType(item.id, StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
-                        sendBroadcast(Intent(AprsService.MSG_PRIV_INTENT))
+                        sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGE))
                         loadData()
                     },
                     onClearAllMessages = {
@@ -96,7 +96,7 @@ class MessageActivity : StationHelper(R.string.app_messages) {
     override fun onResume() {
         super.onResume()
         targetcall?.let { ServiceNotifier.instance.cancelMessage(this, it) }
-        ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_NOT_EXPORTED)
         loadData()
     }
 
@@ -135,7 +135,7 @@ class MessageActivity : StationHelper(R.string.app_messages) {
         }
         storage.addMessage(cv)
         sendMessageBroadcast(targetcall ?: "", msg)
-        sendBroadcast(Intent(AprsService.MSG_PRIV_INTENT))
+        sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGE))
         loadData()
 
         if (!AprsService.running) {

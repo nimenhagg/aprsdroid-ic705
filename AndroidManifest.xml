@@ -177,18 +177,10 @@
 	</activity>
 	<service android:name=".AprsService" android:label="@string/aprsservice"
 		android:foregroundServiceType="location|microphone|specialUse"
-		tools:ignore="ExportedService"
-		android:exported="true"
+		android:exported="false"
 		>
 	    <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
 		          android:value="WLAN Connection to Amateur Radio (IC-705)" />
-	    <intent-filter>
-		<action android:name="org.aprsdroid.app.SERVICE" />
-		<action android:name="org.aprsdroid.app.ONCE" />
-		<action android:name="org.aprsdroid.app.SEND_PACKET" />
-		<action android:name="org.aprsdroid.app.SERVICE_STOP" />
-		<action android:name="org.aprsdroid.app.FREQUENCY" />
-	    </intent-filter>
 	</service>
 
 	<!-- file provider for exported logs and similar things -->

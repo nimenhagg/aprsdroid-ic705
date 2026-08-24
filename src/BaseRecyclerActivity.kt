@@ -109,7 +109,7 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
     }
 
     fun sendMessageBroadcast(call: String, message: String) {
-        val i = Intent(AprsService.MESSAGETX).apply {
+        val i = AprsService.privateIntent(this, AprsService.MESSAGETX).apply {
             putExtra(AprsService.DEST, call)
             putExtra(AprsService.BODY, message)
         }

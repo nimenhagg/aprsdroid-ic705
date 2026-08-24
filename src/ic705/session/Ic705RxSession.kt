@@ -345,8 +345,12 @@ class Ic705RxSession internal constructor(
     private val pttStateMachine: Ic705PttStateMachine = Ic705PttStateMachine(
         actions = object : Ic705PttActions {
             override fun sendCivFrame(frame: ByteArray) {
-                val runtime = channelRuntimes[Ic705ChannelRole.CIV] ?: return
-                val remoteId = runtime.remoteId ?: return
+                val runtime = checkNotNull(channelRuntimes[Ic705ChannelRole.CIV]) {
+                    "CI-V channel is unavailable"
+                }
+                val remoteId = checkNotNull(runtime.remoteId) {
+                    "CI-V remote endpoint is unavailable"
+                }
                 val civEnvelope = Ic705CivDatagramCodec.encode(
                     Ic705CivDatagram(
                         type = 0,

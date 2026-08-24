@@ -31,7 +31,7 @@ class MessageService(val s: AprsService) {
         }
 
         s.sendBroadcast(
-            Intent(AprsService.MESSAGE)
+            AprsService.privateIntent(s, AprsService.MESSAGE)
                 .putExtra(AprsService.SOURCE, srccall)
                 .putExtra(AprsService.DEST, msg.targetCallsign)
                 .putExtra(AprsService.BODY, msg.messageBody)
@@ -48,7 +48,7 @@ class MessageService(val s: AprsService) {
                     StorageDatabase.Companion.Message.TYPE_OUT_REJECTED
                 }
                 s.db.updateMessageAcked(ap.sourceCall, msg.messageNumber, newType)
-                s.sendBroadcast(AprsService.MSG_PRIV_INTENT)
+                s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
             } else {
                 storeNotifyMessage(ts, ap.sourceCall, msg)
                 if (msg.messageNumber.isNotEmpty()) {
@@ -91,7 +91,7 @@ class MessageService(val s: AprsService) {
             Log.d(TAG, String.format(Locale.US, "pending message: %d/%d (%ds) ->%s '%s'", retrycnt, NUM_OF_RETRIES, tSend / 1000, call, text))
             if (retrycnt == NUM_OF_RETRIES && tSend <= 0) {
                 s.db.updateMessageType(c.getLong(0), StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
-                s.sendBroadcast(AprsService.MSG_PRIV_INTENT)
+                s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
             } else if (retrycnt < NUM_OF_RETRIES && tSend <= 0) {
                 val msg = s.newPacket(MessagePacket(call, text, msgid))
                 s.sendPacket(msg)
@@ -100,7 +100,7 @@ class MessageService(val s: AprsService) {
                     put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
                 }
                 s.db.updateMessage(c.getLong(0), cv)
-                s.sendBroadcast(AprsService.MSG_PRIV_INTENT)
+                s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                 nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
             } else if (retrycnt < NUM_OF_RETRIES) {
                 nextRun = min(nextRun, tSend)

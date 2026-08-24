@@ -59,14 +59,9 @@ class UsbTnc(
     private val intent = Intent(USB_PERM_ACTION).setPackage(service.packageName)
     private val pendingIntent = PendingIntent.getBroadcast(service, 0, intent, PendingIntent.FLAG_MUTABLE)
 
-    private val receiver = object : BroadcastReceiver() {
+    private val permissionReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context, i: Intent) {
             Log.d(TAG, "onReceive: $i")
-            if (i.action == ACTION_USB_DETACHED) {
-                log("USB device detached.")
-                ctx.stopService(AprsService.intent(ctx, AprsService.SERVICE))
-                return
-            }
             val extras = i.extras
             if (extras == null) {
                 service.postAbort("USB permission bug")
@@ -84,14 +79,32 @@ class UsbTnc(
         }
     }
 
+    private val detachReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context, i: Intent) {
+            Log.d(TAG, "onReceive: $i")
+            log("USB device detached.")
+            ctx.stopService(AprsService.intent(ctx, AprsService.SERVICE))
+        }
+    }
+
     private var proto: TncProto? = null
     private var sis: SerialInputStream? = null
 
     @SuppressLint("WrongConstant")
     override fun start(): Boolean {
-        val filter = IntentFilter(USB_PERM_ACTION)
-        filter.addAction(ACTION_USB_DETACHED)
-        ContextCompat.registerReceiver(service, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(
+            service,
+            permissionReceiver,
+            IntentFilter(USB_PERM_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        ContextCompat.registerReceiver(
+            service,
+            detachReceiver,
+            IntentFilter(ACTION_USB_DETACHED),
+            // This protected broadcast originates from the Android USB service.
+            ContextCompat.RECEIVER_EXPORTED,
+        )
         alreadyRunning = true
         if (ser == null) requestPermissions()
         return false
@@ -126,7 +139,8 @@ class UsbTnc(
 
     override fun stop() {
         if (alreadyRunning) {
-            try { service.unregisterReceiver(receiver) } catch (_: Exception) {}
+            try { service.unregisterReceiver(permissionReceiver) } catch (_: Exception) {}
+            try { service.unregisterReceiver(detachReceiver) } catch (_: Exception) {}
         }
         alreadyRunning = false
         try { ser?.close() } catch (_: Exception) {}

@@ -66,7 +66,7 @@ class ConversationsActivity : BaseRecyclerActivity() {
     @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
-        ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_NOT_EXPORTED)
         loadData()
     }
 
