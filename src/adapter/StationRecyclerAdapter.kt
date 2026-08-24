@@ -62,13 +62,30 @@ class StationRecyclerAdapter(
         val primaryContainer = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorPrimaryContainer)
         val secondaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSecondary)
         val secondaryContainer = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSecondaryContainer)
+        val surfaceContainerLow = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSurfaceContainerLow)
+        val outlineVariant = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOutlineVariant)
         val onSurface = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurface)
         val onSurfaceVariant = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant)
 
-        when (item.call) {
-            mycall -> holder.itemView.setBackgroundColor((primaryContainer and 0x00ffffff) or 0x33000000)
-            targetcall -> holder.itemView.setBackgroundColor((secondaryContainer and 0x00ffffff) or 0x33000000)
-            else -> holder.itemView.setBackgroundColor(0)
+        val card = holder.itemView as? com.google.android.material.card.MaterialCardView
+        if (card != null) {
+            when (item.call) {
+                mycall -> {
+                    card.setCardBackgroundColor(primaryContainer)
+                    card.strokeColor = primaryColor
+                    card.strokeWidth = (context.resources.displayMetrics.density * 1.5f).toInt()
+                }
+                targetcall -> {
+                    card.setCardBackgroundColor(secondaryContainer)
+                    card.strokeColor = secondaryColor
+                    card.strokeWidth = (context.resources.displayMetrics.density * 1.5f).toInt()
+                }
+                else -> {
+                    card.setCardBackgroundColor(surfaceContainerLow)
+                    card.strokeColor = outlineVariant
+                    card.strokeWidth = (context.resources.displayMetrics.density * 1f).toInt()
+                }
+            }
         }
 
         holder.callView.text = item.call

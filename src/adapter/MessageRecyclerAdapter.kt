@@ -8,11 +8,11 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import org.aprsdroid.app.R
 import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.model.MessageItem
-import java.util.Locale
 
 class MessageRecyclerAdapter(
     private val context: Context,
@@ -31,12 +31,13 @@ class MessageRecyclerAdapter(
             }
 
             override fun areContentsTheSame(oldItem: MessageItem, newItem: MessageItem): Boolean {
-                return oldItem == newItem
+                return oldItem == newItem && oldItem.type == newItem.type && oldItem.retryCnt == newItem.retryCnt
             }
         }
     }
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val card: MaterialCardView = itemView as MaterialCardView
         val tsView: TextView = itemView.findViewById(R.id.listts)
         val statusView: TextView = itemView.findViewById(R.id.liststatus)
         val messageView: TextView = itemView.findViewById(R.id.listmessage)
@@ -53,6 +54,9 @@ class MessageRecyclerAdapter(
         val primaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorPrimary)
         val secondaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSecondary)
         val tertiaryColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorTertiary)
+        val surfaceContainerLow = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSurfaceContainerLow)
+        val surfaceContainerHigh = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorSurfaceContainerHigh)
+        val outlineVariant = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOutlineVariant)
         val onSurface = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurface)
         val onSurfaceVariant = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorOnSurfaceVariant)
         val errorColor = MaterialColors.getColor(holder.itemView, com.google.android.material.R.attr.colorError)
@@ -64,30 +68,40 @@ class MessageRecyclerAdapter(
         holder.messageView.setTextColor(onSurface)
 
         val msgtype = item.type
-        when (msgtype) {
-            StorageDatabase.Companion.Message.TYPE_INCOMING ->
-                holder.statusView.setTextColor(primaryColor)
-            StorageDatabase.Companion.Message.TYPE_OUT_NEW ->
-                holder.statusView.setTextColor(tertiaryColor)
-            StorageDatabase.Companion.Message.TYPE_OUT_ACKED ->
-                holder.statusView.setTextColor(secondaryColor)
-            StorageDatabase.Companion.Message.TYPE_OUT_REJECTED ->
-                holder.statusView.setTextColor(errorColor)
-            StorageDatabase.Companion.Message.TYPE_OUT_ABORTED ->
-                holder.statusView.setTextColor(onSurfaceVariant)
-            else ->
-                holder.statusView.setTextColor(primaryColor)
+        val isOutgoing = (msgtype != StorageDatabase.Companion.Message.TYPE_INCOMING)
+
+        if (isOutgoing) {
+            holder.card.setCardBackgroundColor(surfaceContainerHigh)
+        } else {
+            holder.card.setCardBackgroundColor(surfaceContainerLow)
+        }
+        holder.card.strokeColor = outlineVariant
+        holder.card.strokeWidth = (context.resources.displayMetrics.density * 1f).toInt()
+
+        val (statusText, statusColor) = when (msgtype) {
+            StorageDatabase.Companion.Message.TYPE_INCOMING -> {
+                "📥 来自 $targetcall" to secondaryColor
+            }
+            StorageDatabase.Companion.Message.TYPE_OUT_NEW -> {
+                val retryStr = if (item.retryCnt > 0) " (重试 ${item.retryCnt}/$NUM_OF_RETRIES)" else " (待发 0/$NUM_OF_RETRIES)"
+                "⏳ 发送中$retryStr" to tertiaryColor
+            }
+            StorageDatabase.Companion.Message.TYPE_OUT_ACKED -> {
+                "✓✓ 已送达 (ACK)" to primaryColor
+            }
+            StorageDatabase.Companion.Message.TYPE_OUT_REJECTED -> {
+                "✕ 对方拒绝 (REJ)" to errorColor
+            }
+            StorageDatabase.Companion.Message.TYPE_OUT_ABORTED -> {
+                "⊘ 发送失败/已中止" to errorColor
+            }
+            else -> {
+                mycall to onSurfaceVariant
+            }
         }
 
-        val status = when (msgtype) {
-            StorageDatabase.Companion.Message.TYPE_INCOMING -> targetcall
-            StorageDatabase.Companion.Message.TYPE_OUT_NEW -> String.format(Locale.US, "%s %d/%d", mycall, item.retryCnt, NUM_OF_RETRIES)
-            StorageDatabase.Companion.Message.TYPE_OUT_ACKED -> mycall
-            StorageDatabase.Companion.Message.TYPE_OUT_REJECTED -> "$mycall ${context.getString(R.string.msg_type_rejected)}"
-            StorageDatabase.Companion.Message.TYPE_OUT_ABORTED -> "$mycall ${context.getString(R.string.msg_type_aborted)}"
-            else -> mycall
-        }
-        holder.statusView.text = status
+        holder.statusView.text = statusText
+        holder.statusView.setTextColor(statusColor)
 
         holder.itemView.setOnClickListener { onItemClick(item) }
         holder.itemView.setOnLongClickListener { v -> onItemLongClick(item, v) }
