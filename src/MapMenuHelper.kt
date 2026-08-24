@@ -85,6 +85,9 @@ abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, Loadin
         val modesmenu = menu.findItem(R.id.overlays)?.subMenu
         if (modesmenu != null) {
             val defaultMode = MapModes.defaultMapMode(this, prefs)
+            val configuredModeIds = MapModes.all_mapmodes.mapTo(mutableSetOf()) { it.menu_id }
+            modesmenu.findItem(R.id.normal)?.isVisible = R.id.normal in configuredModeIds
+            modesmenu.findItem(R.id.satellite)?.isVisible = R.id.satellite in configuredModeIds
             for (mode in MapModes.all_mapmodes) {
                 val item = modesmenu.findItem(mode.menu_id) ?: modesmenu.add(R.id.mapmodes, mode.menu_id, 0, mode.title)
                 item.isCheckable = true

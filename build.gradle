@@ -34,8 +34,8 @@ allprojects {
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = (findProperty("MOD_VERSION") ?: "1.7.1").toString()
-	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082471").toString())
+	mod_version = (findProperty("MOD_VERSION") ?: "1.8.0").toString()
+	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082480").toString())
 	base_version = "APRSdroid v1.7.0"
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
@@ -49,12 +49,18 @@ if (mod_version_code < 1 || mod_version_code > 2100000000) {
 }
 
 def mapsApiKey() {
+	def environmentKey = System.getenv('MAPS_API_KEY')?.trim()
+	if (environmentKey) return environmentKey
+	def propertyKey = findProperty('MAPS_API_KEY')?.toString()?.trim()
+	if (propertyKey) return propertyKey
 	Properties properties = new Properties()
 	try {
 		properties.load(project.rootProject.file('local.properties').newDataInputStream())
 	} catch(Exception ex) {}
-	properties.getProperty('mapsApiKey', "AIzaSyA12R_iI_upYQ33FWnPU_8GlMKrEmjDxiQ")
+	properties.getProperty('mapsApiKey', '').trim()
 }
+
+def configuredMapsApiKey = mapsApiKey()
 
 android {
 	namespace = 'org.aprsdroid.app'
@@ -63,14 +69,12 @@ android {
 		applicationId = "me.nimenhagg.aprsdroidic705mod"
 		minSdk = 25
 		targetSdk = 37
-		ndk {
-			abiFilters 'arm64-v8a'
-		}
 		versionName "$build_revision"
 		versionCode mod_version_code
 		resValue "string", "build_revision", "$build_revision"
 		resValue "string", "build_version", "$build_version"
-		resValue "string", "google_maps_key", mapsApiKey()
+		resValue "string", "google_maps_key", configuredMapsApiKey
+		buildConfigField "boolean", "GOOGLE_MAPS_ENABLED", (!configuredMapsApiKey.isEmpty()).toString()
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
@@ -82,6 +86,29 @@ android {
 		buildConfig = true
 		compose = true
 		resValues = true
+	}
+	flavorDimensions += 'target'
+	productFlavors {
+		arm64Vulkan {
+			dimension = 'target'
+			ndk { abiFilters 'arm64-v8a' }
+		}
+		arm64Opengl {
+			dimension = 'target'
+			ndk { abiFilters 'arm64-v8a' }
+		}
+		arm32Opengl {
+			dimension = 'target'
+			ndk { abiFilters 'armeabi-v7a' }
+		}
+		x86Multi {
+			dimension = 'target'
+			ndk { abiFilters 'x86' }
+		}
+		x8664Multi {
+			dimension = 'target'
+			ndk { abiFilters 'x86_64' }
+		}
 	}
 	lint {
 		// These versions are intentionally pinned to the mutually compatible release toolchain.
@@ -96,7 +123,8 @@ android {
 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.cfg'
 		}
 		release {
-			minifyEnabled = false
+			minifyEnabled = true
+			shrinkResources = true
 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.cfg'
 		}
 	}
@@ -169,9 +197,13 @@ play {
 
 dependencies {
 	implementation fileTree(include: ['*.jar'], dir: 'libs')
-	implementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.5.1'
+	arm64VulkanImplementation 'org.maplibre.gl:android-sdk-vulkan:13.5.1'
+	arm64OpenglImplementation 'org.maplibre.gl:android-sdk-opengl:13.5.1'
+	arm32OpenglImplementation 'org.maplibre.gl:android-sdk-opengl:13.5.1'
+	x86MultiImplementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.5.1'
+	x8664MultiImplementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.5.1'
 	implementation 'com.google.android.gms:play-services-maps:17.0.0'
-	implementation 'com.google.maps.android:android-maps-utils:0.5'
+	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 	implementation 'androidx.core:core-ktx:1.12.0'
 	implementation 'androidx.appcompat:appcompat:1.6.1'
 	implementation 'androidx.preference:preference-ktx:1.2.1'

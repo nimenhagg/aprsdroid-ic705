@@ -40,6 +40,7 @@ class GoogleMapMode(
     tileType: MapTileType
 ) : MapMode(tag, menu_id, title, GoogleMapAct::class.java, tileType) {
     override fun isAvailable(ctx: Context): Boolean {
+        if (!BuildConfig.GOOGLE_MAPS_ENABLED) return false
         return try {
             ctx.packageManager.getPackageInfo(GoogleApiAvailability.GOOGLE_PLAY_SERVICES_PACKAGE, 0)
             true
@@ -73,14 +74,19 @@ object MapModes {
 
         all_mapmodes.add(TileMapMode("amap", R.id.amap, ctx.getString(R.string.map_amap), MapTileType.AMAP))
         all_mapmodes.add(TileMapMode("osm", R.id.osm, ctx.getString(R.string.map_osm), MapTileType.OSM))
-        all_mapmodes.add(GoogleMapMode("google", R.id.normal, ctx.getString(R.string.map_google), GoogleMap.MAP_TYPE_NORMAL, MapTileType.GOOGLE_NORMAL))
-        all_mapmodes.add(GoogleMapMode("satellite", R.id.satellite, ctx.getString(R.string.map_satellite), GoogleMap.MAP_TYPE_HYBRID, MapTileType.GOOGLE_HYBRID))
+        if (BuildConfig.GOOGLE_MAPS_ENABLED) {
+            all_mapmodes.add(GoogleMapMode("google", R.id.normal, ctx.getString(R.string.map_google), GoogleMap.MAP_TYPE_NORMAL, MapTileType.GOOGLE_NORMAL))
+            all_mapmodes.add(GoogleMapMode("satellite", R.id.satellite, ctx.getString(R.string.map_satellite), GoogleMap.MAP_TYPE_HYBRID, MapTileType.GOOGLE_HYBRID))
+        }
         all_mapmodes.add(TileMapMode("custom", R.id.custom_tile, ctx.getString(R.string.map_custom_tile), MapTileType.CUSTOM))
     }
 
     fun defaultMapMode(ctx: Context, prefs: PrefsWrapper): MapMode {
         initialize(ctx)
         val tag = prefs.getString("mapmode", "amap")
+        if (!BuildConfig.GOOGLE_MAPS_ENABLED && (tag == "google" || tag == "satellite")) {
+            return all_mapmodes.first { it.tag == "osm" }
+        }
         var default: MapMode? = null
         for (mode in all_mapmodes) {
             if (default == null && mode.isAvailable(ctx)) default = mode

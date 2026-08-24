@@ -6,17 +6,17 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 版本 | `1.7.1-ic705` |
-| Android versionCode | `2026082471` |
+| 版本 | `1.8.0-ic705` |
+| Android versionCode | `2026082480` |
 | 上游基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 25`，`compileSdk 37`，`targetSdk 37` |
-| 原生 ABI | 仅 `arm64-v8a` |
+| 原生 ABI | `arm64-v8a`、`armeabi-v7a`、`x86`、`x86_64` 分包发布 |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
 | 语言/编译器 | AGP 9 内置 Kotlin `2.2.10`，Compose Compiler `2.2.10`，Java `17` |
 | UI | Compose BOM `2026.08.00` + Material 3；部分旧页面仍为 View/XML |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
-| 地图 | MapLibre Native `13.5.1` 多后端 + Google Maps SDK |
-| 发布标签 | `v1.7.1-ic705` |
+| 地图 | MapLibre Native `13.5.1` 按安装包选择后端 + Google Maps SDK |
+| 发布标签 | `v1.8.0-ic705` |
 
 Java 17 是 AGP 9.3 的默认与最低 JDK 基线。没有明确需求和完整兼容性验证时，不要仅为提高版本号切换 Java 21。
 
@@ -31,7 +31,7 @@ Java 17 是 AGP 9.3 的默认与最低 JDK 基线。没有明确需求和完整�
 
 ### 明确的非目标
 
-- IC-705 LAN 和用户指定的 APRS 服务器可能使用明文 UDP/TCP。`android:usesCleartextTraffic="true"` 是当前兼容性决定；1.7.1 未改变传输协议或加入 TLS。HTTP POST 使用 `HttpURLConnection`，但裸主机仍兼容明文 `http://:8080/`。除非维护者明确要求并能提供服务器/电台测试条件，不要擅自强制 TLS、删除明文能力或改变证书逻辑。
+- IC-705 LAN 和用户指定的 APRS 服务器可能使用明文 UDP/TCP。`android:usesCleartextTraffic="true"` 是当前兼容性决定；1.8.0 未改变传输协议或加入 TLS。HTTP POST 使用 `HttpURLConnection`，但裸主机仍兼容明文 `http://:8080/`。除非维护者明确要求并能提供服务器/电台测试条件，不要擅自强制 TLS、删除明文能力或改变证书逻辑。
 - 不保证在模拟器中完成无线电硬件验证。协议单测、构建和 Lint 通过不能替代真机、真电台、低功率/假负载测试。
 
 ## 3. 目录与构建特点
@@ -53,10 +53,18 @@ AGP 9 使用 built-in Kotlin：不要重新应用 `org.jetbrains.kotlin.android`
 ### 地图架构
 
 - `MapAct` 使用 MapLibre Native 13.5.1 渲染高德、OpenStreetMap 与自定义在线栅格瓦片；`GoogleMapAct` 只处理 Google 普通地图和卫星地图。图源切换必须进入对应 Activity，不要重新在 Google SDK 中实现 MapLibre 图源。
-- 依赖为 `org.maplibre.gl:android-sdk-vulkan-opengl`。`MapLibre.getInstance(application)` 使用库的默认渲染引擎选择：符合版本和设备能力条件时选择 Vulkan，否则使用 OpenGL。不要强制 Vulkan，以免破坏回退。
-- Gradle 的 `abiFilters` 只发布 `arm64-v8a`。Release 验证必须检查 APK 中没有 `armeabi-v7a`、`x86` 或 `x86_64` 原生库，并同时保留 MapLibre 的 Vulkan 与 OpenGL ARM64 库。
+- Gradle 以 `target` product flavor 发布五种互斥规格：`arm64Vulkan`、`arm64Opengl`、`arm32Opengl`、`x86Multi`、`x8664Multi`。每个 APK 只包含其命名 ABI；不要重新合并成通用 APK。
+- 推荐的 `arm64Vulkan` 只带 Vulkan；ARM64 兼容包和 ARMv7 包只带 OpenGL；x86/x86_64 包同时带 Vulkan 与 OpenGL，并由 MapLibre 自动选择。修改依赖时必须保持这套矩阵，避免让双后端显著放大推荐包。
 - 不依赖可选的 MapLibre Offline 插件，代码中不得引用 `org.maplibre.android.offline`，也没有离线区域下载/管理 UI。MapLibre 主 AAR 内部自带的 API 类不等于项目启用了 Offline 功能。
+- OSM 在线瓦片请求通过 MapLibre 的共享 OkHttp 客户端发送可识别的应用 User-Agent；地图页面必须始终提供可点击的 `© OpenStreetMap contributors` 署名。不得加入批量抓瓦片、预取整个区域或绕过 OSM 服务政策的功能。
+- Google Maps key 只能由 `MAPS_API_KEY` 环境变量、同名 Gradle property 或未纳入版本控制的 `local.properties` 中 `mapsApiKey` 注入，不得提交密钥。未配置 key 的自编译版本会隐藏 Google 普通/卫星图源并回退到 OSM。
 - 地图页面继续复用 `mapview.xml` 的现有 Material 控件；APRS 台站通过 GeoJSON `SymbolLayer` 呈现，缩放 10 级起显示呼号组合图标。
+
+### Release 压缩与可诊断性
+
+- Release 构建启用 R8 `minifyEnabled` 和 `shrinkResources`。不要重新加入全局 `-dontobfuscate`，也不要为了消除第三方 native strip 提示关闭压缩。
+- 修改 JNI、序列化、反射或 MapLibre 集成时必须在 Release 构建中验证，并仅添加必要的 keep 规则。
+- CI 为每种 Release flavor 保存 R8 `mapping.txt`；崩溃反混淆应使用与 APK 完全匹配的映射文件。
 
 ## 4. IC-705 数据流
 
@@ -111,13 +119,13 @@ API 37 的 `ACCESS_LOCAL_NETWORK` 是运行时权限。当前策略：
 本地发布前至少运行：
 
 ```bash
-./gradlew verifyReleaseVersion testDebugUnitTest lintDebug assembleRelease --no-daemon --stacktrace
+./gradlew verifyReleaseVersion testArm64VulkanDebugUnitTest lintArm64VulkanDebug assembleRelease --no-daemon --stacktrace
 ```
 
 Windows PowerShell 使用 `./gradlew.bat`。API 37 SDK 未安装但许可证已接受时，可以临时传入：
 
 ```powershell
-./gradlew.bat testDebugUnitTest '-Pandroid.builder.sdkDownload=true' --no-daemon
+./gradlew.bat testArm64VulkanDebugUnitTest '-Pandroid.builder.sdkDownload=true' --no-daemon
 ```
 
 对于发射链变更，还应执行以下人工验证：
@@ -138,20 +146,22 @@ Windows PowerShell 使用 `./gradlew.bat`。API 37 SDK 未安装但许可证已�
 4. 标签严格使用 `v<major.minor.patch>-ic705`。
 5. 先运行完整验证，再提交并创建标签；不要移动已经发布的标签。
 
-CI 的 `verifyReleaseVersion` 会在 Tag 构建中检查标签是否等于 `v${mod_version}-ic705`。工作流随后测试、Lint、构建、签名（若 secrets 可用）并创建 GitHub Release。
+CI 的 `verifyReleaseVersion` 会在 Tag 构建中检查标签是否等于 `v${mod_version}-ic705`。工作流随后测试、Lint、构建五个经 R8 压缩的 APK、签名、校验 ABI/渲染后端、生成 `SHA256SUMS.txt`，并创建 GitHub Release。正式 Tag 缺少签名 secrets 时必须失败，不能发布未签名 APK；`MAPS_API_KEY` 从 GitHub Actions secret 注入。
 
-## 10. 1.7.1 交接状态
+## 10. 1.8.0 交接状态
 
 - 构建链已迁移到 Gradle 9.5.0 / AGP 9.3.2 / built-in Kotlin 2.2.10 / API 37。
 - Java 源与字节码目标保持 17。
 - Android 17 本地网络权限已按 IC-705 与 LAN TNC 后端接入统一服务启动链。
-- README 已扩充为中英双语用户/开发指南，并记录 ARM64 与地图渲染边界。
+- README 已扩充为中英双语用户/开发指南，并记录五种 APK 的 ABI 与地图渲染边界。
 - Compose 迁移后无引用的 RecyclerView 外壳、旧 XML 布局和未参与构建的 `PacketDroid` 子模块已移除；根目录中实际使用的 AFSK/AX.25 路径保留。
 - 地图、铃声和运行时权限均使用 Activity Result launcher；外部存储权限已删除，导出位于应用专属目录并通过 `FileProvider` 分享。
 - HTTP POST 后端已迁移到 `HttpURLConnection`，Gradle 与 Manifest 不再依赖 `org.apache.http.legacy`。
 - 配置导入使用 Activity Result `OpenDocument` 和 `ContentResolver` 流；不可达的 map/theme 文件选择器及 86 个无引用资源标识已从全部语言文件同步移除，默认资源、58 个 locale 目录与活动翻译保持完整。
 - Android Lint 从 1001 项降为 `No issues found`，未引入 baseline；TLS 兼容项仅做窄范围说明性抑制，行为未改。
 - Mapsforge 0.3.0、专用瓦片下载器和遗留 ProGuard 规则已移除；高德、OSM、自定义图源迁移到 MapLibre，Google 图源仍使用 Google SDK。
-- MapLibre 使用 ARM64 Vulkan/OpenGL 多后端并保留自动回退；未加入可选 Offline 插件或离线地图功能。
+- MapLibre 改为五种 ABI/后端规格：推荐 ARM64 Vulkan、ARM64 OpenGL 兼容、ARMv7 OpenGL、x86 双后端和 x86_64 双后端；未加入可选 Offline 插件或离线地图功能。
+- OSM 图源增加可识别 User-Agent 和常驻可点击署名；Google Maps key 改为构建时 secret/property 注入，未配置 key 的构建会隐藏不可用的 Google 图源。
+- Release 已启用 R8 代码混淆压缩和资源裁剪，并在 CI 中保存每种 flavor 的映射文件。推荐 ARM64 Vulkan 未签名本地 APK 由旧双后端约 40.6 MiB 降至约 18.2 MiB。
 - TLS 未修改，明文兼容行为保持不变。
-- 1.7.1 已完成 134 项 JVM 测试（133 通过、1 跳过）、Android Lint（0 error、0 warning）、Release APK 与 instrumentation APK 编译；APK 元数据为 API 25/37，原生库清单仅含 `arm64-v8a`，并包含 Vulkan/OpenGL 两套 MapLibre 后端。仍需在具备硬件时补做 MapLibre Vulkan/OpenGL 真机地图与 IC-705 收发验证。
+- 1.8.0 已完成 134 项 JVM 测试（133 通过、1 跳过）、Android Lint（0 error、0 warning）、五种 R8 Release APK 与 instrumentation APK 编译；APK 元数据为 API 25/37，每个 APK 仅含对应 ABI，ARM 包含指定的单后端，x86 包包含双后端。仍需在具备硬件时补做 MapLibre Vulkan/OpenGL 真机地图、Google Maps key 限制验证与 IC-705 收发验证。

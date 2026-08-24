@@ -27,6 +27,22 @@
             android:clickable="true"
             android:focusable="true" />
 
+        <TextView
+            android:id="@+id/osm_attribution"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="4dp"
+            android:background="#B3000000"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="3dp"
+            android:text="@string/map_osm_attribution"
+            android:textColor="@android:color/white"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
         <include layout="@layout/mapcontrols" />
     </FrameLayout>
 </LinearLayout>

@@ -431,6 +431,4 @@
 <string name="about_license_heading">📜 Open source and credits</string>
 <string name="about_license_body">Based on the original APRSdroid project by Georg Lukas.\nLicensed under GNU General Public License v2 (GPL-2.0).\nThanks to amateur radio operators and open-source contributors worldwide.</string>
 <string name="ringtone_silent">Silent</string>
-    <string name="p_google_maps_key">Google Maps API Key</string>
-    <string name="p_google_maps_key_summary">Custom Google Maps API key (leave empty to use default)</string>
 </resources>

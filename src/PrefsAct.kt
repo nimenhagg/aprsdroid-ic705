@@ -90,6 +90,19 @@ class PrefsAct : AppCompatActivity() {
     class PrefsFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.preferences, rootKey)
+            if (!BuildConfig.GOOGLE_MAPS_ENABLED) {
+                val mapModePref = findPreference<androidx.preference.ListPreference>("mapmode")
+                val entries = resources.getTextArray(R.array.p_map_source_e)
+                val values = resources.getTextArray(R.array.p_map_source_ev)
+                val retained = entries.zip(values).filterNot { (_, value) ->
+                    value == "google" || value == "satellite"
+                }
+                mapModePref?.entries = retained.map { it.first }.toTypedArray()
+                mapModePref?.entryValues = retained.map { it.second }.toTypedArray()
+                if (mapModePref?.value == "google" || mapModePref?.value == "satellite") {
+                    mapModePref.value = "osm"
+                }
+            }
         }
 
         override fun onPreferenceTreeClick(preference: Preference): Boolean {
@@ -102,11 +115,9 @@ class PrefsAct : AppCompatActivity() {
 
         private fun updateMapPreferenceVisibilities(mapMode: String?) {
             val isCustom = (mapMode == "custom")
-            val isGoogle = (mapMode == "google" || mapMode == "satellite")
 
             findPreference<Preference>("map_custom_url")?.isVisible = isCustom
             findPreference<Preference>("map_custom_subdomains")?.isVisible = isCustom
-            findPreference<Preference>("google_maps_key")?.isVisible = isGoogle
         }
 
         override fun onResume() {

@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.util.Base64
 import android.util.Log
 import android.view.View
+import android.widget.TextView
 import androidx.core.graphics.createBitmap
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -53,6 +54,7 @@ class MapAct : MapLoaderBase() {
 
     private val mapview: MapView by lazy { findViewById(R.id.mapview) }
     private val loading: View by lazy { findViewById(R.id.loading) }
+    private val osmAttribution: TextView by lazy { findViewById(R.id.osm_attribution) }
     private var map: MapLibreMap? = null
     private var pendingStations = arrayListOf<Station>()
     private val activeImageIds = linkedSetOf<String>()
@@ -64,6 +66,10 @@ class MapAct : MapLoaderBase() {
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         toolbar.setNavigationOnClickListener { finish() }
+
+        osmAttribution.setOnClickListener {
+            UrlOpener.open(this, getString(R.string.map_osm_copyright_url))
+        }
 
         mapview.onCreate(savedInstanceState)
         mapview.addOnDidFailLoadingMapListener { error ->
@@ -182,6 +188,7 @@ class MapAct : MapLoaderBase() {
 
     private fun applyRasterStyle(mode: MapMode) {
         val maplibreMap = map ?: return
+        osmAttribution.visibility = if (mode.tileType == MapTileType.OSM) View.VISIBLE else View.GONE
         val (urlPattern, subdomains, maxZoom, attribution) = when (mode.tileType) {
             MapTileType.AMAP -> TileConfiguration(
                 OnlineTileSources.AMAP_TILE_URL,
@@ -193,7 +200,7 @@ class MapAct : MapLoaderBase() {
                 OnlineTileSources.OSM_TILE_URL,
                 OnlineTileSources.OSM_SUBDOMAINS,
                 19f,
-                "OpenStreetMap contributors"
+                getString(R.string.map_osm_attribution)
             )
             MapTileType.CUSTOM -> TileConfiguration(
                 prefs.getString("map_custom_url", OnlineTileSources.AMAP_TILE_URL)

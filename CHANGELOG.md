@@ -1,3 +1,14 @@
+## 🚀 [v1.8.0-ic705] - 2026-08-24
+
+### 📦 多架构轻量发布、OSM 合规与正式构建收缩
+* 将 Release 重组为五个独立规格：推荐的 `arm64-v8a` Vulkan、ARM64 OpenGL 兼容版、`armeabi-v7a` OpenGL，以及 `x86` / `x86_64` Vulkan+OpenGL 双后端版；不再生成把全部 ABI 塞入一个文件的通用 APK。
+* 不清楚设备规格时请下载文件名以 `Recommended_` 开头的 ARM64 Vulkan 包；若发布页没有所需的 ABI/渲染组合，可按 README 自行编译。
+* Release 正式启用 R8 代码优化/混淆和资源裁剪，移除旧 `-dontobfuscate` 开关，并由 CI 单独保存每个变体的 `mapping.txt`；本地未签名推荐包由上一版约 40.6 MiB 降至约 18.2 MiB。
+* OpenStreetMap 请求使用可识别且稳定的应用 User-Agent，地图上始终显示可点击的 `© OpenStreetMap contributors`；继续遵守服务器缓存响应，不加入预取、批量下载或 MapLibre Offline 模块。
+* 保留 Google 普通地图与卫星/混合地图，但删除源码内置 Key 和实际无效的运行时 Key 输入项；正式 Key 仅从 `MAPS_API_KEY` CI Secret 注入，自行构建未配置 Key 时自动隐藏 Google 图源。
+* 发布流水线会构建、签名、验签并检查全部五个 APK 的 ABI 与 MapLibre 后端数量，推荐文件以 `Recommended_` 开头，同时发布 `SHA256SUMS.txt` 和独立 R8 mapping 构建产物。
+* 版本元数据更新为 `1.8.0-ic705`（`versionCode 2026082480`）；IC-705 协议、PTT/音频链、明文服务器兼容策略和最低 Android 版本均未改变。
+
 ## 🚀 [v1.7.1-ic705] - 2026-08-24
 
 ### 🗺️ MapLibre 地图引擎与 ARM64 渲染链

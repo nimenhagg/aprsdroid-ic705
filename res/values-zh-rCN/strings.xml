@@ -422,6 +422,4 @@
     <string name="about_license_body">基于 Georg Lukas 原创 APRSdroid 项目二次开发。\n遵循 GNU General Public License v2 (GPL-2.0) 开源协议。\n致谢全球业余无线电爱好者与开源社区贡献者。</string>
     <string name="ringtone_silent">静音</string>
 
-    <string name="p_google_maps_key">Google 地图 API Key</string>
-    <string name="p_google_maps_key_summary">自定义 Google Maps 秘钥（留空使用默认内置秘钥）</string>
 </resources>

@@ -131,11 +131,5 @@
             android:summary="@string/p_map_custom_subdomains_summary"
             android:dialogTitle="@string/p_map_custom_subdomains" />
 
-        <de.duenndns.EditTextPreferenceWithValue
-            android:key="google_maps_key"
-            android:icon="@drawable/ic_pref_maps"
-            android:title="@string/p_google_maps_key"
-            android:summary="@string/p_google_maps_key_summary"
-            android:dialogTitle="@string/p_google_maps_key" />
     </PreferenceCategory>
 </PreferenceScreen>
