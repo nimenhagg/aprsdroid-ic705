@@ -326,17 +326,21 @@ private fun MessageBubbleItem(
             "📥 来自 $targetCall" to MaterialTheme.colorScheme.secondary
         }
         StorageDatabase.Companion.Message.TYPE_OUT_NEW -> {
-            val retryStr = if (item.retryCnt > 0) " (重试 ${item.retryCnt}/7)" else " (待发 0/7)"
-            "⏳ 发送中$retryStr" to MaterialTheme.colorScheme.tertiary
+            val label = when (item.retryCnt) {
+                0 -> "⏳ 排队待发 (0/7)"
+                1 -> "📡 已发射，等待对方应答 (1/7)"
+                else -> "🔄 正在重传 (${item.retryCnt}/7)"
+            }
+            label to MaterialTheme.colorScheme.tertiary
         }
         StorageDatabase.Companion.Message.TYPE_OUT_ACKED -> {
-            "✓✓ 已送达 (ACK)" to MaterialTheme.colorScheme.primary
+            "✓✓ 对方已确认 (ACK)" to MaterialTheme.colorScheme.primary
         }
         StorageDatabase.Companion.Message.TYPE_OUT_REJECTED -> {
-            "✕ 对方拒绝 (REJ)" to MaterialTheme.colorScheme.error
+            "✕ 对方拒收 (REJ)" to MaterialTheme.colorScheme.error
         }
         StorageDatabase.Companion.Message.TYPE_OUT_ABORTED -> {
-            "⊘ 发送失败/已中止" to MaterialTheme.colorScheme.error
+            "⊘ 对方无应答 (已中止)" to MaterialTheme.colorScheme.error
         }
         else -> {
             myCall to MaterialTheme.colorScheme.onSurfaceVariant

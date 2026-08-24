@@ -213,9 +213,30 @@ class MapAct : MapActivity(), LoadingIndicator {
         findViewById<View>(R.id.crosshair)?.visibility = if (isChooser) View.VISIBLE else View.GONE
         findViewById<View>(R.id.accept)?.visibility = if (isChooser) View.VISIBLE else View.GONE
 
-        mapview.setBuiltInZoomControls(true)
+        mapview.setBuiltInZoomControls(false)
         mapview.overlays.add(staoverlay)
         mapview.setTextScale(resources.displayMetrics.density)
+
+        findViewById<View>(R.id.btn_zoom_in)?.setOnClickListener {
+            mapview.controller.zoomIn()
+        }
+        findViewById<View>(R.id.btn_zoom_out)?.setOnClickListener {
+            mapview.controller.zoomOut()
+        }
+        findViewById<View>(R.id.btn_my_location)?.setOnClickListener {
+            val mycall = prefs.getCallSsid()
+            val pos = db.getStaPosition(mycall)
+            if (pos.count > 0 && pos.moveToFirst()) {
+                val latIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+                val lonIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LON)
+                if (latIdx >= 0 && lonIdx >= 0) {
+                    val lat = pos.getInt(latIdx)
+                    val lon = pos.getInt(lonIdx)
+                    mapview.controller.setCenter(GeoPoint(lat, lon))
+                }
+            }
+            pos.close()
+        }
 
         targetcall = intent.getStringExtra("call") ?: ""
         showObjects = prefs.getBoolean("show_objects", false)

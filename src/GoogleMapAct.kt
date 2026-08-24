@@ -51,9 +51,30 @@ class GoogleMapAct : MapLoaderBase(),
             googleMap.setOnInfoWindowClickListener(this)
             googleMap.setOnCameraMoveListener(this)
             googleMap.uiSettings.isCompassEnabled = true
-            googleMap.uiSettings.isZoomControlsEnabled = true
+            googleMap.uiSettings.isZoomControlsEnabled = false
             visible_callsigns = googleMap.cameraPosition.zoom > CALLSIGN_ZOOM
             startLoading()
+        }
+
+        findViewById<View>(R.id.btn_zoom_in)?.setOnClickListener {
+            changeZoom(1)
+        }
+        findViewById<View>(R.id.btn_zoom_out)?.setOnClickListener {
+            changeZoom(-1)
+        }
+        findViewById<View>(R.id.btn_my_location)?.setOnClickListener {
+            val mycall = prefs.getCallSsid()
+            val pos = storage.getStaPosition(mycall)
+            if (pos.count > 0 && pos.moveToFirst()) {
+                val latIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+                val lonIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LON)
+                if (latIdx >= 0 && lonIdx >= 0) {
+                    val lat = pos.getInt(latIdx) / 1000000.0
+                    val lon = pos.getInt(lonIdx) / 1000000.0
+                    map?.animateCamera(com.google.android.gms.maps.CameraUpdateFactory.newLatLng(com.google.android.gms.maps.model.LatLng(lat, lon)))
+                }
+            }
+            pos.close()
         }
     }
 

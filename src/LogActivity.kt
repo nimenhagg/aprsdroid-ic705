@@ -9,18 +9,15 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import android.widget.TextView
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import org.aprsdroid.app.adapter.LogRecyclerAdapter
 import org.aprsdroid.app.model.LogPostItem
+import org.aprsdroid.app.ui.screen.LogScreen
+import org.aprsdroid.app.ui.theme.AprsTheme
 import java.util.concurrent.Executors
 
-class LogActivity : MainRecyclerActivity("log", R.id.log) {
+class LogActivity : BaseRecyclerActivity() {
     companion object {
         const val TAG = "APRSdroid.Log"
     }
@@ -29,9 +26,8 @@ class LogActivity : MainRecyclerActivity("log", R.id.log) {
     private val executor = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var emptyView: TextView
-    private lateinit var adapter: LogRecyclerAdapter
+    private val itemsState = mutableStateOf<List<LogPostItem>>(emptyList())
+    private val isRunningState = mutableStateOf(false)
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -39,44 +35,80 @@ class LogActivity : MainRecyclerActivity("log", R.id.log) {
         }
     }
 
+    private val serviceStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            isRunningState.value = AprsService.running
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.main)
+        menu_id = R.id.log
 
-        Log.d(TAG, "starting " + getString(R.string.build_version))
-        onContentViewLoaded()
-
-        recyclerView = findViewById(R.id.recycler_view)
-        emptyView = findViewById(R.id.empty)
-        emptyView.setText(R.string.empty_logview)
-
-        adapter = LogRecyclerAdapter(
-            onItemClick = { item ->
-                if (item.type == StorageDatabase.Companion.Post.TYPE_POST || item.type == StorageDatabase.Companion.Post.TYPE_INCMG) {
-                    val call = item.message.split(">")[0]
-                    Log.d(TAG, "onItemClick: $call")
-                    openDetails(call)
-                }
+        setContent {
+            AprsTheme {
+                LogScreen(
+                    items = itemsState.value,
+                    isRunning = isRunningState.value,
+                    onBack = { finish() },
+                    onSendPosition = {
+                        startService(AprsService.intent(this, AprsService.SERVICE_ONCE))
+                        isRunningState.value = true
+                    },
+                    onToggleTracking = {
+                        val running = AprsService.running
+                        if (!running) {
+                            startService(AprsService.intent(this, AprsService.SERVICE))
+                            isRunningState.value = true
+                        } else {
+                            startService(AprsService.intent(this, AprsService.SERVICE_STOP))
+                            isRunningState.value = false
+                        }
+                    },
+                    onItemClick = { item ->
+                        if (item.type == StorageDatabase.Companion.Post.TYPE_POST || item.type == StorageDatabase.Companion.Post.TYPE_INCMG) {
+                            val call = item.message.split(">")[0]
+                            if (call.isNotBlank()) {
+                                openDetails(call)
+                            }
+                        }
+                    },
+                    onExportLogs = {
+                        onStartLoading()
+                        LogExporter(this, storage, null) {
+                            onStopLoading()
+                            loadData()
+                        }.execute()
+                    },
+                    onClearLogs = {
+                        onStartLoading()
+                        StorageCleaner(this, storage) {
+                            onStopLoading()
+                            loadData()
+                        }.execute()
+                    }
+                )
             }
-        )
+        }
 
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = adapter
-
-        onStartLoading()
         loadData()
     }
 
     @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
+        isRunningState.value = AprsService.running
         ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.SERVICE_STOPPED), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_OFF), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_ON), ContextCompat.RECEIVER_EXPORTED)
         loadData()
     }
 
     override fun onPause() {
         super.onPause()
         try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
+        try { unregisterReceiver(serviceStateReceiver) } catch (_: Exception) {}
     }
 
     override fun onDestroy() {
@@ -89,56 +121,9 @@ class LogActivity : MainRecyclerActivity("log", R.id.log) {
             val cursor = storage.getPosts("300")
             val items = LogPostItem.fromCursor(cursor)
             mainHandler.post {
-                adapter.submitList(items)
-                emptyView.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
-                onStopLoading()
+                isRunningState.value = AprsService.running
+                itemsState.value = items
             }
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.options_activities, menu)
-        menuInflater.inflate(R.menu.options_map, menu)
-        menuInflater.inflate(R.menu.options, menu)
-        menu.findItem(R.id.log)?.isVisible = false
-        menu.findItem(R.id.age)?.isVisible = false
-        menu.findItem(R.id.overlays)?.isVisible = false
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.preferences -> {
-                startActivity(Intent(this, PrefsAct::class.java))
-                true
-            }
-            R.id.hub -> {
-                startActivity(Intent(this, HubActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-                true
-            }
-            R.id.map -> {
-                MapModes.startMap(this, prefs, "")
-                true
-            }
-            R.id.conversations -> {
-                startActivity(Intent(this, ConversationsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-                true
-            }
-            R.id.export -> {
-                onStartLoading()
-                LogExporter(this, storage, null) { onStopLoading() }.execute()
-                true
-            }
-            R.id.clear -> {
-                onStartLoading()
-                StorageCleaner(this, storage) { onStopLoading() }.execute()
-                true
-            }
-            R.id.about -> {
-                AboutDialog(this).show()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
         }
     }
 }
