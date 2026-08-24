@@ -197,7 +197,7 @@ class MapAct : MapActivity(), LoadingIndicator {
     var showObjects: Boolean = false
 
     val mapview: MapView by lazy { findViewById(R.id.mapview) }
-    val allicons: Drawable by lazy { resources.getDrawable(R.drawable.allicons) }
+    val allicons: Drawable by lazy { requireNotNull(ContextCompat.getDrawable(this, R.drawable.allicons)) }
     val db: StorageDatabase by lazy { StorageDatabase.open(this) }
     val staoverlay: StationOverlay by lazy { StationOverlay(allicons, this, db) }
     val loading: View by lazy { findViewById(R.id.loading) }

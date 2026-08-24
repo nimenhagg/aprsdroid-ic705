@@ -18,7 +18,7 @@ interface Ic705RadioSession : Closeable {
 
     /**
      * Queues and transmits an [APRSPacket] via AX.25, AFSK1200 modulation,
-     * CI-V PTT ON, 48kHz audio streaming, and CI-V PTT OFF.
+     * CI-V PTT ON, 12 kHz audio streaming, and CI-V PTT OFF.
      * Returns true if the transmission was successfully initiated.
      */
     fun transmit(packet: APRSPacket): Boolean = false

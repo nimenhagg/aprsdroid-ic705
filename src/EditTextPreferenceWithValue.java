@@ -5,6 +5,8 @@ import android.text.InputFilter;
 import android.text.InputType;
 import android.util.AttributeSet;
 
+import java.util.Locale;
+
 import androidx.preference.EditTextPreference;
 
 public class EditTextPreferenceWithValue extends EditTextPreference {
@@ -33,7 +35,9 @@ public class EditTextPreferenceWithValue extends EditTextPreference {
 
 	public boolean isPassword() {
 		String key = getKey();
-		return key != null && (key.toLowerCase().contains("password") || key.toLowerCase().contains("passcode"));
+		if (key == null) return false;
+		String normalizedKey = key.toLowerCase(Locale.ROOT);
+		return normalizedKey.contains("password") || normalizedKey.contains("passcode");
 	}
 
 	private void init() {

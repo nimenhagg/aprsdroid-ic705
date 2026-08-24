@@ -25,6 +25,8 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
         const val PASSCODE_OPTIONAL = 1
         const val PASSCODE_REQUIRED = 2
 
+        private const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
+
         const val CAN_RECEIVE = 1
         const val CAN_XMIT = 2
         const val CAN_DUPLEX = 3
@@ -107,14 +109,17 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
         @JvmStatic
         fun defaultBackendInfo(prefs: PrefsWrapper): BackendInfo {
             val pi = defaultProtoInfo(prefs)
-            val link = if (pi.link != null) prefs.getString(pi.link, DEFAULT_LINK) else prefs.getProto()
-            return backend_collection[link] ?: backend_collection[DEFAULT_CONNTYPE]!!
+            return backend_collection[defaultBackendKey(prefs, pi)] ?: backend_collection[DEFAULT_CONNTYPE]!!
         }
 
         @JvmStatic
         fun defaultBackendPermissions(prefs: PrefsWrapper): Set<String> {
             val perms = mutableSetOf<String>()
             perms.addAll(defaultBackendInfo(prefs).permissions)
+            val backendKey = defaultBackendKey(prefs, defaultProtoInfo(prefs))
+            if (requiresLocalNetworkPermission(backendKey, Build.VERSION.SDK_INT)) {
+                perms.add(LOCAL_NETWORK_PERMISSION)
+            }
             if (prefs.getProto() == "kenwood" && prefs.getBoolean("kenwood.gps", false)) {
                 perms.add(Manifest.permission.ACCESS_FINE_LOCATION)
                 perms.add(Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -123,6 +128,19 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
                 perms.add(Manifest.permission.POST_NOTIFICATIONS)
             }
             return perms
+        }
+
+        private fun defaultBackendKey(prefs: PrefsWrapper, protoInfo: ProtoInfo): String {
+            return if (protoInfo.link != null) {
+                prefs.getString(protoInfo.link, DEFAULT_LINK)
+            } else {
+                prefs.getProto()
+            }
+        }
+
+        internal fun requiresLocalNetworkPermission(backendKey: String, sdkInt: Int): Boolean {
+            return sdkInt >= Build.VERSION_CODES.CINNAMON_BUN &&
+                (backendKey == "ic705" || backendKey == "tcpip")
         }
 
         @JvmStatic

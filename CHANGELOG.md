@@ -1,3 +1,13 @@
+## 🚀 [v1.6.0-ic705] - 2026-08-24
+
+### 📱 Android 17、现代构建链与双语文档
+* 将 `compileSdk` / `targetSdk` 提升至 API 37（Android 17），为 IC-705 Wi-Fi 与局域网 TNC 增加 `ACCESS_LOCAL_NETWORK` 声明及按需运行时授权；服务启动入口现在会统一校验连接、定位和通知权限。
+* 构建链升级至 Gradle 9.5.0、Android Gradle Plugin 9.3.2、内置 Kotlin 2.2.10 / Compose Compiler 2.2.10 与 Compose BOM 2026.08.00；Java 源码、字节码及 CI 继续使用官方基线 JDK 17。
+* 完成 AGP 9 迁移：拆分 Java/Kotlin 源集，显式启用资源值，改用优化版默认 ProGuard 配置，升级 Gradle Play Publisher 4.0 和 AndroidX 仪器测试组件，并清理面向 Gradle 10 的旧 Groovy DSL 写法。
+* 修复 Kotlin 2.2 暴露的 Activity Intent 空安全签名、权限回调结果越界风险、旧版 `PreferenceManager` 和冗余 Service 生命周期入口；新增 Android 17 局域网权限策略测试。
+* 将版本元数据更新为 `1.6.0-ic705`（`versionCode 2026082460`），全面重写 README 为中英双语使用与开发指南，并同步扩充 `AI_CONTEXT.md`。
+* IC-705 / APRS-IS 的现有传输协议保持不变；本版本未引入 TLS，明文服务器与电台局域网连接行为不变。
+
 ## 🚀 [v1.5.15-ic705] - 2026-08-24
 
 ### 🧹 代码质量与发布门禁

@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.Color
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Vibrator
@@ -72,7 +73,7 @@ class ServiceNotifier {
         val exitTitle = ctx.getString(R.string.notification_action_exit)
 
         val exitAction = Notification.Action.Builder(
-            R.drawable.ic_action_clear,
+            Icon.createWithResource(ctx, R.drawable.ic_action_clear),
             exitTitle,
             stopPendingIntent
         ).build()

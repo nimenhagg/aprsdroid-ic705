@@ -41,7 +41,7 @@ class Afsk1200LoopbackTest {
         assertEquals("WIDE1-1", ax25Packet.path[0])
         assertEquals("WIDE2-1", ax25Packet.path[1])
 
-        // 2. Modulate AX.25 Packet to 48 kHz PCM samples
+        // 2. Modulate AX.25 Packet to 12 kHz PCM samples
         val generator = Afsk1200PcmGenerator(sampleRateHz = 12_000, txDelayMs = 250, txTail = 2)
         val pcmSamples = generator.generateSamples(ax25Packet)
         assert(pcmSamples.isNotEmpty())

@@ -165,7 +165,7 @@ fun SymbolPickerScreen(
             }
 
             // Category Scrollable Chips
-            ScrollableTabRow(
+            PrimaryScrollableTabRow(
                 selectedTabIndex = selectedCategoryIndex,
                 edgePadding = 16.dp,
                 containerColor = Color.Transparent,

@@ -32,7 +32,7 @@ interface PermissionHelper {
     fun handleRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         val failedPerms = mutableSetOf<String>()
         for (i in permissions.indices) {
-            if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.getOrNull(i) != PackageManager.PERMISSION_GRANTED) {
                 failedPerms.add(permissions[i])
             }
         }

@@ -45,9 +45,9 @@ class LocationPrefs : AppCompatActivity(), PermissionHelper {
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        when (intent?.dataString) {
+        when (intent.dataString) {
             "gps2manual" -> {
                 checkPermissions(
                     arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
@@ -87,10 +87,11 @@ class LocationPrefs : AppCompatActivity(), PermissionHelper {
 
     override fun onAllPermissionsGranted(action: Int) {
         val ls = getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-        val bestProv = ls?.let { PeriodicGPS.bestProvider(it) }
-        val l = if (bestProv != null && ls != null) {
-            try { ls.getLastKnownLocation(bestProv) } catch (_: SecurityException) { null }
-        } else null
+        val l = ls?.let { locationManager ->
+            PeriodicGPS.bestProvider(locationManager)?.let { provider ->
+                try { locationManager.getLastKnownLocation(provider) } catch (_: SecurityException) { null }
+            }
+        }
 
         if (l != null) {
             prefs.prefs.edit()

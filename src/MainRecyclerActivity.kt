@@ -89,17 +89,20 @@ abstract class MainRecyclerActivity(
     override fun onClick(view: View) {
         when (view.id) {
             R.id.singlebtn -> {
-                startService(AprsService.intent(this, AprsService.SERVICE_ONCE))
-                setupButtons(true)
+                if (startAprsServiceWithPermissions(AprsService.SERVICE_ONCE)) {
+                    setupButtons(true)
+                }
             }
             R.id.startstopbtn -> {
                 val isRunning = AprsService.running
                 if (!isRunning) {
-                    startService(AprsService.intent(this, AprsService.SERVICE))
+                    if (startAprsServiceWithPermissions(AprsService.SERVICE)) {
+                        setupButtons(true)
+                    }
                 } else {
                     startService(AprsService.intent(this, AprsService.SERVICE_STOP))
+                    setupButtons(false)
                 }
-                setupButtons(!isRunning)
             }
         }
     }

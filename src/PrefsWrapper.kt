@@ -9,7 +9,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.media.AudioManager
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import java.util.Locale
@@ -73,12 +73,12 @@ class PrefsWrapper(@JvmField val context: Context) {
     }
 
     fun setBoolean(name: String, newVal: Boolean): Boolean {
-        prefs.edit().putBoolean(name, newVal).commit()
+        prefs.edit().putBoolean(name, newVal).apply()
         return newVal
     }
 
     fun set(name: String, newVal: String): String {
-        prefs.edit().putString(name, newVal).commit()
+        prefs.edit().putString(name, newVal).apply()
         return newVal
     }
 

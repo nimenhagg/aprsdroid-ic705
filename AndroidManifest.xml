@@ -12,6 +12,7 @@
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
@@ -35,6 +36,7 @@
 	    android:usesCleartextTraffic="true"
 	    android:requestLegacyExternalStorage="true"
 	    android:allowBackup="false"
+	    android:supportsRtl="false"
 	    android:theme="@style/DefaultTheme" >
 
 	<meta-data

@@ -52,14 +52,16 @@ class LogActivity : BaseRecyclerActivity() {
                     isRunning = isRunningState.value,
                     onBack = { finish() },
                     onSendPosition = {
-                        startService(AprsService.intent(this, AprsService.SERVICE_ONCE))
-                        isRunningState.value = true
+                        if (startAprsServiceWithPermissions(AprsService.SERVICE_ONCE)) {
+                            isRunningState.value = true
+                        }
                     },
                     onToggleTracking = {
                         val running = AprsService.running
                         if (!running) {
-                            startService(AprsService.intent(this, AprsService.SERVICE))
-                            isRunningState.value = true
+                            if (startAprsServiceWithPermissions(AprsService.SERVICE)) {
+                                isRunningState.value = true
+                            }
                         } else {
                             startService(AprsService.intent(this, AprsService.SERVICE_STOP))
                             isRunningState.value = false

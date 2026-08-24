@@ -747,7 +747,7 @@ class Ic705WifiBackendControllerTest {
 
     // ------------------------------------------------------------- helpers
 
-    /** Modulates an AX.25 frame into 48 kHz mono PCM16 signed shorts. */
+    /** Modulates an AX.25 frame into 12 kHz mono PCM16 signed shorts. */
     private fun modulate(packet: Packet, sampleRate: Int = 12_000): ShortArray {
         val modulator = Afsk1200Modulator(sampleRate)
         modulator.prepareToTransmit(packet)

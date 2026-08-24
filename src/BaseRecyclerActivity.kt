@@ -8,16 +8,45 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.google.android.material.appbar.MaterialToolbar
 
 abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, PermissionHelper {
 
+    companion object {
+        private const val APRS_SERVICE_PERMISSION = 1020
+        private const val STATE_PENDING_SERVICE_ACTION = "pending_service_action"
+    }
+
     var menu_id: Int = 0
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
     private val loadingIndicator: View? get() = findViewById(R.id.loading)
+    private var pendingServiceAction: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingServiceAction = savedInstanceState?.getString(STATE_PENDING_SERVICE_ACTION)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(STATE_PENDING_SERVICE_ACTION, pendingServiceAction)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        handleRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    fun startAprsServiceWithPermissions(action: String): Boolean {
+        pendingServiceAction = action
+        return checkPermissions(UIHelper.getRequiredPermissions(prefs), APRS_SERVICE_PERMISSION)
+    }
+
+    private fun startPendingAprsService() {
+        val action = pendingServiceAction ?: return
+        pendingServiceAction = null
+        ContextCompat.startForegroundService(this, AprsService.intent(this, action))
     }
 
     fun replaceAct(act: Class<*>) {
@@ -139,7 +168,21 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
     }
 
     // PermissionHelper defaults
-    override fun getActionName(action: Int): Int = R.string.preferences
-    override fun onAllPermissionsGranted(action: Int) {}
-    override fun onPermissionsFailedCancel(action: Int) {}
+    override fun getActionName(action: Int): Int = if (action == APRS_SERVICE_PERMISSION) {
+        R.string.startlog
+    } else {
+        R.string.preferences
+    }
+
+    override fun onAllPermissionsGranted(action: Int) {
+        if (action == APRS_SERVICE_PERMISSION) {
+            startPendingAprsService()
+        }
+    }
+
+    override fun onPermissionsFailedCancel(action: Int) {
+        if (action == APRS_SERVICE_PERMISSION) {
+            pendingServiceAction = null
+        }
+    }
 }

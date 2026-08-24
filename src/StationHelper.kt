@@ -26,7 +26,7 @@ abstract class StationHelper(val titleId: Int) : BaseRecyclerActivity() {
         return true
     }
 
-    override fun onOptionsItemSelected(mi: MenuItem): Boolean {
-        return callsignAction(mi.itemId, targetcall ?: "")
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return callsignAction(item.itemId, targetcall ?: "")
     }
 }

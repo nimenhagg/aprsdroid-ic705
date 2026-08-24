@@ -105,12 +105,6 @@ class AprsService : Service() {
     var poster: AprsBackend? = null
     var singleShot = false
 
-    override fun onStart(i: Intent?, startId: Int) {
-        Log.d(TAG, "onStart: $i, $startId")
-        super.onStart(i, startId)
-        if (i != null) handleStart(i)
-    }
-
     override fun onStartCommand(i: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand: $i, $flags, $startId")
         if (i != null) handleStart(i)
@@ -162,9 +156,7 @@ class AprsService : Service() {
             getString(R.string.service_start)
         }
 
-        if (toastString != null) {
-            showToast(String.format(toastString, prefs.getLocationSourceName(), prefs.getBackendName()))
-        }
+        showToast(String.format(toastString, prefs.getLocationSourceName(), prefs.getBackendName()))
 
         val callssid = prefs.getCallSsid()
         ServiceNotifier.instance.start(this, callssid)
