@@ -129,17 +129,31 @@ class StationOverlay(
         val botleft = proj.fromPixels(p.x - 24, p.y + 24)
         val topright = proj.fromPixels(p.x + 24, p.y - 24)
         val list = stations.filter { it.inArea(botleft, topright) }.map { it.call }
+        val mycall = context.prefs.getCallSsid()
+        var myLat = 0
+        var myLon = 0
+        val pos = db.getStaPosition(mycall)
+        if (pos.count > 0 && pos.moveToFirst()) {
+            val latIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+            val lonIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LON)
+            if (latIdx >= 0 && lonIdx >= 0) {
+                myLat = pos.getInt(latIdx)
+                myLon = pos.getInt(lonIdx)
+            }
+        }
+        pos.close()
+
         return when {
             list.isEmpty() -> false
             list.size == 1 -> {
-                UIHelper.openCallsignDetails(context, list[0])
+                org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(context, list[0], db, myLat, myLon)
                 true
             }
             else -> {
                 MaterialAlertDialogBuilder(context)
                     .setTitle(R.string.map_select)
                     .setItems(list.toTypedArray()) { _, item ->
-                        UIHelper.openCallsignDetails(context, list[item])
+                        org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(context, list[item], db, myLat, myLon)
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
@@ -251,7 +265,7 @@ class MapAct : MapActivity(), LoadingIndicator {
 
     private fun applyCurrentMapMode() {
         val mode = MapModes.defaultMapMode(this, prefs)
-        toolbar.title = mode.title ?: getString(R.string.map_amap)
+        toolbar.title = getString(R.string.app_map)
 
         when (mode.tileType) {
             MapTileType.AMAP -> {

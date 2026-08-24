@@ -200,15 +200,29 @@ class GoogleMapAct : MapLoaderBase(),
     override fun onMarkerClick(marker: Marker): Boolean {
         val call = marker.tag as? String ?: marker.title
         if (!call.isNullOrEmpty()) {
-            marker.showInfoWindow()
+            val mycall = prefs.getCallSsid()
+            var myLat = 0
+            var myLon = 0
+            val pos = storage.getStaPosition(mycall)
+            if (pos.count > 0 && pos.moveToFirst()) {
+                val latIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+                val lonIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LON)
+                if (latIdx >= 0 && lonIdx >= 0) {
+                    myLat = pos.getInt(latIdx)
+                    myLon = pos.getInt(lonIdx)
+                }
+            }
+            pos.close()
+            org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(this, call, storage, myLat, myLon)
+            return true
         }
-        return true
+        return false
     }
 
     override fun onInfoWindowClick(marker: Marker) {
         val call = marker.tag as? String ?: marker.title
         if (!call.isNullOrEmpty()) {
-            UIHelper.openCallsignDetails(this, call)
+            onMarkerClick(marker)
         }
     }
 

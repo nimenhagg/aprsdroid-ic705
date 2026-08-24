@@ -1,37 +1,39 @@
 package org.aprsdroid.app
 
+import android.app.Dialog
 import android.content.Context
-import android.text.method.LinkMovementMethod
-import android.view.LayoutInflater
-import android.view.View
-import android.widget.TextView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.net.Uri
+import android.view.ViewGroup
+import androidx.compose.ui.platform.ComposeView
+import org.aprsdroid.app.ui.component.AboutDialogContent
+import org.aprsdroid.app.ui.theme.AprsTheme
 
 class AboutDialog(private val context: Context) {
     fun show() {
-        val inflater = LayoutInflater.from(context)
-        val view = inflater.inflate(R.layout.aboutview, null, false)
+        val dialog = Dialog(context)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
-        val linkIds = intArrayOf(
-            R.id.about_copyright,
-            R.id.about_gpl,
-            R.id.about_thanks5,
-            R.id.about_thanks6,
-            R.id.about_credits
+        val composeView = ComposeView(context).apply {
+            setContent {
+                AprsTheme {
+                    AboutDialogContent(
+                        onDismiss = { dialog.dismiss() },
+                        onOpenGithub = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/nimenhagg/aprsdroid-ic705"))
+                            context.startActivity(intent)
+                        }
+                    )
+                }
+            }
+        }
+
+        dialog.setContentView(
+            composeView,
+            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         )
-        for (id in linkIds) {
-            view.findViewById<TextView>(id)?.movementMethod = LinkMovementMethod.getInstance()
-        }
-
-        val dialog = MaterialAlertDialogBuilder(context)
-            .setTitle(R.string.about)
-            .setView(view)
-            .create()
-
-        view.findViewById<View>(R.id.about_ok)?.setOnClickListener {
-            dialog.dismiss()
-        }
-
         dialog.show()
     }
 }
