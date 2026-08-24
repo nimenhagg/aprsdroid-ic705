@@ -25,6 +25,7 @@ class GoogleMapAct : MapLoaderBase(),
 
     val loading: View by lazy { findViewById(R.id.loading) }
     val mapview: MapView by lazy { findViewById(R.id.mapview) }
+    private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     var map: GoogleMap? = null
     val icons = mutableMapOf<String, BitmapDescriptor>()
     var visible_callsigns = true
