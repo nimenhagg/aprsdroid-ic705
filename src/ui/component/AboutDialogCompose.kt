@@ -87,7 +87,7 @@ fun AboutDialogContent(
                 // Official App Launcher Icon
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier.size(64.dp),
                     shadowElevation = 2.dp
                 ) {
@@ -95,9 +95,9 @@ fun AboutDialogContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(id = R.mipmap.ic_launcher),
+                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
                             contentDescription = "APRSdroid IC-705",
-                            modifier = Modifier.size(52.dp)
+                            modifier = Modifier.size(56.dp)
                         )
                     }
                 }
