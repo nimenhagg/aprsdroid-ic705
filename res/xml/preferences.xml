@@ -135,7 +135,6 @@
             android:icon="@drawable/ic_pref_maps"
             android:title="@string/p_map_custom_url"
             android:summary="@string/p_map_custom_url_summary"
-            android:defaultValue="https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&amp;size=1&amp;scale=1&amp;style=7&amp;x={x}&amp;y={y}&amp;z={z}"
             android:dialogTitle="@string/p_map_custom_url" />
 
         <de.duenndns.EditTextPreferenceWithValue
@@ -143,7 +142,6 @@
             android:icon="@drawable/ic_pref_maps"
             android:title="@string/p_map_custom_subdomains"
             android:summary="@string/p_map_custom_subdomains_summary"
-            android:defaultValue="1234"
             android:dialogTitle="@string/p_map_custom_subdomains" />
 
         <de.duenndns.PreferenceWithValue

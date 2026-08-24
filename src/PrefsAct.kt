@@ -167,12 +167,41 @@ class PrefsAct : AppCompatActivity() {
             return super.onPreferenceTreeClick(preference)
         }
 
+        private fun updateMapPreferenceVisibilities(mapMode: String?) {
+            val isCustom = (mapMode == "custom")
+            val isGoogle = (mapMode == "google" || mapMode == "satellite")
+
+            findPreference<Preference>("map_custom_url")?.isVisible = isCustom
+            findPreference<Preference>("map_custom_subdomains")?.isVisible = isCustom
+            findPreference<Preference>("google_maps_key")?.isVisible = isGoogle
+        }
+
         override fun onResume() {
             super.onResume()
             val act = activity as? PrefsAct ?: return
             findPreference<Preference>("p_connsetup")?.summary = act.prefs.getBackendName()
             findPreference<Preference>("p_location")?.summary = act.prefs.getLocationSourceName()
             findPreference<Preference>("p_symbol")?.summary = getString(R.string.p_symbol_summary) + ": " + act.prefs.getString("symbol", "/$")
+
+            val mapModePref = findPreference<androidx.preference.ListPreference>("mapmode")
+            val currentMapMode = mapModePref?.value ?: act.prefs.getString("mapmode", "amap")
+            updateMapPreferenceVisibilities(currentMapMode)
+
+            mapModePref?.setOnPreferenceChangeListener { _, newValue ->
+                updateMapPreferenceVisibilities(newValue as? String)
+                true
+            }
+
+            val customUrlPref = findPreference<androidx.preference.EditTextPreference>("map_custom_url")
+            if (customUrlPref?.text?.contains("autonavi.com") == true) {
+                customUrlPref.text = ""
+                act.prefs.set("map_custom_url", "")
+            }
+            val subdomainsPref = findPreference<androidx.preference.EditTextPreference>("map_custom_subdomains")
+            if (subdomainsPref?.text == "1234" && customUrlPref?.text.isNullOrEmpty()) {
+                subdomainsPref.text = ""
+                act.prefs.set("map_custom_subdomains", "")
+            }
 
             findPreference<Preference>("mapfile")?.setOnPreferenceClickListener {
                 val getFile = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*" }
