@@ -85,7 +85,7 @@ fun HubStationScreen(
     onOpenLogs: () -> Unit,
     onOpenMessages: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenAbout: () -> Unit
+    onOpenAbout: () -> Unit = {}
 ) {
     var showTopMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
