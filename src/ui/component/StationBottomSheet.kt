@@ -91,8 +91,7 @@ fun StationBottomSheetContent(
             ) {
                 SymbolBadge(
                     symbol = station.symbol,
-                    size = 56.dp,
-                    isMyOwn = false
+                    size = 56.dp
                 )
 
                 Spacer(modifier = Modifier.width(14.dp))
@@ -250,7 +249,7 @@ private fun getBearing(deg: Double): String {
 
 object StationBottomSheetHelper {
     fun show(context: Context, call: String, db: StorageDatabase, myLat: Int, myLon: Int) {
-        val cursor = db.getStation(call)
+        val cursor = db.getStations("CALL = ?", arrayOf(call), "1")
         if (cursor.count == 0 || !cursor.moveToFirst()) {
             cursor.close()
             UIHelper.openCallsignDetails(context, call)
