@@ -126,8 +126,9 @@ class StationOverlay(
     override fun onTap(gp: GeoPoint, mv: MapView): Boolean {
         val proj = mv.projection
         val p = proj.toPixels(gp, null)
-        val botleft = proj.fromPixels(p.x - 24, p.y + 24)
-        val topright = proj.fromPixels(p.x + 24, p.y - 24)
+        val radius = (36 * context.resources.displayMetrics.density).toInt()
+        val botleft = proj.fromPixels(p.x - radius, p.y + radius)
+        val topright = proj.fromPixels(p.x + radius, p.y - radius)
         val list = stations.filter { it.inArea(botleft, topright) }.map { it.call }
         val mycall = context.prefs.getCallSsid()
         var myLat = 0

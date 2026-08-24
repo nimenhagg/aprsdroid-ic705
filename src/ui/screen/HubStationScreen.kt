@@ -155,7 +155,6 @@ fun HubStationScreen(
                                 onClick = {
                                     showTopMenu = false
                                     showAboutDialog = true
-                                    onOpenAbout()
                                 }
                             )
                         }

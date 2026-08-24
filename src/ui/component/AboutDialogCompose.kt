@@ -150,7 +150,6 @@ fun AboutDialogContent(
                         FeatureItem("📻", "IC-705 Wi-Fi 原生直连", "内置 Wi-Fi UDP 音频/PTT/CI-V 双向通信协议栈")
                         FeatureItem("🎨", "Jetpack Compose M3", "全新声明式 UI 与 Material You 动态主题色彩")
                         FeatureItem("🗺️", "多源现代地图", "集成高德地图、OpenStreetMap 与 Google Maps 矢量源")
-                        FeatureItem("💬", "挂号信短消息机制", "端到端 ACK 确认与透明重传状态追踪")
                     }
                 }
 
