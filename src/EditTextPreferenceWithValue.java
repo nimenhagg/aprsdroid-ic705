@@ -31,12 +31,20 @@ public class EditTextPreferenceWithValue extends EditTextPreference {
 		init();
 	}
 
+	public boolean isPassword() {
+		String key = getKey();
+		return key != null && (key.toLowerCase().contains("password") || key.toLowerCase().contains("passcode"));
+	}
+
 	private void init() {
 		mInitialSummary = getSummary();
 		mInitialSummaryInitialized = true;
 
 		setOnBindEditTextListener(editText -> {
-			if ((editText.getInputType() & InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS) != 0) {
+			if (isPassword()) {
+				// Show plain visible text inside the input dialog for clear editing
+				editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+			} else if ((editText.getInputType() & InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS) != 0) {
 				InputFilter[] filters = editText.getFilters();
 				InputFilter[] newFilters = new InputFilter[filters.length + 1];
 				System.arraycopy(filters, 0, newFilters, 0, filters.length);
@@ -60,6 +68,13 @@ public class EditTextPreferenceWithValue extends EditTextPreference {
 			return mInitialSummary;
 		}
 		String display = text;
+		if (isPassword()) {
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < text.length(); i++) {
+				sb.append("•");
+			}
+			display = sb.toString();
+		}
 		if (mInitialSummary == null || mInitialSummary.length() == 0) {
 			return display;
 		}

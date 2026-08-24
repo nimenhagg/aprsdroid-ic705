@@ -7,6 +7,7 @@
 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="sb.fastspeed"
+                android:icon="@drawable/ic_pref_privacy_speed"
 		android:inputType="number"
 		android:defaultValue="100"
 		android:title="@string/p_sb_fast_speed"
@@ -14,6 +15,7 @@
                 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="sb.fastrate"
+                android:icon="@drawable/ic_pref_timer"
 		android:inputType="number"
 		android:defaultValue="60"
 		android:title="@string/p_sb_fast_rate"
@@ -21,6 +23,7 @@
                 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="sb.slowspeed"
+                android:icon="@drawable/ic_pref_privacy_speed"
 		android:inputType="number"
 		android:defaultValue="5"
 		android:title="@string/p_sb_slow_speed"
@@ -28,6 +31,7 @@
                 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="sb.slowrate"
+                android:icon="@drawable/ic_pref_timer"
 		android:inputType="number"
 		android:defaultValue="1200"
 		android:title="@string/p_sb_slow_rate"
@@ -39,6 +43,7 @@
 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="sb.turntime"
+                android:icon="@drawable/ic_pref_timer"
 		android:inputType="number"
 		android:defaultValue="15"
 		android:title="@string/p_cp_turn_time"
@@ -46,6 +51,7 @@
                 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="sb.turnmin"
+                android:icon="@drawable/ic_pref_location"
 		android:inputType="number"
 		android:defaultValue="10"
 		android:title="@string/p_cp_turn_angle"
@@ -53,6 +59,7 @@
                 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="sb.turnslope"
+                android:icon="@drawable/ic_pref_distance"
 		android:inputType="number"
 		android:defaultValue="240"
 		android:title="@string/p_cp_turn_slope"
@@ -60,6 +67,7 @@
                 
 	<Preference
 		android:key="sb.help"
+                android:icon="@drawable/ic_pref_callsign"
 		android:title="@string/p_sb_help"
 		android:summary="@string/sb_help_url" >
 		<intent android:action="android.intent.action.VIEW"

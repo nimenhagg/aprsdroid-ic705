@@ -7,18 +7,21 @@
 
         <CheckBoxPreference
                 android:key="bt.client"
+                android:icon="@drawable/ic_pref_bluetooth"
 		android:title="@string/p_bt_client"
 		android:defaultValue="true"
 		android:summary="@string/p_bt_client_summary" />
 
 	<de.duenndns.BluetoothDevicePreference
 		android:key="bt.mac"
+                android:icon="@drawable/ic_pref_bluetooth"
 		android:dependency="bt.client"
 		android:title="@string/p_bt_tnc_device"
 		android:summary="@string/p_bt_tnc_device_summary"
 		android:dialogTitle="@string/p_bt_tnc_device_entry" />
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="bt.channel"
+                android:icon="@drawable/ic_pref_port"
 		android:dependency="bt.client"
 		android:inputType="number"
 		android:title="@string/p_bt_channel"
@@ -26,6 +29,7 @@
 		android:dialogTitle="@string/p_bt_channel_entry" />
 
 	<Preference
+                android:icon="@drawable/ic_pref_network"
 		android:title="@string/p_bt_prefs"
 		android:summary="@string/p_bt_prefs_summary" >
 		<intent android:action="android.intent.action.MAIN"
@@ -35,4 +39,3 @@
 
     </PreferenceCategory>
 </PreferenceScreen>
-

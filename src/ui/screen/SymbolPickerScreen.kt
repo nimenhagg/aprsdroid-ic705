@@ -71,8 +71,8 @@ fun SymbolPickerScreen(
             SymbolCategory("🚶 个人", listOf("/[", "/b", "/'", "\\p", "\\b", "\\s")),
             SymbolCategory("⛅ 气象", listOf("/_", "\\_", "/W", "/w")),
             SymbolCategory("✈️ 航行", listOf("/^", "/X", "/s", "/Y", "\\^", "\\s")),
-            SymbolCategory("全量 (Primary)", (33..126).map { "/${it.toChar()}" }),
-            SymbolCategory("全量 (Alternate)", (33..126).map { "\\${it.toChar()}" })
+            SymbolCategory("主符号表 (Primary)", (33..126).map { "/${it.toChar()}" }),
+            SymbolCategory("次符号表 (Alternate)", (33..126).map { "\\${it.toChar()}" })
         )
     }
 

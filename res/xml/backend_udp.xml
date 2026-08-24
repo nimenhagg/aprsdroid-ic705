@@ -7,6 +7,7 @@
 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="udp.server"
+                android:icon="@drawable/ic_pref_server"
 		android:defaultValue="@string/aprs_server"
 		android:hint="@string/p_host_hint"
 		android:inputType="textUri"
@@ -17,4 +18,3 @@
     </PreferenceCategory>
 
 </PreferenceScreen>
-

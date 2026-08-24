@@ -7,6 +7,7 @@
 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="interval"
+                android:icon="@drawable/ic_pref_timer"
 		android:inputType="number"
 		android:defaultValue="10"
 		android:title="@string/p_interval"
@@ -15,6 +16,7 @@
                 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="distance"
+                android:icon="@drawable/ic_pref_distance"
 		android:inputType="number"
 		android:defaultValue="10"
 		android:title="@string/p_distance"
@@ -23,6 +25,7 @@
 
         <de.duenndns.ListPreferenceWithValue
                 android:key="gps_activation"
+                android:icon="@drawable/ic_pref_status"
 		android:title="@string/p_gps"
 		android:summary="@string/p_gps_summary"
                 android:entries="@array/p_gps_e"
@@ -32,9 +35,9 @@
 
         <CheckBoxPreference
                 android:key="netloc"
+                android:icon="@drawable/ic_pref_network"
 		android:title="@string/p_netloc"
 		android:summary="@string/p_netloc_summary" />
 
     </PreferenceCategory>
 </PreferenceScreen>
-

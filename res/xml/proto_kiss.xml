@@ -7,13 +7,16 @@
 
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="kiss.init"
+                android:icon="@drawable/ic_pref_status"
 		android:defaultValue=""
 		android:singleLine="false"
 		android:title="@string/p_tnc_init"
 		android:summary="@string/p_tnc_init_summary"
 		android:dialogTitle="@string/p_tnc_init" />
+
         <de.duenndns.EditTextPreferenceWithValue
                 android:key="kiss.delay"
+                android:icon="@drawable/ic_pref_timer"
 		android:inputType="number"
 		android:hint="300"
 		android:defaultValue="300"
@@ -23,6 +26,7 @@
 
         <de.duenndns.ListPreferenceWithValue
                 android:key="link"
+                android:icon="@drawable/ic_pref_bluetooth"
 		android:title="@string/p_link"
                 android:entries="@array/p_link_e"
                 android:entryValues="@array/p_link_ev"
@@ -31,4 +35,3 @@
 
     </PreferenceCategory>
 </PreferenceScreen>
-

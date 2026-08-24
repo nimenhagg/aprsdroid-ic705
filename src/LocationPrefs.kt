@@ -114,6 +114,7 @@ class LocationPrefs : AppCompatActivity(), PermissionHelper {
             if (prefRes != 0) {
                 addPreferencesFromResource(prefRes)
             }
+            addPreferencesFromResource(R.xml.preferences_privacy)
         }
 
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {

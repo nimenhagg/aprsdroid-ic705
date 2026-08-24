@@ -6,10 +6,10 @@
 
         <de.duenndns.ListPreferenceWithValue
                 android:key="link"
+                android:icon="@drawable/ic_pref_bluetooth"
 		android:title="@string/p_link"
                 android:entries="@array/p_link_e"
                 android:entryValues="@array/p_link_ev"
 		android:defaultValue="bluetooth"
 		android:dialogTitle="@string/p_link_entry" />
 </PreferenceScreen>
-

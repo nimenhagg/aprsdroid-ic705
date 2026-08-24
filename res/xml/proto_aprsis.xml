@@ -12,8 +12,9 @@
 		android:title="@string/p_passcode"
 		android:summary="@string/p_passcode_summary"
 		android:dialogTitle="@string/p_passcode_entry" />
+
 	<Preference
-                android:icon="@drawable/ic_action_info"
+                android:icon="@drawable/ic_pref_callsign"
 		android:title="@string/p_passreq"
 		android:summary="@string/p_passreq_summary" >
 		<intent android:action="android.intent.action.VIEW"

@@ -82,18 +82,6 @@ class BackendPrefs : AppCompatActivity(), PermissionHelper {
                 startActivity(intent)
                 true
             }
-            findPreference<Preference>("ic705.reset_defaults")?.setOnPreferenceClickListener {
-                val sp = preferenceScreen?.sharedPreferences
-                sp?.edit()
-                    ?.putString("ic705.address", "")
-                    ?.putString("ic705.control_port", "50001")
-                    ?.putString("ic705.username", "")
-                    ?.putString("ic705.password", "")
-                    ?.apply()
-                android.widget.Toast.makeText(requireContext(), R.string.ic705_reset_defaults_done, android.widget.Toast.LENGTH_SHORT).show()
-                loadXml()
-                true
-            }
         }
 
         private fun hookPasscode() {

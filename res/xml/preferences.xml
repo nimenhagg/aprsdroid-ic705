@@ -23,16 +23,12 @@
             android:defaultValue="5"
             android:dialogTitle="@string/p_ssid_entry" />
 
-        <de.duenndns.EditTextPreferenceWithValue
+        <org.aprsdroid.app.ui.component.DigiPathPreference
             android:key="digi_path"
             android:icon="@drawable/ic_pref_path"
-            android:hint="hop1,hop2,.."
             android:defaultValue="WIDE1-1"
-            android:inputType="textCapCharacters"
-            android:digits="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ,-"
             android:title="@string/p_aprs_path"
-            android:summary="@string/p_aprs_path_summary"
-            android:dialogTitle="@string/p_aprs_path_entry" />
+            android:summary="@string/p_aprs_path_summary" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/p__connection">
@@ -86,19 +82,6 @@
                 android:action="android.intent.action.MAIN"
                 android:targetPackage="me.nimenhagg.aprsdroidic705mod"
                 android:targetClass="org.aprsdroid.app.LocationPrefs" />
-        </Preference>
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="@string/p_privacy">
-        <Preference
-            android:key="p_privacy"
-            android:icon="@drawable/ic_pref_privacy"
-            android:title="@string/p_privacy"
-            android:summary="@string/p_privacy_summary">
-            <intent
-                android:action="android.intent.action.MAIN"
-                android:targetPackage="me.nimenhagg.aprsdroidic705mod"
-                android:targetClass="org.aprsdroid.app.PrivacyPrefs" />
         </Preference>
     </PreferenceCategory>
 

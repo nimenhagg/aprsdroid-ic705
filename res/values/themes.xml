@@ -18,6 +18,7 @@
         <item name="android:alertDialogTheme">@style/Material3AlertDialogTheme</item>
         <item name="dialogTheme">@style/Material3DialogTheme</item>
         <item name="alertDialogTheme">@style/Material3AlertDialogTheme</item>
+        <item name="materialAlertDialogTheme">@style/Material3AlertDialogTheme</item>
         <item name="actionOverflowMenuStyle">@style/Material3PopupMenu</item>
         <item name="popupMenuStyle">@style/Material3PopupMenu</item>
         <item name="android:popupMenuStyle">@style/Material3PopupMenu</item>
@@ -59,7 +60,7 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="Material3AlertDialogTheme" parent="Theme.Material3.DayNight.Dialog.Alert">
+    <style name="Material3AlertDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
         <item name="windowActionBar">false</item>

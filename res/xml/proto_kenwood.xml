@@ -6,6 +6,7 @@
 	    android:title="@string/p_conn_kwd">
 
 	<Preference
+                android:icon="@drawable/ic_pref_callsign"
 		android:title="@string/p_conn_kwd_info" >
 		<intent android:action="android.intent.action.VIEW"
 			android:data="@string/kwd_help_url" />
@@ -13,22 +14,22 @@
 
         <CheckBoxPreference
                 android:key="kenwood.gps"
+                android:icon="@drawable/ic_pref_location"
 		android:title="@string/p_conn_kwd_gps"
 		android:summary="@string/p_conn_kwd_gps_summary"
-		android:defaultValue="false"
-		/>
+		android:defaultValue="false" />
 
         <CheckBoxPreference
                 android:key="kenwood.gps_debug"
+                android:icon="@drawable/ic_pref_log"
 		android:title="@string/p_conn_kwd_gps_debug"
 		android:summary="@string/p_conn_kwd_gps_debug_summary"
 		android:dependency="kenwood.gps"
-		android:defaultValue="false"
-		/>
-
+		android:defaultValue="false" />
 
         <de.duenndns.ListPreferenceWithValue
                 android:key="link"
+                android:icon="@drawable/ic_pref_bluetooth"
 		android:title="@string/p_link"
                 android:entries="@array/p_link_e"
                 android:entryValues="@array/p_link_ev"
@@ -36,4 +37,3 @@
 		android:dialogTitle="@string/p_link_entry" />
     </PreferenceCategory>
 </PreferenceScreen>
-

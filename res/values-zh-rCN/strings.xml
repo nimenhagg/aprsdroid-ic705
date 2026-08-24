@@ -82,8 +82,8 @@
 <!-- first run dialog -->
 <string name="fr_title">欢迎使用 APRSdroid！</string>
 <string name="fr_text">此软件只可被持有无线电执照的无线电业余爱好者使用！</string>
-<string name="fr_text2">你需要在软件中输入呼号以及APRS-IS呼号验证码才能转发您的数据包。</string>
-<string name="fr_text3">只有通過互聯網的 APRS 才需要：</string>
+<string name="fr_text2">您需要在软件中输入呼号以及 APRS-IS 呼号验证码才能转发您的数据包。</string>
+<string name="fr_text3">只有通过互联网 APRS-IS 传输才需要：</string>
 
 <!-- about dialog -->
 <string name="ad_title">关于 APRSdroid v%s</string>
@@ -149,10 +149,10 @@
 <string name="p_callsign_summary">您的业余无线电呼号</string>
 <string name="p_callsign_entry">输入您的呼号</string>
 <string name="p_passcode">APRS-IS 验证码</string>
-<string name="p_passcode_summary">ARPS-IS 检验验证码</string>
+<string name="p_passcode_summary">APRS-IS 呼号校验码 (Passcode)</string>
 <string name="p_passcode_entry">请输入您的呼号验证码</string>
-<string name="p_passreq">申请验证码</string>
-<string name="p_passreq_summary">在线申请验证码</string>
+<string name="p_passreq">申请 APRS-IS 验证码</string>
+<string name="p_passreq_summary">在浏览器中在线申请验证码</string>
 <string name="p__aprs">APRS 设置</string>
 <string name="p_ssid">SSID</string>
 <string name="p_ssid_summary">基站类型 (1..15; 9=移动台, 10=APRS-IS)</string>
