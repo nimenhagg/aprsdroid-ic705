@@ -62,11 +62,7 @@ class BackendPrefs : AppCompatActivity(), PermissionHelper {
             val protoXml = AprsBackend.prefxml_proto(prefs)
             if (protoXml != 0) {
                 addPreferencesFromResource(protoXml)
-                findPreference<Preference>("ic705_diagnostic_launch")?.setOnPreferenceClickListener {
-                    val intent = android.content.Intent(requireContext(), org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity::class.java)
-                    startActivity(intent)
-                    true
-                }
+                hookIc705()
             }
             val additionalXml = AprsBackend.prefxml_backend(prefs)
             if (additionalXml != 0) {
@@ -77,6 +73,26 @@ class BackendPrefs : AppCompatActivity(), PermissionHelper {
             val perms = AprsBackend.defaultBackendPermissions(prefs)
             if (perms.isNotEmpty()) {
                 (activity as? BackendPrefs)?.checkPermissions(perms.toTypedArray(), BACKEND_PERMISSION)
+            }
+        }
+
+        private fun hookIc705() {
+            findPreference<Preference>("ic705_diagnostic_launch")?.setOnPreferenceClickListener {
+                val intent = android.content.Intent(requireContext(), org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity::class.java)
+                startActivity(intent)
+                true
+            }
+            findPreference<Preference>("ic705.reset_defaults")?.setOnPreferenceClickListener {
+                val sp = preferenceScreen?.sharedPreferences
+                sp?.edit()
+                    ?.putString("ic705.address", "")
+                    ?.putString("ic705.control_port", "50001")
+                    ?.putString("ic705.username", "")
+                    ?.putString("ic705.password", "")
+                    ?.apply()
+                android.widget.Toast.makeText(requireContext(), R.string.ic705_reset_defaults_done, android.widget.Toast.LENGTH_SHORT).show()
+                loadXml()
+                true
             }
         }
 

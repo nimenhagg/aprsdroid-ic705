@@ -148,7 +148,7 @@ class PrefsWrapper(@JvmField val context: Context) {
     }
 
     fun getProto(): String = getString("proto", "aprsis")
-    fun getAfskHQ(): Boolean = getBoolean("afsk.hqdemod", true)
-    fun getAfskBluetooth(): Boolean = getBoolean("afsk.btsco", false) && getAfskHQ()
+    fun getAfskHQ(): Boolean = true
+    fun getAfskBluetooth(): Boolean = getBoolean("afsk.btsco", false)
     fun getAfskOutput(): Int = if (getAfskBluetooth()) AudioManager.STREAM_VOICE_CALL else getStringInt("afsk.output", 0)
 }

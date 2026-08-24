@@ -62,7 +62,10 @@
 <string name="messages_cleared">Messages cleared</string>
 <string name="message_deleted">Message deleted</string>
 <string name="text_copied">Copied to clipboard</string>
-<string name="ic705_rx_diagnostic_summary">Test IC-705 Wi-Fi handshake, audio stream, and AX.25 decoding</string>
+<string name="ic705_rx_diagnostic_summary">Inspect dual-channel connection, control logs and audio stats</string>
+<string name="ic705_reset_defaults_title">Reset IC-705 Settings</string>
+<string name="ic705_reset_defaults_summary">Restore IP, port, username, and password to defaults</string>
+<string name="ic705_reset_defaults_done">IC-705 settings reset to defaults</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid Service</string>

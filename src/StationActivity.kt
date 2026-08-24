@@ -6,30 +6,37 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.view.Menu
-import android.view.View
+import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import org.aprsdroid.app.adapter.LogRecyclerAdapter
-import org.aprsdroid.app.adapter.StationRecyclerAdapter
 import org.aprsdroid.app.model.LogPostItem
 import org.aprsdroid.app.model.StationItem
+import org.aprsdroid.app.ui.screen.StationDetailScreen
+import org.aprsdroid.app.ui.theme.AprsTheme
 import java.util.concurrent.Executors
 
-class StationActivity : StationHelper(R.string.app_sta), View.OnClickListener {
+class StationActivity : AppCompatActivity() {
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
+    private val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
     private val mycall: String by lazy { prefs.getCallSsid() }
     private val executor = Executors.newSingleThreadExecutor()
-    private val mainHandler = Handler(Looper.getMainLooper())
 
-    private lateinit var ssidRecyclerView: RecyclerView
-    private lateinit var postRecyclerView: RecyclerView
-    private lateinit var ssidAdapter: StationRecyclerAdapter
-    private lateinit var postAdapter: LogRecyclerAdapter
+    private val targetcall: String? by lazy {
+        intent.dataString?.removePrefix("call:")?.removePrefix("sms:")?.takeIf { it.isNotEmpty() }
+            ?: intent.getStringExtra("call")
+            ?: intent.getStringExtra("targetcall")
+    }
+
+    private var currentStationItem by mutableStateOf<StationItem?>(null)
+    private var currentSsidList by mutableStateOf<List<StationItem>>(emptyList())
+    private var currentPostList by mutableStateOf<List<LogPostItem>>(emptyList())
+    private var myLatState by mutableIntStateOf(0)
+    private var myLonState by mutableIntStateOf(0)
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -40,39 +47,45 @@ class StationActivity : StationHelper(R.string.app_sta), View.OnClickListener {
     @SuppressLint("WrongConstant")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.stationactivity)
-        initToolbar(hasBackButton = true, titleRes = R.string.app_sta)
 
-        ssidRecyclerView = findViewById(R.id.ssid_recycler_view)
-        postRecyclerView = findViewById(R.id.post_recycler_view)
-
-        ssidAdapter = StationRecyclerAdapter(
-            context = this,
-            mycall = mycall,
-            targetcall = targetcall ?: "",
-            onItemClick = { item ->
-                if (targetcall == item.call) {
-                    callsignAction(R.id.map, item.call)
-                } else {
-                    UIHelper.openCallsignDetails(this, item.call)
-                    finish()
-                }
+        setContent {
+            AprsTheme {
+                StationDetailScreen(
+                    targetCall = targetcall ?: "未知台站",
+                    stationItem = currentStationItem,
+                    ssidList = currentSsidList,
+                    postList = currentPostList,
+                    myLat = myLatState,
+                    myLon = myLonState,
+                    onBack = { finish() },
+                    onSendMessage = { call ->
+                        UIHelper.openMessageChat(this, call)
+                    },
+                    onOpenMap = { call ->
+                        val intent = Intent(this, MapAct::class.java).apply {
+                            putExtra("call", call)
+                        }
+                        startActivity(intent)
+                    },
+                    onOpenQrz = { call ->
+                        val baseCall = call.split("-")[0]
+                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.qrz.com/db/$baseCall"))
+                        startActivity(intent)
+                    },
+                    onOpenAprsFi = { call ->
+                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://aprs.fi/info/a/$call"))
+                        startActivity(intent)
+                    },
+                    onSelectSsid = { call ->
+                        if (!call.equals(targetcall, ignoreCase = true)) {
+                            UIHelper.openCallsignDetails(this, call)
+                            finish()
+                        }
+                    }
+                )
             }
-        )
-
-        postAdapter = LogRecyclerAdapter(onItemClick = {})
-
-        ssidRecyclerView.layoutManager = LinearLayoutManager(this)
-        ssidRecyclerView.adapter = ssidAdapter
-
-        postRecyclerView.layoutManager = LinearLayoutManager(this)
-        postRecyclerView.adapter = postAdapter
-
-        intArrayOf(R.id.map, R.id.qrzcom, R.id.aprsfi).forEach { id ->
-            findViewById<View>(id)?.setOnClickListener(this)
         }
 
-        onStartLoading()
         loadData()
     }
 
@@ -93,7 +106,7 @@ class StationActivity : StationHelper(R.string.app_sta), View.OnClickListener {
         executor.shutdownNow()
     }
 
-    fun loadData() {
+    private fun loadData() {
         val target = targetcall ?: return
         executor.submit {
             var myLat = 0
@@ -114,23 +127,16 @@ class StationActivity : StationHelper(R.string.app_sta), View.OnClickListener {
             val postCursor = storage.getStaPosts(target, "300")
             val postItems = LogPostItem.fromCursor(postCursor)
 
-            mainHandler.post {
-                ssidAdapter.myLat = myLat
-                ssidAdapter.myLon = myLon
-                ssidAdapter.submitList(ssidItems)
-                postAdapter.submitList(postItems)
-                onStopLoading()
+            val targetItem = ssidItems.find { it.call.equals(target, ignoreCase = true) }
+                ?: ssidItems.firstOrNull()
+
+            runOnUiThread {
+                myLatState = myLat
+                myLonState = myLon
+                currentStationItem = targetItem
+                currentSsidList = ssidItems
+                currentPostList = postItems
             }
         }
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        menu.findItem(R.id.details)?.isVisible = false
-        menu.findItem(R.id.messagesclear)?.isVisible = false
-        return true
-    }
-
-    override fun onClick(view: View) {
-        targetcall?.let { callsignAction(view.id, it) }
     }
 }

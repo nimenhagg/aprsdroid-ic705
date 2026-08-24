@@ -34,5 +34,10 @@
                 android:targetPackage="me.nimenhagg.aprsdroidic705mod"
                 android:targetClass="org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity" />
         </Preference>
+        <Preference
+            android:key="ic705.reset_defaults"
+            android:icon="@drawable/ic_action_clear"
+            android:title="@string/ic705_reset_defaults_title"
+            android:summary="@string/ic705_reset_defaults_summary" />
     </PreferenceCategory>
 </PreferenceScreen>

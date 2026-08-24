@@ -60,7 +60,10 @@
 <string name="messages_cleared">消息已清除</string>
 <string name="message_deleted">消息已删除</string>
 <string name="text_copied">已复制到剪贴板</string>
-<string name="ic705_rx_diagnostic_summary">测试 IC-705 Wi-Fi 握手、PCM 音频流接收及 AX.25 解码</string>
+<string name="ic705_rx_diagnostic_summary">查看实时双通道状态、控制报文日志及音频统计</string>
+<string name="ic705_reset_defaults_title">恢复 IC-705 默认配置</string>
+<string name="ic705_reset_defaults_summary">将 IP、端口、用户名和密码还原为初始值</string>
+<string name="ic705_reset_defaults_done">已恢复 IC-705 默认配置</string>
 
 <!-- AprsService -->
 <string name="aprsservice">APRSdroid 服务</string>

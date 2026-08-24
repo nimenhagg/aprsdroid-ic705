@@ -87,7 +87,9 @@
                 android:targetPackage="me.nimenhagg.aprsdroidic705mod"
                 android:targetClass="org.aprsdroid.app.LocationPrefs" />
         </Preference>
+    </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/p_privacy">
         <Preference
             android:key="p_privacy"
             android:icon="@drawable/ic_pref_privacy"
@@ -100,13 +102,7 @@
         </Preference>
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/p__display">
-        <CheckBoxPreference
-            android:key="keepscreen"
-            android:icon="@drawable/ic_pref_screen"
-            android:title="@string/p_keepscreen"
-            android:summary="@string/p_keepscreen_summary" />
-
+    <PreferenceCategory android:title="@string/p__notification">
         <Preference
             android:key="p_notification"
             android:icon="@drawable/ic_pref_notification"
@@ -117,6 +113,14 @@
                 android:targetPackage="me.nimenhagg.aprsdroidic705mod"
                 android:targetClass="org.aprsdroid.app.NotificationPrefs" />
         </Preference>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/p__display">
+        <CheckBoxPreference
+            android:key="keepscreen"
+            android:icon="@drawable/ic_pref_screen"
+            android:title="@string/p_keepscreen"
+            android:summary="@string/p_keepscreen_summary" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/p__map">
