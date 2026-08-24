@@ -17,7 +17,7 @@ import org.aprsdroid.app.ui.screen.HubStationScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import java.util.concurrent.Executors
 
-class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
+class HubActivity : BaseRecyclerActivity() {
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     private val executor = Executors.newSingleThreadExecutor()
@@ -34,8 +34,15 @@ class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
         }
     }
 
+    private val serviceStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            isRunningState.value = AprsService.running
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        menu_id = R.id.hub
 
         setContent {
             AprsTheme {
@@ -81,12 +88,16 @@ class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
         super.onResume()
         isRunningState.value = AprsService.running
         ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.SERVICE_STOPPED), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_OFF), ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_ON), ContextCompat.RECEIVER_EXPORTED)
         loadData()
     }
 
     override fun onPause() {
         super.onPause()
         try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
+        try { unregisterReceiver(serviceStateReceiver) } catch (_: Exception) {}
     }
 
     override fun onDestroy() {
