@@ -63,7 +63,7 @@ class AfskDemodulator(
                 }
 
                 demod.addSamples(bufferF, count)
-                au.notifyMicLevel(demod.peak().toInt())
+                au.notifyMicLevel(demod.peak())
             }
         } catch (e: Exception) {
             Log.e(TAG, "run(): $e")

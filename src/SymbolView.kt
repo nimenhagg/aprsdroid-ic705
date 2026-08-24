@@ -85,8 +85,8 @@ class SymbolView @JvmOverloads constructor(
             bgPaint.color = MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurfaceContainerHigh)
             strokePaint.color = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOutlineVariant)
         } catch (_: Throwable) {
-            bgPaint.color = 0x22888888.toInt()
-            strokePaint.color = 0x33888888.toInt()
+            bgPaint.color = 0x22888888
+            strokePaint.color = 0x33888888
         }
 
         // Draw modern squircle badge background & border

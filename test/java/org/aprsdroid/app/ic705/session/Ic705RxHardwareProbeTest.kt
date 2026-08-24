@@ -63,7 +63,7 @@ class Ic705RxHardwareProbeTest {
         val closed = CountDownLatch(1)
         val socketSequence = AtomicInteger()
         val packetSignatures = ConcurrentHashMap<String, AtomicInteger>()
-        val discoveredControlId = AtomicReference<Int?>(null)
+        val discoveredControlId = AtomicInteger(UNSET_CONTROL_ID)
         val loginLocalId = AtomicReference<Int?>(null)
         val loginTokenRequest = AtomicReference<Int?>(null)
         val loginToken = AtomicReference<Int?>(null)
@@ -122,7 +122,7 @@ class Ic705RxHardwareProbeTest {
                 null
             }
             if (direction == "RX" && socketNumber == 1 && data.size == 16 && commonType == 4) {
-                discoveredControlId.compareAndSet(null, senderId)
+                senderId?.let { discoveredControlId.compareAndSet(UNSET_CONTROL_ID, it) }
             }
             if (direction == "RX" && socketNumber == 1 && data.size == 0x60) {
                 loginLocalId.set(receiverId)
@@ -152,7 +152,9 @@ class Ic705RxHardwareProbeTest {
                         "nameMatchesCapability=${capabilityName.get()?.contentEquals(data.copyOfRange(0x40, 0x60))}",
                 )
             }
-            val senderMatchesDiscovery = discoveredControlId.get()?.let { it == senderId }
+            val senderMatchesDiscovery = discoveredControlId.get()
+                .takeUnless { it == UNSET_CONTROL_ID }
+                ?.let { it == senderId }
             val tokenRequestMatchesLogin = loginTokenRequest.get()?.let { it == tokenRequest }
             val tokenMatchesLogin = loginToken.get()?.let { it == token }
             val signature = listOf(
@@ -189,7 +191,7 @@ class Ic705RxHardwareProbeTest {
                 println(
                     "IC705_HW connectionParameters " +
                         "senderMatchesLoginLocal=${loginLocalId.get()?.let { it == senderId }} " +
-                        "receiverMatchesDiscovery=${discoveredControlId.get()?.let { it == receiverId }} " +
+                        "receiverMatchesDiscovery=${discoveredControlId.get().takeUnless { it == UNSET_CONTROL_ID }?.let { it == receiverId }} " +
                         "identityMatchesAnnouncement=${announcementIdentity.get()?.contentEquals(data.copyOfRange(0x20, 0x40))} " +
                         "identityPrefixMatchesCapability=${capabilityIdentity.get()?.contentEquals(data.copyOfRange(0x20, 0x30))} " +
                         "identityTailZero=${data.copyOfRange(0x30, 0x40).all { it == 0.toByte() }} " +
@@ -354,6 +356,7 @@ class Ic705RxHardwareProbeTest {
         const val SECONDS_ENV = "IC705_SECONDS"
         const val WIRE_TRACE_ENV = "IC705_WIRE_TRACE"
         const val CONTROL_PORT = 50_001
+        const val UNSET_CONTROL_ID = 0
         const val DEFAULT_SECONDS = 20L
         const val MIN_SECONDS = 1L
         const val MAX_SECONDS = 300L

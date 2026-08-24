@@ -94,7 +94,7 @@ class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(p
                 val port = hostPortPair.second
                 service.postAddPost(StorageDatabase.Companion.Post.TYPE_INFO, R.string.post_info, service.getString(R.string.post_connecting, host, port))
 
-                val s = sc.socketFactory.createSocket(host as String, port) as SSLSocket
+                val s = sc.socketFactory.createSocket(host, port) as SSLSocket
                 s.enabledCipherSuites = sc.socketFactory.defaultCipherSuites
                 s
             } catch (_: java.io.FileNotFoundException) {
@@ -129,7 +129,7 @@ class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(p
                         }
                         passcode_warned = true
                     }
-                    socket = Socket(host as String, port)
+                    socket = Socket(host, port)
                 }
                 socket?.let { s ->
                     s.keepAlive = true
