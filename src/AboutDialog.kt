@@ -1,20 +1,38 @@
 package org.aprsdroid.app
 
-import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.view.ViewGroup
+import androidx.activity.ComponentDialog
 import androidx.compose.ui.platform.ComposeView
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.ViewTreeLifecycleOwner
+import androidx.lifecycle.ViewTreeViewModelStoreOwner
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.ViewTreeSavedStateRegistryOwner
 import org.aprsdroid.app.ui.component.AboutDialogContent
 import org.aprsdroid.app.ui.theme.AprsTheme
 
 class AboutDialog(private val context: Context) {
     fun show() {
-        val dialog = Dialog(context)
+        val dialog = ComponentDialog(context)
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        (context as? LifecycleOwner)?.let {
+            dialog.window?.decorView?.let { decor ->
+                ViewTreeLifecycleOwner.set(decor, it)
+                (context as? ViewModelStoreOwner)?.let { vmOwner ->
+                    ViewTreeViewModelStoreOwner.set(decor, vmOwner)
+                }
+                (context as? SavedStateRegistryOwner)?.let { savedOwner ->
+                    ViewTreeSavedStateRegistryOwner.set(decor, savedOwner)
+                }
+            }
+        }
 
         val composeView = ComposeView(context).apply {
             setContent {
