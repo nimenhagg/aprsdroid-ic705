@@ -84,20 +84,20 @@ fun AboutDialogContent(
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Modern M3 Header Emblem
+                // Official App Launcher Icon
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(56.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.size(64.dp),
+                    shadowElevation = 2.dp
                 ) {
                     androidx.compose.foundation.layout.Box(
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Radio,
+                        Image(
+                            painter = painterResource(id = R.mipmap.ic_launcher),
                             contentDescription = "APRSdroid IC-705",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(52.dp)
                         )
                     }
                 }
