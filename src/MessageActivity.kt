@@ -165,10 +165,12 @@ class MessageActivity : StationHelper(R.string.app_messages),
                         }
                         storage.updateMessage(item.id, cv)
                         sendBroadcast(Intent(AprsService.MSG_TX_PRIV_INTENT))
+                        loadData()
                     }
                     getString(R.string.msg_abort) -> {
                         storage.updateMessageType(item.id, StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
                         sendBroadcast(Intent(AprsService.MSG_PRIV_INTENT))
+                        loadData()
                     }
                 }
             }
@@ -242,6 +244,7 @@ class MessageActivity : StationHelper(R.string.app_messages),
         storage.addMessage(cv)
         sendMessageBroadcast(targetcall ?: "", msg)
         sendBroadcast(Intent(AprsService.MSG_PRIV_INTENT))
+        loadData()
 
         if (!AprsService.running) {
             Toast.makeText(this, R.string.msg_stored_offline, Toast.LENGTH_SHORT).show()
