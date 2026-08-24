@@ -5,7 +5,11 @@ import android.view.Menu
 import android.view.MenuItem
 
 abstract class StationHelper(val titleId: Int) : BaseRecyclerActivity() {
-    val targetcall: String? by lazy { intent.dataString }
+    val targetcall: String? by lazy {
+        intent.dataString?.removePrefix("call:")?.removePrefix("sms:")?.takeIf { it.isNotEmpty() }
+            ?: intent.getStringExtra("call")
+            ?: intent.getStringExtra("targetcall")
+    }
 
     override fun onResume() {
         super.onResume()
