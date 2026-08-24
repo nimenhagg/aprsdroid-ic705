@@ -330,15 +330,6 @@
 <string name="p_sotimeout_summary">Bağlantıyı sıfırlamadan önceki süre</string>
 <string name="p_sotimeout_entry">Saniye olarak zamanaşımı süresi (0=devredışı)</string>
 
-<string name="p_mapfile">Harita dosyası adı</string>
-<string name="p_mapfile_summary">APRSdroid için MapsForge harita dosyası</string>
-<string name="p_mapfile_choose">Harita dosyası seçin</string>
-<string name="mapfile_error">Harita dosyası %s yüklenirken hata oluştu!</string>
-
-<string name="p_themefile">Tema dosyasının adı</string>
-<string name="p_themefile_summary">MapsForge işleme teması (XML)</string>
-<string name="p_themefile_choose">Tema dosyası seçin</string>
-<string name="themefile_error">%s tema dosyası yüklenirken hata oluştu!</string>
 
 <string name="kbdnav_title">Keyboard Navigation</string>
 <!-- keyboard navigation info -->

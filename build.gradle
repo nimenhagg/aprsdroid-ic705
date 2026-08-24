@@ -34,8 +34,8 @@ allprojects {
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = (findProperty("MOD_VERSION") ?: "1.6.1").toString()
-	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082461").toString())
+	mod_version = (findProperty("MOD_VERSION") ?: "1.6.2").toString()
+	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082462").toString())
 	base_version = "APRSdroid v1.7.0"
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
@@ -72,7 +72,6 @@ android {
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
-	useLibrary 'org.apache.http.legacy'
 	compileOptions {
 		sourceCompatibility JavaVersion.VERSION_17
 		targetCompatibility JavaVersion.VERSION_17

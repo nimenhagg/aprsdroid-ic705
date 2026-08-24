@@ -22,7 +22,6 @@ import org.mapsforge.v3.android.maps.Projection
 import org.mapsforge.v3.android.maps.overlay.ItemizedOverlay
 import org.mapsforge.v3.android.maps.overlay.OverlayItem
 import org.mapsforge.v3.core.GeoPoint
-import java.io.File
 import java.util.ArrayList
 
 class OSMStation(
@@ -280,13 +279,10 @@ class MapAct : MapActivity(), LoadingIndicator {
                 val customSub = prefs.getString("map_custom_subdomains", "1234")
                 mapview.setMapGenerator(CustomTileDownloader(customUrl, customSub))
             }
-            else -> {
-                val mapFile = prefs.getString("mapfile", "")
-                if (mapFile.isNotEmpty() && File(mapFile).exists()) {
-                    mapview.setMapFile(File(mapFile))
-                } else {
-                    mapview.setMapGenerator(AMapTileDownloader())
-                }
+            MapTileType.GOOGLE_NORMAL,
+            MapTileType.GOOGLE_HYBRID -> {
+                // Google modes use GoogleMapAct; keep a deterministic fallback if routed here.
+                mapview.setMapGenerator(AMapTileDownloader())
             }
         }
     }

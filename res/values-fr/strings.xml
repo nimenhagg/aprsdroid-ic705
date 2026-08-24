@@ -330,15 +330,6 @@
 <string name="p_sotimeout_summary">Temps avant de réinitialiser la connexion</string>
 <string name="p_sotimeout_entry">Valeur d\'expiration en secondes (0 = désactiver)</string>
 
-<string name="p_mapfile">Chemin vers la carte</string>
-<string name="p_mapfile_summary">Fichier MapsForge pour APRSdroid</string>
-<string name="p_mapfile_choose">Selectionner fichier carte</string>
-<string name="mapfile_error">Erreur de chargement de la carte %s!</string>
-
-<string name="p_themefile">Nom du fichier de thème</string>
-<string name="p_themefile_summary">Theme de rendu MapsForge (XML)</string>
-<string name="p_themefile_choose">Choisir le fichier de thème</string>
-<string name="themefile_error">Erreur de chargement du fichier de thème %s!</string>
 
 <string name="kbdnav_title">Naviger avec le clavier</string>
 <!-- keyboard navigation info -->

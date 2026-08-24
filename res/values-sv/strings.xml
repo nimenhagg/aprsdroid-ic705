@@ -330,15 +330,6 @@
 <string name="p_sotimeout_summary">Tid innan anslutningen återställs</string>
 <string name="p_sotimeout_entry">Timeoutvärde i sekunder (0 = inaktivera)</string>
 
-<string name="p_mapfile">Kartfilnamn</string>
-<string name="p_mapfile_summary">MapsForge kartfil för APRSdroid</string>
-<string name="p_mapfile_choose">Välj kartfil</string>
-<string name="mapfile_error">Fel vid läsning in kartfilen %s!</string>
-
-<string name="p_themefile">Temafilnamn</string>
-<string name="p_themefile_summary">MapsForge-renderingstema (XML)</string>
-<string name="p_themefile_choose">Välj temafil</string>
-<string name="themefile_error">Fel vid laddning temafilen %s!</string>
 
 <string name="kbdnav_title">Tangentbordsnavigering</string>
 <!-- keyboard navigation info -->

@@ -1,3 +1,12 @@
+## 🚀 [v1.6.2-ic705] - 2026-08-24
+
+### 🌐 原生 HTTP 上传与现代文档访问
+* 将 HTTP POST 后端从已废弃的 Apache `DefaultHttpClient` 迁移到 Android 原生 `HttpURLConnection`，增加 15 秒连接/读取超时、固定长度 UTF-8 请求体和规范的 `Accept` 请求头，同时保持裸主机默认使用明文 `http://:8080/` 的兼容行为。
+* 删除 Gradle `org.apache.http.legacy` 编译库和 Manifest `<uses-library>` 声明；新增请求 URL、Header、Body、超时、状态与连接关闭测试。
+* 配置导入改用 Activity Result `OpenDocument`，通过 `ContentResolver.openInputStream()` 直接读取 `content://`；PKCS#12 和配置输入流现在均保证关闭，不再查询 `_data`、重写 DocumentsProvider URI 或拼接 `/storage` 路径。
+* 删除从未注册到当前地图模式、没有运行消费者的离线地图文件和渲染主题选择入口；仅同步移除这些死入口在各语言文件中的 8 个孤立资源键，所有仍在使用的多语言界面资源完整保留。
+* 版本元数据更新为 `1.6.2-ic705`（`versionCode 2026082462`）；TLS、IC-705 协议、PTT/音频链和在线地图行为均未改变。
+
 ## 🚀 [v1.6.1-ic705] - 2026-08-24
 
 ### 🧹 移除迁移遗留与 Android 兼容层化石

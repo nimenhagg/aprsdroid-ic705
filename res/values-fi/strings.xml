@@ -330,15 +330,6 @@
 <string name="p_sotimeout_summary">Hyytyneen yhteyden katkaisuviive</string>
 <string name="p_sotimeout_entry">Aikakatkaisu sekunneissa (0 = ei käytössä)</string>
 
-<string name="p_mapfile">Karttatiedoston nimi</string>
-<string name="p_mapfile_summary">MapsForge-karttatiedosto APRSdroidille</string>
-<string name="p_mapfile_choose">Valitse karttatiedosto</string>
-<string name="mapfile_error">Virhe ladattaessa karttatiedostoa %s!</string>
-
-<string name="p_themefile">Teematiedoston nimi</string>
-<string name="p_themefile_summary">MapsForge piirtoteema (XML)</string>
-<string name="p_themefile_choose">Valitse teematiedosto</string>
-<string name="themefile_error">Virhe ladattaessa teematiedostoa %s!</string>
 
 <string name="kbdnav_title">Keyboard Navigation</string>
 <!-- keyboard navigation info -->

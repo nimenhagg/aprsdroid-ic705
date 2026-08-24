@@ -4,7 +4,7 @@ APRSdroid 的 Icom IC-705 Wi-Fi 直连修改版 / An APRSdroid fork with direct 
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-当前版本 / Current release: **1.6.1-ic705**
+当前版本 / Current release: **1.6.2-ic705**
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -101,7 +101,8 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 的 Wi-Fi `Network`，因此电
 
 ### 网络与安全边界
 
-- IC-705 LAN 协议和部分 APRS 服务器本身使用明文 UDP/TCP；`1.6.1` 保留该行为，没有引入 TLS。请只在可信网络使用，并理解凭据与流量可能被同网段设备观察。
+- IC-705 LAN 协议和部分 APRS 服务器本身使用明文 UDP/TCP；`1.6.2` 保留该行为，没有引入 TLS。HTTP POST 后端已使用 Android 原生 `HttpURLConnection`，但裸主机配置仍按兼容规则连接明文 `http://` 端口 `8080`。请只在可信网络使用，并理解凭据与流量可能被同网段设备观察。
+- 配置文件导入直接读取 Android 文档提供器授予的 `content://` 数据流，不依赖 `_data` 列或外部存储绝对路径。
 - 应用禁用 Android 备份，但连接凭据仍保存在应用本地偏好设置中。不要在不受信任或已 Root 的设备保存敏感凭据。
 - 项目包含发射功能。软件故障、Wi-Fi 丢包或电台配置错误都可能造成意外发射；操作者始终对合法合规使用负责。
 
@@ -137,7 +138,7 @@ mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY
 - Kotlin 与 Java 源码位于非标准的 `src/` 目录，单元测试位于 `test/java/`。
 - 修改 IC-705 发射链时必须保留 PTT OFF 和绝对超时看门狗的安全语义，并增加对应测试。
 - 发布时同时更新 `build.gradle`、`CHANGELOG.md`、`AI_CONTEXT.md` 和 README 中的版本信息。
-- 标签格式是 `v<版本>-ic705`，例如 `v1.6.1-ic705`；CI 会验证标签和 APK 版本一致。
+- 标签格式是 `v<版本>-ic705`，例如 `v1.6.2-ic705`；CI 会验证标签和 APK 版本一致。
 - 完整的工程交接信息见 [AI_CONTEXT.md](AI_CONTEXT.md)。
 
 ## English
@@ -220,7 +221,8 @@ If PTT remains asserted, release it on the radio or turn the radio off immediate
 
 ### Network and security boundary
 
-- The IC-705 LAN protocol and some APRS servers use cleartext UDP/TCP. Version 1.6.1 intentionally preserves that behavior and does not add TLS. Use trusted networks and assume that peers on the LAN may observe credentials or traffic.
+- The IC-705 LAN protocol and some APRS servers use cleartext UDP/TCP. Version 1.6.2 intentionally preserves that behavior and does not add TLS. The HTTP POST backend now uses Android's native `HttpURLConnection`, while a bare host setting still resolves to cleartext `http://` on port `8080` for compatibility. Use trusted networks and assume that peers on the LAN may observe credentials or traffic.
+- Profile imports read the `content://` stream granted by Android's document provider directly; they do not query `_data` or reconstruct external-storage paths.
 - Android backup is disabled, but connection credentials are still stored in the app's local preferences. Do not store sensitive credentials on an untrusted or rooted device.
 - This software can key a transmitter. The operator remains responsible for lawful operation and for handling software, Wi-Fi, and radio failures safely.
 
@@ -244,7 +246,7 @@ The main toolchain is AGP 9.3.2, Gradle 9.5.0, built-in Kotlin / Compose Compile
 - Production sources use the legacy `src/` layout; unit tests live in `test/java/`.
 - Changes to IC-705 transmit code must preserve PTT OFF and absolute-watchdog safety semantics and include tests.
 - A release updates `build.gradle`, `CHANGELOG.md`, `AI_CONTEXT.md`, and the version shown here.
-- Tags use `v<version>-ic705`, for example `v1.6.1-ic705`; CI rejects a tag that does not match APK metadata.
+- Tags use `v<version>-ic705`, for example `v1.6.2-ic705`; CI rejects a tag that does not match APK metadata.
 - See [AI_CONTEXT.md](AI_CONTEXT.md) for the maintainer and AI handover guide.
 
 ## 致谢与许可证 / Credits and license

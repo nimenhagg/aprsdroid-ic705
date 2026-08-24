@@ -55,20 +55,6 @@ class TileMapMode(
     tileType: MapTileType
 ) : MapMode(tag, menu_id, title, MapAct::class.java, tileType)
 
-class MapsforgeOnlineMode(
-    tag: String,
-    menu_id: Int,
-    title: String?,
-    val foo: String
-) : MapMode(tag, menu_id, title, MapAct::class.java, MapTileType.OSM)
-
-class MapsforgeFileMode(
-    tag: String,
-    menu_id: Int,
-    title: String?,
-    val file: String
-) : MapMode(tag, menu_id, title, MapAct::class.java, MapTileType.OSM)
-
 object MapModes {
     val all_mapmodes = mutableListOf<MapMode>()
 
@@ -90,8 +76,6 @@ object MapModes {
         all_mapmodes.add(GoogleMapMode("satellite", R.id.satellite, ctx.getString(R.string.map_satellite), GoogleMap.MAP_TYPE_HYBRID, MapTileType.GOOGLE_HYBRID))
         all_mapmodes.add(TileMapMode("custom", R.id.custom_tile, ctx.getString(R.string.map_custom_tile), MapTileType.CUSTOM))
     }
-
-    fun reloadOfflineMaps(ctx: Context) {}
 
     fun defaultMapMode(ctx: Context, prefs: PrefsWrapper): MapMode {
         initialize(ctx)

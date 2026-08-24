@@ -331,15 +331,6 @@ z późniejszych wersji. \n\n Niniejszy program rozpowszechniany jest z nadziej�
 <string name="p_sotimeout_summary">Czas przed zresetowaniem połączenia</string>
 <string name="p_sotimeout_entry">Timeout w sec. (0 = wył.)</string>
 
-<string name="p_mapfile">Nazwa pliku mapy</string>
-<string name="p_mapfile_summary">Plik mapy MapsForge</string>
-<string name="p_mapfile_choose">Wybierz plik mapy</string>
-<string name="mapfile_error">Błąd ładowania pliku mapy: %s!</string>
-
-<string name="p_themefile">Nazwa pliku motywu</string>
-<string name="p_themefile_summary">Motyw renderowania MapsForge (XML)</string>
-<string name="p_themefile_choose">Wybierz plik motywu</string>
-<string name="themefile_error">Błąd ładowania pliku motywu %s!</string>
 
 <string name="kbdnav_title">Keyboard Navigation</string>
 <!-- keyboard navigation info -->

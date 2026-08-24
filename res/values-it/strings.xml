@@ -330,15 +330,6 @@
 <string name="p_sotimeout_summary">Tempo prima di resettare la connessione</string>
 <string name="p_sotimeout_entry">Tempo sconnessione , valore in secondi (0 = disabilita)</string>
 
-<string name="p_mapfile">Nome del file Mappa (map)</string>
-<string name="p_mapfile_summary">MapsForge map fiLE per APRSdroid</string>
-<string name="p_mapfile_choose">Scegli il file .map</string>
-<string name="mapfile_error">Errore caricando il  file .map %s</string>
-
-<string name="p_themefile">Il nome del file del tema principale (presentazione)</string>
-<string name="p_themefile_summary">MapsForge tema tridimensionale della mappa (XML)</string>
-<string name="p_themefile_choose">Scegli il tema del file</string>
-<string name="themefile_error">Errore caricando il tema del file %s!</string>
 
 <string name="kbdnav_title">Naviga da tastiera</string>
 <!-- keyboard navigation info -->

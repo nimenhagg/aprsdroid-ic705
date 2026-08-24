@@ -7,7 +7,6 @@ import androidx.preference.PreferenceManager
 import android.util.Log
 import android.widget.Toast
 import org.json.JSONObject
-import java.util.Scanner
 
 class ProfileImportActivity : Activity() {
     val TAG = "APRSdroid.ProfileImport"
@@ -22,10 +21,9 @@ class ProfileImportActivity : Activity() {
     fun import_config() {
         try {
             val dataUri = intent.data ?: throw IllegalArgumentException("Missing data URI")
-            val isStream = contentResolver.openInputStream(dataUri)
-                ?: throw IllegalArgumentException("Cannot open stream for " + dataUri)
-            val scanner = Scanner(isStream).useDelimiter("\\A")
-            val configString = scanner.next()
+            val configString = contentResolver.openInputStream(dataUri)?.use { input ->
+                input.bufferedReader(Charsets.UTF_8).readText()
+            } ?: throw IllegalArgumentException("Cannot open stream for $dataUri")
             val config = JSONObject(configString)
             val prefsedit = PreferenceManager.getDefaultSharedPreferences(this).edit()
 

@@ -353,15 +353,6 @@
 <string name="p_sotimeout_summary">重置连接前的时间</string>
 <string name="p_sotimeout_entry">超时值(0为关闭，单位:秒)</string>
 
-<string name="p_mapfile">地图文件名</string>
-<string name="p_mapfile_summary">APRSdroid的MapsForge地图文件</string>
-<string name="p_mapfile_choose">选择地图文件</string>
-<string name="mapfile_error">加载地图文件%s时出错!</string>
-
-<string name="p_themefile">主题文件名</string>
-<string name="p_themefile_summary">MapsForge渲染主题(XML)</string>
-<string name="p_themefile_choose">选择主题文件</string>
-<string name="themefile_error">加载主题文件%s时出错!</string>
 
 <string name="kbdnav_title">键盘导航</string>
 <!-- keyboard navigation info -->

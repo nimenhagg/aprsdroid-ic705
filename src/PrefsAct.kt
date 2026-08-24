@@ -1,13 +1,11 @@
 package org.aprsdroid.app
 
-import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -20,15 +18,18 @@ import java.util.Date
 import java.util.Locale
 
 class PrefsAct : AppCompatActivity() {
-    companion object {
-        private fun openDocumentIntent(): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            type = "*/*"
-            addCategory(Intent.CATEGORY_OPENABLE)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+    private val profileDocumentPicker = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            startActivity(
+                Intent(this, ProfileImportActivity::class.java)
+                    .setData(uri)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            )
         }
     }
 
-    val db: StorageDatabase by lazy { StorageDatabase.open(this) }
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 
     fun exportPrefs() {
@@ -63,88 +64,6 @@ class PrefsAct : AppCompatActivity() {
         }
     }
 
-    fun resolveContentUri(uri: Uri): String {
-        val parts = (uri.path ?: "").replace("/document/", "").split(":", limit = 2)
-        val storage = if (parts.isNotEmpty()) parts[0] else ""
-        val path = if (parts.size > 1) parts[1] else ""
-        return if (storage == "primary") {
-            @Suppress("DEPRECATION")
-            Environment.getExternalStorageDirectory().toString() + "/" + path
-        } else {
-            "/storage/" + storage + "/" + path
-        }
-    }
-
-    fun parseFilePickerResult(data: Intent, prefName: String, errorId: Int) {
-        val dataUri = data.data
-        val file: String? = when (dataUri?.scheme) {
-            "file" -> dataUri.path
-            "content" -> {
-                if ("com.android.externalstorage.documents" == dataUri.authority) {
-                    resolveContentUri(dataUri)
-                } else {
-                    val fixupUri = Uri.parse(
-                        (data.dataString ?: "").replace(
-                            "content://com.android.providers.downloads.documents/document",
-                            "content://downloads/public_downloads"
-                        )
-                    )
-                    val cursor = contentResolver.query(fixupUri, null, null, null, null)
-                    cursor?.moveToFirst()
-                    val idx = cursor?.getColumnIndex("_data") ?: -1
-                    val result = if (idx != -1) cursor?.getString(idx) else null
-                    cursor?.close()
-                    result
-                }
-            }
-            else -> null
-        }
-
-        if (file != null) {
-            PreferenceManager.getDefaultSharedPreferences(this)
-                .edit().putString(prefName, file).apply()
-            Toast.makeText(this, file, Toast.LENGTH_SHORT).show()
-            finish()
-            startActivity(intent)
-        } else {
-            val errmsg = getString(errorId, data.dataString)
-            Toast.makeText(this, errmsg, Toast.LENGTH_SHORT).show()
-            db.addPost(System.currentTimeMillis(), StorageDatabase.Companion.Post.TYPE_ERROR, getString(R.string.post_error), errmsg)
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(reqCode: Int, resultCode: Int, data: Intent?) {
-        if (resultCode == Activity.RESULT_OK && data != null) {
-            when (reqCode) {
-                123456 -> {
-                    data.data?.let { uri ->
-                        if ((data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
-                            runCatching {
-                                contentResolver.takePersistableUriPermission(
-                                    uri,
-                                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                                )
-                            }
-                        }
-                    }
-                    PreferenceManager.getDefaultSharedPreferences(this)
-                        .edit().putString("mapfile", data.dataString).apply()
-                    finish()
-                    startActivity(intent)
-                }
-                123457 -> parseFilePickerResult(data, "themefile", R.string.themefile_error)
-                123458 -> {
-                    data.setClass(this, ProfileImportActivity::class.java)
-                    startActivity(data)
-                }
-                else -> super.onActivityResult(reqCode, resultCode, data)
-            }
-        } else {
-            super.onActivityResult(reqCode, resultCode, data)
-        }
-    }
-
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.options_prefs, menu)
         return true
@@ -157,9 +76,7 @@ class PrefsAct : AppCompatActivity() {
                 true
             }
             R.id.profile_load -> {
-                val getFile = openDocumentIntent()
-                @Suppress("DEPRECATION")
-                startActivityForResult(Intent.createChooser(getFile, getString(R.string.profile_import_activity)), 123458)
+                profileDocumentPicker.launch(arrayOf("*/*"))
                 true
             }
             R.id.profile_export -> {
@@ -219,18 +136,6 @@ class PrefsAct : AppCompatActivity() {
                 act.prefs.set("map_custom_subdomains", "")
             }
 
-            findPreference<Preference>("mapfile")?.setOnPreferenceClickListener {
-                val getFile = openDocumentIntent()
-                @Suppress("DEPRECATION")
-                act.startActivityForResult(Intent.createChooser(getFile, getString(R.string.p_mapfile_choose)), 123456)
-                true
-            }
-            findPreference<Preference>("themefile")?.setOnPreferenceClickListener {
-                val getFile = openDocumentIntent()
-                @Suppress("DEPRECATION")
-                act.startActivityForResult(Intent.createChooser(getFile, getString(R.string.p_themefile_choose)), 123457)
-                true
-            }
         }
     }
 }

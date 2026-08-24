@@ -54,9 +54,9 @@ class KeyfileImportActivity : Activity() {
         try {
             val dataUri = intent.data ?: throw IllegalArgumentException("Missing data URI")
             val ks = KeyStore.getInstance("PKCS12")
-            val isStream = contentResolver.openInputStream(dataUri)
-                ?: throw IllegalArgumentException("Cannot open stream for " + dataUri)
-            ks.load(isStream, password.toCharArray())
+            contentResolver.openInputStream(dataUri)?.use { input ->
+                ks.load(input, password.toCharArray())
+            } ?: throw IllegalArgumentException("Cannot open stream for $dataUri")
 
             var callsign: String? = null
             for (alias in ks.aliases()) {

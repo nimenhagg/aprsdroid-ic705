@@ -131,18 +131,6 @@
             android:summary="@string/p_map_custom_subdomains_summary"
             android:dialogTitle="@string/p_map_custom_subdomains" />
 
-        <de.duenndns.PreferenceWithValue
-            android:key="mapfile"
-            android:icon="@drawable/ic_pref_maps"
-            android:title="@string/p_mapfile"
-            android:summary="@string/p_mapfile_summary" />
-
-        <de.duenndns.PreferenceWithValue
-            android:key="themefile"
-            android:icon="@drawable/ic_pref_maps"
-            android:title="@string/p_themefile"
-            android:summary="@string/p_themefile_summary" />
-
         <de.duenndns.EditTextPreferenceWithValue
             android:key="google_maps_key"
             android:icon="@drawable/ic_pref_maps"

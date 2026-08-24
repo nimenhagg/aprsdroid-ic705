@@ -330,15 +330,6 @@
 <string name="p_sotimeout_summary">Tempo antes de resetar a conexão</string>
 <string name="p_sotimeout_entry">Valor do timeout em segundos (0 = desativar)</string>
 
-<string name="p_mapfile">Nome do arquivo de mapa</string>
-<string name="p_mapfile_summary">Arquivo de mapa do MapsForge para APRSdroid</string>
-<string name="p_mapfile_choose">Escolher arquivo de mapa</string>
-<string name="mapfile_error">Falha ao carregar arquivo de mapa %s</string>
-
-<string name="p_themefile">Nome do arquivo de tema</string>
-<string name="p_themefile_summary">Tema de exibição do MapsForge (XML)</string>
-<string name="p_themefile_choose">Selecione o arquivo de tema</string>
-<string name="themefile_error">Falha ao carregar o arquivo de tema %s</string>
 
 <string name="kbdnav_title">A navegação por teclado</string>
 <!-- keyboard navigation info -->

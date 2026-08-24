@@ -330,15 +330,6 @@
 <string name="p_sotimeout_summary">ເວລາກ່ອນທີ່ຈະຣີເຊັດການເຊື່ອມຕໍ່</string>
 <string name="p_sotimeout_entry">ຄ່າໝົດເວລາເປັນວິນາທີ (0 = ປິດ)</string>
 
-<string name="p_mapfile">ຊື່ໄຟລ໌ແຜນທີ່</string>
-<string name="p_mapfile_summary">ໄຟລ໌ແຜນທີ່ MapsForge ສຳລັບ APRSdroid</string>
-<string name="p_mapfile_choose">ເລືອກໄຟລ໌ແຜນທີ່</string>
-<string name="mapfile_error">ໂຫຼດໄຟລ໌ແຜນທີ່ %s ຜິດພາດ!</string>
-
-<string name="p_themefile">ຊື່ໄຟລ໌ທີມ</string>
-<string name="p_themefile_summary">ທີມການສະແດງຜົນ MapsForge (XML)</string>
-<string name="p_themefile_choose">ເລືອກໄຟລ໌ທີມ</string>
-<string name="themefile_error">ໂຫຼດໄຟລ໌ທີມ %s ຜິດພາດ!</string>
 
 <string name="kbdnav_title">ການນຳທາງດ້ວຍຄີບອດ</string>
 <!-- keyboard navigation info -->
