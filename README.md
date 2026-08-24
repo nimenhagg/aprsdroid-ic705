@@ -63,11 +63,12 @@
 
 ## 💻 编译说明
 
-- **环境**：JDK 17 + Android SDK (API 34/35)
+- **环境**：JDK 17 + Android SDK（API 36）
 - **命令**：
   ```bash
   git clone https://github.com/nimenhagg/aprsdroid-ic705.git
   cd aprsdroid-ic705
+  ./gradlew testDebugUnitTest lintDebug
   ./gradlew assembleDebug
   ```
 

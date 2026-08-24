@@ -20,6 +20,14 @@ import java.util.Date
 import java.util.Locale
 
 class PrefsAct : AppCompatActivity() {
+    companion object {
+        private fun openDocumentIntent(): Intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            type = "*/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        }
+    }
+
     val db: StorageDatabase by lazy { StorageDatabase.open(this) }
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 
@@ -110,8 +118,16 @@ class PrefsAct : AppCompatActivity() {
         if (resultCode == Activity.RESULT_OK && data != null) {
             when (reqCode) {
                 123456 -> {
-                    val takeFlags = data.flags and (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-                    data.data?.let { contentResolver.takePersistableUriPermission(it, takeFlags) }
+                    data.data?.let { uri ->
+                        if ((data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
+                            runCatching {
+                                contentResolver.takePersistableUriPermission(
+                                    uri,
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                                )
+                            }
+                        }
+                    }
                     PreferenceManager.getDefaultSharedPreferences(this)
                         .edit().putString("mapfile", data.dataString).apply()
                     finish()
@@ -141,7 +157,7 @@ class PrefsAct : AppCompatActivity() {
                 true
             }
             R.id.profile_load -> {
-                val getFile = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*" }
+                val getFile = openDocumentIntent()
                 @Suppress("DEPRECATION")
                 startActivityForResult(Intent.createChooser(getFile, getString(R.string.profile_import_activity)), 123458)
                 true
@@ -204,13 +220,13 @@ class PrefsAct : AppCompatActivity() {
             }
 
             findPreference<Preference>("mapfile")?.setOnPreferenceClickListener {
-                val getFile = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*" }
+                val getFile = openDocumentIntent()
                 @Suppress("DEPRECATION")
                 act.startActivityForResult(Intent.createChooser(getFile, getString(R.string.p_mapfile_choose)), 123456)
                 true
             }
             findPreference<Preference>("themefile")?.setOnPreferenceClickListener {
-                val getFile = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*" }
+                val getFile = openDocumentIntent()
                 @Suppress("DEPRECATION")
                 act.startActivityForResult(Intent.createChooser(getFile, getString(R.string.p_themefile_choose)), 123457)
                 true

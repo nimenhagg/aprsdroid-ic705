@@ -1,9 +1,11 @@
 package org.aprsdroid.app
 
-import android.annotation.SuppressLint
+import android.Manifest
+import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.util.Log
+import androidx.core.content.ContextCompat
 import sivantoledo.ax25.Afsk1200Demodulator
 
 class AfskDemodulator(
@@ -26,9 +28,15 @@ class AfskDemodulator(
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO)
     }
 
-    @SuppressLint("MissingPermission")
     override fun run() {
         Log.d(TAG, "running...")
+        if (ContextCompat.checkSelfPermission(au.service, Manifest.permission.RECORD_AUDIO) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w(TAG, "Audio recording permission is not granted")
+            au.postAbort("Audio recording permission is not granted")
+            return
+        }
         try {
             var zeroReads = 0
             val rec = AudioRecord(

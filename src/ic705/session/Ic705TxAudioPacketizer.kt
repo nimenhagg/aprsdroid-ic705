@@ -4,7 +4,7 @@ import org.aprsdroid.app.audio.Pcm16LittleEndian
 import org.aprsdroid.app.ic705.protocol.Ic705AudioPacketCodec
 
 /**
- * Slices 48 kHz PCM audio streams into sequential IC-705 audio UDP datagrams
+ * Slices 12 kHz PCM audio streams into sequential IC-705 audio UDP datagrams
  * with appropriate prime and trailing silence padding.
  */
 class Ic705TxAudioPacketizer(

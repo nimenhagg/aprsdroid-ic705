@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="DefaultTheme" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">false</item>
+    <style name="DefaultThemeBase" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:fitsSystemWindows">true</item>
-        <item name="android:enforceNavigationBarContrast">false</item>
 
         <!-- Android 14-17 Material Motion Transitions -->
         <item name="android:windowActivityTransitions">true</item>
@@ -24,6 +21,8 @@
         <item name="android:popupMenuStyle">@style/Material3PopupMenu</item>
         <item name="android:actionOverflowMenuStyle">@style/Material3PopupMenu</item>
     </style>
+
+    <style name="DefaultTheme" parent="DefaultThemeBase" />
 
     <style name="TextAppearance.Material3.Title" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Title">
         <item name="android:textSize">20sp</item>

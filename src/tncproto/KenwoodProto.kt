@@ -1,16 +1,17 @@
 package org.aprsdroid.app
 
+import android.Manifest
 import android.content.Context
-import android.location.GpsStatus
+import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.location.OnNmeaMessageListener
 import android.os.Build
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.core.content.ContextCompat
 import net.ab0oo.aprs.parser.APRSPacket
 import java.io.BufferedReader
 import java.io.InputStream
@@ -35,13 +36,24 @@ class KenwoodProto(val service: AprsService, isStream: InputStream, osStream: Ou
     init {
         if (service.prefs.getBoolean("kenwood.gps", false)) {
             Handler(Looper.getMainLooper()).post {
+                if (ContextCompat.checkSelfPermission(service, Manifest.permission.ACCESS_FINE_LOCATION) !=
+                    PackageManager.PERMISSION_GRANTED
+                ) {
+                    Log.w(TAG, "GPS permission is not granted; NMEA forwarding is disabled")
+                    return@post
+                }
                 try {
                     locMan.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, sinkhole)
-                    val listener = OnNmeaMessageListener { nmea, timestamp ->
-                        onNmeaReceived(timestamp, nmea)
+                    val listener = OnNmeaMessageListener { nmea, _ ->
+                        onNmeaReceived(nmea)
                     }
                     nmeaListener = listener
-                    locMan.addNmeaListener(listener)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        locMan.addNmeaListener(ContextCompat.getMainExecutor(service), listener)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        locMan.addNmeaListener(listener)
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "GPS listener registration error: $e")
                 }
@@ -94,7 +106,7 @@ class KenwoodProto(val service: AprsService, isStream: InputStream, osStream: Ou
         // No-op
     }
 
-    fun onNmeaReceived(timestamp: Long, nmea: String) {
+    fun onNmeaReceived(nmea: String) {
         if (output != null && (nmea.startsWith("\$GPGGA") || nmea.startsWith("\$GPRMC"))) {
             Log.d(TAG, "NMEA >>> $nmea")
             try {

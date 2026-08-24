@@ -36,22 +36,22 @@ allprojects {
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = "1.5.12"
+	mod_version = (findProperty("MOD_VERSION") ?: "1.5.15").toString()
+	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082415").toString())
 	base_version = "APRSdroid v1.7.0"
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
 }
 
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-	kotlinOptions.jvmTarget = '17'
+if (!(mod_version ==~ /\d+\.\d+\.\d+/)) {
+	throw new GradleException("MOD_VERSION must use major.minor.patch format: ${mod_version}")
+}
+if (mod_version_code < 1 || mod_version_code > 2100000000) {
+	throw new GradleException("VERSION_CODE must be between 1 and 2100000000: ${mod_version_code}")
 }
 
-def versionCodeDate() {
-	if (project.hasProperty("RELEASE_MINOR")) {
-		return new Date().format("yyyyMMdd" + RELEASE_MINOR).toInteger()
-	} else {
-		return new Date().format("yyyyMMdd00").toInteger()
-	}
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+	kotlinOptions.jvmTarget = '17'
 }
 
 def mapsApiKey() {
@@ -70,7 +70,7 @@ android {
 		minSdk = 24
 		targetSdk = 36
 		versionName "$build_revision"
-		versionCode versionCodeDate()
+		versionCode mod_version_code
 		resValue "string", "build_revision", "$build_revision"
 		resValue "string", "build_date", "$build_date"
 		resValue "string", "build_version", "$build_version"
@@ -151,6 +151,20 @@ android {
 	}
 }
 
+tasks.register('verifyReleaseVersion') {
+	group = 'verification'
+	description = 'Checks that a CI release tag matches the APK version metadata.'
+	doLast {
+		if (System.getenv('GITHUB_REF_TYPE') == 'tag') {
+			def actualTag = System.getenv('GITHUB_REF_NAME')
+			def expectedTag = "v${mod_version}-ic705"
+			if (actualTag != expectedTag) {
+				throw new GradleException("Release tag ${actualTag} does not match ${expectedTag}")
+			}
+		}
+	}
+}
+
 play {
 	serviceAccountCredentials = file('play-publish-credentials.json')
 	track = 'beta'
@@ -176,8 +190,7 @@ dependencies {
 	implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.7.0'
 	implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
 
-	implementation 'com.squareup.okio:okio:2.1.0'
 	androidTestImplementation 'com.android.support.test:runner:1.0.2'
 	androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-	testImplementation 'junit:junit:4.12'
+	testImplementation 'junit:junit:4.13.2'
 }

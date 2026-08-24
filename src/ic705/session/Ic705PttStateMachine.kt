@@ -101,7 +101,13 @@ class Ic705PttStateMachine(
     fun finishTransmission() {
         if (state == Ic705PttState.RX_IDLE) return
         cancelWatchdog()
-        sendPttCommand(false)
+        try {
+            sendPttCommand(false)
+        } catch (error: Exception) {
+            Log.e(TAG, "PTT OFF command failed; keeping the watchdog armed", error)
+            scheduleWatchdog()
+            throw error
+        }
         isPttAsserted.set(false)
         transitionTo(Ic705PttState.RX_IDLE)
     }

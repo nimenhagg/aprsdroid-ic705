@@ -2,15 +2,21 @@ package com.jazzido.PacketDroid;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder.AudioSource;
 import android.util.Log;
 
+import androidx.core.content.ContextCompat;
+
 public class AudioBufferProcessor extends Thread {
 	static final String LOG_TAG = "APRSdroid.AfskABP";
 
 	private final AudioIn audioIn = new AudioIn();
+	private final Context context;
 	private final PacketCallback callback;
 	
 	private boolean inited = false;
@@ -29,8 +35,9 @@ public class AudioBufferProcessor extends Thread {
         System.loadLibrary("multimon");
     }
 	
-	public AudioBufferProcessor(PacketCallback cb) {
+	public AudioBufferProcessor(Context context, PacketCallback cb) {
 		super("AudioBufferProcessor");
+		this.context = context.getApplicationContext();
 		queue = new LinkedBlockingQueue<>();
 		callback = cb;
 	}
@@ -101,6 +108,11 @@ public class AudioBufferProcessor extends Thread {
 		@Override
 		public void run() {
 			int ix = 0;
+			if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+					!= PackageManager.PERMISSION_GRANTED) {
+				Log.w(LOG_TAG, "Audio recording permission is not granted");
+				return;
+			}
 			try {
 				recorder = new AudioRecord(AudioSource.MIC, 22050,
 						AudioFormat.CHANNEL_IN_MONO,

@@ -3,12 +3,15 @@ package org.aprsdroid.app
 import org.aprsdroid.app.location.LocationSource
 import org.aprsdroid.app.location.PeriodicGPS
 
+import android.Manifest
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.media.AudioManager
 import android.preference.PreferenceManager
 import android.util.Log
+import androidx.core.content.ContextCompat
 import java.util.Locale
 
 class PrefsWrapper(@JvmField val context: Context) {
@@ -131,7 +134,10 @@ class PrefsWrapper(@JvmField val context: Context) {
     fun getFilterString(service: AprsService): String {
         val filterdist = getStringInt("tcp.filterdist", 50)
         val userfilter = getString("tcp.filter", "")
-        val lastloc = try {
+        val hasLocationPermission =
+            ContextCompat.checkSelfPermission(service, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(service, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val lastloc = if (!hasLocationPermission) "" else try {
             val locMan = service.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
             val provider = PeriodicGPS.bestProvider(locMan)
             if (locMan != null && provider != null) {

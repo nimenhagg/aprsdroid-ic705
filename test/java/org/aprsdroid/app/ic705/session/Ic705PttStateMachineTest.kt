@@ -2,8 +2,10 @@ package org.aprsdroid.app.ic705.session
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.Executors
 
 class Ic705PttStateMachineTest {
 
@@ -11,8 +13,13 @@ class Ic705PttStateMachineTest {
         val sentCivFrames = mutableListOf<ByteArray>()
         val sentAudioDatagrams = mutableListOf<ByteArray>()
         val stateHistory = mutableListOf<Ic705PttState>()
+        var nextCivFailure: RuntimeException? = null
 
         override fun sendCivFrame(frame: ByteArray) {
+            nextCivFailure?.let { failure ->
+                nextCivFailure = null
+                throw failure
+            }
             sentCivFrames.add(frame.copyOf())
         }
 
@@ -102,5 +109,45 @@ class Ic705PttStateMachineTest {
         assertTrue(sm.beginTransmission())
         assertFalse(sm.beginTransmission())
         assertEquals(1, actions.sentCivFrames.size)
+    }
+
+    @Test
+    fun failedPttOffKeepsTransmitStateUntilWatchdogCanRetry() {
+        val actions = FakePttActions()
+        val watchdog = Executors.newSingleThreadScheduledExecutor()
+        val sm = Ic705PttStateMachine(
+            actions = actions,
+            absoluteWatchdogMs = 60_000L,
+            watchdogExecutor = watchdog,
+        )
+
+        try {
+            assertTrue(sm.beginTransmission())
+            assertTrue(sm.onAudioStreamingFinished())
+            actions.nextCivFailure = IllegalStateException("simulated socket failure")
+
+            assertThrows(IllegalStateException::class.java) {
+                sm.finishTransmission()
+            }
+            assertEquals(Ic705PttState.DRAINING, sm.state)
+            assertTrue(sm.isTransmitting)
+            assertTrue(sm.isRadioPttOn)
+        } finally {
+            watchdog.shutdownNow()
+        }
+    }
+
+    @Test
+    fun failedForcedPttOffStillResetsState() {
+        val actions = FakePttActions()
+        val sm = Ic705PttStateMachine(actions)
+
+        assertTrue(sm.beginTransmission())
+        actions.nextCivFailure = IllegalStateException("simulated socket failure")
+
+        sm.forceRelease("test failure cleanup")
+        assertEquals(Ic705PttState.RX_IDLE, sm.state)
+        assertFalse(sm.isTransmitting)
+        assertFalse(sm.isRadioPttOn)
     }
 }

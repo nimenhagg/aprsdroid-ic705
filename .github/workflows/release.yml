@@ -35,8 +35,8 @@ jobs:
       - name: Grant Execute Permission to Gradlew
         run: chmod +x gradlew
 
-      - name: Build Release APK with Gradle
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+      - name: Run Tests, Lint, and Build Release APK
+        run: ./gradlew verifyReleaseVersion testDebugUnitTest lintDebug assembleRelease --no-daemon --stacktrace
         env:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
 
@@ -55,7 +55,9 @@ jobs:
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "Signing with repository secret keystore..."
             echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > release.jks
-            $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            BUILD_TOOLS_VERSION=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)
+            APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+            "$APKSIGNER" sign \
               --v1-signing-enabled true \
               --v2-signing-enabled true \
               --v3-signing-enabled true \
@@ -66,7 +68,7 @@ jobs:
               --out "${APK_DEST}" "${APK_SRC}"
             rm -f release.jks
             echo "Verifying signature:"
-            $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose "${APK_DEST}"
+            "$APKSIGNER" verify --verbose "${APK_DEST}"
           else
             echo "No custom secret keystore configured, using build APK..."
             cp "${APK_SRC}" "${APK_DEST}"
