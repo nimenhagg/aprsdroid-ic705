@@ -260,6 +260,7 @@ private fun ConversationCardItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val cardShape = RoundedCornerShape(16.dp)
 
     Card(
@@ -284,7 +285,7 @@ private fun ConversationCardItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             SymbolBadge(
-                symbol = item.sym ?: "/$",
+                symbol = "/$",
                 size = 44.dp
             )
 
@@ -304,8 +305,12 @@ private fun ConversationCardItem(
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
+                    val timeStr = remember(item.ts) {
+                        DateUtils.getRelativeTimeSpanString(context, item.ts).toString()
+                    }
+
                     Text(
-                        text = item.timeString,
+                        text = timeStr,
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )
@@ -314,7 +319,7 @@ private fun ConversationCardItem(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = item.lastMessage ?: "",
+                    text = item.lastMessage,
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

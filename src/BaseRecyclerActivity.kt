@@ -20,6 +20,13 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
         super.onCreate(savedInstanceState)
     }
 
+    fun replaceAct(act: Class<*>) {
+        val i = Intent(this, act)
+        i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        startActivity(i)
+        finish()
+    }
+
     fun initToolbar(hasBackButton: Boolean = false, titleRes: Int? = null) {
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         if (toolbar != null) {

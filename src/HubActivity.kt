@@ -68,7 +68,7 @@ class HubActivity : MainRecyclerActivity("hub", R.id.hub) {
                     onOpenLogs = { replaceAct(LogActivity::class.java) },
                     onOpenMessages = { startActivity(Intent(this, ConversationsActivity::class.java)) },
                     onOpenSettings = { startActivity(Intent(this, PrefsAct::class.java)) },
-                    onOpenAbout = { startActivity(Intent(this, AboutActivity::class.java)) }
+                    onOpenAbout = { AboutDialog(this).show() }
                 )
             }
         }

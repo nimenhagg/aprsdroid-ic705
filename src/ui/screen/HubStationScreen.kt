@@ -1,6 +1,7 @@
 package org.aprsdroid.app.ui.screen
 
-import androidx.compose.animation.AnimatedVisibility
+import android.location.Location
+import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +63,10 @@ import androidx.compose.ui.unit.sp
 import org.aprsdroid.app.R
 import org.aprsdroid.app.model.StationItem
 import org.aprsdroid.app.ui.components.SymbolBadge
+import java.util.Locale
+
+private val LETTERS = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+private fun getBearing(b: Double): String = LETTERS[(((b.toInt() + 22 + 720) % 360) / 45)]
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -257,6 +263,7 @@ fun StationCardItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val cardShape = RoundedCornerShape(16.dp)
 
     val containerColor = if (isMyOwn) {
@@ -300,7 +307,7 @@ fun StationCardItem(
         ) {
             // Sliced HD Symbol Badge
             SymbolBadge(
-                symbol = item.sym ?: "/$",
+                symbol = item.symbol,
                 size = 46.dp
             )
 
@@ -322,17 +329,23 @@ fun StationCardItem(
                     )
 
                     Column(horizontalAlignment = Alignment.End) {
-                        val distBearing = item.formatDistBearing(myLat, myLon)
-                        if (distBearing.isNotEmpty()) {
-                            Text(
-                                text = distBearing,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        val dist = remember(myLat, myLon, item.lat, item.lon) {
+                            val results = FloatArray(2)
+                            val mcd = 1000000.0
+                            Location.distanceBetween(myLat / mcd, myLon / mcd, item.lat / mcd, item.lon / mcd, results)
+                            results
                         }
+                        val distStr = String.format(Locale.US, "%1.1f km %s", dist[0] / 1000.0, getBearing(dist[1].toDouble()))
+                        val age = DateUtils.getRelativeTimeSpanString(context, item.ts).toString()
+
                         Text(
-                            text = item.timeString,
+                            text = distStr,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = age,
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )
@@ -340,15 +353,15 @@ fun StationCardItem(
                 }
 
                 // Middle line: Frequency badge if available
-                val freq = item.freq
-                if (!freq.isNullOrEmpty() && freq != "0.0") {
+                val qrg = item.qrg
+                if (!qrg.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
-                            text = "📻 $freq MHz",
+                            text = qrg,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
