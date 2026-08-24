@@ -93,6 +93,7 @@ jobs:
                 --v1-signing-enabled true \
                 --v2-signing-enabled true \
                 --v3-signing-enabled true \
+                --v4-signing-enabled false \
                 --ks release.jks \
                 --ks-pass pass:"$KEYSTORE_PASSWORD" \
                 --ks-key-alias "$KEY_ALIAS" \
@@ -146,7 +147,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aprsdroid-apks
-          path: release-apks/*
+          path: |
+            release-apks/*.apk
+            release-apks/SHA256SUMS.txt
 
       - name: Upload R8 Mapping Files
         uses: actions/upload-artifact@v4
@@ -159,7 +162,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: release-apks/*
+          files: |
+            release-apks/*.apk
+            release-apks/SHA256SUMS.txt
           body_path: RELEASE_NOTES.md
           draft: false
           prerelease: false
