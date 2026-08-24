@@ -58,7 +58,7 @@ class ServiceNotifier {
             .setContentTitle(appname)
             .setContentText(status)
             .setContentIntent(PendingIntent.getActivity(ctx, 0, i, PendingIntent.FLAG_IMMUTABLE))
-            .setSmallIcon(R.drawable.ic_status)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setWhen(System.currentTimeMillis())
             .setOngoing(true)
 
@@ -98,7 +98,7 @@ class ServiceNotifier {
             .setContentTitle(call)
             .setContentText(message)
             .setContentIntent(PendingIntent.getActivity(ctx, 0, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-            .setSmallIcon(R.drawable.icon)
+            .setSmallIcon(R.drawable.ic_action_messages)
             .setTicker("$call: $message")
             .setWhen(System.currentTimeMillis())
             .setAutoCancel(true)

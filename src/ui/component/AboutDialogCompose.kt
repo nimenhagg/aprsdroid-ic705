@@ -84,20 +84,20 @@ fun AboutDialogContent(
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // App Icon
+                // Modern M3 Header Emblem
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(18.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(68.dp),
-                    shadowElevation = 4.dp
+                    modifier = Modifier.size(56.dp)
                 ) {
                     androidx.compose.foundation.layout.Box(
                         contentAlignment = Alignment.Center
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.icon),
-                            contentDescription = "App Icon",
-                            modifier = Modifier.size(52.dp)
+                        Icon(
+                            imageVector = Icons.Default.Radio,
+                            contentDescription = "APRSdroid IC-705",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(32.dp)
                         )
                     }
                 }
