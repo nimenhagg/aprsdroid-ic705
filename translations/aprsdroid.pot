@@ -319,11 +319,6 @@ msgstr ""
 msgid "OpenStreetMap.org"
 msgstr ""
 
-#. intended use is in map style menu: "file name of offline map (Offline)"
-#: res/values/strings.xml:117(string)
-msgid "%s (Offline)"
-msgstr ""
-
 #: res/values/strings.xml:118(string)
 msgid "APRS Objects"
 msgstr ""
@@ -1119,38 +1114,6 @@ msgstr ""
 
 #: res/values/strings.xml:350(string)
 msgid "Timeout value in seconds (0 = disable)"
-msgstr ""
-
-#: res/values/strings.xml:352(string)
-msgid "Map file name"
-msgstr ""
-
-#: res/values/strings.xml:353(string)
-msgid "MapsForge map file for APRSdroid"
-msgstr ""
-
-#: res/values/strings.xml:354(string)
-msgid "Choose map file"
-msgstr ""
-
-#: res/values/strings.xml:355(string)
-msgid "Error loading map file %s!"
-msgstr ""
-
-#: res/values/strings.xml:357(string)
-msgid "Theme file name"
-msgstr ""
-
-#: res/values/strings.xml:358(string)
-msgid "MapsForge rendering theme (XML)"
-msgstr ""
-
-#: res/values/strings.xml:359(string)
-msgid "Choose theme file"
-msgstr ""
-
-#: res/values/strings.xml:360(string)
-msgid "Error loading theme file %s!"
 msgstr ""
 
 #: res/values/strings.xml:362(string)

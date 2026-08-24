@@ -1,398 +1,143 @@
 package org.aprsdroid.app
 
-import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Point
-import android.graphics.Rect
+import android.graphics.RectF
 import android.graphics.Typeface
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Base64
 import android.util.Log
-import android.view.MenuItem
 import android.view.View
-import androidx.core.content.ContextCompat
-import androidx.core.content.edit
+import androidx.core.graphics.createBitmap
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import org.mapsforge.v3.android.maps.MapActivity
-import org.mapsforge.v3.android.maps.MapView
-import org.mapsforge.v3.android.maps.Projection
-import org.mapsforge.v3.android.maps.overlay.ItemizedOverlay
-import org.mapsforge.v3.android.maps.overlay.OverlayItem
-import org.mapsforge.v3.core.GeoPoint
+import com.google.gson.JsonObject
+import org.aprsdroid.app.map.OnlineTileSources
+import org.aprsdroid.app.map.TileUrlTemplate
+import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.Style
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.BackgroundLayer
+import org.maplibre.android.style.layers.PropertyFactory.backgroundColor
+import org.maplibre.android.style.layers.PropertyFactory.iconAllowOverlap
+import org.maplibre.android.style.layers.PropertyFactory.iconIgnorePlacement
+import org.maplibre.android.style.layers.PropertyFactory.iconImage
+import org.maplibre.android.style.layers.RasterLayer
+import org.maplibre.android.style.layers.SymbolLayer
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.android.style.sources.RasterSource
+import org.maplibre.android.style.sources.TileSet
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.Point
 import java.util.ArrayList
+import kotlin.math.ceil
+import kotlin.math.max
+import kotlin.math.roundToInt
 
-class OSMStation(
-    val movelog: List<GeoPoint>?,
-    val pt: GeoPoint,
-    val call: String,
-    val origin: String?,
-    val symbol: String
-) : OverlayItem(pt, call, origin) {
+/**
+ * GMS-independent map screen backed by MapLibre Native.
+ *
+ * The surrounding toolbar and controls intentionally remain shared with the legacy map screen.
+ * MapLibre only replaces the rendering surface for AMap, OSM, and custom raster tiles.
+ */
+class MapAct : MapLoaderBase() {
 
-    fun inArea(bl: GeoPoint, tr: GeoPoint): Boolean {
-        val latOk = bl.latitudeE6 <= pt.latitudeE6 && pt.latitudeE6 <= tr.latitudeE6
-        val lonOk = if (bl.longitudeE6 <= tr.longitudeE6) {
-            bl.longitudeE6 <= pt.longitudeE6 && pt.longitudeE6 <= tr.longitudeE6
-        } else {
-            bl.longitudeE6 <= pt.longitudeE6 || pt.longitudeE6 <= tr.longitudeE6
-        }
-        return latOk && lonOk
-    }
-}
+    override val TAG = "APRSdroid.MapLibre"
 
-class StationOverlay(
-    icons: Drawable,
-    val context: MapAct,
-    val db: StorageDatabase
-) : ItemizedOverlay<OSMStation>(icons) {
-
-    companion object {
-        const val TAG = "APRSdroid.StaOverlay"
-    }
-
-    var stations: ArrayList<OSMStation> = ArrayList()
-    val iconbitmap = (icons as BitmapDrawable).bitmap
-    val symbolSize = iconbitmap.width / 16
-    val drawSize = (context.resources.displayMetrics.density * 24).toInt()
-
-    init {
-        icons.setBounds(0, 0, symbolSize, symbolSize)
-        populate()
-    }
-
-    override fun size(): Int = stations.size
-    override fun createItem(idx: Int): OSMStation = stations[idx]
-
-    fun symbol2rect(index: Int, page: Int): Rect {
-        if (index < 0 || index >= 6 * 16) return Rect(0, 0, symbolSize, symbolSize)
-        val altOffset = page * symbolSize * 6
-        val y = (index / 16) * symbolSize + altOffset
-        val x = (index % 16) * symbolSize
-        return Rect(x, y, x + symbolSize, y + symbolSize)
-    }
-
-    fun symbol2rect(symbol: String): Rect {
-        val page = if (symbol.isNotEmpty() && symbol[0] == '/') 0 else 1
-        val index = if (symbol.length > 1) symbol[1].code - 33 else 0
-        return symbol2rect(index, page)
-    }
-
-    fun symbolIsOverlayed(symbol: String): Boolean {
-        return symbol.isNotEmpty() && symbol[0] != '/' && symbol[0] != '\\'
-    }
-
-    override fun drawOverlayBitmap(c: Canvas, dp: Point?, proj: Projection, zoom: Byte) {
-        if (!context.mapview.mapPosition.isValid) return
-        val fontSize = drawSize * 7 / 8
-        val textPaint = Paint().apply {
-            color = 0xff000000.toInt()
-            textAlign = Paint.Align.CENTER
-            textSize = fontSize.toFloat()
-            typeface = Typeface.MONOSPACE
-            isAntiAlias = true
-        }
-        val strokePaint = Paint(textPaint).apply {
-            color = 0xffffffff.toInt()
-            style = Paint.Style.STROKE
-            strokeWidth = drawSize.toFloat() / 8.0f
-            setShadowLayer(6f, 0f, 0f, 0x80000000.toInt())
-        }
-
-        val p = Point()
-        val width = c.width
-        val height = c.height
-        val ss = drawSize / 2
-        for (s in stations) {
-            proj.toPixels(s.pt, p)
-            if (p.x >= -ss && p.y >= -ss && p.x < width + ss && p.y < height + ss) {
-                val srcRect = symbol2rect(s.symbol)
-                val destRect = Rect(p.x - ss, p.y - ss, p.x + ss, p.y + ss)
-                if (zoom >= 10) {
-                    c.drawText(s.call, p.x.toFloat(), (p.y + ss + fontSize).toFloat(), strokePaint)
-                    c.drawText(s.call, p.x.toFloat(), (p.y + ss + fontSize).toFloat(), textPaint)
-                }
-                c.drawBitmap(iconbitmap, srcRect, destRect, null)
-                if (symbolIsOverlayed(s.symbol)) {
-                    c.drawBitmap(iconbitmap, symbol2rect(s.symbol[0].code - 33, 2), destRect, null)
-                }
-            }
-        }
-    }
-
-    override fun onTap(gp: GeoPoint, mv: MapView): Boolean {
-        val proj = mv.projection
-        val p = proj.toPixels(gp, null)
-        val radius = (36 * context.resources.displayMetrics.density).toInt()
-        val botleft = proj.fromPixels(p.x - radius, p.y + radius)
-        val topright = proj.fromPixels(p.x + radius, p.y - radius)
-        val list = stations.filter { it.inArea(botleft, topright) }.map { it.call }
-        val mycall = context.prefs.getCallSsid()
-        var myLat = 0
-        var myLon = 0
-        val pos = db.getStaPosition(mycall)
-        if (pos.count > 0 && pos.moveToFirst()) {
-            val latIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LAT)
-            val lonIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LON)
-            if (latIdx >= 0 && lonIdx >= 0) {
-                myLat = pos.getInt(latIdx)
-                myLon = pos.getInt(lonIdx)
-            }
-        }
-        pos.close()
-
-        return when {
-            list.isEmpty() -> false
-            list.size == 1 -> {
-                org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(context, list[0], db, myLat, myLon)
-                true
-            }
-            else -> {
-                MaterialAlertDialogBuilder(context)
-                    .setTitle(R.string.map_select)
-                    .setItems(list.toTypedArray()) { _, item ->
-                        org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(context, list[item], db, myLat, myLon)
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
-                true
-            }
-        }
-    }
-
-    fun load_stations(i: Intent): ArrayList<OSMStation> {
-        val s = ArrayList<OSMStation>()
-        val ageTs = (System.currentTimeMillis() - context.prefs.getShowAge()).toString()
-        val filter = if (context.showObjects) "TS > ? OR CALL=?" else "(ORIGIN IS NULL AND TS > ?) OR CALL=?"
-        val c = db.getStations(filter, arrayOf(ageTs, context.targetcall), null)
-        c.moveToFirst()
-        while (!c.isAfterLast) {
-            val call = c.getString(StorageDatabase.Companion.Station.COLUMN_MAP_CALL)
-            val lat = c.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LAT)
-            val lon = c.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LON)
-            val symbol = c.getString(StorageDatabase.Companion.Station.COLUMN_MAP_SYMBOL)
-            val origin = c.getString(StorageDatabase.Companion.Station.COLUMN_MAP_ORIGIN)
-            val p = GeoPoint(lat, lon)
-            s.add(OSMStation(null, p, call, origin, symbol ?: "/$"))
-            c.moveToNext()
-        }
-        c.close()
-        return s
-    }
-
-    fun replace_stations(s: ArrayList<OSMStation>) {
-        stations = s
-        populate()
-        context.onStopLoading()
-    }
-}
-
-class MapAct : MapActivity(), LoadingIndicator {
-
-    val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
-    var targetcall: String = ""
-    var showObjects: Boolean = false
-
-    val mapview: MapView by lazy { findViewById(R.id.mapview) }
-    val allicons: Drawable by lazy { requireNotNull(ContextCompat.getDrawable(this, R.drawable.allicons)) }
-    val db: StorageDatabase by lazy { StorageDatabase.open(this) }
-    val staoverlay: StationOverlay by lazy { StationOverlay(allicons, this, db) }
-    val loading: View by lazy { findViewById(R.id.loading) }
-    lateinit var toolbar: MaterialToolbar
-
-    val locReceiver = LocationReceiver2(
-        { staoverlay.load_stations(it) },
-        { staoverlay.replace_stations(it) },
-        { /* cancel */ }
-    )
+    private val mapview: MapView by lazy { findViewById(R.id.mapview) }
+    private val loading: View by lazy { findViewById(R.id.loading) }
+    private var map: MapLibreMap? = null
+    private var pendingStations = arrayListOf<Station>()
+    private val activeImageIds = linkedSetOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.mapview)
 
-        toolbar = findViewById(R.id.toolbar)
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
         toolbar.setNavigationOnClickListener { finish() }
-        toolbar.inflateMenu(R.menu.options_map)
-        toolbar.inflateMenu(R.menu.options_activities)
-        toolbar.inflateMenu(R.menu.options)
 
-        toolbar.setOnMenuItemClickListener { item ->
-            handleMenuItem(item)
+        mapview.onCreate(savedInstanceState)
+        mapview.addOnDidFailLoadingMapListener { error ->
+            Log.e(TAG, "MapLibre failed to load the map: $error")
+            onStopLoading()
         }
-
-        // Hide crosshair and coordinate selection buttons when not in coordinate chooser mode
-        val isChooser = callingActivity != null
-        findViewById<View>(R.id.crosshair)?.visibility = if (isChooser) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.accept)?.visibility = if (isChooser) View.VISIBLE else View.GONE
-
-        mapview.setBuiltInZoomControls(false)
-        mapview.overlays.add(staoverlay)
-        mapview.setTextScale(resources.displayMetrics.density)
-
-        findViewById<View>(R.id.btn_zoom_in)?.setOnClickListener {
-            mapview.controller.zoomIn()
+        mapview.addOnRenderErrorListener {
+            Log.e(TAG, "MapLibre renderer reported an error")
         }
-        findViewById<View>(R.id.btn_zoom_out)?.setOnClickListener {
-            mapview.controller.zoomOut()
-        }
-        findViewById<View>(R.id.btn_my_location)?.setOnClickListener {
-            val mycall = prefs.getCallSsid()
-            val pos = db.getStaPosition(mycall)
-            if (pos.count > 0 && pos.moveToFirst()) {
-                val latIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LAT)
-                val lonIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LON)
-                if (latIdx >= 0 && lonIdx >= 0) {
-                    val lat = pos.getInt(latIdx)
-                    val lon = pos.getInt(lonIdx)
-                    mapview.controller.setCenter(GeoPoint(lat, lon))
-                }
+        mapview.getMapAsync { maplibreMap ->
+            map = maplibreMap
+            maplibreMap.uiSettings.apply {
+                isCompassEnabled = false
+                isLogoEnabled = false
+                isAttributionEnabled = false
+                isTiltGesturesEnabled = false
             }
-            pos.close()
+            maplibreMap.addOnCameraMoveListener {
+                val target = maplibreMap.cameraPosition.target ?: return@addOnCameraMoveListener
+                updateCoordinateInfo(target.latitude.toFloat(), target.longitude.toFloat())
+            }
+            maplibreMap.addOnMapClickListener { point -> onMapTap(point) }
+
+            loadInitialMapPosition()
+            val currentMode = MapModes.defaultMapMode(this, prefs)
+            if (currentMode.viewClass != MapAct::class.java) {
+                saveMapPosition()
+                switchMapActivity(currentMode.viewClass)
+                return@getMapAsync
+            }
+            applyRasterStyle(currentMode)
+            onStartLoading()
+            startLoading()
         }
 
-        targetcall = intent.getStringExtra("call") ?: ""
-        showObjects = prefs.getBoolean("show_objects", false)
-
-        applyCurrentMapMode()
-        mapview.post {
-            loadMapPosition()
-            mapview.redrawTiles()
-        }
-        startLoading()
+        findViewById<View>(R.id.btn_zoom_in).setOnClickListener { changeZoom(1) }
+        findViewById<View>(R.id.btn_zoom_out).setOnClickListener { changeZoom(-1) }
+        findViewById<View>(R.id.btn_my_location).setOnClickListener { moveToMyLocation() }
     }
 
-    private fun applyCurrentMapMode() {
-        val mode = MapModes.defaultMapMode(this, prefs)
-        toolbar.title = getString(R.string.app_map)
-
-        when (mode.tileType) {
-            MapTileType.AMAP -> {
-                mapview.setMapGenerator(AMapTileDownloader())
-            }
-            MapTileType.OSM -> {
-                mapview.setMapGenerator(OsmTileDownloader())
-            }
-            MapTileType.CUSTOM -> {
-                val customUrl = prefs.getString("map_custom_url", "https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}")
-                val customSub = prefs.getString("map_custom_subdomains", "1234")
-                mapview.setMapGenerator(CustomTileDownloader(customUrl, customSub))
-            }
-            MapTileType.GOOGLE_NORMAL,
-            MapTileType.GOOGLE_HYBRID -> {
-                // Google modes use GoogleMapAct; keep a deterministic fallback if routed here.
-                mapview.setMapGenerator(AMapTileDownloader())
-            }
-        }
-    }
-
-    private fun loadMapPosition() {
-        var lat = prefs.prefs.getFloat("map_lat", 0f)
-        var lon = prefs.prefs.getFloat("map_lon", 0f)
-        val zoom = prefs.prefs.getFloat("map_zoom", 12f).toInt()
-
-        if (lat == 0f && lon == 0f) {
-            val c = db.getStations(null, null, "TS DESC LIMIT 1")
-            if (c.moveToFirst()) {
-                val latE6 = c.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LAT)
-                val lonE6 = c.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LON)
-                lat = (latE6 / 1e6).toFloat()
-                lon = (lonE6 / 1e6).toFloat()
-            } else {
-                lat = 39.9042f
-                lon = 116.4074f
-            }
-            c.close()
-        }
-
-        mapview.controller.setCenter(GeoPoint((lat * 1e6).toInt(), (lon * 1e6).toInt()))
-        mapview.controller.setZoom(zoom)
-    }
-
-    private fun saveMapPosition() {
-        val pos = mapview.mapPosition
-        if (pos != null && pos.isValid) {
-            val gp = pos.mapCenter
-            prefs.prefs.edit {
-                putFloat("map_lat", (gp.latitudeE6 / 1e6).toFloat())
-                putFloat("map_lon", (gp.longitudeE6 / 1e6).toFloat())
-                putFloat("map_zoom", pos.zoomLevel.toFloat())
-            }
-        }
-    }
-
-    private fun handleMenuItem(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.amap -> switchMode("amap")
-            R.id.osm -> switchMode("osm")
-            R.id.custom_tile -> switchMode("custom")
-            R.id.normal -> switchGoogleMap("google")
-            R.id.satellite -> switchGoogleMap("satellite")
-            R.id.objects -> {
-                showObjects = prefs.toggleBoolean("show_objects", true)
-                item.isChecked = showObjects
-                startLoading()
-            }
-            R.id.hub -> {
-                startActivity(Intent(this, HubActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-                finish()
-            }
-            R.id.log -> {
-                startActivity(Intent(this, LogActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-                finish()
-            }
-            R.id.conversations -> {
-                startActivity(Intent(this, ConversationsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-                finish()
-            }
-            R.id.preferences -> {
-                startActivity(Intent(this, PrefsAct::class.java))
-            }
-            R.id.export -> {
-                onStartLoading()
-                LogExporter(this, StorageDatabase.open(this), null) { onStopLoading() }.execute()
-            }
-            R.id.clear -> {
-                onStartLoading()
-                StorageCleaner(this, StorageDatabase.open(this)) { onStopLoading() }.execute()
-            }
-            else -> return super.onOptionsItemSelected(item)
-        }
-        return true
-    }
-
-    private fun switchMode(tag: String) {
-        prefs.prefs.edit { putString("mapmode", tag) }
-        applyCurrentMapMode()
-        mapview.redrawTiles()
-    }
-
-    private fun switchGoogleMap(tag: String) {
-        prefs.prefs.edit { putString("mapmode", tag) }
-        saveMapPosition()
-        startActivity(Intent(this, GoogleMapAct::class.java).putExtras(intent))
-        finish()
-    }
-
-    fun startLoading() {
-        locReceiver.startTask(Intent())
-        ContextCompat.registerReceiver(this, locReceiver, android.content.IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_EXPORTED)
+    override fun onStart() {
+        super.onStart()
+        mapview.onStart()
     }
 
     override fun onResume() {
         super.onResume()
+        mapview.onResume()
     }
 
     override fun onPause() {
         saveMapPosition()
+        mapview.onPause()
         super.onPause()
     }
 
+    override fun onStop() {
+        mapview.onStop()
+        super.onStop()
+    }
+
     override fun onDestroy() {
-        try { unregisterReceiver(locReceiver) } catch (_: Exception) {}
+        mapview.onDestroy()
         super.onDestroy()
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mapview.onLowMemory()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        mapview.onSaveInstanceState(outState)
     }
 
     override fun onStartLoading() {
@@ -401,5 +146,290 @@ class MapAct : MapActivity(), LoadingIndicator {
 
     override fun onStopLoading() {
         loading.visibility = View.GONE
+    }
+
+    override fun reloadMap() {
+        onStartLoading()
+        locReceiver.startTask(Intent())
+    }
+
+    override fun changeZoom(delta: Int) {
+        map?.animateCamera(CameraUpdateFactory.zoomBy(delta.toDouble()))
+    }
+
+    override fun loadMapViewPosition(lat: Float, lon: Float, zoom: Float) {
+        map?.moveCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(lat.toDouble(), lon.toDouble()),
+                zoom.toDouble()
+            )
+        )
+    }
+
+    override fun setMapMode(mm: MapMode) {
+        if (mm.viewClass != MapAct::class.java) {
+            saveMapPosition()
+            super.setMapMode(mm)
+            return
+        }
+        applyRasterStyle(mm)
+    }
+
+    override fun onStationUpdate(sl: ArrayList<Station>) {
+        pendingStations = ArrayList(sl)
+        map?.style?.let { updateStationLayer(it, pendingStations) }
+    }
+
+    private fun applyRasterStyle(mode: MapMode) {
+        val maplibreMap = map ?: return
+        val (urlPattern, subdomains, maxZoom, attribution) = when (mode.tileType) {
+            MapTileType.AMAP -> TileConfiguration(
+                OnlineTileSources.AMAP_TILE_URL,
+                OnlineTileSources.AMAP_SUBDOMAINS,
+                18f,
+                "AutoNavi"
+            )
+            MapTileType.OSM -> TileConfiguration(
+                OnlineTileSources.OSM_TILE_URL,
+                OnlineTileSources.OSM_SUBDOMAINS,
+                19f,
+                "OpenStreetMap contributors"
+            )
+            MapTileType.CUSTOM -> TileConfiguration(
+                prefs.getString("map_custom_url", OnlineTileSources.AMAP_TILE_URL)
+                    .trim()
+                    .ifEmpty { OnlineTileSources.AMAP_TILE_URL },
+                prefs.getString("map_custom_subdomains", OnlineTileSources.AMAP_SUBDOMAINS).trim(),
+                19f,
+                null
+            )
+            MapTileType.GOOGLE_NORMAL,
+            MapTileType.GOOGLE_HYBRID -> return
+        }
+
+        val tileUrls = TileUrlTemplate.expand(urlPattern, subdomains)
+        if (tileUrls.isEmpty()) return
+        onStartLoading()
+        val tileSet = TileSet("2.2.0", *tileUrls).apply {
+            setMinZoom(0f)
+            setMaxZoom(maxZoom)
+            this.attribution = attribution
+        }
+        val emptyStations = FeatureCollection.fromFeatures(emptyArray())
+        val stationIconLayer = SymbolLayer(STATION_ICON_LAYER_ID, STATION_SOURCE_ID).withProperties(
+            iconImage(Expression.get(PROPERTY_ICON)),
+            iconAllowOverlap(true),
+            iconIgnorePlacement(true)
+        ).apply {
+            setMaxZoom(CALLSIGN_ZOOM)
+        }
+        val stationLabelLayer = SymbolLayer(STATION_LABEL_LAYER_ID, STATION_SOURCE_ID).withProperties(
+            iconImage(Expression.get(PROPERTY_LABELED_ICON)),
+            iconAllowOverlap(true),
+            iconIgnorePlacement(true)
+        ).apply {
+            setMinZoom(CALLSIGN_ZOOM)
+        }
+
+        activeImageIds.clear()
+        maplibreMap.setStyle(
+            Style.Builder()
+                .withLayer(
+                    BackgroundLayer(BACKGROUND_LAYER_ID).withProperties(backgroundColor(Color.WHITE))
+                )
+                .withSource(RasterSource(RASTER_SOURCE_ID, tileSet, TILE_SIZE))
+                .withLayer(RasterLayer(RASTER_LAYER_ID, RASTER_SOURCE_ID))
+                .withSource(GeoJsonSource(STATION_SOURCE_ID, emptyStations))
+                .withLayer(stationIconLayer)
+                .withLayer(stationLabelLayer)
+        ) { style ->
+            updateStationLayer(style, pendingStations)
+        }
+    }
+
+    private fun updateStationLayer(style: Style, stations: List<Station>) {
+        activeImageIds.forEach { imageId ->
+            if (style.getImage(imageId) != null) style.removeImage(imageId)
+        }
+        activeImageIds.clear()
+
+        val iconSize = (24f * resources.displayMetrics.density).roundToInt().coerceAtLeast(24)
+        val symbolImages = mutableMapOf<String, String>()
+        val features = stations.mapIndexed { index, station ->
+            val symbol = station.symbol ?: "/$"
+            val iconId = symbolImages.getOrPut(symbol) {
+                val id = "aprs-symbol-${encodeImageId(symbol)}"
+                val icon = MapModes.symbol2bitmap(symbol, iconSize).apply {
+                    density = resources.displayMetrics.densityDpi
+                }
+                style.addImage(id, icon)
+                activeImageIds.add(id)
+                id
+            }
+            val labeledIconId = "aprs-station-$index-${encodeImageId(station.call)}"
+            style.addImage(labeledIconId, createLabeledStationBitmap(station.call, symbol, iconSize))
+            activeImageIds.add(labeledIconId)
+
+            val properties = JsonObject().apply {
+                addProperty(PROPERTY_CALL, station.call)
+                addProperty(PROPERTY_ICON, iconId)
+                addProperty(PROPERTY_LABELED_ICON, labeledIconId)
+            }
+            Feature.fromGeometry(Point.fromLngLat(station.lon, station.lat), properties)
+        }
+
+        style.getSourceAs<GeoJsonSource>(STATION_SOURCE_ID)
+            ?.setGeoJson(FeatureCollection.fromFeatures(features.toTypedArray()))
+        onStopLoading()
+    }
+
+    private fun createLabeledStationBitmap(call: String, symbol: String, iconSize: Int): Bitmap {
+        val density = resources.displayMetrics.density
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textAlign = Paint.Align.CENTER
+            textSize = iconSize * 7f / 8f
+            typeface = Typeface.MONOSPACE
+        }
+        val strokePaint = Paint(textPaint).apply {
+            color = Color.WHITE
+            style = Paint.Style.STROKE
+            strokeWidth = max(1f, iconSize / 8f)
+        }
+        val metrics = textPaint.fontMetrics
+        val labelHeight = ceil(metrics.descent - metrics.ascent).toInt().coerceAtLeast(1)
+        val horizontalPadding = (4f * density).roundToInt()
+        val width = max(iconSize, ceil(strokePaint.measureText(call)).toInt() + horizontalPadding * 2)
+        val bitmap = createBitmap(width, iconSize + labelHeight * 2).apply {
+            this.density = resources.displayMetrics.densityDpi
+        }
+        val canvas = Canvas(bitmap)
+        val symbolBitmap = MapModes.symbol2bitmap(symbol, iconSize)
+        canvas.drawBitmap(symbolBitmap, ((width - iconSize) / 2f), labelHeight.toFloat(), null)
+        val baseline = labelHeight + iconSize - metrics.ascent
+        val centerX = width / 2f
+        canvas.drawText(call, centerX, baseline, strokePaint)
+        canvas.drawText(call, centerX, baseline, textPaint)
+        return bitmap
+    }
+
+    private fun onMapTap(point: LatLng): Boolean {
+        if (isCoordinateChooser) return false
+        val maplibreMap = map ?: return false
+        val screenPoint = maplibreMap.projection.toScreenLocation(point)
+        val radius = 36f * resources.displayMetrics.density
+        val area = RectF(
+            screenPoint.x - radius,
+            screenPoint.y - radius,
+            screenPoint.x + radius,
+            screenPoint.y + radius
+        )
+        val calls = maplibreMap.queryRenderedFeatures(
+            area,
+            STATION_ICON_LAYER_ID,
+            STATION_LABEL_LAYER_ID
+        ).mapNotNull { feature ->
+            if (feature.hasProperty(PROPERTY_CALL)) feature.getStringProperty(PROPERTY_CALL) else null
+        }.distinct()
+
+        return when {
+            calls.isEmpty() -> false
+            calls.size == 1 -> {
+                showStationDetails(calls.first())
+                true
+            }
+            else -> {
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.map_select)
+                    .setItems(calls.toTypedArray()) { _, index -> showStationDetails(calls[index]) }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+                true
+            }
+        }
+    }
+
+    private fun showStationDetails(call: String) {
+        var myLat = 0
+        var myLon = 0
+        val position = db.getStaPosition(prefs.getCallSsid())
+        if (position.count > 0 && position.moveToFirst()) {
+            val latIndex = position.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+            val lonIndex = position.getColumnIndex(StorageDatabase.Companion.Station.LON)
+            if (latIndex >= 0 && lonIndex >= 0) {
+                myLat = position.getInt(latIndex)
+                myLon = position.getInt(lonIndex)
+            }
+        }
+        position.close()
+        org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(this, call, db, myLat, myLon)
+    }
+
+    private fun moveToMyLocation() {
+        val position = db.getStaPosition(prefs.getCallSsid())
+        if (position.count > 0 && position.moveToFirst()) {
+            val latIndex = position.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+            val lonIndex = position.getColumnIndex(StorageDatabase.Companion.Station.LON)
+            if (latIndex >= 0 && lonIndex >= 0) {
+                val latitude = position.getInt(latIndex) / 1_000_000.0
+                val longitude = position.getInt(lonIndex) / 1_000_000.0
+                map?.animateCamera(CameraUpdateFactory.newLatLng(LatLng(latitude, longitude)))
+            }
+        }
+        position.close()
+    }
+
+    private fun loadInitialMapPosition() {
+        var latitude = prefs.prefs.getFloat("map_lat", 0f)
+        var longitude = prefs.prefs.getFloat("map_lon", 0f)
+        val zoom = prefs.prefs.getFloat("map_zoom", 12f)
+        if (latitude == 0f && longitude == 0f) {
+            val latest = db.getStations(null, null, "TS DESC LIMIT 1")
+            if (latest.moveToFirst()) {
+                latitude = latest.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LAT) / 1_000_000f
+                longitude = latest.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LON) / 1_000_000f
+            } else {
+                latitude = 39.9042f
+                longitude = 116.4074f
+            }
+            latest.close()
+        }
+        loadMapViewPosition(latitude, longitude, zoom)
+    }
+
+    private fun saveMapPosition() {
+        val camera = map?.cameraPosition ?: return
+        val target = camera.target ?: return
+        saveMapViewPosition(
+            target.latitude.toFloat(),
+            target.longitude.toFloat(),
+            camera.zoom.toFloat()
+        )
+    }
+
+    private fun encodeImageId(value: String): String = Base64.encodeToString(
+        value.toByteArray(Charsets.UTF_8),
+        Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
+    )
+
+    private data class TileConfiguration(
+        val urlPattern: String,
+        val subdomains: String,
+        val maxZoom: Float,
+        val attribution: String?
+    )
+
+    private companion object {
+        const val TILE_SIZE = 256
+        const val CALLSIGN_ZOOM = 10f
+        const val BACKGROUND_LAYER_ID = "aprs-background"
+        const val RASTER_SOURCE_ID = "aprs-raster-source"
+        const val RASTER_LAYER_ID = "aprs-raster-layer"
+        const val STATION_SOURCE_ID = "aprs-stations-source"
+        const val STATION_ICON_LAYER_ID = "aprs-stations-icons"
+        const val STATION_LABEL_LAYER_ID = "aprs-stations-labels"
+        const val PROPERTY_CALL = "call"
+        const val PROPERTY_ICON = "icon"
+        const val PROPERTY_LABELED_ICON = "labeled-icon"
     }
 }

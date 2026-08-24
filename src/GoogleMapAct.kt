@@ -12,10 +12,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.model.TileOverlay
-import com.google.android.gms.maps.model.TileOverlayOptions
 import com.google.android.material.appbar.MaterialToolbar
-import org.aprsdroid.app.map.OnlineTileProvider
 import java.util.ArrayList
 
 class GoogleMapAct : MapLoaderBase(),
@@ -31,8 +28,6 @@ class GoogleMapAct : MapLoaderBase(),
     var visible_callsigns = true
     var first_load = true
     val CALLSIGN_ZOOM = 8
-
-    private var currentTileOverlay: TileOverlay? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -139,9 +134,19 @@ class GoogleMapAct : MapLoaderBase(),
     }
 
     override fun setMapMode(mm: MapMode) {
+        if (mm.viewClass != GoogleMapAct::class.java) {
+            map?.cameraPosition?.let { camera ->
+                saveMapViewPosition(
+                    camera.target.latitude.toFloat(),
+                    camera.target.longitude.toFloat(),
+                    camera.zoom
+                )
+            }
+            super.setMapMode(mm)
+            return
+        }
+
         val gMap = map ?: return
-        currentTileOverlay?.remove()
-        currentTileOverlay = null
 
         when (mm.tileType) {
             MapTileType.GOOGLE_NORMAL -> {
@@ -150,35 +155,15 @@ class GoogleMapAct : MapLoaderBase(),
             MapTileType.GOOGLE_HYBRID -> {
                 gMap.mapType = GoogleMap.MAP_TYPE_HYBRID
             }
-            MapTileType.AMAP -> {
-                gMap.mapType = GoogleMap.MAP_TYPE_NONE
-                val provider = OnlineTileProvider.createAmap()
-                currentTileOverlay = gMap.addTileOverlay(TileOverlayOptions().tileProvider(provider).fadeIn(false))
-            }
-            MapTileType.OSM -> {
-                gMap.mapType = GoogleMap.MAP_TYPE_NONE
-                val provider = OnlineTileProvider.createOsm()
-                currentTileOverlay = gMap.addTileOverlay(TileOverlayOptions().tileProvider(provider).fadeIn(false))
-            }
-            MapTileType.CUSTOM -> {
-                gMap.mapType = GoogleMap.MAP_TYPE_NONE
-                val customUrl = prefs.getString("map_custom_url", OnlineTileProvider.AMAP_TILE_URL).trim()
-                val customSubdomains = prefs.getString("map_custom_subdomains", "1234").trim()
-                val effectiveUrl = customUrl.ifEmpty { OnlineTileProvider.AMAP_TILE_URL }
-                val provider = OnlineTileProvider.createCustom(effectiveUrl, customSubdomains)
-                currentTileOverlay = gMap.addTileOverlay(TileOverlayOptions().tileProvider(provider).fadeIn(false))
-            }
+            MapTileType.AMAP,
+            MapTileType.OSM,
+            MapTileType.CUSTOM -> return
         }
     }
 
     override fun onStationUpdate(sl: ArrayList<Station>) {
         val gMap = map ?: return
         gMap.clear()
-        // Re-add tile overlay if active since clear() clears all overlays and markers
-        val currentMode = MapModes.defaultMapMode(this, prefs)
-        if (currentMode.tileType != MapTileType.GOOGLE_NORMAL && currentMode.tileType != MapTileType.GOOGLE_HYBRID) {
-            setMapMode(currentMode)
-        }
 
         for (sta in sl) {
             val pos = LatLng(sta.lat, sta.lon)

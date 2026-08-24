@@ -8,8 +8,9 @@
   * **StationHelper** -- helper for per-station menus
     * **MessageActivity** -- conversation with a callsign
     * **StationActivity** -- details of a callsign, list of all SSIDs, list of all packets
-* **MapAct** (MapsForge MapActivity) -- offline map
-* **GoogleMapAct** (Android Activity) -- online map
+* **MapLoaderBase** (AndroidX AppCompatActivity) -- shared station loading for map screens
+  * **MapAct** -- MapLibre Native online raster maps (AMap, OpenStreetMap, custom)
+  * **GoogleMapAct** -- Google Maps SDK map and satellite modes
 * **PrefsAct** (Android PreferenceActivity) -- central preferences 
 * **PrefSymbolAct** (Android Activity) -- chooser for APRS symbol
 * **ProfileImportActivity** (Android Activity) -- JSON profile file import

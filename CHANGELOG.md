@@ -1,3 +1,13 @@
+## 🚀 [v1.7.1-ic705] - 2026-08-24
+
+### 🗺️ MapLibre 地图引擎与 ARM64 渲染链
+* 将高德、OpenStreetMap 与自定义在线瓦片从 Mapsforge 0.3.0 迁移到 MapLibre Native 13.5.1；删除旧 Mapsforge 聚合 JAR、三个专用瓦片下载器及相应 ProGuard 遗留规则。
+* 使用 MapLibre Vulkan/OpenGL 多后端构建，由运行设备能力自动优先选择 Vulkan，不满足条件时回退 OpenGL；发布 APK 仅包含 `arm64-v8a` 原生库。
+* 保持现有地图页面、顶栏、缩放/定位按钮、坐标选择器与图源菜单布局不变；APRS 符号、缩放后呼号标签、点击台站和多台站选择均迁移到 GeoJSON/SymbolLayer 实现。
+* Google 普通地图与卫星地图继续使用 Google Maps SDK；图源切换现在严格路由到对应引擎，不再由 Google SDK 代绘高德、OSM 或自定义瓦片。
+* 未加入可选的 MapLibre Offline 插件、离线包下载或离线地图管理界面；现有在线自定义瓦片 URL 与明文网络兼容策略保持不变。
+* 版本元数据更新为 `1.7.1-ic705`（`versionCode 2026082471`），新增瓦片模板展开测试，并继续以 JVM 测试、Android Lint 和 Release 构建作为发布门禁。
+
 ## 🚀 [v1.6.3-ic705] - 2026-08-24
 
 ### 🧹 现代 Activity Result、存储权限与零告警治理

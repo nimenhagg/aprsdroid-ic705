@@ -103,8 +103,10 @@ abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, Loadin
     }
 
     fun getTargetCall(): String {
-        val i = intent
-        return if (i != null && i.dataString != null) i.dataString ?: "" else ""
+        return intent?.dataString
+            ?: intent?.getStringExtra("call")
+            ?: intent?.getStringExtra("targetcall")
+            ?: ""
     }
 
     fun getMapTitlePrefix(): String {

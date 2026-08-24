@@ -34,8 +34,8 @@ allprojects {
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = (findProperty("MOD_VERSION") ?: "1.6.3").toString()
-	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082463").toString())
+	mod_version = (findProperty("MOD_VERSION") ?: "1.7.1").toString()
+	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082471").toString())
 	base_version = "APRSdroid v1.7.0"
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
@@ -61,8 +61,11 @@ android {
 	compileSdk = 37
 	defaultConfig {
 		applicationId = "me.nimenhagg.aprsdroidic705mod"
-		minSdk = 27
+		minSdk = 25
 		targetSdk = 37
+		ndk {
+			abiFilters 'arm64-v8a'
+		}
 		versionName "$build_revision"
 		versionCode mod_version_code
 		resValue "string", "build_revision", "$build_revision"
@@ -83,6 +86,8 @@ android {
 	lint {
 		// These versions are intentionally pinned to the mutually compatible release toolchain.
 		disable += ['AndroidGradlePluginVersion', 'NewerVersionAvailable']
+		// MapLibre brings Timber transitively; this app intentionally keeps its existing Android Log facade.
+		disable += ['LogNotTimber']
 	}
 
 	buildTypes {
@@ -164,6 +169,7 @@ play {
 
 dependencies {
 	implementation fileTree(include: ['*.jar'], dir: 'libs')
+	implementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.5.1'
 	implementation 'com.google.android.gms:play-services-maps:17.0.0'
 	implementation 'com.google.maps.android:android-maps-utils:0.5'
 	implementation 'androidx.core:core-ktx:1.12.0'

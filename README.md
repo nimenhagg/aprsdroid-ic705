@@ -4,7 +4,7 @@ APRSdroid 的 Icom IC-705 Wi-Fi 直连修改版 / An APRSdroid fork with direct 
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-当前版本 / Current release: **1.6.3-ic705**
+当前版本 / Current release: **1.7.1-ic705**
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -26,13 +26,15 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 的 Wi-Fi `Network`，因此电
 - APRS-IS TCP / HTTP POST / UDP，以及 AFSK、KISS、TNC2、Kenwood 等原 APRSdroid 连接方式。
 - 蓝牙 SPP、USB 串口和局域网 TCP TNC。
 - 智能信标、周期定位、手动位置、台站列表、消息、日志和多地图源。
-- Material 3 / Material You 界面，支持简体中文与英文。
+- MapLibre Native 在线栅格地图：支持高德、OpenStreetMap 与自定义瓦片，设备可用时优先 Vulkan 渲染并自动回退 OpenGL。
+- Material 3 / Material You 界面；保留 58 个 locale 资源目录，简体中文与英文为当前维护基线。
 
 ### 兼容性
 
 | 项目 | 要求或状态 |
 | --- | --- |
-| Android | Android 8.1+ |
+| Android | Android 7.1+（API 25） |
+| CPU / ABI | 仅 `arm64-v8a`；不支持 32 位 ARM 或 x86 设备 |
 | 目标平台 | Android 17 / API 37 |
 | 电台 | Icom IC-705，启用 WLAN 与 Network User |
 | 默认控制端口 | UDP `50001`（CI-V 与音频通常使用后续端口） |
@@ -43,7 +45,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 的 Wi-Fi `Network`，因此电
 
 ### 安装
 
-从 [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases) 下载最新 APK。若从旧签名或其他 APRSdroid 分支迁移，Android 可能要求先卸载旧应用；卸载会删除该应用的本地设置和日志，请先自行备份需要的数据。
+从 [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases) 下载最新 APK。1.7.1 起发布包仅包含 64 位 ARM 原生库；多数近年 Android 手机属于 `arm64-v8a`，32 位 ARM、x86 手机和大多数 x86 模拟器无法安装。若从旧签名或其他 APRSdroid 分支迁移，Android 可能要求先卸载旧应用；卸载会删除该应用的本地设置和日志，请先自行备份需要的数据。
 
 本项目的应用 ID 是 `me.nimenhagg.aprsdroidic705mod`。发布 APK 是否已签名以对应 Release 的说明和 Android 安装界面为准。
 
@@ -65,6 +67,13 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 的 Wi-Fi `Network`，因此电
 4. 可先打开“IC-705 Wi-Fi 诊断”确认握手、音频接收与 AFSK 解码状态。诊断页不会发射。
 5. 返回主页，点击单次位置或开始记录路径。首次启动时按系统提示授予必要权限。
 6. 首次发射请使用低功率或假负载，并确认 PTT 能及时释放。
+
+### 地图引擎
+
+- 高德、OpenStreetMap 和自定义 URL 使用 MapLibre Native 13.5.1。多后端构建会根据 Android 版本与设备图形能力优先选择 Vulkan；不满足 Vulkan 条件时自动使用 OpenGL。
+- Google 普通地图和卫星地图仍使用 Google Maps SDK，并需要可用的 Google Play 服务与正确受限的 Maps API Key。
+- 地图页的顶栏、缩放、回到我的位置、坐标选择和图源菜单保持原有布局；APRS 符号、呼号标签和台站点击已改由 MapLibre 图层渲染。
+- 本项目没有加入可选的 MapLibre Offline 插件，也没有离线包下载或管理功能。自定义图源是在线 `{z}/{x}/{y}` 瓦片模板，可选 `{s}` 子域名。
 
 ### 权限说明
 
@@ -131,6 +140,7 @@ mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY
 - Gradle 9.5.0
 - Kotlin / Compose Compiler 2.2.10（AGP 9 内置 Kotlin）
 - Compose BOM 2026.08.00
+- MapLibre Native 13.5.1（Vulkan/OpenGL 多后端）
 - Java 17
 
 ### 开发与发布
@@ -138,7 +148,7 @@ mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY
 - Kotlin 与 Java 源码位于非标准的 `src/` 目录，单元测试位于 `test/java/`。
 - 修改 IC-705 发射链时必须保留 PTT OFF 和绝对超时看门狗的安全语义，并增加对应测试。
 - 发布时同时更新 `build.gradle`、`CHANGELOG.md`、`AI_CONTEXT.md` 和 README 中的版本信息。
-- 标签格式是 `v<版本>-ic705`，例如 `v1.6.3-ic705`；CI 会验证标签和 APK 版本一致。
+- 标签格式是 `v<版本>-ic705`，例如 `v1.7.1-ic705`；CI 会验证标签和 APK 版本一致。
 - 完整的工程交接信息见 [AI_CONTEXT.md](AI_CONTEXT.md)。
 
 ## English
@@ -157,13 +167,15 @@ Each radio UDP socket is bound to Android's Wi-Fi `Network`. Radio traffic can t
 - APRS-IS TCP / HTTP POST / UDP plus APRSdroid's AFSK, KISS, TNC2, and Kenwood modes.
 - Bluetooth SPP, USB serial, and LAN TCP TNC transports.
 - SmartBeaconing, periodic/manual positions, stations, messages, logs, and multiple map sources.
-- Material 3 / Material You UI with Simplified Chinese and English resources.
+- MapLibre Native online raster maps for AMap, OpenStreetMap, and custom tiles, with Vulkan preferred when supported and automatic OpenGL fallback.
+- Material 3 / Material You UI. All 58 locale resource directories are retained; Simplified Chinese and English are the actively maintained baseline.
 
 ### Requirements
 
 | Item | Requirement or status |
 | --- | --- |
-| Android | Android 8.1+ |
+| Android | Android 7.1+ (API 25) |
+| CPU / ABI | `arm64-v8a` only; 32-bit ARM and x86 devices are unsupported |
 | Target platform | Android 17 / API 37 |
 | Radio | Icom IC-705 with WLAN and a Network User enabled |
 | Default control port | UDP `50001`; CI-V and audio normally use the following ports |
@@ -174,7 +186,7 @@ Menu labels can vary by radio firmware. Perform the first transmit test at low p
 
 ### Install
 
-Download the current APK from [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases). Android may require uninstalling an APK signed by another key or another APRSdroid fork first. Uninstalling removes that app's local preferences and logs, so back up anything you need.
+Download the current APK from [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases). Starting with 1.7.1, release APKs contain 64-bit ARM native libraries only. Most recent Android phones use `arm64-v8a`; 32-bit ARM, x86 phones, and most x86 emulators cannot install this build. Android may require uninstalling an APK signed by another key or another APRSdroid fork first. Uninstalling removes that app's local preferences and logs, so back up anything you need.
 
 The application ID is `me.nimenhagg.aprsdroidic705mod`. Check the individual Release notes and Android's installer for signing details.
 
@@ -196,6 +208,13 @@ Never post the radio password in screenshots, Issues, or logs.
 4. Optionally run IC-705 Wi-Fi Diagnostics first. The diagnostics screen receives and decodes but does not transmit.
 5. Return to the home screen and request a single position or start tracking. Grant the permissions Android requests.
 6. Make the first transmission at low power or into a dummy load, and verify that PTT releases promptly.
+
+### Map engines
+
+- AMap, OpenStreetMap, and custom URLs use MapLibre Native 13.5.1. Its multi-backend build prefers Vulkan according to the Android version and advertised device graphics capabilities, then automatically falls back to OpenGL when Vulkan is unavailable.
+- Google map and satellite modes continue to use the Google Maps SDK and require working Google Play services plus a correctly restricted Maps API key.
+- The existing toolbar, zoom, recenter, coordinate picker, and source menu layout is preserved. APRS symbols, callsign labels, and station taps are rendered through MapLibre layers.
+- This project does not include the optional MapLibre Offline plugin and provides no offline-region download or management UI. Custom sources are online `{z}/{x}/{y}` tile templates with optional `{s}` subdomains.
 
 ### Permissions
 
@@ -239,20 +258,21 @@ cd aprsdroid-ic705
 
 Use `./gradlew.bat` in Windows PowerShell. APKs are written below `build/outputs/apk/`; a local release build is normally unsigned unless release signing properties are supplied. To enable Google Maps, add an Android-restricted `mapsApiKey` to `local.properties`.
 
-The main toolchain is AGP 9.3.2, Gradle 9.5.0, built-in Kotlin / Compose Compiler 2.2.10, Compose BOM 2026.08.00, and Java 17.
+The main toolchain is AGP 9.3.2, Gradle 9.5.0, built-in Kotlin / Compose Compiler 2.2.10, Compose BOM 2026.08.00, MapLibre Native 13.5.1 multi-backend, and Java 17.
 
 ### Contributing and releasing
 
 - Production sources use the legacy `src/` layout; unit tests live in `test/java/`.
 - Changes to IC-705 transmit code must preserve PTT OFF and absolute-watchdog safety semantics and include tests.
 - A release updates `build.gradle`, `CHANGELOG.md`, `AI_CONTEXT.md`, and the version shown here.
-- Tags use `v<version>-ic705`, for example `v1.6.3-ic705`; CI rejects a tag that does not match APK metadata.
+- Tags use `v<version>-ic705`, for example `v1.7.1-ic705`; CI rejects a tag that does not match APK metadata.
 - See [AI_CONTEXT.md](AI_CONTEXT.md) for the maintainer and AI handover guide.
 
 ## 致谢与许可证 / Credits and license
 
 - 基础项目 / Upstream: [ge0rg/APRSdroid](https://github.com/ge0rg/aprsdroid)
 - 协议与实现参考 / Protocol and implementation references: [N0BOY/FT8CN](https://github.com/N0BOY/FT8CN), [wfview](https://wfview.org/)
+- 地图引擎 / Map engine: [MapLibre Native](https://maplibre.org/maplibre-native/); OpenStreetMap data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)
 - 许可证 / License: [GNU General Public License v2.0](LICENSE)
 
 项目开发包含 AI 辅助协作；所有变更仍应由维护者审查、测试并承担发布责任。

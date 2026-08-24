@@ -30,6 +30,7 @@ class ServiceNotifier {
     val callIdMap = mutableMapOf<String, Int>()
 
     fun setupChannels(ctx: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val nm = ctx.getSystemService(NotificationManager::class.java)
         nm?.createNotificationChannel(
             NotificationChannel("status", ctx.getString(R.string.aprsservice), NotificationManager.IMPORTANCE_LOW)
@@ -40,7 +41,12 @@ class ServiceNotifier {
     }
 
     fun newNotificationBuilder(ctx: Service, channel: String): Notification.Builder {
-        return Notification.Builder(ctx, channel)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(ctx, channel)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(ctx)
+        }
     }
 
     fun newNotification(ctx: Service, status: String): Notification {
@@ -121,7 +127,13 @@ class ServiceNotifier {
                 @Suppress("DEPRECATION")
                 ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
             }
-            v?.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 200, 200), -1))
+            val pattern = longArrayOf(0, 200, 200)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                v?.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
+            } else {
+                @Suppress("DEPRECATION")
+                v?.vibrate(pattern, -1)
+            }
         }
         val sound = prefs.getString(prefix + "notify_ringtone", null)
         if (!sound.isNullOrEmpty()) {
