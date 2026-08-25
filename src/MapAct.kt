@@ -396,15 +396,20 @@ class MapAct : MapLoaderBase() {
         var longitude = prefs.prefs.getFloat("map_lon", 0f)
         val zoom = prefs.prefs.getFloat("map_zoom", 12f)
         if (latitude == 0f && longitude == 0f) {
-            val latest = db.getStations(null, null, "TS DESC LIMIT 1")
-            if (latest.moveToFirst()) {
-                latitude = latest.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LAT) / 1_000_000f
-                longitude = latest.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LON) / 1_000_000f
-            } else {
+            try {
+                val latest = db.getStations(null, null, "1", "TS DESC")
+                if (latest.moveToFirst()) {
+                    latitude = latest.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LAT) / 1_000_000f
+                    longitude = latest.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LON) / 1_000_000f
+                }
+                latest.close()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading initial map position: $e", e)
+            }
+            if (latitude == 0f && longitude == 0f) {
                 latitude = 39.9042f
                 longitude = 116.4074f
             }
-            latest.close()
         }
         loadMapViewPosition(latitude, longitude, zoom)
     }

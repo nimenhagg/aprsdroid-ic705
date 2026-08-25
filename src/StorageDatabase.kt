@@ -272,8 +272,8 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         return true
     }
 
-    fun getStations(sel: String?, selArgs: Array<String>?, limit: String?): Cursor {
-        return readableDatabase.query(Station.TABLE, Station.COLUMNS_MAP, sel, selArgs, null, null, "CALL", limit)
+    fun getStations(sel: String?, selArgs: Array<String>?, limit: String?, orderBy: String = "CALL"): Cursor {
+        return readableDatabase.query(Station.TABLE, Station.COLUMNS_MAP, sel, selArgs, null, null, orderBy, limit)
     }
 
     fun getRectStations(lat1: Int, lon1: Int, lat2: Int, lon2: Int, limit: String?): Cursor {
