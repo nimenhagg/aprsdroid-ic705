@@ -4,7 +4,7 @@ APRSdroid 的 Icom IC-705 Wi-Fi 直连修改版 / An APRSdroid fork with direct 
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-当前版本 / Current release: **1.8.5-ic705**
+当前版本 / Current release: **1.8.6-ic705**
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -161,7 +161,7 @@ mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY
 - Kotlin 与 Java 源码位于非标准的 `src/` 目录，单元测试位于 `test/java/`。
 - 修改 IC-705 发射链时必须保留 PTT OFF 和绝对超时看门狗的安全语义，并增加对应测试。
 - 发布时同时更新 `build.gradle`、`CHANGELOG.md`、`AI_CONTEXT.md` 和 README 中的版本信息。
-- 标签格式是 `v<版本>-ic705`，例如 `v1.8.5-ic705`；CI 会验证标签和 APK 版本一致并发布签名 APK、校验和及独立 R8 mapping 构建产物。
+- 标签格式是 `v<版本>-ic705`，例如 `v1.8.6-ic705`；CI 会验证标签和 APK 版本一致并发布签名 APK、校验和及独立 R8 mapping 构建产物。
 - 完整的工程交接信息见 [AI_CONTEXT.md](AI_CONTEXT.md)。
 
 ## English
@@ -290,7 +290,7 @@ The main toolchain is AGP 9.3.2, Gradle 9.5.0, built-in Kotlin / Compose Compile
 - Production sources use the legacy `src/` layout; unit tests live in `test/java/`.
 - Changes to IC-705 transmit code must preserve PTT OFF and absolute-watchdog safety semantics and include tests.
 - A release updates `build.gradle`, `CHANGELOG.md`, `AI_CONTEXT.md`, and the version shown here.
-- Tags use `v<version>-ic705`, for example `v1.8.5-ic705`; CI rejects a tag that does not match APK metadata and publishes signed APKs, checksums, and separate R8 mapping artifacts.
+- Tags use `v<version>-ic705`, for example `v1.8.6-ic705`; CI rejects a tag that does not match APK metadata and publishes signed APKs, checksums, and separate R8 mapping artifacts.
 - See [AI_CONTEXT.md](AI_CONTEXT.md) for the maintainer and AI handover guide.
 
 ## 致谢与许可证 / Credits and license

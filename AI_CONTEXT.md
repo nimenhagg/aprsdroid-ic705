@@ -6,8 +6,8 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 版本 | `1.8.5-ic705` |
-| Android versionCode | `2026082585` |
+| 版本 | `1.8.6-ic705` |
+| Android versionCode | `2026082586` |
 | 上游基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 25`，`compileSdk 37`，`targetSdk 37` |
 | 原生 ABI | `arm64-v8a`、`armeabi-v7a`、`x86`、`x86_64` |
@@ -17,7 +17,7 @@
 | UI | Compose BOM `2026.08.00` + Material 3；偏好设置已全面升级 MD3 弹窗 |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | 地图 | MapLibre Native `13.5.1` + Google Maps SDK `20.0.0` |
-| 发布标签 | `v1.8.5-ic705` |
+| 发布标签 | `v1.8.6-ic705` |
 
 Java 17 是 AGP 9.3 的默认与最低 JDK 基线。没有明确需求和完整兼容性验证时，不要仅为提高版本号切换 Java 21。
 
@@ -149,9 +149,55 @@ Windows PowerShell 使用 `./gradlew.bat`。API 37 SDK 未安装但许可证已�
 
 CI 的 `verifyReleaseVersion` 会在 Tag 构建中检查标签是否等于 `v${mod_version}-ic705`。工作流随后测试、Lint，构建 ARM64/ARMv7 两个经 R8 压缩的 OpenGL APK，签名、校验 ABI/渲染后端、生成 `SHA256SUMS.txt`，并创建 GitHub Release。正式 Tag 缺少签名 secrets 时必须失败，不能发布未签名 APK；`MAPS_API_KEY` 从 GitHub Actions secret 注入。
 
-## 10. 1.8.0 交接状态
+## 10. 更新日志写作规范
 
-- 构建链已迁移到 Gradle 9.5.0 / AGP 9.3.2 / built-in Kotlin 2.2.10 / API 37。
+CHANGELOG.md 是面向用户和协作者的工程记录，不是营销材料。写更新日志时遵守以下规则：
+
+### 语气与用词
+
+- 陈述事实，不堆砌修饰。禁止使用"彻底"、"全面"、"全量"、"极致"、"丝滑"、"告别"、"淘汰"、"秒级"、"革命性"等营销词汇，除非它们是唯一准确的技术描述（几乎不可能）。
+- 不使用 emoji 作为标题或条目前缀。
+- 一个改动写一行。小修（改颜色、换图标、调边距）不要扩写成整段文字。
+- 如果一个版本只做了一件事，就写一行，不要凑篇幅。
+
+### 格式
+
+每个版本使用以下结构，省略没有内容的分类：
+
+```markdown
+## [vX.Y.Z-ic705] - YYYY-MM-DD
+
+### Added
+- 新增了什么功能，一句话说清楚。
+
+### Fixed
+- 修复了什么问题。说明原因和影响，不要只写"修复 Bug"。
+
+### Changed
+- 改变了什么行为或实现方式。
+
+### Removed
+- 删除了什么代码、文件或功能。
+```
+
+### 禁止事项
+
+- 不要把 `AlertDialog.Builder` 换成 `MaterialAlertDialogBuilder` 写成"全面现代化重构"。
+- 不要把修一个 null 判断写成"深度安全加固"。
+- 不要用"告别 Android 2.x 古董时代"之类的说法——直接写"移除旧版 ZoomButtonsController，改用自定义缩放控件"。
+- 不要每个版本都写得像产品发布会。大部分版本就是日常迭代，如实记录即可。
+
+### 对比示例
+
+错误写法：
+> 🌟 **全面现代化重构短消息聊天界面（Material 3 极致体验）**：彻底淘汰旧版古董布局，引入如原生 Pixel 般丝滑的声明式 Compose 气泡会话……
+
+正确写法：
+> 消息聊天页从 XML RecyclerView 迁移到 Compose `MessageChatScreen`，使用 Material 3 气泡布局，支持发送状态显示和长按操作菜单。
+
+## 11. 历史迁移与交接状态
+
+- 构建链已迁移到 Gradle 9.5.0 / AGP 9.3.2 / built-in Kotlin 2.3.21 / API 37。
 - Java 源与字节码目标保持 17。
 - Android 17 本地网络权限已按 IC-705 与 LAN TNC 后端接入统一服务启动链。
 - README 已扩充为中英双语用户/开发指南，并记录五种 APK 的 ABI 与地图渲染边界。
