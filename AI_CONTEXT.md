@@ -6,17 +6,18 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 版本 | `1.8.0-ic705` |
-| Android versionCode | `2026082480` |
+| 版本 | `1.8.3-ic705` |
+| Android versionCode | `2026082583` |
 | 上游基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 25`，`compileSdk 37`，`targetSdk 37` |
-| 原生 ABI | `arm64-v8a`、`armeabi-v7a`、`x86`、`x86_64` 分包发布 |
+| 原生 ABI | `arm64-v8a`、`armeabi-v7a`、`x86`、`x86_64` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
-| 语言/编译器 | AGP 9 内置 Kotlin `2.2.10`，Compose Compiler `2.2.10`，Java `17` |
-| UI | Compose BOM `2026.08.00` + Material 3；部分旧页面仍为 View/XML |
+| 语言/编译器 | AGP 9 内置 Kotlin `2.3.21`，Compose Compiler `2.3.21`，Java `17` |
+| 核心库 | AppCompat `1.8.0`，Material `1.14.0`，OkHttp `5.3.0`，Core-KTX `1.19.0`，Lifecycle `2.11.0` |
+| UI | Compose BOM `2026.08.00` + Material 3；偏好设置已全面升级 MD3 弹窗 |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
-| 地图 | MapLibre Native `13.5.1` 按安装包选择后端 + Google Maps SDK |
-| 发布标签 | `v1.8.0-ic705` |
+| 地图 | MapLibre Native `13.5.1` + Google Maps SDK `20.0.0` |
+| 发布标签 | `v1.8.3-ic705` |
 
 Java 17 是 AGP 9.3 的默认与最低 JDK 基线。没有明确需求和完整兼容性验证时，不要仅为提高版本号切换 Java 21。
 

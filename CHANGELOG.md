@@ -1,3 +1,15 @@
+## 🚀 [v1.8.3-ic705] - 2026-08-25
+
+### 📦 核心依赖升级与 Google Maps 链路加固
+* **核心依赖升级（Batch 2 Dependency Upgrades）**：
+  - `androidx.appcompat:appcompat` 升级至 `1.8.0`。
+  - `com.google.android.material:material` 升级至 `1.14.0`。
+  - `com.squareup.okhttp3:okhttp` 升级至 `5.3.0`。
+* **Google 地图链路恢复与安全回退保障**：
+  - 确认在配置有效 `MAPS_API_KEY` 构建中 Google 普通地图与 Google 卫星/混合地图正常可见与交互。
+  - 保持无 Key、无 Google Play 服务或网络不可达时安全回退至 OpenStreetMap / MapLibre，防止应用崩溃。
+* 版本元数据更新为 `1.8.3-ic705`（`versionCode 2026082583`）。
+
 ## 🚀 [v1.8.2-ic705] - 2026-08-25
 
 ### 🎨 Material 3 全设置弹窗统一、OpenGL 专属发布与系统兼容性加固
