@@ -212,6 +212,9 @@
 
 <!-- connection type properties -->
 <string name="p_host">Server</string>
+<string name="p_port">Port</string>
+<string name="p_source_got_last">Got current GPS position</string>
+<string name="p_source_no_fix">Cannot get current GPS position</string>
 <string name="p_host_summary">APRS-IS server (port 8080) to send beacons</string>
 <string name="p_host_entry">Enter the APRS-IS server hostname</string>
 <string name="p_host_hint">host:port</string>
@@ -384,8 +387,8 @@
 <string name="ic705_rx_port">Control UDP port</string>
 <string name="ic705_rx_username">IC-705 network username</string>
 <string name="ic705_rx_password">IC-705 network password</string>
-<string name="ic705_rx_start">Start receive diagnostics</string>
-<string name="ic705_rx_stop">Stop diagnostics</string>
+<string name="ic705_rx_start">Start Diagnostics</string>
+<string name="ic705_rx_stop">Stop Diagnostics</string>
 <string name="ic705_rx_stopped">Stopped</string>
 <string name="ic705_rx_starting">Starting the Wi-Fi UDP session…</string>
 <string name="ic705_rx_running">Receiving and decoding…</string>

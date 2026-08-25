@@ -1,18 +1,24 @@
 package org.aprsdroid.app
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.view.View
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
-import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.material.appbar.MaterialToolbar
+import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
+import org.aprsdroid.app.ui.screen.MapScreen
+import org.aprsdroid.app.ui.theme.AprsTheme
 import java.util.ArrayList
 
 class GoogleMapAct : MapLoaderBase(),
@@ -20,8 +26,7 @@ class GoogleMapAct : MapLoaderBase(),
     GoogleMap.OnInfoWindowClickListener,
     GoogleMap.OnCameraMoveListener {
 
-    val loading: View by lazy { findViewById(R.id.loading) }
-    val mapview: MapView by lazy { findViewById(R.id.mapview) }
+    private lateinit var mapview: MapView
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     var map: GoogleMap? = null
     val icons = mutableMapOf<String, BitmapDescriptor>()
@@ -31,62 +36,104 @@ class GoogleMapAct : MapLoaderBase(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.googlemapview)
 
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        toolbar.setNavigationOnClickListener { finish() }
-
-        mapview.onCreate(savedInstanceState)
-        mapview.getMapAsync { googleMap ->
-            Log.d(TAG, "Got map!")
-            map = googleMap
-            loadMapViewPosition()
-            setMapMode(MapModes.defaultMapMode(this, prefs))
-            googleMap.setOnMarkerClickListener(this)
-            googleMap.setOnInfoWindowClickListener(this)
-            googleMap.setOnCameraMoveListener(this)
-            googleMap.uiSettings.isCompassEnabled = true
-            googleMap.uiSettings.isZoomControlsEnabled = false
-            visible_callsigns = googleMap.cameraPosition.zoom > CALLSIGN_ZOOM
-            startLoading()
-        }
-
-        findViewById<View>(R.id.btn_zoom_in)?.setOnClickListener {
-            changeZoom(1)
-        }
-        findViewById<View>(R.id.btn_zoom_out)?.setOnClickListener {
-            changeZoom(-1)
-        }
-        findViewById<View>(R.id.btn_my_location)?.setOnClickListener {
-            val mycall = prefs.getCallSsid()
-            val pos = storage.getStaPosition(mycall)
-            if (pos.count > 0 && pos.moveToFirst()) {
-                val latIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LAT)
-                val lonIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LON)
-                if (latIdx >= 0 && lonIdx >= 0) {
-                    val lat = pos.getInt(latIdx) / 1000000.0
-                    val lon = pos.getInt(lonIdx) / 1000000.0
-                    map?.animateCamera(com.google.android.gms.maps.CameraUpdateFactory.newLatLng(com.google.android.gms.maps.model.LatLng(lat, lon)))
-                }
+        mapview = MapView(this).apply {
+            onCreate(savedInstanceState)
+            getMapAsync { googleMap ->
+                Log.d(TAG, "Got Google map!")
+                map = googleMap
+                loadMapViewPosition()
+                setMapMode(MapModes.defaultMapMode(this@GoogleMapAct, prefs))
+                googleMap.setOnMarkerClickListener(this@GoogleMapAct)
+                googleMap.setOnInfoWindowClickListener(this@GoogleMapAct)
+                googleMap.setOnCameraMoveListener(this@GoogleMapAct)
+                googleMap.uiSettings.isCompassEnabled = true
+                googleMap.uiSettings.isZoomControlsEnabled = false
+                visible_callsigns = googleMap.cameraPosition.zoom > CALLSIGN_ZOOM
+                startLoading()
             }
-            pos.close()
+        }
+
+        setContent {
+            AprsTheme {
+                MapScreen(
+                    title = if (targetcall.isNotEmpty()) getString(R.string.map_track_call, targetcall) else getMapTitlePrefix(),
+                    isLoading = isLoadingState.value,
+                    showOsmAttribution = false,
+                    isCoordinateChooser = isCoordinateChooser,
+                    coordinateInfo = coordinateInfoState.value,
+                    onAcceptCoordinate = {
+                        setResult(Activity.RESULT_OK, resultIntent)
+                        finish()
+                    },
+                    availableMapModes = MapModes.all_mapmodes.filter { it.isAvailable(this) },
+                    currentMapMode = currentMapModeState.value,
+                    showObjects = showObjectsState.value,
+                    onToggleShowObjects = {
+                        val newState = prefs.toggleBoolean("show_objects", true)
+                        showObjectsState.value = newState
+                        showObjects = newState
+                        reloadMap()
+                    },
+                    onSelectMapMode = { mode ->
+                        MapModes.setDefault(prefs, mode.tag)
+                        currentMapModeState.value = mode
+                        setMapMode(mode)
+                    },
+                    onMyLocationClick = {
+                        val mycall = prefs.getCallSsid()
+                        val pos = storage.getStaPosition(mycall)
+                        if (pos.count > 0 && pos.moveToFirst()) {
+                            val latIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+                            val lonIdx = pos.getColumnIndex(StorageDatabase.Companion.Station.LON)
+                            if (latIdx >= 0 && lonIdx >= 0) {
+                                val lat = pos.getInt(latIdx) / 1000000.0
+                                val lon = pos.getInt(lonIdx) / 1000000.0
+                                map?.animateCamera(CameraUpdateFactory.newLatLng(LatLng(lat, lon)))
+                            }
+                        }
+                        pos.close()
+                    },
+                    onZoomIn = { changeZoom(1) },
+                    onZoomOut = { changeZoom(-1) },
+                    onBackClick = { finish() },
+                    onOpenLogs = {
+                        startActivity(Intent(this, LogActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                    },
+                    onOpenSettings = {
+                        startActivity(Intent(this, PrefsAct::class.java))
+                    },
+                    onClearLogs = {
+                        onStartLoading()
+                        StorageCleaner(this, storage) { onStopLoading() }.execute()
+                    },
+                    onOpenAbout = {
+                        AboutDialog(this).show()
+                    },
+                    mapContent = {
+                        AndroidView(
+                            factory = { mapview },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                )
+            }
         }
     }
 
     override fun onStart() {
         super.onStart()
-        mapview.onStart()
+        if (::mapview.isInitialized) mapview.onStart()
     }
 
     override fun onResume() {
         super.onResume()
-        mapview.onResume()
+        if (::mapview.isInitialized) mapview.onResume()
     }
 
     override fun onPause() {
         super.onPause()
-        mapview.onPause()
+        if (::mapview.isInitialized) mapview.onPause()
         map?.let {
             val target = it.cameraPosition.target
             saveMapViewPosition(target.latitude.toFloat(), target.longitude.toFloat(), it.cameraPosition.zoom)
@@ -94,35 +141,27 @@ class GoogleMapAct : MapLoaderBase(),
     }
 
     override fun onStop() {
+        if (::mapview.isInitialized) mapview.onStop()
         super.onStop()
-        mapview.onStop()
     }
 
     override fun onDestroy() {
+        if (::mapview.isInitialized) mapview.onDestroy()
         super.onDestroy()
-        mapview.onDestroy()
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
-        mapview.onLowMemory()
+        if (::mapview.isInitialized) mapview.onLowMemory()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        mapview.onSaveInstanceState(outState)
-    }
-
-    override fun onStartLoading() {
-        loading.visibility = View.VISIBLE
-    }
-
-    override fun onStopLoading() {
-        loading.visibility = View.GONE
+        if (::mapview.isInitialized) mapview.onSaveInstanceState(outState)
     }
 
     override fun reloadMap() {
-        locReceiver.startTask(android.content.Intent())
+        locReceiver.startTask(Intent())
     }
 
     override fun changeZoom(delta: Int) {

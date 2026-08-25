@@ -1,5 +1,6 @@
 package org.aprsdroid.app
 
+import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -10,14 +11,18 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
-import android.view.View
-import android.widget.TextView
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.createBitmap
-import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.gson.JsonObject
+import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
 import org.aprsdroid.app.map.OnlineTileSources
 import org.aprsdroid.app.map.TileUrlTemplate
+import org.aprsdroid.app.ui.screen.MapScreen
+import org.aprsdroid.app.ui.theme.AprsTheme
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
@@ -43,115 +48,148 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 /**
- * GMS-independent map screen backed by MapLibre Native.
- *
- * The surrounding toolbar and controls intentionally remain shared with the legacy map screen.
- * MapLibre only replaces the rendering surface for AMap, OSM, and custom raster tiles.
+ * GMS-independent map screen backed by MapLibre Native with Compose Material 3 UI overlay.
  */
 class MapAct : MapLoaderBase() {
 
     override val TAG = "APRSdroid.MapLibre"
 
-    private val mapview: MapView by lazy { findViewById(R.id.mapview) }
-    private val loading: View by lazy { findViewById(R.id.loading) }
-    private val osmAttribution: TextView by lazy { findViewById(R.id.osm_attribution) }
+    private lateinit var mapview: MapView
     private var map: MapLibreMap? = null
     private var pendingStations = arrayListOf<Station>()
     private val activeImageIds = linkedSetOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.mapview)
 
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        toolbar.setNavigationOnClickListener { finish() }
-
-        osmAttribution.setOnClickListener {
-            UrlOpener.open(this, getString(R.string.map_osm_copyright_url))
-        }
-
-        mapview.onCreate(savedInstanceState)
-        mapview.addOnDidFailLoadingMapListener { error ->
-            Log.e(TAG, "MapLibre failed to load the map: $error")
-            onStopLoading()
-        }
-        mapview.addOnRenderErrorListener {
-            Log.e(TAG, "MapLibre renderer reported an error")
-        }
-        mapview.getMapAsync { maplibreMap ->
-            map = maplibreMap
-            maplibreMap.uiSettings.apply {
-                isCompassEnabled = false
-                isLogoEnabled = false
-                isAttributionEnabled = false
-                isTiltGesturesEnabled = false
+        mapview = MapView(this).apply {
+            onCreate(savedInstanceState)
+            addOnDidFailLoadingMapListener { error ->
+                Log.e(TAG, "MapLibre failed to load the map: $error")
+                onStopLoading()
             }
-            maplibreMap.addOnCameraMoveListener {
-                val target = maplibreMap.cameraPosition.target ?: return@addOnCameraMoveListener
-                updateCoordinateInfo(target.latitude.toFloat(), target.longitude.toFloat())
+            addOnRenderErrorListener {
+                Log.e(TAG, "MapLibre renderer reported an error")
             }
-            maplibreMap.addOnMapClickListener { point -> onMapTap(point) }
+            getMapAsync { maplibreMap ->
+                map = maplibreMap
+                maplibreMap.uiSettings.apply {
+                    isCompassEnabled = false
+                    isLogoEnabled = false
+                    isAttributionEnabled = false
+                    isTiltGesturesEnabled = false
+                }
+                maplibreMap.addOnCameraMoveListener {
+                    val target = maplibreMap.cameraPosition.target ?: return@addOnCameraMoveListener
+                    updateCoordinateInfo(target.latitude.toFloat(), target.longitude.toFloat())
+                }
+                maplibreMap.addOnMapClickListener { point -> onMapTap(point) }
 
-            loadInitialMapPosition()
-            val currentMode = MapModes.defaultMapMode(this, prefs)
-            if (currentMode.viewClass != MapAct::class.java) {
-                saveMapPosition()
-                switchMapActivity(currentMode.viewClass)
-                return@getMapAsync
+                loadInitialMapPosition()
+                val currentMode = MapModes.defaultMapMode(this@MapAct, prefs)
+                currentMapModeState.value = currentMode
+                if (currentMode.viewClass != MapAct::class.java) {
+                    saveMapPosition()
+                    switchMapActivity(currentMode.viewClass)
+                    return@getMapAsync
+                }
+                applyRasterStyle(currentMode)
+                onStartLoading()
+                startLoading()
             }
-            applyRasterStyle(currentMode)
-            onStartLoading()
-            startLoading()
         }
 
-        findViewById<View>(R.id.btn_zoom_in).setOnClickListener { changeZoom(1) }
-        findViewById<View>(R.id.btn_zoom_out).setOnClickListener { changeZoom(-1) }
-        findViewById<View>(R.id.btn_my_location).setOnClickListener { moveToMyLocation() }
+        setContent {
+            AprsTheme {
+                MapScreen(
+                    title = if (targetcall.isNotEmpty()) getString(R.string.map_track_call, targetcall) else getMapTitlePrefix(),
+                    isLoading = isLoadingState.value,
+                    showOsmAttribution = showOsmAttributionState.value,
+                    onOsmAttributionClick = {
+                        UrlOpener.open(this, getString(R.string.map_osm_copyright_url))
+                    },
+                    isCoordinateChooser = isCoordinateChooser,
+                    coordinateInfo = coordinateInfoState.value,
+                    onAcceptCoordinate = {
+                        setResult(Activity.RESULT_OK, resultIntent)
+                        finish()
+                    },
+                    availableMapModes = MapModes.all_mapmodes.filter { it.isAvailable(this) },
+                    currentMapMode = currentMapModeState.value,
+                    showObjects = showObjectsState.value,
+                    onToggleShowObjects = {
+                        val newState = prefs.toggleBoolean("show_objects", true)
+                        showObjectsState.value = newState
+                        showObjects = newState
+                        reloadMap()
+                    },
+                    onSelectMapMode = { mode ->
+                        MapModes.setDefault(prefs, mode.tag)
+                        currentMapModeState.value = mode
+                        setMapMode(mode)
+                    },
+                    onMyLocationClick = { moveToMyLocation() },
+                    onZoomIn = { changeZoom(1) },
+                    onZoomOut = { changeZoom(-1) },
+                    onBackClick = { finish() },
+                    onOpenLogs = {
+                        startActivity(Intent(this, LogActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                    },
+                    onOpenSettings = {
+                        startActivity(Intent(this, PrefsAct::class.java))
+                    },
+                    onClearLogs = {
+                        onStartLoading()
+                        StorageCleaner(this, db) { onStopLoading() }.execute()
+                    },
+                    onOpenAbout = {
+                        AboutDialog(this).show()
+                    },
+                    mapContent = {
+                        AndroidView(
+                            factory = { mapview },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                )
+            }
+        }
     }
 
     override fun onStart() {
         super.onStart()
-        mapview.onStart()
+        if (::mapview.isInitialized) mapview.onStart()
     }
 
     override fun onResume() {
         super.onResume()
-        mapview.onResume()
+        if (::mapview.isInitialized) mapview.onResume()
     }
 
     override fun onPause() {
         saveMapPosition()
-        mapview.onPause()
+        if (::mapview.isInitialized) mapview.onPause()
         super.onPause()
     }
 
     override fun onStop() {
-        mapview.onStop()
+        if (::mapview.isInitialized) mapview.onStop()
         super.onStop()
     }
 
     override fun onDestroy() {
-        mapview.onDestroy()
+        if (::mapview.isInitialized) mapview.onDestroy()
         super.onDestroy()
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
-        mapview.onLowMemory()
+        if (::mapview.isInitialized) mapview.onLowMemory()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        mapview.onSaveInstanceState(outState)
-    }
-
-    override fun onStartLoading() {
-        loading.visibility = View.VISIBLE
-    }
-
-    override fun onStopLoading() {
-        loading.visibility = View.GONE
+        if (::mapview.isInitialized) mapview.onSaveInstanceState(outState)
     }
 
     override fun reloadMap() {
@@ -188,7 +226,7 @@ class MapAct : MapLoaderBase() {
 
     private fun applyRasterStyle(mode: MapMode) {
         val maplibreMap = map ?: return
-        osmAttribution.visibility = if (mode.tileType == MapTileType.OSM) View.VISIBLE else View.GONE
+        showOsmAttributionState.value = (mode.tileType == MapTileType.OSM)
         val (urlPattern, subdomains, maxZoom, attribution) = when (mode.tileType) {
             MapTileType.AMAP -> TileConfiguration(
                 OnlineTileSources.AMAP_TILE_URL,
@@ -268,7 +306,7 @@ class MapAct : MapLoaderBase() {
                 val iconId = symbolImages.getOrPut(symbol) {
                     val id = "aprs-symbol-${encodeImageId(symbol)}"
                     val icon = MapModes.symbol2bitmap(symbol, iconSize).apply {
-                        density = resources.displayMetrics.densityDpi
+                        this.density = resources.displayMetrics.densityDpi
                     }
                     style.addImage(id, icon)
                     activeImageIds.add(id)
@@ -299,54 +337,66 @@ class MapAct : MapLoaderBase() {
         val density = resources.displayMetrics.density
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
-            textAlign = Paint.Align.CENTER
-            textSize = iconSize * 7f / 8f
-            typeface = Typeface.MONOSPACE
+            textSize = 12f * density
+            typeface = Typeface.DEFAULT_BOLD
         }
-        val strokePaint = Paint(textPaint).apply {
-            color = Color.WHITE
-            style = Paint.Style.STROKE
-            strokeWidth = max(1f, iconSize / 8f)
-        }
-        val metrics = textPaint.fontMetrics
-        val labelHeight = ceil(metrics.descent - metrics.ascent).toInt().coerceAtLeast(1)
-        val horizontalPadding = (4f * density).roundToInt()
-        val width = max(iconSize, ceil(strokePaint.measureText(call)).toInt() + horizontalPadding * 2)
-        val bitmap = createBitmap(width, iconSize + labelHeight * 2).apply {
+        val textWidth = ceil(textPaint.measureText(call)).toInt()
+        val textHeight = ceil(textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent).toInt()
+        val textBaseline = -textPaint.fontMetrics.ascent
+        val padding = (3f * density).roundToInt()
+        val cornerRadius = 3f * density
+        val spacing = (2f * density).roundToInt()
+
+        val symbolBitmap = MapModes.symbol2bitmap(symbol, iconSize)
+        val bitmapWidth = max(iconSize, textWidth + padding * 2)
+        val bitmapHeight = iconSize + spacing + textHeight + padding * 2
+
+        val bitmap = createBitmap(bitmapWidth, bitmapHeight).apply {
             this.density = resources.displayMetrics.densityDpi
         }
         val canvas = Canvas(bitmap)
-        val symbolBitmap = MapModes.symbol2bitmap(symbol, iconSize)
-        canvas.drawBitmap(symbolBitmap, ((width - iconSize) / 2f), labelHeight.toFloat(), null)
-        val baseline = labelHeight + iconSize - metrics.ascent
-        val centerX = width / 2f
-        canvas.drawText(call, centerX, baseline, strokePaint)
-        canvas.drawText(call, centerX, baseline, textPaint)
+
+        val symbolLeft = ((bitmapWidth - iconSize) / 2f).coerceAtLeast(0f)
+        canvas.drawBitmap(symbolBitmap, symbolLeft, 0f, null)
+
+        val backgroundRect = RectF(
+            ((bitmapWidth - (textWidth + padding * 2)) / 2f).coerceAtLeast(0f),
+            iconSize.toFloat() + spacing,
+            ((bitmapWidth + (textWidth + padding * 2)) / 2f).coerceAtMost(bitmapWidth.toFloat()),
+            bitmapHeight.toFloat()
+        )
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(200, 255, 255, 255)
+        }
+        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(120, 0, 0, 0)
+            style = Paint.Style.STROKE
+            strokeWidth = 1f * density
+        }
+        canvas.drawRoundRect(backgroundRect, cornerRadius, cornerRadius, bgPaint)
+        canvas.drawRoundRect(backgroundRect, cornerRadius, cornerRadius, borderPaint)
+
+        val textLeft = backgroundRect.left + padding
+        val textTop = backgroundRect.top + padding + textBaseline
+        canvas.drawText(call, textLeft, textTop, textPaint)
         return bitmap
     }
 
     private fun onMapTap(point: LatLng): Boolean {
-        if (isCoordinateChooser) return false
         val maplibreMap = map ?: return false
         val screenPoint = maplibreMap.projection.toScreenLocation(point)
-        val radius = 36f * resources.displayMetrics.density
-        val area = RectF(
-            screenPoint.x - radius,
-            screenPoint.y - radius,
-            screenPoint.x + radius,
-            screenPoint.y + radius
+        val touchSlop = (24f * resources.displayMetrics.density).roundToInt()
+        val rect = RectF(
+            screenPoint.x - touchSlop,
+            screenPoint.y - touchSlop,
+            screenPoint.x + touchSlop,
+            screenPoint.y + touchSlop
         )
-        val calls = maplibreMap.queryRenderedFeatures(
-            area,
-            STATION_ICON_LAYER_ID,
-            STATION_LABEL_LAYER_ID
-        ).mapNotNull { feature ->
-            if (feature.hasProperty(PROPERTY_CALL)) feature.getStringProperty(PROPERTY_CALL) else null
-        }.distinct()
-
-        return when {
-            calls.isEmpty() -> false
-            calls.size == 1 -> {
+        val features = maplibreMap.queryRenderedFeatures(rect, STATION_ICON_LAYER_ID, STATION_LABEL_LAYER_ID)
+        val calls = features.mapNotNull { it.getStringProperty(PROPERTY_CALL) }.distinct()
+        return when (calls.size) {
+            0 -> false
+            1 -> {
                 showStationDetails(calls.first())
                 true
             }
@@ -399,8 +449,12 @@ class MapAct : MapLoaderBase() {
             try {
                 val latest = db.getStations(null, null, "1", "TS DESC")
                 if (latest.moveToFirst()) {
-                    latitude = latest.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LAT) / 1_000_000f
-                    longitude = latest.getInt(StorageDatabase.Companion.Station.COLUMN_MAP_LON) / 1_000_000f
+                    val latIdx = latest.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+                    val lonIdx = latest.getColumnIndex(StorageDatabase.Companion.Station.LON)
+                    if (latIdx >= 0 && lonIdx >= 0) {
+                        latitude = latest.getInt(latIdx) / 1_000_000f
+                        longitude = latest.getInt(lonIdx) / 1_000_000f
+                    }
                 }
                 latest.close()
             } catch (e: Exception) {

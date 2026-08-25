@@ -1,15 +1,14 @@
 package org.aprsdroid.app.ic705.diagnostic
 
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.view.MenuItem
-import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import com.google.android.material.appbar.MaterialToolbar
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.textfield.TextInputEditText
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.R
 import org.aprsdroid.app.audio.FeedableAfskDecoder
@@ -23,30 +22,30 @@ import org.aprsdroid.app.ic705.session.Ic705RxSessionCallbacks
 import org.aprsdroid.app.ic705.session.Ic705RxSessionConfig
 import org.aprsdroid.app.ic705.session.Ic705RxSessionEngine
 import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
+import org.aprsdroid.app.ui.screen.Ic705RxDiagnosticScreen
+import org.aprsdroid.app.ui.theme.AprsTheme
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.text.NumberFormat
 import java.util.ArrayDeque
 import java.util.concurrent.atomic.AtomicLong
 
-class Ic705RxDiagnosticActivity : AppCompatActivity() {
+class Ic705RxDiagnosticActivity : ComponentActivity() {
 
     private val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
+    private val mainHandler = Handler(Looper.getMainLooper())
 
-    private val toolbar: MaterialToolbar by lazy { findViewById(R.id.diagnostic_toolbar) }
-    private val address: TextInputEditText by lazy { findViewById(R.id.diagnostic_address) }
-    private val port: TextInputEditText by lazy { findViewById(R.id.diagnostic_port) }
-    private val username: TextInputEditText by lazy { findViewById(R.id.diagnostic_username) }
-    private val password: TextInputEditText by lazy { findViewById(R.id.diagnostic_password) }
-    private val connect: MaterialButton by lazy { findViewById(R.id.diagnostic_connect) }
-    private val disconnect: MaterialButton by lazy { findViewById(R.id.diagnostic_disconnect) }
-    private val status: TextView by lazy { findViewById(R.id.diagnostic_status) }
-    private val statAudioBlocks: TextView by lazy { findViewById(R.id.stat_audio_blocks) }
-    private val statPcmSamples: TextView by lazy { findViewById(R.id.stat_pcm_samples) }
-    private val statAx25Frames: TextView by lazy { findViewById(R.id.stat_ax25_frames) }
-    private val statAudioResets: TextView by lazy { findViewById(R.id.stat_audio_resets) }
-    private val eventLog: TextView by lazy { findViewById(R.id.diagnostic_event_log) }
+    private val addressState = mutableStateOf("192.168.59.1")
+    private val portState = mutableStateOf("50001")
+    private val usernameState = mutableStateOf("")
+    private val passwordState = mutableStateOf("")
+    private val isRunningState = mutableStateOf(false)
+    private val statusTextState = mutableStateOf("")
+    private val acceptedAudioBlocksState = mutableLongStateOf(0L)
+    private val acceptedAudioSamplesState = mutableLongStateOf(0L)
+    private val decodedAx25FramesState = mutableLongStateOf(0L)
+    private val audioResetsState = mutableLongStateOf(0L)
+    private val eventLogTextState = mutableStateOf("")
 
     private val acceptedAudioBlocks = AtomicLong()
     private val acceptedAudioSamples = AtomicLong()
@@ -65,28 +64,37 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_ic705_rx_diagnostic)
-
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         activityStartedAtMillis = SystemClock.elapsedRealtime()
-
+        statusTextState.value = getString(R.string.ic705_rx_stopped)
         restoreConnectionFields()
 
-        connect.setOnClickListener { startReceiveOnlySession() }
-        disconnect.setOnClickListener { stopReceiveOnlySession(R.string.ic705_rx_stopped) }
-
-        renderStatistics()
-        recordEvent(attempt = 0, event = "ACTIVITY_CREATED")
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) {
-            finish()
-            return true
+        setContent {
+            AprsTheme {
+                Ic705RxDiagnosticScreen(
+                    address = addressState.value,
+                    port = portState.value,
+                    username = usernameState.value,
+                    password = passwordState.value,
+                    isRunning = isRunningState.value,
+                    statusText = statusTextState.value,
+                    acceptedAudioBlocks = acceptedAudioBlocksState.longValue,
+                    acceptedAudioSamples = acceptedAudioSamplesState.longValue,
+                    decodedAx25Frames = decodedAx25FramesState.longValue,
+                    audioResets = audioResetsState.longValue,
+                    eventLogText = eventLogTextState.value,
+                    onAddressChange = { addressState.value = it },
+                    onPortChange = { portState.value = it },
+                    onUsernameChange = { usernameState.value = it },
+                    onPasswordChange = { passwordState.value = it },
+                    onStartDiagnostics = { startReceiveOnlySession() },
+                    onStopDiagnostics = { stopReceiveOnlySession(R.string.ic705_rx_stopped) },
+                    onBack = { finish() }
+                )
+            }
         }
-        return super.onOptionsItemSelected(item)
+
+        recordEvent(attempt = 0, event = "ACTIVITY_CREATED")
     }
 
     override fun onDestroy() {
@@ -96,10 +104,10 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
     }
 
     private fun startReceiveOnlySession() {
-        val targetAddress = address.text.toString().trim()
-        val targetPort = port.text.toString().trim().toIntOrNull() ?: 50001
-        val targetUsername = username.text.toString()
-        val targetPassword = password.text.toString()
+        val targetAddress = addressState.value.trim()
+        val targetPort = portState.value.trim().toIntOrNull() ?: 50001
+        val targetUsername = usernameState.value
+        val targetPassword = passwordState.value
 
         val parsedAddress = try {
             parseNumericIpv4(targetAddress)
@@ -171,22 +179,18 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
                 runOnUiThreadFor(attempt) {
                     when (state.phase) {
                         Ic705RxSessionEngine.Phase.RECEIVING -> {
-                            status.setText(R.string.ic705_rx_running)
-                            status.setTextColor(getColor(R.color.md3_primary))
+                            statusTextState.value = getString(R.string.ic705_rx_running)
                         }
                         Ic705RxSessionEngine.Phase.STOPPED -> {
-                            status.setText(R.string.ic705_rx_stopped)
-                            status.setTextColor(getColor(R.color.md3_on_surface_variant))
+                            statusTextState.value = getString(R.string.ic705_rx_stopped)
                             stopReceiveOnlySession(null)
                         }
                         Ic705RxSessionEngine.Phase.FAILED -> {
-                            status.text = state.failureReason ?: getString(R.string.ic705_rx_connection_failed)
-                            status.setTextColor(getColor(R.color.md3_on_surface_variant))
+                            statusTextState.value = state.failureReason ?: getString(R.string.ic705_rx_connection_failed)
                             stopReceiveOnlySession(null)
                         }
                         else -> {
-                            status.setText(R.string.ic705_rx_starting)
-                            status.setTextColor(getColor(R.color.md3_primary))
+                            statusTextState.value = getString(R.string.ic705_rx_starting)
                         }
                     }
                     recordEvent(attempt = attempt, event = "PHASE_${state.phase.name}")
@@ -209,10 +213,8 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
         )
 
         activeSession = session
-        connect.isEnabled = false
-        disconnect.isEnabled = true
-        status.setText(R.string.ic705_rx_starting)
-        status.setTextColor(getColor(R.color.md3_primary))
+        isRunningState.value = true
+        statusTextState.value = getString(R.string.ic705_rx_starting)
         recordEvent(attempt = attempt, event = "SESSION_START")
         scheduleStatistics(attempt)
         session.start()
@@ -225,11 +227,9 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
         val previousDecoder = activeDecoder
         activeSession = null
         activeDecoder = null
-        connect.isEnabled = previous == null
-        disconnect.isEnabled = false
+        isRunningState.value = false
         if (statusMessage != null) {
-            status.setText(statusMessage)
-            status.setTextColor(getColor(R.color.md3_on_surface_variant))
+            statusTextState.value = getString(statusMessage)
         }
         if (previous != null) {
             recordEvent(attempt = closingAttempt, event = "SESSION_STOP")
@@ -237,7 +237,6 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
                 runCatching { previousDecoder?.close() }
                 runOnUiThread {
                     if (!activityDestroyed && activeAttempt == stoppedAttempt && activeSession == null) {
-                        connect.isEnabled = true
                         recordEvent(attempt = closingAttempt, event = "SESSION_CLOSED")
                     }
                 }
@@ -259,7 +258,7 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
     }
 
     private fun scheduleStatistics(attempt: Long) {
-        status.postDelayed(
+        mainHandler.postDelayed(
             {
                 if (activeAttempt == attempt && activeSession != null) {
                     renderStatistics()
@@ -267,7 +266,7 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
                     scheduleStatistics(attempt)
                 }
             },
-            STATISTICS_PERIOD_MILLIS,
+            STATISTICS_PERIOD_MILLIS
         )
     }
 
@@ -322,22 +321,21 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
     private fun renderEventLog() {
         if (activityDestroyed) return
         val snapshot = synchronized(eventLogLock) { diagnosticEvents.joinToString(separator = "\n") }
-        eventLog.text = if (snapshot.isEmpty()) getString(R.string.ic705_rx_log_empty) else snapshot
+        eventLogTextState.value = snapshot
     }
 
     private fun restoreConnectionFields() {
-        address.setText(prefs.getString("ic705.address", "192.168.59.1"))
-        port.setText(prefs.getString("ic705.control_port", "50001"))
-        username.setText(prefs.getString("ic705.username", ""))
-        password.setText(prefs.getString("ic705.password", ""))
+        addressState.value = prefs.getString("ic705.address", "192.168.59.1")
+        portState.value = prefs.getString("ic705.control_port", "50001")
+        usernameState.value = prefs.getString("ic705.username", "")
+        passwordState.value = prefs.getString("ic705.password", "")
     }
 
     private fun renderStatistics() {
-        val numberFormat = NumberFormat.getIntegerInstance()
-        statAudioBlocks.text = numberFormat.format(acceptedAudioBlocks.get())
-        statPcmSamples.text = numberFormat.format(acceptedAudioSamples.get())
-        statAx25Frames.text = numberFormat.format(decodedAx25Frames.get())
-        statAudioResets.text = numberFormat.format(audioResets.get())
+        acceptedAudioBlocksState.longValue = acceptedAudioBlocks.get()
+        acceptedAudioSamplesState.longValue = acceptedAudioSamples.get()
+        decodedAx25FramesState.longValue = decodedAx25Frames.get()
+        audioResetsState.longValue = audioResets.get()
     }
 
     private fun runOnUiThreadFor(attempt: Long, block: () -> Unit) {

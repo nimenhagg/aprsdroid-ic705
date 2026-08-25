@@ -7,6 +7,7 @@ import android.net.Uri
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -176,54 +177,75 @@ fun StationBottomSheetContent(
             // Action Buttons Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 FilledTonalButton(
                     onClick = onSendMessage,
                     modifier = Modifier
                         .weight(1.1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(24.dp)
+                        .height(46.dp),
+                    shape = RoundedCornerShape(23.dp),
+                    contentPadding = PaddingValues(horizontal = 6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Chat,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.action_send_message), fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.action_send_message),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
 
                 Button(
                     onClick = onViewDetails,
                     modifier = Modifier
-                        .weight(1.1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(24.dp)
+                        .weight(1.3f)
+                        .height(46.dp),
+                    shape = RoundedCornerShape(23.dp),
+                    contentPadding = PaddingValues(horizontal = 6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.action_view_track), fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.action_view_track),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
 
                 OutlinedButton(
                     onClick = onNavigate,
                     modifier = Modifier
-                        .weight(0.9f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(24.dp)
+                        .weight(0.95f)
+                        .height(46.dp),
+                    shape = RoundedCornerShape(23.dp),
+                    contentPadding = PaddingValues(horizontal = 6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Navigation,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(stringResource(R.string.action_navigate), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = stringResource(R.string.action_navigate),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
             }
         }

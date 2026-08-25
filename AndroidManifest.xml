@@ -104,10 +104,6 @@
 		android:parentActivityName=".PrefsAct"
 		android:theme="@style/PreferenceTheme"
 		/>
-	<activity android:name=".PrivacyPrefs" android:label="@string/p_privacy"
-		android:parentActivityName=".PrefsAct"
-		android:theme="@style/PreferenceTheme"
-		/>
 	<activity android:name=".GoogleMapAct" android:label="@string/app_map"
 		android:launchMode="singleTop"
 		android:parentActivityName=".HubActivity"

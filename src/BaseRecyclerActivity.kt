@@ -20,7 +20,6 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
 
     var menu_id: Int = 0
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
-    private val loadingIndicator: View? get() = findViewById(R.id.loading)
     private var pendingServiceAction: String? = null
     override var pendingPermissionAction: Int? = null
     override var pendingPermissions: Set<String> = emptySet()
@@ -58,27 +57,8 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
         finish()
     }
 
-    fun initToolbar(hasBackButton: Boolean = false, titleRes: Int? = null) {
-        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        if (toolbar != null) {
-            setSupportActionBar(toolbar)
-            if (hasBackButton) {
-                supportActionBar?.setDisplayHomeAsUpEnabled(true)
-                toolbar.setNavigationOnClickListener { finish() }
-            }
-            if (titleRes != null) {
-                supportActionBar?.setTitle(titleRes)
-            }
-        }
-    }
-
-    override fun onStartLoading() {
-        loadingIndicator?.visibility = View.VISIBLE
-    }
-
-    override fun onStopLoading() {
-        loadingIndicator?.visibility = View.GONE
-    }
+    override fun onStartLoading() {}
+    override fun onStopLoading() {}
 
     fun setLongTitle(resId: Int, subtitle: String) {
         val t = getString(resId) + ": " + subtitle

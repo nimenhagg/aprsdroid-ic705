@@ -2,21 +2,23 @@ package org.aprsdroid.app
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
-import androidx.preference.Preference
-import androidx.preference.PreferenceFragmentCompat
+import androidx.compose.runtime.mutableStateOf
 import androidx.preference.PreferenceManager
+import org.aprsdroid.app.diagnostic.LogReportManager
+import org.aprsdroid.app.ui.screen.SettingsScreen
+import org.aprsdroid.app.ui.theme.AprsTheme
 import org.json.JSONObject
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class PrefsAct : AppCompatActivity() {
+class PrefsAct : ComponentActivity() {
+
     private val profileDocumentPicker = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -51,6 +53,16 @@ class PrefsAct : AppCompatActivity() {
 
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 
+    private val callsignState = mutableStateOf("")
+    private val ssidState = mutableStateOf("5")
+    private val digiPathState = mutableStateOf("WIDE1-1")
+    private val userDigiPresetsState = mutableStateOf<Set<String>>(emptySet())
+    private val symbolState = mutableStateOf("/$")
+    private val backendNameState = mutableStateOf("")
+    private val locationSourceNameState = mutableStateOf("")
+    private val mapModeTitleState = mutableStateOf("")
+    private val showObjectsState = mutableStateOf(true)
+
     fun exportPrefs() {
         val filename = String.format("profile-%s.aprs", SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date()))
         profileExportPicker.launch(filename)
@@ -58,106 +70,93 @@ class PrefsAct : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_preference)
-        findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.preference_toolbar)?.let { toolbar ->
-            setSupportActionBar(toolbar)
-            supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        }
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.preference_container, PrefsFragment())
-                .commit()
+
+        setContent {
+            AprsTheme {
+                SettingsScreen(
+                    callsign = callsignState.value,
+                    ssid = ssidState.value,
+                    digiPath = digiPathState.value,
+                    userDigiPresets = userDigiPresetsState.value,
+                    symbol = symbolState.value,
+                    backendName = backendNameState.value,
+                    locationSourceName = locationSourceNameState.value,
+                    mapModeTitle = mapModeTitleState.value,
+                    showObjects = showObjectsState.value,
+                    onBack = { finish() },
+                    onOpenCallsignDialog = {
+                        PasscodeDialog(this, false).apply {
+                            setOnDismissListener { refreshPrefsState() }
+                        }.show()
+                    },
+                    onSaveSsid = { newSsid ->
+                        prefs.set("ssid", newSsid)
+                        refreshPrefsState()
+                    },
+                    onSaveDigiPath = { newPath ->
+                        prefs.set("digi_path", newPath)
+                        refreshPrefsState()
+                    },
+                    onAddDigiPreset = { preset ->
+                        val current = HashSet(prefs.getDigiPathPresets())
+                        current.add(preset)
+                        prefs.saveDigiPathPresets(current)
+                        userDigiPresetsState.value = current
+                        Toast.makeText(this, "已保存预设: $preset", Toast.LENGTH_SHORT).show()
+                    },
+                    onDeleteDigiPreset = { preset ->
+                        val current = HashSet(prefs.getDigiPathPresets())
+                        current.remove(preset)
+                        prefs.saveDigiPathPresets(current)
+                        userDigiPresetsState.value = current
+                        Toast.makeText(this, "已删除预设: $preset", Toast.LENGTH_SHORT).show()
+                    },
+                    onOpenSymbolPicker = {
+                        startActivity(Intent(this, PrefSymbolAct::class.java))
+                    },
+                    onOpenConnectionSetup = {
+                        startActivity(Intent(this, BackendPrefs::class.java))
+                    },
+                    onOpenLocationSetup = {
+                        startActivity(Intent(this, LocationPrefs::class.java))
+                    },
+                    onOpenMapModeSetup = {
+                        MapModes.startMap(this, prefs, null)
+                    },
+                    onToggleShowObjects = {
+                        val newState = prefs.toggleBoolean("show_objects", true)
+                        showObjectsState.value = newState
+                    },
+                    onOpenNotificationPrefs = {
+                        startActivity(Intent(this, NotificationPrefs::class.java))
+                    },
+                    onExportProfile = { exportPrefs() },
+                    onImportProfile = { profileDocumentPicker.launch(arrayOf("*/*")) },
+                    onShareDiagnostics = {
+                        LogReportManager.shareDiagnosticReport(this)
+                    },
+                    onOpenAbout = {
+                        AboutDialog(this).show()
+                    }
+                )
+            }
         }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.options_prefs, menu)
-        return true
+    override fun onResume() {
+        super.onResume()
+        refreshPrefsState()
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            android.R.id.home -> {
-                finish()
-                true
-            }
-            R.id.profile_load -> {
-                profileDocumentPicker.launch(arrayOf("*/*"))
-                true
-            }
-            R.id.profile_export -> {
-                exportPrefs()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
-    class PrefsFragment : PreferenceFragmentCompat() {
-        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            setPreferencesFromResource(R.xml.preferences, rootKey)
-            if (!BuildConfig.GOOGLE_MAPS_ENABLED) {
-                val mapModePref = findPreference<androidx.preference.ListPreference>("mapmode")
-                val entries = resources.getTextArray(R.array.p_map_source_e)
-                val values = resources.getTextArray(R.array.p_map_source_ev)
-                val retained = entries.zip(values).filterNot { (_, value) ->
-                    value == "google" || value == "satellite"
-                }
-                mapModePref?.entries = retained.map { it.first }.toTypedArray()
-                mapModePref?.entryValues = retained.map { it.second }.toTypedArray()
-                if (mapModePref?.value == "google" || mapModePref?.value == "satellite") {
-                    mapModePref.value = "osm"
-                }
-            }
-        }
-
-        override fun onPreferenceTreeClick(preference: Preference): Boolean {
-            if (preference.key == "share_diagnostic_logs") {
-                val ctx = context ?: return true
-                org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(ctx)
-                return true
-            }
-            if (preference.intent != null) {
-                startActivity(preference.intent)
-                return true
-            }
-            return super.onPreferenceTreeClick(preference)
-        }
-
-        private fun updateMapPreferenceVisibilities(mapMode: String?) {
-            val isCustom = (mapMode == "custom")
-
-            findPreference<Preference>("map_custom_url")?.isVisible = isCustom
-            findPreference<Preference>("map_custom_subdomains")?.isVisible = isCustom
-        }
-
-        override fun onResume() {
-            super.onResume()
-            val act = activity as? PrefsAct ?: return
-            findPreference<Preference>("p_connsetup")?.summary = act.prefs.getBackendName()
-            findPreference<Preference>("p_location")?.summary = act.prefs.getLocationSourceName()
-            findPreference<Preference>("p_symbol")?.summary = getString(R.string.p_symbol_summary) + ": " + act.prefs.getString("symbol", "/$")
-
-            val mapModePref = findPreference<androidx.preference.ListPreference>("mapmode")
-            val currentMapMode = mapModePref?.value ?: act.prefs.getString("mapmode", "amap")
-            updateMapPreferenceVisibilities(currentMapMode)
-
-            mapModePref?.setOnPreferenceChangeListener { _, newValue ->
-                updateMapPreferenceVisibilities(newValue as? String)
-                true
-            }
-
-            val customUrlPref = findPreference<androidx.preference.EditTextPreference>("map_custom_url")
-            if (customUrlPref?.text?.contains("autonavi.com") == true) {
-                customUrlPref.text = ""
-                act.prefs.set("map_custom_url", "")
-            }
-            val subdomainsPref = findPreference<androidx.preference.EditTextPreference>("map_custom_subdomains")
-            if (subdomainsPref?.text == "1234" && customUrlPref?.text.isNullOrEmpty()) {
-                subdomainsPref.text = ""
-                act.prefs.set("map_custom_subdomains", "")
-            }
-
-        }
+    private fun refreshPrefsState() {
+        callsignState.value = prefs.getCallsign()
+        ssidState.value = prefs.getSsid()
+        digiPathState.value = prefs.getString("digi_path", "WIDE1-1")
+        userDigiPresetsState.value = prefs.getDigiPathPresets()
+        symbolState.value = prefs.getString("symbol", "/$")
+        backendNameState.value = prefs.getBackendName()
+        locationSourceNameState.value = prefs.getLocationSourceName()
+        mapModeTitleState.value = MapModes.defaultMapMode(this, prefs).title ?: getString(R.string.app_map)
+        showObjectsState.value = prefs.getShowObjects()
     }
 }

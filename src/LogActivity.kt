@@ -6,16 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
-import org.aprsdroid.app.model.LogPostItem
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.aprsdroid.app.data.repository.LogRepository
 import org.aprsdroid.app.ui.screen.LogScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
-import java.util.concurrent.Executors
+import org.aprsdroid.app.ui.viewmodel.LogViewModel
 
 class LogActivity : BaseRecyclerActivity() {
     companion object {
@@ -23,21 +20,18 @@ class LogActivity : BaseRecyclerActivity() {
     }
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
-    private val executor = Executors.newSingleThreadExecutor()
-    private val mainHandler = Handler(Looper.getMainLooper())
-
-    private val itemsState = mutableStateOf<List<LogPostItem>>(emptyList())
-    private val isRunningState = mutableStateOf(false)
+    private val repository: LogRepository by lazy { LogRepository(storage) }
+    private val viewModel: LogViewModel by lazy { LogViewModel(repository) }
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            loadData()
+            viewModel.refresh()
         }
     }
 
     private val serviceStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            isRunningState.value = AprsService.running
+            viewModel.updateServiceState()
         }
     }
 
@@ -47,9 +41,10 @@ class LogActivity : BaseRecyclerActivity() {
 
         setContent {
             AprsTheme {
+                val state = viewModel.uiState.collectAsStateWithLifecycle().value
                 LogScreen(
-                    items = itemsState.value,
-                    isRunning = isRunningState.value,
+                    items = state.items,
+                    isRunning = state.isRunning,
                     onBack = {
                         startActivity(Intent(this, HubActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
                         finish()
@@ -65,18 +60,18 @@ class LogActivity : BaseRecyclerActivity() {
                     },
                     onSendPosition = {
                         if (startAprsServiceWithPermissions(AprsService.SERVICE_ONCE)) {
-                            isRunningState.value = true
+                            viewModel.updateServiceState()
                         }
                     },
                     onToggleTracking = {
                         val running = AprsService.running
                         if (!running) {
                             if (startAprsServiceWithPermissions(AprsService.SERVICE)) {
-                                isRunningState.value = true
+                                viewModel.updateServiceState()
                             }
                         } else {
                             startService(AprsService.intent(this, AprsService.SERVICE_STOP))
-                            isRunningState.value = false
+                            viewModel.updateServiceState()
                         }
                     },
                     onItemClick = { item ->
@@ -91,53 +86,37 @@ class LogActivity : BaseRecyclerActivity() {
                         onStartLoading()
                         LogExporter(this, storage, null) {
                             onStopLoading()
-                            loadData()
+                            viewModel.refresh()
                         }.execute()
                     },
                     onClearLogs = {
                         onStartLoading()
                         StorageCleaner(this, storage) {
                             onStopLoading()
-                            loadData()
+                            viewModel.refresh()
                         }.execute()
                     }
                 )
             }
         }
 
-        loadData()
+        viewModel.refresh()
     }
 
     @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
-        isRunningState.value = AprsService.running
+        viewModel.updateServiceState()
         ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_NOT_EXPORTED)
         ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.SERVICE_STOPPED), ContextCompat.RECEIVER_NOT_EXPORTED)
         ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
         ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
-        loadData()
+        viewModel.refresh()
     }
 
     override fun onPause() {
         super.onPause()
         try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
         try { unregisterReceiver(serviceStateReceiver) } catch (_: Exception) {}
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        executor.shutdownNow()
-    }
-
-    fun loadData() {
-        executor.submit {
-            val cursor = storage.getPosts("300")
-            val items = LogPostItem.fromCursor(cursor)
-            mainHandler.post {
-                isRunningState.value = AprsService.running
-                itemsState.value = items
-            }
-        }
     }
 }

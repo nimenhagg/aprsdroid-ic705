@@ -83,6 +83,10 @@ class PrefsWrapper(@JvmField val context: Context) {
         return newVal
     }
 
+    fun set(name: String, newVal: Boolean): Boolean {
+        return setBoolean(name, newVal)
+    }
+
     fun getShowObjects(): Boolean = prefs.getBoolean("show_objects", true)
     fun getShowSatellite(): Boolean = prefs.getBoolean("show_satellite", false)
 
@@ -158,4 +162,12 @@ class PrefsWrapper(@JvmField val context: Context) {
     fun getAfskHQ(): Boolean = true
     fun getAfskBluetooth(): Boolean = getBoolean("afsk.btsco", false)
     fun getAfskOutput(): Int = if (getAfskBluetooth()) AudioManager.STREAM_VOICE_CALL else getStringInt("afsk.output", 0)
+
+    fun getDigiPathPresets(): Set<String> {
+        return prefs.getStringSet("digi_path_user_presets", emptySet())?.toSet() ?: emptySet()
+    }
+
+    fun saveDigiPathPresets(presets: Set<String>) {
+        prefs.edit { putStringSet("digi_path_user_presets", presets) }
+    }
 }

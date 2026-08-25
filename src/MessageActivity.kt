@@ -7,17 +7,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
-import org.aprsdroid.app.model.MessageItem
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.aprsdroid.app.data.repository.MessageRepository
 import org.aprsdroid.app.ui.screen.MessageChatScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
-import java.util.concurrent.Executors
+import org.aprsdroid.app.ui.viewmodel.MessageChatViewModel
 
 class MessageActivity : StationHelper(R.string.app_messages) {
 
@@ -26,69 +24,61 @@ class MessageActivity : StationHelper(R.string.app_messages) {
     }
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
+    private val repository: MessageRepository by lazy { MessageRepository(storage) }
+    private val viewModel: MessageChatViewModel by lazy { MessageChatViewModel(repository) }
     private val mycall: String by lazy { prefs.getCallSsid() }
-    private val executor = Executors.newSingleThreadExecutor()
-    private val mainHandler = Handler(Looper.getMainLooper())
-
-    private val messagesState = mutableStateOf<List<MessageItem>>(emptyList())
 
     private val messageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            loadData()
+            targetcall?.let { viewModel.refresh(it) }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val target = targetcall ?: ""
+
         setContent {
             AprsTheme {
+                val state = viewModel.uiState.collectAsStateWithLifecycle().value
                 MessageChatScreen(
-                    targetCall = targetcall ?: "",
+                    targetCall = target,
                     myCall = mycall,
-                    messages = messagesState.value,
+                    messages = state.messages,
                     onBack = { finish() },
                     onSendMessage = { msg -> sendMessage(msg) },
                     onDeleteMessage = { id ->
-                        storage.deleteMessage(id)
-                        loadData()
+                        viewModel.deleteMessage(id, target)
                     },
                     onRestartMessage = { item ->
-                        val cv = ContentValues().apply {
-                            put(StorageDatabase.Companion.Message.TYPE, StorageDatabase.Companion.Message.TYPE_OUT_NEW)
-                            put(StorageDatabase.Companion.Message.RETRYCNT, 0)
-                            put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+                        viewModel.restartMessage(item, target) {
+                            sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGETX))
                         }
-                        storage.updateMessage(item.id, cv)
-                        sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGETX))
-                        loadData()
                     },
                     onAbortMessage = { item ->
-                        storage.updateMessageType(item.id, StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
-                        sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGE))
-                        loadData()
+                        viewModel.abortMessage(item, target) {
+                            sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGE))
+                        }
                     },
                     onClearAllMessages = {
-                        targetcall?.let { call ->
-                            storage.deleteMessages(call)
-                            loadData()
-                        }
+                        viewModel.clearAll(target)
                     },
                     onExportLogs = {
-                        targetcall?.let { call ->
-                            LogExporter(this, storage, "call = '$call'") {}.execute()
-                        }
+                        LogExporter(this, storage, "call = '$target'") {}.execute()
                     }
                 )
             }
         }
 
-        loadData()
+        if (target.isNotEmpty()) {
+            viewModel.refresh(target)
+        }
 
         if (savedInstanceState == null) {
             val message = intent.getStringExtra("message")
-            if (message != null && !targetcall.isNullOrEmpty()) {
-                Log.d(TAG, "sending message to $targetcall: $message")
+            if (message != null && target.isNotEmpty()) {
+                Log.d(TAG, "sending message to $target: $message")
                 sendMessage(message)
             }
         }
@@ -97,9 +87,11 @@ class MessageActivity : StationHelper(R.string.app_messages) {
     @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
-        targetcall?.let { ServiceNotifier.instance.cancelMessage(this, it) }
+        targetcall?.let {
+            ServiceNotifier.instance.cancelMessage(this, it)
+            viewModel.refresh(it)
+        }
         ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_NOT_EXPORTED)
-        loadData()
     }
 
     override fun onPause() {
@@ -107,38 +99,23 @@ class MessageActivity : StationHelper(R.string.app_messages) {
         try { unregisterReceiver(messageReceiver) } catch (_: Exception) {}
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        executor.shutdownNow()
-    }
-
-    fun loadData() {
+    private fun sendMessage(msg: String) {
         val target = targetcall ?: return
-        executor.submit {
-            val cursor = storage.getMessages(target)
-            val items = MessageItem.fromCursor(cursor)
-            mainHandler.post {
-                messagesState.value = items
-            }
-        }
-    }
-
-    fun sendMessage(msg: String) {
-        if (msg.isEmpty() || targetcall.isNullOrEmpty()) return
+        if (msg.isEmpty()) return
         Log.d(TAG, "sending $msg")
 
         val cv = ContentValues().apply {
             put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
             put(StorageDatabase.Companion.Message.RETRYCNT, 0)
-            put(StorageDatabase.Companion.Message.CALL, targetcall)
-            put(StorageDatabase.Companion.Message.MSGID, storage.createMsgId(targetcall ?: ""))
+            put(StorageDatabase.Companion.Message.CALL, target)
+            put(StorageDatabase.Companion.Message.MSGID, storage.createMsgId(target))
             put(StorageDatabase.Companion.Message.TYPE, StorageDatabase.Companion.Message.TYPE_OUT_NEW)
             put(StorageDatabase.Companion.Message.TEXT, msg)
         }
         storage.addMessage(cv)
-        sendMessageBroadcast(targetcall ?: "", msg)
+        sendMessageBroadcast(target, msg)
         sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGE))
-        loadData()
+        viewModel.refresh(target)
 
         if (!AprsService.running) {
             Toast.makeText(this, R.string.msg_stored_offline, Toast.LENGTH_SHORT).show()

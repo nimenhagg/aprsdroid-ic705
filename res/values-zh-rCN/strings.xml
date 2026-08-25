@@ -2,7 +2,7 @@
 <!-- APRSdroid strings.xml - this file contains strings which need to be translated -->
 <resources>
 <string name="app_name">APRSdroid IC-705</string>
-<string name="app_prefs">APRSdroid 偏好设置</string>
+<string name="app_prefs">设置</string>
 <string name="app_map">APRS 地图</string>
 <string name="app_hub">APRSdroid 列表中心</string>
 <string name="app_log">APRSdroid 日志</string>
@@ -103,7 +103,7 @@
 <string name="export_log">导出日志</string>
 <string name="export_empty">没有输出</string>
 <string name="clear_log">清除日志</string>
-<string name="preferences">偏好设置</string>
+<string name="preferences">设置</string>
 <!-- preferences -->
 <string name="profile_load">载入配置文件</string>
 <string name="profile_export">导出配置文件</string>
@@ -151,7 +151,7 @@
 <string name="p_conntype_entry">选择连接协议</string>
 <string name="p_link">连接类型</string>
 <string name="p_link_entry">选择链接类型</string>
-<string name="p_connsetup">连接首选项</string>
+<string name="p_connsetup">连接设置</string>
 <string name="p_connlog">连接记录中</string>
 <string name="p_connlog_summary">记录详细登陆输出信息</string>
 <!-- array of connection types -->
@@ -205,6 +205,9 @@
 
 <!-- connection type properties -->
 <string name="p_host">服务器</string>
+<string name="p_port">端口</string>
+<string name="p_source_got_last">已获取当前 GPS 坐标</string>
+<string name="p_source_no_fix">无法获取当前 GPS 坐标</string>
 <string name="p_host_summary">APRS-IS 服务器 (端口 8080) 发送信标</string>
 <string name="p_host_entry">输入 APRS-IS 服务器的主机名</string>
 <string name="p_host_hint">服务器:端口</string>
@@ -379,8 +382,11 @@
     <string name="ic705_rx_port">控制 UDP 端口</string>
     <string name="ic705_rx_username">IC-705 用户名</string>
     <string name="ic705_rx_password">IC-705 网络密码</string>
+    <string name="ic705_rx_start">开始诊断</string>
+    <string name="ic705_rx_stop">停止诊断</string>
     <string name="ic705_rx_stopped">已停止</string>
     <string name="ic705_rx_starting">正在建立 Wi-Fi UDP 会话…</string>
+    <string name="ic705_rx_running">正在接收并解码…</string>
     <string name="ic705_backend_requires_api_22">IC-705 Wi-Fi 需要 Android 5.1 或更高版本。</string>
     <string name="ic705_backend_no_wifi">未找到可用于连接 IC-705 的 Wi-Fi 网络。</string>
     <string name="ic705_backend_invalid_settings">IC-705 Wi-Fi 设置无效，请检查地址、端口、用户名和密码。</string>
