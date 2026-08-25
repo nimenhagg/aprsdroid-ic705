@@ -1,3 +1,21 @@
+## 🚀 [v1.8.2-ic705] - 2026-08-25
+
+### 🎨 Material 3 全设置弹窗统一、OpenGL 专属发布与系统兼容性加固
+* **全量 Material 3 偏好设置弹窗（Modern M3 Settings Dialogs）**：
+  - 升级 `EditTextPreferenceWithValue` 与 `ListPreferenceWithValue`，全面支持 Material 3 视觉规范（28dp 大圆角卡片、OutlinedBox 外边框输入框、动态 Surface 色彩与 MD3 单选列表）。
+  - 呼号、SSID、APRS-IS 认证密码、服务器与端口、过滤规则、位置与信标等全部设置项与中继路径（Digipath）保持统一的现代化视觉体验。
+* **纯粹高效的 OpenGL 渲染发布流（OpenGL-Only Architecture）**：
+  - CI/CD 与正式构建专注于轻量高兼容的 OpenGL 渲染管线（提供 `arm64-v8a` OpenGL 推荐版与 `armeabi-v7a` OpenGL 兼容版），彻底规避部分机型 Vulkan 驱动闪退。
+* **华为 / 荣耀 / EMUI 前台通知与定位闪退修复**：
+  - 修复前台定位服务使用多色自适应启动图标导致部分定制 ROM（如 MagicUI / EMUI）在通知栏抛出 `BadNotificationException` 闪退的问题，改用标准 24x24dp 单色白底矢量通知图标 `ic_stat_notify`，并增加服务启动异常保护。
+* **全新安装首次进入地图 SQLite 语法异常修复**：
+  - 修复在全新安装无历史台站数据时，打开地图执行排序查询触发 `SQLiteException: near "DESC": syntax error` 崩溃的缺陷。
+* **极简顶栏与彩蛋式诊断日志**：
+  - 顶栏移除常驻的调试图标，界面更加清爽均衡；支持长按顶栏标题 `APRSdroid IC-705` 1.5 秒一键生成并分享系统诊断报告。
+* **全套 V1 + V2 + V3 + V4 APK 签名方案**：
+  - 本地与 GitHub CI 构建全面启用 V1 (JAR) + V2 (Full APK) + V3 (Key Rotation) + V4 (Streaming) 全版本签名方案，保证 Android 8.0 ~ Android 17 设备极致安装兼容性。
+* 版本元数据更新为 `1.8.2-ic705`（`versionCode 2026082582`）。
+
 ## 🚀 [v1.8.1-ic705] - 2026-08-25
 
 ### ⚡ MapLibre 启动稳定性修复、PTT 释放安全重试与广播加固
