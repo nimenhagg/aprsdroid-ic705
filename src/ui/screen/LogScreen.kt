@@ -133,7 +133,14 @@ fun LogScreen(
                     Text(
                         text = stringResource(R.string.show_log),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 19.sp
+                        fontSize = 19.sp,
+                        modifier = Modifier.combinedClickable(
+                            onClick = { },
+                            onLongClick = {
+                                Toast.makeText(context, context.getString(R.string.share_diagnostic_logs_generating), Toast.LENGTH_SHORT).show()
+                                org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
+                            }
+                        )
                     )
                 },
                 navigationIcon = {
@@ -155,13 +162,6 @@ fun LogScreen(
                         Icon(
                             imageVector = Icons.Default.Map,
                             contentDescription = stringResource(R.string.show_map)
-                        )
-                    }
-                    IconButton(onClick = { org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context) }) {
-                        Icon(
-                            imageVector = Icons.Default.BugReport,
-                            contentDescription = stringResource(R.string.share_diagnostic_logs),
-                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     IconButton(onClick = onOpenSettings) {

@@ -111,7 +111,14 @@ fun HubStationScreen(
                         fontWeight = FontWeight.Bold,
                         fontSize = 19.sp,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.combinedClickable(
+                            onClick = { },
+                            onLongClick = {
+                                android.widget.Toast.makeText(context, context.getString(R.string.share_diagnostic_logs_generating), android.widget.Toast.LENGTH_SHORT).show()
+                                org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
+                            }
+                        )
                     )
                 },
                 actions = {
@@ -131,13 +138,6 @@ fun HubStationScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Chat,
                             contentDescription = stringResource(R.string.app_messages)
-                        )
-                    }
-                    IconButton(onClick = { org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context) }) {
-                        Icon(
-                            imageVector = Icons.Default.BugReport,
-                            contentDescription = stringResource(R.string.share_diagnostic_logs),
-                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     IconButton(onClick = onOpenSettings) {
