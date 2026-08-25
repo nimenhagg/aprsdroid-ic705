@@ -1,3 +1,14 @@
+## [v1.9.1-ic705] - 2026-08-25
+
+### 🔧 稳定性修复：IC-705 Wi-Fi TX 异常防御与 Socket 健壮性
+* **[严重] IC-705 发射线程崩溃修复**：
+  - 修复 IC-705 Wi-Fi 发射信标/短消息音频流（`startTxAudioStreaming`）过程中，若发生网络重连、Socket 关闭或通道解构时，`NoSuchElementException`、`IllegalStateException`、`SocketException` 逃逸至 `ic705-tx` 线程导致应用崩溃的问题。
+  - 在 `Ic705RxSession` 中重构 `sendTracked`、`sendUntracked` 以及 TX 音频推流循环：
+    - 增加严格的空安全查找与 `channel.isOpen` 检查。
+    - 捕获传输层 I/O 与运行期异常，遇到网络异常时安全中止推流并自动调用 `pttStateMachine.forceRelease()` 安全释放电台 PTT，彻底杜绝崩溃和无线电卡 PTT 风险。
+* **版本元数据**：
+  - 更新版本为 `1.9.1-ic705`（`versionCode 2026082591`）。
+
 ## [v1.9.0-ic705] - 2026-08-25
 
 ### 🚀 100% Jetpack Compose 全量现代化重构与体验升级

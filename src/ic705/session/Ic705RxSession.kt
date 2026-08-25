@@ -473,14 +473,13 @@ class Ic705RxSession internal constructor(
                     val samplesPerPacket = Ic705AudioPacketCodec.SAMPLES_PER_PACKET
                     val sampleRateHz = Ic705AudioPacketCodec.SAMPLE_RATE_HZ
                     val packetDurationNs = (samplesPerPacket.toLong() * 1_000_000_000L) / sampleRateHz
-                    // 50ms Pre-roll lead cushion fills IC-705 DSP jitter buffer to prevent underruns
+                    // 60ms Pre-roll lead cushion fills IC-705 DSP jitter buffer to prevent underruns
                     val leadNs = 60_000_000L
                     val startNs = System.nanoTime()
-                    // streaming
 
                     for ((index, datagram) in datagrams.withIndex()) {
-                        if (!pttStateMachine.isTransmitting || closed.get()) {
-                            Log.w(TAG, "startTxAudioStreaming: aborted at packet $index (transmitting=${pttStateMachine.isTransmitting}, closed=${closed.get()})")
+                        if (!pttStateMachine.isTransmitting || closed.get() || engineState.phase != Ic705RxSessionEngine.Phase.RECEIVING) {
+                            Log.w(TAG, "startTxAudioStreaming: aborted at packet $index (transmitting=${pttStateMachine.isTransmitting}, closed=${closed.get()}, phase=${engineState.phase})")
                             break
                         }
                         val targetNs = startNs + (index * packetDurationNs) - leadNs
@@ -493,26 +492,36 @@ class Ic705RxSession internal constructor(
                                 Thread.yield()
                             }
                         }
+                        val audioChannel = channels[Ic705ChannelRole.AUDIO]
+                        if (audioChannel == null || !audioChannel.isOpen) {
+                            Log.w(TAG, "startTxAudioStreaming: AUDIO channel closed during transmission at packet $index")
+                            break
+                        }
                         sendTracked(Ic705ChannelRole.AUDIO, datagram)
-
                     }
 
-                    
-                    pttStateMachine.onAudioStreamingFinished()
-                    Thread.sleep(TX_DRAIN_WAIT_MILLIS)
-                    
-                } catch (_: InterruptedException) {
+                    if (pttStateMachine.isTransmitting && !closed.get()) {
+                        pttStateMachine.onAudioStreamingFinished()
+                        Thread.sleep(TX_DRAIN_WAIT_MILLIS)
+                    }
+                } catch (e: InterruptedException) {
                     Log.w(TAG, "startTxAudioStreaming: interrupted")
                     Thread.currentThread().interrupt()
+                } catch (e: Throwable) {
+                    Log.e(TAG, "startTxAudioStreaming: error during TX streaming", e)
+                    pttStateMachine.forceRelease("Streaming error: ${e.message}")
                 } finally {
                     pttStateMachine.finishTransmission()
                     lastTxCompletedMonotonicMillis = monotonicMillis()
-                    
                 }
             }
-        } catch (_: RejectedExecutionException) {
-            Log.e(TAG, "startTxAudioStreaming: TX executor rejected execution")
+        } catch (e: RejectedExecutionException) {
+            Log.e(TAG, "startTxAudioStreaming: TX executor rejected execution", e)
             pttStateMachine.forceRelease("TX executor shut down")
+            lastTxCompletedMonotonicMillis = monotonicMillis()
+        } catch (e: Throwable) {
+            Log.e(TAG, "startTxAudioStreaming: unexpected error", e)
+            pttStateMachine.forceRelease("Unexpected error: ${e.message}")
             lastTxCompletedMonotonicMillis = monotonicMillis()
         }
     }
@@ -1170,8 +1179,8 @@ class Ic705RxSession internal constructor(
                     radioIdentityBlock = announcement.radioIdentityBlock,
                     radioName = announcement.radioName,
                     username = config.username,
-                    localCivPort = channels.getValue(Ic705ChannelRole.CIV).localPort,
-                    localAudioPort = channels.getValue(Ic705ChannelRole.AUDIO).localPort,
+                    localCivPort = channels[Ic705ChannelRole.CIV]?.localPort ?: (config.controlPort + 1),
+                    localAudioPort = channels[Ic705ChannelRole.AUDIO]?.localPort ?: (config.controlPort + 2),
                     receiveEnabled = true,
                     // The IC-705 expects the full-duplex LPCM capability bit during LAN
                     // negotiation even for a receive-only client. This only advertises
@@ -1184,11 +1193,11 @@ class Ic705RxSession internal constructor(
 
     private fun openStreams(endpoints: Ic705RxSessionEngine.StreamEndpoints) {
         val radioAddress = discoveredRadioAddress ?: config.radioAddress
-        channels.getValue(Ic705ChannelRole.CIV).setRemoteEndpoint(
+        channels[Ic705ChannelRole.CIV]?.setRemoteEndpoint(
             InetSocketAddress(radioAddress, endpoints.civPort),
             lockSource = false,
         )
-        channels.getValue(Ic705ChannelRole.AUDIO).setRemoteEndpoint(
+        channels[Ic705ChannelRole.AUDIO]?.setRemoteEndpoint(
             InetSocketAddress(radioAddress, endpoints.audioPort),
             lockSource = false,
         )
@@ -1228,7 +1237,7 @@ class Ic705RxSession internal constructor(
     }
 
     private fun sendAreYouThere(role: Ic705ChannelRole) {
-        val runtime = channelRuntimes.getValue(role)
+        val runtime = channelRuntimes[role] ?: return
         sendUntracked(
             role,
             Ic705ControlPacketCodec.encode(
@@ -1254,7 +1263,7 @@ class Ic705RxSession internal constructor(
     }
 
     private fun sendPing(role: Ic705ChannelRole) {
-        val runtime = channelRuntimes.getValue(role)
+        val runtime = channelRuntimes[role] ?: return
         val remoteId = runtime.remoteId ?: return
         sendUntracked(
             role,
@@ -1315,13 +1324,40 @@ class Ic705RxSession internal constructor(
     }
 
     private fun sendTracked(role: Ic705ChannelRole, template: ByteArray) {
-        val runtime = channelRuntimes.getValue(role)
+        val runtime = channelRuntimes[role] ?: run {
+            Log.w(TAG, "sendTracked($role): runtime not found")
+            return
+        }
+        val channel = channels[role] ?: run {
+            Log.w(TAG, "sendTracked($role): channel not found")
+            return
+        }
+        if (!channel.isOpen) {
+            Log.w(TAG, "sendTracked($role): channel is not open")
+            return
+        }
         val tracked = runtime.trackedPackets.track(template)
-        channels.getValue(role).send(tracked.data)
+        try {
+            channel.send(tracked.data)
+        } catch (e: Exception) {
+            Log.w(TAG, "sendTracked($role) failed: ${e.message}")
+        }
     }
 
     private fun sendUntracked(role: Ic705ChannelRole, data: ByteArray) {
-        channels.getValue(role).send(data)
+        val channel = channels[role] ?: run {
+            Log.w(TAG, "sendUntracked($role): channel not found")
+            return
+        }
+        if (!channel.isOpen) {
+            Log.w(TAG, "sendUntracked($role): channel is not open")
+            return
+        }
+        try {
+            channel.send(data)
+        } catch (e: Exception) {
+            Log.w(TAG, "sendUntracked($role) failed: ${e.message}")
+        }
     }
 
     private fun controlPacket(
