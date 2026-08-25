@@ -34,8 +34,8 @@ allprojects {
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = (findProperty("MOD_VERSION") ?: "1.8.2").toString()
-	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082582").toString())
+	mod_version = (findProperty("MOD_VERSION") ?: "1.8.3").toString()
+	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082583").toString())
 	base_version = "APRSdroid v1.7.0"
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
@@ -206,11 +206,11 @@ dependencies {
 	x86MultiImplementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.5.1'
 	x8664MultiImplementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.5.1'
 	implementation 'com.google.android.gms:play-services-maps:20.0.0'
-	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+	implementation 'com.squareup.okhttp3:okhttp:5.3.0'
 	implementation 'androidx.core:core-ktx:1.19.0'
-	implementation 'androidx.appcompat:appcompat:1.6.1'
+	implementation 'androidx.appcompat:appcompat:1.8.0'
 	implementation 'androidx.preference:preference-ktx:1.2.1'
-	implementation 'com.google.android.material:material:1.11.0'
+	implementation 'com.google.android.material:material:1.14.0'
 
 	def composeBom = platform('androidx.compose:compose-bom:2026.08.00')
 	implementation composeBom
