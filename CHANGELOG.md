@@ -1,3 +1,12 @@
+## 🚀 [v1.8.1-ic705] - 2026-08-25
+
+### ⚡ MapLibre 启动稳定性修复、PTT 释放安全重试与广播加固
+* 修复 `APRSdroidApplication` 中由于 OkHttpClient 初始化先行触发 MapLibre 上下文校验导致的冷启动崩溃（`Using MapView requires calling MapLibre.getInstance(...)`）。
+* 加固 IC-705 PTT 释放状态机：引入 CI-V PTT OFF 的 ACK 握手确认、指数退避重试与硬件安全回退机制，避免弱网下意外长发。
+* 适配 Android 14+ 内部广播注册规范，显式使用 `RECEIVER_NOT_EXPORTED` 消除 `SecurityException` 崩溃隐患。
+* 规范化 USB TNC 权限请求与设备插拔监听，适配 Android 12+ `FLAG_IMMUTABLE` 约束。
+* 版本元数据更新为 `1.8.1-ic705`（`versionCode 2026082581`）。
+
 ## 🚀 [v1.8.0-ic705] - 2026-08-24
 
 ### 📦 多架构轻量发布、OSM 合规与正式构建收缩
