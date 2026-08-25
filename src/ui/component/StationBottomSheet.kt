@@ -62,13 +62,18 @@ fun StationBottomSheetContent(
 ) {
     val context = LocalContext.current
 
-    val dist = remember(myLat, myLon, station.lat, station.lon) {
-        val results = FloatArray(2)
-        val mcd = 1000000.0
-        Location.distanceBetween(myLat / mcd, myLon / mcd, station.lat / mcd, station.lon / mcd, results)
-        results
+    val hasMyPosition = myLat != 0 || myLon != 0
+    val distStr = if (hasMyPosition) {
+        val dist = remember(myLat, myLon, station.lat, station.lon) {
+            val results = FloatArray(2)
+            val mcd = 1000000.0
+            Location.distanceBetween(myLat / mcd, myLon / mcd, station.lat / mcd, station.lon / mcd, results)
+            results
+        }
+        String.format(Locale.US, "%1.1f km %s", dist[0] / 1000.0, getBearing(dist[1].toDouble()))
+    } else {
+        "—"
     }
-    val distStr = String.format(Locale.US, "%1.1f km %s", dist[0] / 1000.0, getBearing(dist[1].toDouble()))
     val age = DateUtils.getRelativeTimeSpanString(context, station.ts).toString()
 
     Surface(
@@ -251,14 +256,7 @@ private fun getBearing(deg: Double): String {
 object StationBottomSheetHelper {
     fun show(context: Context, call: String, db: StorageDatabase, myLat: Int, myLon: Int) {
         val cursor = db.getStations("CALL = ?", arrayOf(call), "1")
-        if (cursor.count == 0 || !cursor.moveToFirst()) {
-            cursor.close()
-            UIHelper.openCallsignDetails(context, call)
-            return
-        }
-
-        val items = StationItem.fromCursor(cursor)
-        cursor.close()
+        val items = StationItem.fromCursor(cursor) // fromCursor iterates and closes cursor
         if (items.isEmpty()) {
             UIHelper.openCallsignDetails(context, call)
             return

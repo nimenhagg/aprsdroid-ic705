@@ -53,6 +53,7 @@ class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(p
             try { it.join(50) } catch (_: Exception) {}
         }
         conn = null
+        executor.shutdown()
     }
 
     inner class TcpSocketThread(val hostport: String) : Thread("APRSdroid TCP connection") {

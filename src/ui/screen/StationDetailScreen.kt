@@ -140,13 +140,18 @@ fun StationDetailScreen(
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 stationItem?.let {
-                                    val dist = remember(myLat, myLon, it.lat, it.lon) {
-                                        val results = FloatArray(2)
-                                        val mcd = 1000000.0
-                                        Location.distanceBetween(myLat / mcd, myLon / mcd, it.lat / mcd, it.lon / mcd, results)
-                                        results
+                                    val hasMyPosition = myLat != 0 || myLon != 0
+                                    val distStr = if (hasMyPosition) {
+                                        val dist = remember(myLat, myLon, it.lat, it.lon) {
+                                            val results = FloatArray(2)
+                                            val mcd = 1000000.0
+                                            Location.distanceBetween(myLat / mcd, myLon / mcd, it.lat / mcd, it.lon / mcd, results)
+                                            results
+                                        }
+                                        String.format(Locale.US, "%1.1f km %s", dist[0] / 1000.0, getBearing(dist[1].toDouble()))
+                                    } else {
+                                        "—"
                                     }
-                                    val distStr = String.format(Locale.US, "%1.1f km %s", dist[0] / 1000.0, getBearing(dist[1].toDouble()))
                                     Text(
                                         text = distStr,
                                         fontSize = 13.sp,

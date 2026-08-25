@@ -84,7 +84,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             const val COLUMN_QRG = 11
             const val COLUMN_FLAGS = 12
 
-            val COLUMNS_MAP = arrayOf(_ID, CALL, LAT, LON, SYMBOL, ORIGIN, QRG, COMMENT, SPEED, COURSE)
+            val COLUMNS_MAP = arrayOf(_ID, CALL, LAT, LON, SYMBOL, ORIGIN, QRG, COMMENT, SPEED, COURSE, TS)
             const val COLUMN_MAP_CALL = 1
             const val COLUMN_MAP_LAT = 2
             const val COLUMN_MAP_LON = 3
@@ -346,9 +346,9 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
 
     fun getExportPosts(call: String?): Cursor {
         return if (call != null) {
-            writableDatabase.query(Post.TABLE, Post.COLUMNS, "type in (0, 3) and message LIKE ?", arrayOf("$call%"), null, null, null, null)
+            writableDatabase.query(Post.TABLE, Post.COLUMNS, "type in (0, 3, 4) and message LIKE ?", arrayOf("$call%"), null, null, null, null)
         } else {
-            writableDatabase.query(Post.TABLE, Post.COLUMNS, "type in (0, 3)", null, null, null, null, null)
+            writableDatabase.query(Post.TABLE, Post.COLUMNS, "type in (0, 3, 4)", null, null, null, null, null)
         }
     }
 

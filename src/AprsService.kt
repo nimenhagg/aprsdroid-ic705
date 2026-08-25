@@ -320,7 +320,7 @@ class AprsService : Service() {
             val status = try {
                 val s = poster?.update(packet) ?: "No poster"
                 val fullStatus = s + statusPostfix
-                addPost(StorageDatabase.Companion.Post.TYPE_POST, fullStatus, packet.toString())
+                addPost(StorageDatabase.Companion.Post.TYPE_TX, fullStatus, packet.toString())
                 fullStatus
             } catch (e: Exception) {
                 addPost(StorageDatabase.Companion.Post.TYPE_ERROR, "Error", e.toString())
@@ -411,7 +411,7 @@ class AprsService : Service() {
     fun addPost(t: Int, status: String?, message: String) {
         val ts = System.currentTimeMillis()
         db.addPost(ts, t, status ?: "", message)
-        if (t == StorageDatabase.Companion.Post.TYPE_POST || t == StorageDatabase.Companion.Post.TYPE_INCMG) {
+        if (t == StorageDatabase.Companion.Post.TYPE_POST || t == StorageDatabase.Companion.Post.TYPE_INCMG || t == StorageDatabase.Companion.Post.TYPE_TX) {
             parsePacket(ts, message, t)
         } else {
             Log.d(TAG, "addPost: $status - $message")

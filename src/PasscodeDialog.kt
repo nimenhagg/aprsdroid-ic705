@@ -124,6 +124,8 @@ class PasscodeDialog(
             putString("callsign", parts[0])
             if (parts.size == 2) {
                 putString("ssid", parts[1])
+            } else {
+                remove("ssid")
             }
             if (passOK(call, passcode)) {
                 putString("passcode", passcode)

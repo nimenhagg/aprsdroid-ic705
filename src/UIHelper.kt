@@ -192,6 +192,7 @@ class LogExporter(
             var error: String? = null
             if (c.count == 0) {
                 error = activity.getString(R.string.export_empty)
+                c.close()
             } else {
                 try {
                     directory.mkdirs()

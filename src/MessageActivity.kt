@@ -85,10 +85,12 @@ class MessageActivity : StationHelper(R.string.app_messages) {
 
         loadData()
 
-        val message = intent.getStringExtra("message")
-        if (message != null && !targetcall.isNullOrEmpty()) {
-            Log.d(TAG, "sending message to $targetcall: $message")
-            sendMessage(message)
+        if (savedInstanceState == null) {
+            val message = intent.getStringExtra("message")
+            if (message != null && !targetcall.isNullOrEmpty()) {
+                Log.d(TAG, "sending message to $targetcall: $message")
+                sendMessage(message)
+            }
         }
     }
 
