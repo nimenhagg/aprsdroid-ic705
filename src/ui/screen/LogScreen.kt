@@ -26,14 +26,18 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -83,6 +87,9 @@ fun LogScreen(
     items: List<LogPostItem>,
     isRunning: Boolean,
     onBack: () -> Unit,
+    onOpenHub: () -> Unit = {},
+    onOpenMap: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     onSendPosition: () -> Unit,
     onToggleTracking: () -> Unit,
     onItemClick: (LogPostItem) -> Unit,
@@ -144,6 +151,25 @@ fun LogScreen(
                             contentDescription = "Search"
                         )
                     }
+                    IconButton(onClick = onOpenMap) {
+                        Icon(
+                            imageVector = Icons.Default.Map,
+                            contentDescription = stringResource(R.string.show_map)
+                        )
+                    }
+                    IconButton(onClick = { org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context) }) {
+                        Icon(
+                            imageVector = Icons.Default.BugReport,
+                            contentDescription = stringResource(R.string.share_diagnostic_logs),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.preferences)
+                        )
+                    }
                     Box {
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
@@ -155,6 +181,30 @@ fun LogScreen(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.show_hub)) },
+                                leadingIcon = { Icon(Icons.Default.Radio, contentDescription = null) },
+                                onClick = {
+                                    showMenu = false
+                                    onOpenHub()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.preferences)) },
+                                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                onClick = {
+                                    showMenu = false
+                                    onOpenSettings()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.share_diagnostic_logs)) },
+                                leadingIcon = { Icon(Icons.Default.BugReport, contentDescription = null) },
+                                onClick = {
+                                    showMenu = false
+                                    org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.export_log)) },
                                 leadingIcon = { Icon(Icons.Default.FileDownload, contentDescription = null) },

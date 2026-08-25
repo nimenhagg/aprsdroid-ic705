@@ -255,39 +255,44 @@ class MapAct : MapLoaderBase() {
     }
 
     private fun updateStationLayer(style: Style, stations: List<Station>) {
-        activeImageIds.forEach { imageId ->
-            if (style.getImage(imageId) != null) style.removeImage(imageId)
-        }
-        activeImageIds.clear()
+        try {
+            activeImageIds.forEach { imageId ->
+                if (style.getImage(imageId) != null) style.removeImage(imageId)
+            }
+            activeImageIds.clear()
 
-        val iconSize = (24f * resources.displayMetrics.density).roundToInt().coerceAtLeast(24)
-        val symbolImages = mutableMapOf<String, String>()
-        val features = stations.mapIndexed { index, station ->
-            val symbol = station.symbol ?: "/$"
-            val iconId = symbolImages.getOrPut(symbol) {
-                val id = "aprs-symbol-${encodeImageId(symbol)}"
-                val icon = MapModes.symbol2bitmap(symbol, iconSize).apply {
-                    density = resources.displayMetrics.densityDpi
+            val iconSize = (24f * resources.displayMetrics.density).roundToInt().coerceAtLeast(24)
+            val symbolImages = mutableMapOf<String, String>()
+            val features = stations.mapIndexed { index, station ->
+                val symbol = station.symbol ?: "/$"
+                val iconId = symbolImages.getOrPut(symbol) {
+                    val id = "aprs-symbol-${encodeImageId(symbol)}"
+                    val icon = MapModes.symbol2bitmap(symbol, iconSize).apply {
+                        density = resources.displayMetrics.densityDpi
+                    }
+                    style.addImage(id, icon)
+                    activeImageIds.add(id)
+                    id
                 }
-                style.addImage(id, icon)
-                activeImageIds.add(id)
-                id
-            }
-            val labeledIconId = "aprs-station-$index-${encodeImageId(station.call)}"
-            style.addImage(labeledIconId, createLabeledStationBitmap(station.call, symbol, iconSize))
-            activeImageIds.add(labeledIconId)
+                val labeledIconId = "aprs-station-$index-${encodeImageId(station.call)}"
+                style.addImage(labeledIconId, createLabeledStationBitmap(station.call, symbol, iconSize))
+                activeImageIds.add(labeledIconId)
 
-            val properties = JsonObject().apply {
-                addProperty(PROPERTY_CALL, station.call)
-                addProperty(PROPERTY_ICON, iconId)
-                addProperty(PROPERTY_LABELED_ICON, labeledIconId)
+                val properties = JsonObject().apply {
+                    addProperty(PROPERTY_CALL, station.call)
+                    addProperty(PROPERTY_ICON, iconId)
+                    addProperty(PROPERTY_LABELED_ICON, labeledIconId)
+                }
+                Feature.fromGeometry(Point.fromLngLat(station.lon, station.lat), properties)
             }
-            Feature.fromGeometry(Point.fromLngLat(station.lon, station.lat), properties)
+
+            style.getSourceAs<GeoJsonSource>(STATION_SOURCE_ID)
+                ?.setGeoJson(FeatureCollection.fromFeatures(features.toTypedArray()))
+            onStopLoading()
+        } catch (e: Exception) {
+            Log.e(TAG, "updateStationLayer error", e)
+            onStopLoading()
         }
-
-        style.getSourceAs<GeoJsonSource>(STATION_SOURCE_ID)
-            ?.setGeoJson(FeatureCollection.fromFeatures(features.toTypedArray()))
-        onStopLoading()
     }
 
     private fun createLabeledStationBitmap(call: String, symbol: String, iconSize: Int): Bitmap {

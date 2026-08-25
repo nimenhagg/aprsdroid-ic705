@@ -58,7 +58,7 @@ class ServiceNotifier {
             .setContentTitle(appname)
             .setContentText(status)
             .setContentIntent(PendingIntent.getActivity(ctx, 0, i, PendingIntent.FLAG_IMMUTABLE))
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_stat_notify)
             .setWhen(System.currentTimeMillis())
             .setOngoing(true)
 
@@ -71,12 +71,14 @@ class ServiceNotifier {
         )
         val exitTitle = ctx.getString(R.string.notification_action_exit)
 
-        val exitAction = Notification.Action.Builder(
-            Icon.createWithResource(ctx, R.drawable.ic_action_clear),
-            exitTitle,
-            stopPendingIntent
-        ).build()
-        nb.addAction(exitAction)
+        try {
+            val exitAction = Notification.Action.Builder(
+                Icon.createWithResource(ctx, R.drawable.ic_action_clear),
+                exitTitle,
+                stopPendingIntent
+            ).build()
+            nb.addAction(exitAction)
+        } catch (_: Exception) {}
 
         return nb.build()
     }
@@ -98,7 +100,7 @@ class ServiceNotifier {
             .setContentTitle(call)
             .setContentText(message)
             .setContentIntent(PendingIntent.getActivity(ctx, 0, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-            .setSmallIcon(R.drawable.ic_action_messages)
+            .setSmallIcon(R.drawable.ic_stat_notify)
             .setTicker("$call: $message")
             .setWhen(System.currentTimeMillis())
             .setAutoCancel(true)
@@ -110,56 +112,65 @@ class ServiceNotifier {
     }
 
     fun setupNotification(n: Notification, ctx: Context, prefs: PrefsWrapper, default: Boolean, prefix: String) {
-        if (prefs.getBoolean(prefix + "notify_led", default)) {
-            @Suppress("DEPRECATION")
-            n.ledARGB = Color.YELLOW
-            @Suppress("DEPRECATION")
-            n.ledOnMS = 300
-            @Suppress("DEPRECATION")
-            n.ledOffMS = 1000
-            @Suppress("DEPRECATION")
-            n.flags = n.flags or Notification.FLAG_SHOW_LIGHTS
-        }
-        if (prefs.getBoolean(prefix + "notify_vibr", default)) {
-            val v = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                (ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager)?.defaultVibrator
-            } else {
+        try {
+            if (prefs.getBoolean(prefix + "notify_led", default)) {
                 @Suppress("DEPRECATION")
-                ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-            }
-            val pattern = longArrayOf(0, 200, 200)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                v?.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
-            } else {
+                n.ledARGB = Color.YELLOW
                 @Suppress("DEPRECATION")
-                v?.vibrate(pattern, -1)
+                n.ledOnMS = 300
+                @Suppress("DEPRECATION")
+                n.ledOffMS = 1000
+                @Suppress("DEPRECATION")
+                n.flags = n.flags or Notification.FLAG_SHOW_LIGHTS
             }
-        }
-        val sound = prefs.getString(prefix + "notify_ringtone", null)
-        if (!sound.isNullOrEmpty()) {
-            @Suppress("DEPRECATION")
-            n.sound = sound.toUri()
-        }
+            if (prefs.getBoolean(prefix + "notify_vibr", default)) {
+                val v = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    (ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager)?.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                }
+                val pattern = longArrayOf(0, 200, 200)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v?.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
+                } else {
+                    @Suppress("DEPRECATION")
+                    v?.vibrate(pattern, -1)
+                }
+            }
+            val sound = prefs.getString(prefix + "notify_ringtone", null)
+            if (!sound.isNullOrEmpty()) {
+                @Suppress("DEPRECATION")
+                n.sound = sound.toUri()
+            }
+        } catch (_: Exception) {}
     }
 
     fun notifyMessage(ctx: Service, prefs: PrefsWrapper, call: String, message: String) {
-        val n = newMessageNotification(ctx, call, message)
-        setupNotification(n, ctx, prefs, true, "")
-        getNotificationMgr(ctx).notify(getCallNumber(call), n)
+        try {
+            val n = newMessageNotification(ctx, call, message)
+            setupNotification(n, ctx, prefs, true, "")
+            getNotificationMgr(ctx).notify(getCallNumber(call), n)
+        } catch (_: Exception) {}
     }
 
     fun cancelMessage(ctx: Context, call: String) {
-        getNotificationMgr(ctx).cancel(getCallNumber(call))
+        try {
+            getNotificationMgr(ctx).cancel(getCallNumber(call))
+        } catch (_: Exception) {}
     }
 
     @JvmOverloads
     fun notifyPosition(ctx: Service, prefs: PrefsWrapper, status: String, prefix: String = "pos_") {
-        val n = newNotification(ctx, status)
-        setupNotification(n, ctx, prefs, false, prefix)
-        getNotificationMgr(ctx).notify(SERVICE_NOTIFICATION, n)
+        try {
+            val n = newNotification(ctx, status)
+            setupNotification(n, ctx, prefs, false, prefix)
+            getNotificationMgr(ctx).notify(SERVICE_NOTIFICATION, n)
+        } catch (_: Exception) {}
     }
 
     fun start(ctx: Service, status: String) {
+        setupChannels(ctx)
         var serviceType = if (Build.VERSION.SDK_INT >= 34) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         } else {
@@ -181,11 +192,19 @@ class ServiceNotifier {
                 serviceType = types
             }
         }
-        ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), serviceType)
+        try {
+            ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), serviceType)
+        } catch (_: Exception) {
+            try {
+                ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), 0)
+            } catch (_: Exception) {}
+        }
     }
 
     fun stop(ctx: Service) {
-        @Suppress("DEPRECATION")
-        ctx.stopForeground(true)
+        try {
+            @Suppress("DEPRECATION")
+            ctx.stopForeground(true)
+        } catch (_: Exception) {}
     }
 }

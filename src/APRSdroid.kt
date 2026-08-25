@@ -25,10 +25,11 @@ class APRSdroid : Activity() {
         }
 
         val mapmode = MapModes.defaultMapMode(this, PrefsWrapper(this))
-        when (sp.getString("activity", "log")) {
+        when (sp.getString("activity", "hub")) {
             "hub" -> replaceAct(HubActivity::class.java)
             "map" -> replaceAct(mapmode.viewClass)
-            else -> replaceAct(LogActivity::class.java)
+            "log" -> replaceAct(LogActivity::class.java)
+            else -> replaceAct(HubActivity::class.java)
         }
     }
 }

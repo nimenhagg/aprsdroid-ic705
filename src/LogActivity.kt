@@ -50,7 +50,19 @@ class LogActivity : BaseRecyclerActivity() {
                 LogScreen(
                     items = itemsState.value,
                     isRunning = isRunningState.value,
-                    onBack = { finish() },
+                    onBack = {
+                        startActivity(Intent(this, HubActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                        finish()
+                    },
+                    onOpenHub = {
+                        startActivity(Intent(this, HubActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                    },
+                    onOpenMap = {
+                        MapModes.startMap(this, prefs, null)
+                    },
+                    onOpenSettings = {
+                        startActivity(Intent(this, PrefsAct::class.java))
+                    },
                     onSendPosition = {
                         if (startAprsServiceWithPermissions(AprsService.SERVICE_ONCE)) {
                             isRunningState.value = true
