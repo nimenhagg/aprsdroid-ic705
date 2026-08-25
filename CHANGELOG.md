@@ -1,3 +1,25 @@
+## 🐛 [v1.8.6-ic705] - 2026-08-25
+
+### 🔧 七项 Bug 修复：游标逻辑、日志标签、资源泄露、重复发送、距离计算、配置残留与线程泄露
+* **[严重] 地图电台 BottomSheet 弹窗失效修复**：
+  - 修复 `StationBottomSheetHelper.show` 中 `cursor.moveToFirst()` 预消费与 `StationItem.fromCursor` 内部 `moveToNext()` 冲突，导致单行查询结果被跳过、BottomSheet 永远无法弹出的 100% 必现 Bug。
+  - 补充 `Station.COLUMNS_MAP` 中缺失的 `TS` 列，修复电台时间戳始终显示为 1970 年的问题。
+* **[中等] 发射信标日志标签错误修复**：
+  - `AprsService.sendPacket()` 改用 `TYPE_TX` 替代 `TYPE_POST` 写入数据库，修复日志页面所有自己发出的位置信标全部显示绿色 "RX" 接收徽章的问题。
+  - 扩展 `addPost` 中 `parsePacket` 守卫条件覆盖 `TYPE_TX`，确保发射包仍被解析入 stations 表。
+  - 扩展 `getExportPosts` 导出查询过滤条件（`type in (0, 3)` → `type in (0, 3, 4)`），确保 TX 包被纳入日志导出。
+* **[中等] 日志导出空结果 Cursor 泄露修复**：
+  - `UIHelper.LogExporter` 在 `c.count == 0` 分支补充 `c.close()`，修复空导出时 SQLite Cursor 句柄泄露。
+* **[中等] 消息 Activity 重建重复发送修复**：
+  - `MessageActivity.onCreate` 添加 `savedInstanceState == null` 守卫，防止屏幕旋转、暗黑模式切换或进程恢复时重复向空中无线电/APRS-IS 发射报文。
+* **[轻微] 未定位时 Null Island 虚假距离修复**：
+  - `HubStationScreen`、`StationDetailScreen`、`StationBottomSheet` 三处距离计算添加 `hasMyPosition` 守卫，当设备未获得 GPS 定位时显示 `"—"` 替代从 (0°, 0°) 计算出的荒谬万公里距离。
+* **[轻微] 呼号 SSID 去除后旧值残留修复**：
+  - `PasscodeDialog.saveFirstRun` 当用户输入不含 `-` 的纯呼号时，执行 `remove("ssid")` 清除 SharedPreferences 中残留的旧 SSID。
+* **[轻微] TCP 后端 Executor 线程泄露修复**：
+  - `TcpUploader.stop()` 补充 `executor.shutdown()`，防止服务反复停止/启动时 `SingleThreadExecutor` 线程资源累积泄露。
+* 版本元数据更新为 `1.8.6-ic705`（`versionCode 2026082586`）。
+
 ## 🚀 [v1.8.5-ic705] - 2026-08-25
 
 ### 🛡️ IC-705 诊断页 Compose 化与纯 V2+V3+V4 签名
