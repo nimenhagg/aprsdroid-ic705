@@ -431,4 +431,10 @@
 <string name="about_license_heading">📜 Open source and credits</string>
 <string name="about_license_body">Based on the original APRSdroid project by Georg Lukas.\nLicensed under GNU General Public License v2 (GPL-2.0).\nThanks to amateur radio operators and open-source contributors worldwide.</string>
 <string name="ringtone_silent">Silent</string>
+    <string name="p__diagnostics">Diagnostics &amp; Logs</string>
+    <string name="share_diagnostic_logs">Share Diagnostic Logs</string>
+    <string name="share_diagnostic_logs_summary">Collect system info, configuration, and recent runtime logcat to troubleshoot issues</string>
+    <string name="share_diagnostic_logs_generating">Generating diagnostic log report…</string>
+    <string name="share_diagnostic_logs_failed">Failed to export diagnostic logs: %1$s</string>
+    <string name="share_diagnostic_logs_chooser">Share APRSdroid Diagnostic Logs</string>
 </resources>

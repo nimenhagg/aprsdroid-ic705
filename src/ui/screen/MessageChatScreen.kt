@@ -131,31 +131,33 @@ fun MessageChatScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showTopMenu = true }) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Options"
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = showTopMenu,
-                        onDismissRequest = { showTopMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.app_messages_clear)) },
-                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                            onClick = {
-                                showTopMenu = false
-                                showClearDialog = true
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.export_log)) },
-                            onClick = {
-                                showTopMenu = false
-                                onExportLogs()
-                            }
-                        )
+                    Box {
+                        IconButton(onClick = { showTopMenu = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Options"
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showTopMenu,
+                            onDismissRequest = { showTopMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.app_messages_clear)) },
+                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                                onClick = {
+                                    showTopMenu = false
+                                    showClearDialog = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.export_log)) },
+                                onClick = {
+                                    showTopMenu = false
+                                    onExportLogs()
+                                }
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

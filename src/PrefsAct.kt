@@ -106,6 +106,11 @@ class PrefsAct : AppCompatActivity() {
         }
 
         override fun onPreferenceTreeClick(preference: Preference): Boolean {
+            if (preference.key == "share_diagnostic_logs") {
+                val ctx = context ?: return true
+                org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(ctx)
+                return true
+            }
             if (preference.intent != null) {
                 startActivity(preference.intent)
                 return true

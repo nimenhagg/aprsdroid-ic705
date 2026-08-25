@@ -420,6 +420,12 @@
     <string name="about_feature_maps_desc">集成高德地图、OpenStreetMap 与 Google Maps 地图源</string>
     <string name="about_license_heading">📜 开源与致谢</string>
     <string name="about_license_body">基于 Georg Lukas 原创 APRSdroid 项目二次开发。\n遵循 GNU General Public License v2 (GPL-2.0) 开源协议。\n致谢全球业余无线电爱好者与开源社区贡献者。</string>
+    <string name="p__diagnostics">诊断与日志</string>
+    <string name="share_diagnostic_logs">分享运行诊断日志</string>
+    <string name="share_diagnostic_logs_summary">收集设备系统信息、APRS配置与近期Logcat运行日志以排查闪退与异常</string>
+    <string name="share_diagnostic_logs_generating">正在生成诊断日志报告…</string>
+    <string name="share_diagnostic_logs_failed">导出诊断日志失败：%1$s</string>
+    <string name="share_diagnostic_logs_chooser">分享 APRSdroid 诊断日志</string>
     <string name="ringtone_silent">静音</string>
 
 </resources>

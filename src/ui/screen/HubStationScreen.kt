@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Map
@@ -90,6 +91,7 @@ fun HubStationScreen(
 ) {
     var showTopMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val appTitle = if (isRunning) {
         "${stringResource(R.string.app_name)} ($myCall)"
@@ -131,6 +133,19 @@ fun HubStationScreen(
                             contentDescription = stringResource(R.string.app_messages)
                         )
                     }
+                    IconButton(onClick = { org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context) }) {
+                        Icon(
+                            imageVector = Icons.Default.BugReport,
+                            contentDescription = stringResource(R.string.share_diagnostic_logs),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.preferences)
+                        )
+                    }
                     Box {
                         IconButton(onClick = { showTopMenu = true }) {
                             Icon(
@@ -148,6 +163,14 @@ fun HubStationScreen(
                                 onClick = {
                                     showTopMenu = false
                                     onOpenSettings()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.share_diagnostic_logs)) },
+                                leadingIcon = { Icon(Icons.Default.BugReport, contentDescription = null) },
+                                onClick = {
+                                    showTopMenu = false
+                                    org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
                                 }
                             )
                             DropdownMenuItem(

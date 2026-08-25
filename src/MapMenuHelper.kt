@@ -58,42 +58,50 @@ abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, Loadin
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.options_map, menu)
-        menuInflater.inflate(R.menu.context_call, menu)
-        menuInflater.inflate(R.menu.options_activities, menu)
-        menuInflater.inflate(R.menu.options, menu)
-        menu.findItem(R.id.map)?.isVisible = false
-        if (isCoordinateChooser) {
-            for (idx in 0 until menu.size) {
-                menu[idx].isVisible = false
+        try {
+            menuInflater.inflate(R.menu.options_map, menu)
+            menuInflater.inflate(R.menu.context_call, menu)
+            menuInflater.inflate(R.menu.options_activities, menu)
+            menuInflater.inflate(R.menu.options, menu)
+            menu.findItem(R.id.map)?.isVisible = false
+            if (isCoordinateChooser) {
+                for (idx in 0 until menu.size) {
+                    menu[idx].isVisible = false
+                }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error inflating options menu", e)
         }
         return true
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        super.onPrepareOptionsMenu(menu)
-        val tracking = targetcall.isNotEmpty()
-        Log.d(TAG, "preparing menu for " + targetcall)
-        if (isCoordinateChooser) return true
+        try {
+            super.onPrepareOptionsMenu(menu)
+            val tracking = targetcall.isNotEmpty()
+            Log.d(TAG, "preparing menu for " + targetcall)
+            if (isCoordinateChooser) return true
 
-        menu.findItem(R.id.objects)?.isChecked = prefs.getShowObjects()
-        menu.setGroupVisible(R.id.menu_context_call, tracking)
-        menu.setGroupVisible(R.id.menu_options_activities, !tracking)
-        menu.setGroupVisible(R.id.menu_options, !tracking)
+            menu.findItem(R.id.objects)?.isChecked = prefs.getShowObjects()
+            menu.setGroupVisible(R.id.menu_context_call, tracking)
+            menu.setGroupVisible(R.id.menu_options_activities, !tracking)
+            menu.setGroupVisible(R.id.menu_options, !tracking)
 
-        val modesmenu = menu.findItem(R.id.overlays)?.subMenu
-        if (modesmenu != null) {
-            val defaultMode = MapModes.defaultMapMode(this, prefs)
-            val configuredModeIds = MapModes.all_mapmodes.mapTo(mutableSetOf()) { it.menu_id }
-            modesmenu.findItem(R.id.normal)?.isVisible = R.id.normal in configuredModeIds
-            modesmenu.findItem(R.id.satellite)?.isVisible = R.id.satellite in configuredModeIds
-            for (mode in MapModes.all_mapmodes) {
-                val item = modesmenu.findItem(mode.menu_id) ?: modesmenu.add(R.id.mapmodes, mode.menu_id, 0, mode.title)
-                item.isCheckable = true
-                if (mode == defaultMode) item.isChecked = true
-                item.isEnabled = mode.isAvailable(this)
+            val modesmenu = menu.findItem(R.id.overlays)?.subMenu
+            if (modesmenu != null) {
+                val defaultMode = MapModes.defaultMapMode(this, prefs)
+                val configuredModeIds = MapModes.all_mapmodes.mapTo(mutableSetOf()) { it.menu_id }
+                modesmenu.findItem(R.id.normal)?.isVisible = R.id.normal in configuredModeIds
+                modesmenu.findItem(R.id.satellite)?.isVisible = R.id.satellite in configuredModeIds
+                for (mode in MapModes.all_mapmodes) {
+                    val item = modesmenu.findItem(mode.menu_id) ?: modesmenu.add(R.id.mapmodes, mode.menu_id, 0, mode.title)
+                    item.isCheckable = true
+                    if (mode == defaultMode) item.isChecked = true
+                    item.isEnabled = mode.isAvailable(this)
+                }
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error preparing options menu", e)
         }
         return true
     }

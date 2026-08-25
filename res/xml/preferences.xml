@@ -132,4 +132,12 @@
             android:dialogTitle="@string/p_map_custom_subdomains" />
 
     </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/p__diagnostics">
+        <Preference
+            android:key="share_diagnostic_logs"
+            android:icon="@drawable/ic_pref_log"
+            android:title="@string/share_diagnostic_logs"
+            android:summary="@string/share_diagnostic_logs_summary" />
+    </PreferenceCategory>
 </PreferenceScreen>
