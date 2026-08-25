@@ -93,7 +93,7 @@ jobs:
                 --v1-signing-enabled true \
                 --v2-signing-enabled true \
                 --v3-signing-enabled true \
-                --v4-signing-enabled false \
+                --v4-signing-enabled true \
                 --ks release.jks \
                 --ks-pass pass:"$KEYSTORE_PASSWORD" \
                 --ks-key-alias "$KEY_ALIAS" \
