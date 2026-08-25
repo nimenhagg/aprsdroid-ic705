@@ -6,8 +6,8 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 版本 | `1.8.4-ic705` |
-| Android versionCode | `2026082584` |
+| 版本 | `1.8.5-ic705` |
+| Android versionCode | `2026082585` |
 | 上游基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 25`，`compileSdk 37`，`targetSdk 37` |
 | 原生 ABI | `arm64-v8a`、`armeabi-v7a`、`x86`、`x86_64` |
@@ -17,7 +17,7 @@
 | UI | Compose BOM `2026.08.00` + Material 3；偏好设置已全面升级 MD3 弹窗 |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | 地图 | MapLibre Native `13.5.1` + Google Maps SDK `20.0.0` |
-| 发布标签 | `v1.8.4-ic705` |
+| 发布标签 | `v1.8.5-ic705` |
 
 Java 17 是 AGP 9.3 的默认与最低 JDK 基线。没有明确需求和完整兼容性验证时，不要仅为提高版本号切换 Java 21。
 

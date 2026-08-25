@@ -34,8 +34,8 @@ allprojects {
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = (findProperty("MOD_VERSION") ?: "1.8.4").toString()
-	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082584").toString())
+	mod_version = (findProperty("MOD_VERSION") ?: "1.8.5").toString()
+	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082585").toString())
 	maplibre_version = "13.5.1"
 	base_version = "APRSdroid v1.7.0"
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
@@ -140,7 +140,7 @@ android {
 				storePassword = RELEASE_STORE_PASSWORD
 				keyAlias = RELEASE_KEY_ALIAS
 				keyPassword = RELEASE_KEY_PASSWORD
-				enableV1Signing = true
+				enableV1Signing = false
 				enableV2Signing = true
 				enableV3Signing = true
 				enableV4Signing = true

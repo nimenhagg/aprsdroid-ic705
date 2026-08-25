@@ -90,7 +90,7 @@ jobs:
             local destination="release-apks/${prefix}APRSdroid-${BUILD_LABEL}-${abi}-${renderer}.apk"
             if [ -n "${KEYSTORE_BASE64:-}" ]; then
               "$APKSIGNER" sign \
-                --v1-signing-enabled true \
+                --v1-signing-enabled false \
                 --v2-signing-enabled true \
                 --v3-signing-enabled true \
                 --v4-signing-enabled true \
