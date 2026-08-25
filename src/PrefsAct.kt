@@ -30,24 +30,30 @@ class PrefsAct : AppCompatActivity() {
         }
     }
 
+    private val profileExportPicker = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        if (uri != null) {
+            try {
+                contentResolver.openOutputStream(uri)?.use { os ->
+                    val sp = PreferenceManager.getDefaultSharedPreferences(this)
+                    val json = JSONObject(sp.all)
+                    val writer = PrintWriter(os)
+                    writer.println(json.toString(2))
+                    writer.flush()
+                }
+                Toast.makeText(this, R.string.config_saved, Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 
     fun exportPrefs() {
         val filename = String.format("profile-%s.aprs", SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date()))
-        val directory = UIHelper.getExportDirectory(this)
-        val file = File(directory, filename)
-        try {
-            directory.mkdirs()
-            val sp = PreferenceManager.getDefaultSharedPreferences(this)
-            val json = JSONObject(sp.all)
-            val fo = PrintWriter(file)
-            fo.println(json.toString(2))
-            fo.close()
-
-            UIHelper.shareFile(this, file, filename)
-        } catch (e: Exception) {
-            Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()
-        }
+        profileExportPicker.launch(filename)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

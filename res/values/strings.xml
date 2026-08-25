@@ -437,4 +437,5 @@
     <string name="share_diagnostic_logs_generating">Generating diagnostic log report…</string>
     <string name="share_diagnostic_logs_failed">Failed to export diagnostic logs: %1$s</string>
     <string name="share_diagnostic_logs_chooser">Share APRSdroid Diagnostic Logs</string>
+    <string name="config_saved">Configuration saved successfully</string>
 </resources>

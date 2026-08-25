@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -135,6 +136,8 @@ fun LogScreen(
                         fontWeight = FontWeight.Bold,
                         fontSize = 19.sp,
                         modifier = Modifier.combinedClickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
                             onClick = { },
                             onLongClick = {
                                 Toast.makeText(context, R.string.share_diagnostic_logs_generating, Toast.LENGTH_SHORT).show()
@@ -162,12 +165,6 @@ fun LogScreen(
                         Icon(
                             imageVector = Icons.Default.Map,
                             contentDescription = stringResource(R.string.show_map)
-                        )
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.preferences)
                         )
                     }
                     Box {

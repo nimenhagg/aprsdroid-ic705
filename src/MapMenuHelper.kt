@@ -86,6 +86,9 @@ abstract class MapMenuHelper : AppCompatActivity(), View.OnClickListener, Loadin
             menu.setGroupVisible(R.id.menu_context_call, tracking)
             menu.setGroupVisible(R.id.menu_options_activities, !tracking)
             menu.setGroupVisible(R.id.menu_options, !tracking)
+            menu.findItem(R.id.startstopbtn)?.isVisible = false
+            menu.findItem(R.id.singlebtn)?.isVisible = false
+            menu.findItem(R.id.about)?.isVisible = false
 
             val modesmenu = menu.findItem(R.id.overlays)?.subMenu
             if (modesmenu != null) {

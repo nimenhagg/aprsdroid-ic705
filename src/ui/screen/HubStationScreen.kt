@@ -4,6 +4,7 @@ import android.location.Location
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Map
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -45,6 +48,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -87,11 +91,13 @@ fun HubStationScreen(
     onOpenLogs: () -> Unit,
     onOpenMessages: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenAbout: () -> Unit = {}
+    onOpenAbout: () -> Unit,
+    onClearLogs: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     var showTopMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+    var showClearConfirmDialog by remember { mutableStateOf(false) }
 
     val appTitle = if (isRunning) {
         "${stringResource(R.string.app_name)} ($myCall)"
@@ -113,6 +119,8 @@ fun HubStationScreen(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.combinedClickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
                             onClick = { },
                             onLongClick = {
                                 android.widget.Toast.makeText(context, R.string.share_diagnostic_logs_generating, android.widget.Toast.LENGTH_SHORT).show()
@@ -163,6 +171,14 @@ fun HubStationScreen(
                                 onClick = {
                                     showTopMenu = false
                                     onOpenSettings()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.clear_log)) },
+                                leadingIcon = { Icon(Icons.Default.DeleteSweep, contentDescription = null) },
+                                onClick = {
+                                    showTopMenu = false
+                                    showClearConfirmDialog = true
                                 }
                             )
                             DropdownMenuItem(
@@ -291,6 +307,29 @@ fun HubStationScreen(
                     "https://github.com/nimenhagg/aprsdroid-ic705".toUri(),
                 )
                 context.startActivity(intent)
+            }
+        )
+    }
+
+    if (showClearConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirmDialog = false },
+            title = { Text(stringResource(R.string.clear_log)) },
+            text = { Text("确定清空所有本地保存的台站和日志记录吗？") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onClearLogs()
+                        showClearConfirmDialog = false
+                    }
+                ) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirmDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
             }
         )
     }
