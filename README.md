@@ -153,8 +153,9 @@ mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY
 
 - Android Gradle Plugin 9.3.2
 - Gradle 9.5.0
-- Kotlin / Compose Compiler 2.2.10（AGP 9 内置 Kotlin）
+- Kotlin / Compose Compiler 2.3.21（AGP 9 内置 Kotlin）
 - Compose BOM 2026.08.00
+- AppCompat 1.8.0, Material 1.14.0, OkHttp 5.3.0
 - MapLibre Native 13.5.1（Vulkan、OpenGL 与双后端变体）
 - Java 17
 
@@ -163,7 +164,7 @@ mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY
 - Kotlin 与 Java 源码位于非标准的 `src/` 目录，单元测试位于 `test/java/`。
 - 修改 IC-705 发射链时必须保留 PTT OFF 和绝对超时看门狗的安全语义，并增加对应测试。
 - 发布时同时更新 `build.gradle`、`CHANGELOG.md`、`AI_CONTEXT.md` 和 README 中的版本信息。
-- 标签格式是 `v<版本>-ic705`，例如 `v1.8.0-ic705`；CI 会验证标签和 APK 版本一致，并发布五个已签名 APK、校验和及独立 R8 mapping 构建产物。
+- 标签格式是 `v<版本>-ic705`，例如 `v1.8.3-ic705`；CI 会验证标签和 APK 版本一致并发布签名 APK、校验和及独立 R8 mapping 构建产物。
 - 完整的工程交接信息见 [AI_CONTEXT.md](AI_CONTEXT.md)。
 
 ## English
@@ -288,14 +289,14 @@ Use `./gradlew.bat` in Windows PowerShell. `assembleRelease` writes five unsigne
 
 To enable Google Maps, set `mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY` in `local.properties` or provide the `MAPS_API_KEY` environment variable. Restrict the key to Android package `me.nimenhagg.aprsdroidic705mod`, the SHA-1 fingerprint of the relevant signing certificate, and the Maps SDK for Android API only. Never commit it to the repository.
 
-The main toolchain is AGP 9.3.2, Gradle 9.5.0, built-in Kotlin / Compose Compiler 2.2.10, Compose BOM 2026.08.00, MapLibre Native 13.5.1 Vulkan/OpenGL variants, and Java 17.
+The main toolchain is AGP 9.3.2, Gradle 9.5.0, built-in Kotlin / Compose Compiler 2.3.21, Compose BOM 2026.08.00, AppCompat 1.8.0, Material 1.14.0, OkHttp 5.3.0, MapLibre Native 13.5.1 Vulkan/OpenGL variants, and Java 17.
 
 ### Contributing and releasing
 
 - Production sources use the legacy `src/` layout; unit tests live in `test/java/`.
 - Changes to IC-705 transmit code must preserve PTT OFF and absolute-watchdog safety semantics and include tests.
 - A release updates `build.gradle`, `CHANGELOG.md`, `AI_CONTEXT.md`, and the version shown here.
-- Tags use `v<version>-ic705`, for example `v1.8.0-ic705`; CI rejects a tag that does not match APK metadata and publishes five signed APKs, checksums, and separate R8 mapping artifacts.
+- Tags use `v<version>-ic705`, for example `v1.8.3-ic705`; CI rejects a tag that does not match APK metadata and publishes signed APKs, checksums, and separate R8 mapping artifacts.
 - See [AI_CONTEXT.md](AI_CONTEXT.md) for the maintainer and AI handover guide.
 
 ## 致谢与许可证 / Credits and license

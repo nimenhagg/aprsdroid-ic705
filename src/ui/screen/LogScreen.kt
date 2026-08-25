@@ -7,7 +7,7 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,6 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -135,15 +136,14 @@ fun LogScreen(
                         text = stringResource(R.string.show_log),
                         fontWeight = FontWeight.Bold,
                         fontSize = 19.sp,
-                        modifier = Modifier.combinedClickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { },
-                            onLongClick = {
-                                Toast.makeText(context, R.string.share_diagnostic_logs_generating, Toast.LENGTH_SHORT).show()
-                                org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
-                            }
-                        )
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(
+                                onLongPress = {
+                                    Toast.makeText(context, R.string.share_diagnostic_logs_generating, Toast.LENGTH_SHORT).show()
+                                    org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
+                                }
+                            )
+                        }
                     )
                 },
                 navigationIcon = {

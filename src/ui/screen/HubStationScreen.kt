@@ -4,7 +4,7 @@ import android.location.Location
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -118,15 +119,14 @@ fun HubStationScreen(
                         fontSize = 19.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.combinedClickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { },
-                            onLongClick = {
-                                android.widget.Toast.makeText(context, R.string.share_diagnostic_logs_generating, android.widget.Toast.LENGTH_SHORT).show()
-                                org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
-                            }
-                        )
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(
+                                onLongPress = {
+                                    android.widget.Toast.makeText(context, R.string.share_diagnostic_logs_generating, android.widget.Toast.LENGTH_SHORT).show()
+                                    org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
+                                }
+                            )
+                        }
                     )
                 },
                 actions = {
@@ -146,12 +146,6 @@ fun HubStationScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Chat,
                             contentDescription = stringResource(R.string.app_messages)
-                        )
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.preferences)
                         )
                     }
                     Box {
