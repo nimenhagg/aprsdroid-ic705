@@ -115,7 +115,7 @@ fun HubStationScreen(
                         modifier = Modifier.combinedClickable(
                             onClick = { },
                             onLongClick = {
-                                android.widget.Toast.makeText(context, context.getString(R.string.share_diagnostic_logs_generating), android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, R.string.share_diagnostic_logs_generating, android.widget.Toast.LENGTH_SHORT).show()
                                 org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
                             }
                         )

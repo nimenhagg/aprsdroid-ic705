@@ -137,7 +137,7 @@ fun LogScreen(
                         modifier = Modifier.combinedClickable(
                             onClick = { },
                             onLongClick = {
-                                Toast.makeText(context, context.getString(R.string.share_diagnostic_logs_generating), Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, R.string.share_diagnostic_logs_generating, Toast.LENGTH_SHORT).show()
                                 org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
                             }
                         )
