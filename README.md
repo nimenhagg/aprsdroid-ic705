@@ -4,7 +4,7 @@ APRSdroid 的 Icom IC-705 Wi-Fi 直连修改版 / An APRSdroid fork with direct 
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-当前版本 / Current release: **1.8.3-ic705**
+当前版本 / Current release: **1.8.4-ic705**
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -45,17 +45,14 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 的 Wi-Fi `Network`，因此电
 
 ### 安装
 
-从 [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases) 下载与你设备匹配的 APK。不清楚架构时直接选择文件名以 `Recommended_` 开头的 ARM64 Vulkan 版本。
+从 [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases) 下载与你设备匹配的 APK。不清楚架构时直接选择文件名以 `Recommended_` 开头的 ARM64 OpenGL 版本。
 
 | 文件规格 | 适用设备 |
 | --- | --- |
-| `Recommended_...-arm64-v8a-vulkan.apk` | 绝大多数现代 64 位 ARM 手机，推荐下载 |
-| `...-arm64-v8a-opengl-compat.apk` | ARM64 手机出现 Vulkan 黑屏、闪退或驱动问题时使用 |
+| `Recommended_...-arm64-v8a-opengl.apk` | 绝大多数现代 64 位 ARM 手机，推荐下载 |
 | `...-armeabi-v7a-opengl.apk` | 仅支持 32 位应用的 ARM 设备 |
-| `...-x86_64-vulkan-opengl.apk` | 64 位 x86 模拟器、Chromebook 或 Android 兼容环境 |
-| `...-x86-vulkan-opengl.apk` | 旧 32 位 x86 模拟器或设备 |
 
-Android 的 `arm64-v8a` ABI 不区分 ARMv8 与 ARMv9。现代 64 位设备优先使用 Vulkan；少数驱动异常设备可安装同版本、同签名的 ARM64 OpenGL 兼容包。部分 64 位系统已经不能运行 32 位应用，因此 ARMv7 包不是所有 ARM64 设备的通用回退。Release 同时提供 `SHA256SUMS.txt`；若没有所需组合，可按下文说明自行构建。
+官方 Release 当前只发布 ARM64 与 ARMv7 两个 OpenGL APK，以降低 Vulkan 驱动兼容风险；同时提供 `SHA256SUMS.txt`。源码仍保留 ARM64 Vulkan、x86 和 x86_64 flavor，需要这些组合时可按下文说明自行构建。部分 64 位系统不能运行 32 位应用，因此 ARMv7 包不是 ARM64 设备的通用回退。
 
 若从旧签名或其他 APRSdroid 分支迁移，Android 可能要求先卸载旧应用；卸载会删除该应用的本地设置和日志，请先自行备份需要的数据。
 
@@ -82,7 +79,7 @@ Android 的 `arm64-v8a` ABI 不区分 ARMv8 与 ARMv9。现代 64 位设备优�
 
 ### 地图引擎
 
-- 高德、OpenStreetMap 和自定义 URL 使用 MapLibre Native 13.5.1。推荐 ARM64 包使用 Vulkan；ARM64/ARMv7 另有 OpenGL 包；x86 与 x86_64 包会根据设备能力在 Vulkan 和 OpenGL 间选择。
+- 高德、OpenStreetMap 和自定义 URL 使用 MapLibre Native 13.5.1。官方 ARM64/ARMv7 包使用 OpenGL；源码中的 ARM64 Vulkan 与 x86/x86_64 双后端 flavor 可按需自行构建。
 - OpenStreetMap 使用官方在线瓦片地址、可识别的应用 User-Agent 和服务端缓存规则；地图上始终显示可点击的 `© OpenStreetMap contributors`。本应用不会预取或批量下载 OSM 瓦片。
 - Google 普通地图和卫星/混合地图继续使用 Google Maps SDK。官方 Release 在构建时注入受包名和签名证书限制的 Key，用户无需填写；自行构建未配置 Key 时会隐藏 Google 图源。
 - 地图页的顶栏、缩放、回到我的位置、坐标选择和图源菜单保持原有布局；APRS 符号、呼号标签和台站点击已改由 MapLibre 图层渲染。
@@ -136,7 +133,7 @@ Android 的 `arm64-v8a` ABI 不区分 ARMv8 与 ARMv9。现代 64 位设备优�
 git clone https://github.com/nimenhagg/aprsdroid-ic705.git
 cd aprsdroid-ic705
 
-./gradlew verifyReleaseVersion testArm64VulkanDebugUnitTest lintArm64VulkanDebug assembleRelease --no-daemon
+./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleRelease --no-daemon
 ```
 
 Windows PowerShell 使用 `./gradlew.bat`。`assembleRelease` 会在 `build/outputs/apk/<变体>/release/` 下生成五个未签名 APK；可用 `assembleArm64VulkanRelease` 等任务只构建一个规格。没有发布密钥时本地 Release APK 不会自动签名。
@@ -164,7 +161,7 @@ mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY
 - Kotlin 与 Java 源码位于非标准的 `src/` 目录，单元测试位于 `test/java/`。
 - 修改 IC-705 发射链时必须保留 PTT OFF 和绝对超时看门狗的安全语义，并增加对应测试。
 - 发布时同时更新 `build.gradle`、`CHANGELOG.md`、`AI_CONTEXT.md` 和 README 中的版本信息。
-- 标签格式是 `v<版本>-ic705`，例如 `v1.8.3-ic705`；CI 会验证标签和 APK 版本一致并发布签名 APK、校验和及独立 R8 mapping 构建产物。
+- 标签格式是 `v<版本>-ic705`，例如 `v1.8.4-ic705`；CI 会验证标签和 APK 版本一致并发布签名 APK、校验和及独立 R8 mapping 构建产物。
 - 完整的工程交接信息见 [AI_CONTEXT.md](AI_CONTEXT.md)。
 
 ## English
@@ -202,17 +199,14 @@ Menu labels can vary by radio firmware. Perform the first transmit test at low p
 
 ### Install
 
-Download the APK matching your device from [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases). If you do not know the architecture, choose the ARM64 Vulkan file whose name starts with `Recommended_`.
+Download the APK matching your device from [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases). If you do not know the architecture, choose the ARM64 OpenGL file whose name starts with `Recommended_`.
 
 | Package | Intended devices |
 | --- | --- |
-| `Recommended_...-arm64-v8a-vulkan.apk` | Most modern 64-bit ARM phones; recommended |
-| `...-arm64-v8a-opengl-compat.apk` | ARM64 devices affected by a Vulkan black screen, crash, or driver issue |
+| `Recommended_...-arm64-v8a-opengl.apk` | Most modern 64-bit ARM phones; recommended |
 | `...-armeabi-v7a-opengl.apk` | Devices that run only 32-bit ARM apps |
-| `...-x86_64-vulkan-opengl.apk` | 64-bit x86 emulators, Chromebooks, and compatible Android environments |
-| `...-x86-vulkan-opengl.apk` | Legacy 32-bit x86 emulators or devices |
 
-Android's `arm64-v8a` ABI does not distinguish ARMv8 from ARMv9. Modern 64-bit devices should use Vulkan; the same-version, same-signature ARM64 OpenGL package is the compatibility escape hatch for rare driver failures. Some 64-bit-only Android systems cannot install 32-bit apps, so the ARMv7 build is not a universal fallback for ARM64. Each Release includes `SHA256SUMS.txt`; combinations not published here can be built from source.
+Official Releases currently publish two OpenGL APKs, one for ARM64 and one for ARMv7, to reduce Vulkan driver risk. Each Release includes `SHA256SUMS.txt`. The source tree still provides ARM64 Vulkan plus x86 and x86_64 flavors for local builds. Some 64-bit-only Android systems cannot install 32-bit apps, so the ARMv7 build is not a universal fallback for ARM64.
 
 Android may require uninstalling an APK signed by another key or another APRSdroid fork first. Uninstalling removes that app's local preferences and logs, so back up anything you need.
 
@@ -239,7 +233,7 @@ Never post the radio password in screenshots, Issues, or logs.
 
 ### Map engines
 
-- AMap, OpenStreetMap, and custom URLs use MapLibre Native 13.5.1. The recommended ARM64 package uses Vulkan; separate ARM64 and ARMv7 packages use OpenGL; x86 and x86_64 packages select between Vulkan and OpenGL according to device capabilities.
+- AMap, OpenStreetMap, and custom URLs use MapLibre Native 13.5.1. Official ARM64 and ARMv7 packages use OpenGL; the source-only ARM64 Vulkan and dual-backend x86/x86_64 flavors can be built when needed.
 - OpenStreetMap uses the official online tile URL, an identifiable application User-Agent, and server caching rules. A clickable `© OpenStreetMap contributors` notice remains visible on the map. The app does not prefetch or bulk-download OSM tiles.
 - Google map and satellite/hybrid modes continue to use the Google Maps SDK. Official Releases inject a package- and signing-certificate-restricted key at build time, so end users configure nothing. Source builds hide Google modes when no key is configured.
 - The existing toolbar, zoom, recenter, coordinate picker, and source menu layout is preserved. APRS symbols, callsign labels, and station taps are rendered through MapLibre layers.
@@ -282,7 +276,7 @@ Install JDK 17 and Android SDK API 37. The wrapper pins Gradle 9.5.0 and downloa
 git clone https://github.com/nimenhagg/aprsdroid-ic705.git
 cd aprsdroid-ic705
 
-./gradlew verifyReleaseVersion testArm64VulkanDebugUnitTest lintArm64VulkanDebug assembleRelease --no-daemon
+./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleRelease --no-daemon
 ```
 
 Use `./gradlew.bat` in Windows PowerShell. `assembleRelease` writes five unsigned APKs below `build/outputs/apk/<variant>/release/`; tasks such as `assembleArm64VulkanRelease` build one package only. Local release builds remain unsigned unless signing properties are supplied.
@@ -296,7 +290,7 @@ The main toolchain is AGP 9.3.2, Gradle 9.5.0, built-in Kotlin / Compose Compile
 - Production sources use the legacy `src/` layout; unit tests live in `test/java/`.
 - Changes to IC-705 transmit code must preserve PTT OFF and absolute-watchdog safety semantics and include tests.
 - A release updates `build.gradle`, `CHANGELOG.md`, `AI_CONTEXT.md`, and the version shown here.
-- Tags use `v<version>-ic705`, for example `v1.8.3-ic705`; CI rejects a tag that does not match APK metadata and publishes signed APKs, checksums, and separate R8 mapping artifacts.
+- Tags use `v<version>-ic705`, for example `v1.8.4-ic705`; CI rejects a tag that does not match APK metadata and publishes signed APKs, checksums, and separate R8 mapping artifacts.
 - See [AI_CONTEXT.md](AI_CONTEXT.md) for the maintainer and AI handover guide.
 
 ## 致谢与许可证 / Credits and license

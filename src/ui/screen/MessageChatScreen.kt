@@ -126,7 +126,7 @@ fun MessageChatScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.action_back)
                         )
                     }
                 },
@@ -135,7 +135,7 @@ fun MessageChatScreen(
                         IconButton(onClick = { showTopMenu = true }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Options"
+                                contentDescription = stringResource(R.string.action_menu)
                             )
                         }
                         DropdownMenu(
@@ -210,7 +210,7 @@ fun MessageChatScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send"
+                            contentDescription = stringResource(R.string.action_send_message)
                         )
                     }
                 }
@@ -325,24 +325,24 @@ private fun MessageBubbleItem(
 
     val (statusLabel, statusColor) = when (item.type) {
         StorageDatabase.Companion.Message.TYPE_INCOMING -> {
-            "📥 来自 $targetCall" to MaterialTheme.colorScheme.secondary
+            stringResource(R.string.message_status_from, targetCall) to MaterialTheme.colorScheme.secondary
         }
         StorageDatabase.Companion.Message.TYPE_OUT_NEW -> {
             val label = when (item.retryCnt) {
-                0 -> "⏳ 排队待发 (0/7)"
-                1 -> "📡 已发射，等待对方应答 (1/7)"
-                else -> "🔄 正在重传 (${item.retryCnt}/7)"
+                0 -> stringResource(R.string.message_status_queued, 0, 7)
+                1 -> stringResource(R.string.message_status_waiting_ack, 1, 7)
+                else -> stringResource(R.string.message_status_retrying, item.retryCnt, 7)
             }
             label to MaterialTheme.colorScheme.tertiary
         }
         StorageDatabase.Companion.Message.TYPE_OUT_ACKED -> {
-            "✓✓ 对方已确认 (ACK)" to MaterialTheme.colorScheme.primary
+            stringResource(R.string.message_status_acked) to MaterialTheme.colorScheme.primary
         }
         StorageDatabase.Companion.Message.TYPE_OUT_REJECTED -> {
-            "✕ 对方拒收 (REJ)" to MaterialTheme.colorScheme.error
+            stringResource(R.string.message_status_rejected) to MaterialTheme.colorScheme.error
         }
         StorageDatabase.Companion.Message.TYPE_OUT_ABORTED -> {
-            "⊘ 对方无应答 (已中止)" to MaterialTheme.colorScheme.error
+            stringResource(R.string.message_status_aborted) to MaterialTheme.colorScheme.error
         }
         else -> {
             myCall to MaterialTheme.colorScheme.onSurfaceVariant

@@ -11,8 +11,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import org.json.JSONObject
-import java.io.File
-import java.io.PrintWriter
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -35,12 +34,13 @@ class PrefsAct : AppCompatActivity() {
     ) { uri ->
         if (uri != null) {
             try {
-                contentResolver.openOutputStream(uri)?.use { os ->
+                val output = contentResolver.openOutputStream(uri)
+                    ?: throw IOException(getString(R.string.config_export_open_error))
+                output.bufferedWriter(Charsets.UTF_8).use { writer ->
                     val sp = PreferenceManager.getDefaultSharedPreferences(this)
                     val json = JSONObject(sp.all)
-                    val writer = PrintWriter(os)
-                    writer.println(json.toString(2))
-                    writer.flush()
+                    writer.write(json.toString(2))
+                    writer.newLine()
                 }
                 Toast.makeText(this, R.string.config_saved, Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {

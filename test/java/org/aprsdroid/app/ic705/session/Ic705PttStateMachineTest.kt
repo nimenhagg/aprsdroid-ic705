@@ -182,6 +182,35 @@ class Ic705PttStateMachineTest {
     }
 
     @Test
+    fun watchdogRetriesAfterAllLocalPttOffSendsFail() {
+        val actions = FakePttActions()
+        val watchdog = Executors.newSingleThreadScheduledExecutor()
+        val sm = Ic705PttStateMachine(
+            actions = actions,
+            ackTimeoutMs = 10L,
+            absoluteWatchdogMs = 80L,
+            maxReleaseAttempts = 3,
+            watchdogExecutor = watchdog,
+        )
+
+        try {
+            assertTrue(sm.beginTransmission())
+            actions.remainingCivFailures.set(3)
+
+            sm.finishTransmission()
+            waitUntil { actions.civSendAttempts.get() >= 5 }
+
+            assertEquals(Ic705PttState.DRAINING, sm.state)
+            assertTrue(sm.isRadioPttOn)
+            sm.onCivReceived(ackFrame())
+            assertEquals(Ic705PttState.RX_IDLE, sm.state)
+            assertFalse(sm.isRadioPttOn)
+        } finally {
+            watchdog.shutdownNow()
+        }
+    }
+
+    @Test
     fun missingOffAckRetriesThenUsesCompatibilityFallback() {
         val actions = FakePttActions()
         val watchdog = Executors.newSingleThreadScheduledExecutor()

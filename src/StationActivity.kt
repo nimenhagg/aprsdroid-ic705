@@ -52,7 +52,7 @@ class StationActivity : AppCompatActivity() {
         setContent {
             AprsTheme {
                 StationDetailScreen(
-                    targetCall = targetcall ?: "未知台站",
+                    targetCall = targetcall ?: getString(R.string.unknown_station),
                     stationItem = currentStationItem,
                     ssidList = currentSsidList,
                     postList = currentPostList,

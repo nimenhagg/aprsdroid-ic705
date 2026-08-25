@@ -18,10 +18,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.aprsdroid.app.R
 import org.aprsdroid.app.model.LogPostItem
 import org.aprsdroid.app.model.StationItem
 import org.aprsdroid.app.ui.components.SymbolBadge
@@ -48,7 +50,10 @@ fun StationDetailScreen(
 ) {
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("历史数据包 (${postList.size})", "关联 SSID (${ssidList.size})")
+    val tabs = listOf(
+        stringResource(R.string.station_packet_history_tab, postList.size),
+        stringResource(R.string.station_related_ssids_tab, ssidList.size),
+    )
 
     Scaffold(
         topBar = {
@@ -74,7 +79,7 @@ fun StationDetailScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = stringResource(R.string.action_back)
                         )
                     }
                 },
@@ -82,14 +87,14 @@ fun StationDetailScreen(
                     IconButton(onClick = { onOpenMap(targetCall) }) {
                         Icon(
                             imageVector = Icons.Default.Map,
-                            contentDescription = "地图查看",
+                            contentDescription = stringResource(R.string.action_view_on_map),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     IconButton(onClick = { onSendMessage(targetCall) }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Chat,
-                            contentDescription = "发送消息",
+                            contentDescription = stringResource(R.string.action_send_message),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -164,7 +169,7 @@ fun StationDetailScreen(
                                 if (!qrg.isNullOrEmpty()) {
                                     SuggestionChip(
                                         onClick = {},
-                                        label = { Text("语音频率: $qrg MHz", fontWeight = FontWeight.SemiBold) },
+                                        label = { Text(stringResource(R.string.station_voice_frequency, qrg), fontWeight = FontWeight.SemiBold) },
                                         icon = { Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(16.dp)) },
                                         colors = SuggestionChipDefaults.suggestionChipColors(
                                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -198,7 +203,7 @@ fun StationDetailScreen(
                             ) {
                                 Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("发消息")
+                                Text(stringResource(R.string.action_send_message))
                             }
                             OutlinedButton(
                                 onClick = { onOpenMap(targetCall) },
@@ -207,7 +212,7 @@ fun StationDetailScreen(
                             ) {
                                 Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("地图轨迹")
+                                Text(stringResource(R.string.action_map_track))
                             }
                         }
 
@@ -259,7 +264,7 @@ fun StationDetailScreen(
                             modifier = Modifier.fillMaxWidth().padding(32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("暂无历史数据包", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.station_no_packet_history), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 } else {
@@ -310,7 +315,7 @@ fun StationDetailScreen(
                             modifier = Modifier.fillMaxWidth().padding(32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("无同名 SSID 台站", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.station_no_related_ssids), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 } else {

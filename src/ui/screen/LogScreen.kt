@@ -150,7 +150,7 @@ fun LogScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.action_back)
                         )
                     }
                 },
@@ -158,7 +158,7 @@ fun LogScreen(
                     IconButton(onClick = { showSearch = !showSearch }) {
                         Icon(
                             imageVector = if (showSearch) Icons.Default.FilterList else Icons.Default.Search,
-                            contentDescription = "Search"
+                            contentDescription = stringResource(R.string.action_search)
                         )
                     }
                     IconButton(onClick = onOpenMap) {
@@ -171,7 +171,7 @@ fun LogScreen(
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Menu"
+                                contentDescription = stringResource(R.string.action_menu)
                             )
                         }
                         DropdownMenu(
@@ -297,12 +297,12 @@ fun LogScreen(
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("搜索呼号或报文...") },
+                        placeholder = { Text(stringResource(R.string.log_search_placeholder)) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                    Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.action_clear))
                                 }
                             }
                         },
@@ -319,22 +319,22 @@ fun LogScreen(
                         FilterChip(
                             selected = selectedFilterType == -1,
                             onClick = { selectedFilterType = -1 },
-                            label = { Text("全部") }
+                            label = { Text(stringResource(R.string.log_filter_all)) }
                         )
                         FilterChip(
                             selected = selectedFilterType == StorageDatabase.Companion.Post.TYPE_POST,
                             onClick = { selectedFilterType = StorageDatabase.Companion.Post.TYPE_POST },
-                            label = { Text("RX 接收") }
+                            label = { Text(stringResource(R.string.log_filter_rx)) }
                         )
                         FilterChip(
                             selected = selectedFilterType == StorageDatabase.Companion.Post.TYPE_TX,
                             onClick = { selectedFilterType = StorageDatabase.Companion.Post.TYPE_TX },
-                            label = { Text("TX 发射") }
+                            label = { Text(stringResource(R.string.log_filter_tx)) }
                         )
                         FilterChip(
                             selected = selectedFilterType == StorageDatabase.Companion.Post.TYPE_ERROR,
                             onClick = { selectedFilterType = StorageDatabase.Companion.Post.TYPE_ERROR },
-                            label = { Text("异常") }
+                            label = { Text(stringResource(R.string.log_filter_error)) }
                         )
                     }
                 }
@@ -382,7 +382,7 @@ fun LogScreen(
         AlertDialog(
             onDismissRequest = { showClearConfirmDialog = false },
             title = { Text(stringResource(R.string.clear_log)) },
-            text = { Text("确定清空所有本地保存的报文日志吗？") },
+            text = { Text(stringResource(R.string.confirm_clear_packet_logs)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -413,12 +413,12 @@ private fun LogPacketCard(
 
     val (badgeLabel, badgeContainer, badgeContent) = when (item.type) {
         StorageDatabase.Companion.Post.TYPE_TX -> Triple(
-            "TX 发射",
+            stringResource(R.string.log_badge_tx),
             MaterialTheme.colorScheme.tertiaryContainer,
             MaterialTheme.colorScheme.onTertiaryContainer
         )
         StorageDatabase.Companion.Post.TYPE_POST, StorageDatabase.Companion.Post.TYPE_INCMG -> Triple(
-            "RX 接收",
+            stringResource(R.string.log_badge_rx),
             MaterialTheme.colorScheme.secondaryContainer,
             MaterialTheme.colorScheme.onSecondaryContainer
         )

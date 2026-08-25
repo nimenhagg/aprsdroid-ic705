@@ -120,7 +120,6 @@ class Ic705PttStateMachine(
     @Synchronized
     fun finishTransmission() {
         if (state == Ic705PttState.RX_IDLE) return
-        cancelWatchdog()
         if (state == Ic705PttState.TX_STREAMING) {
             transitionTo(Ic705PttState.DRAINING)
         }
@@ -164,6 +163,7 @@ class Ic705PttStateMachine(
                 } else {
                     pendingCommand = null
                     Log.e(TAG, "PTT OFF rejected after $releaseAttempts attempts; retaining asserted state")
+                    scheduleWatchdog()
                 }
             }
             PendingPttCommand.ON -> forceRelease("Radio rejected PTT ON command (NAK)")
@@ -202,6 +202,7 @@ class Ic705PttStateMachine(
             scheduleReleaseTimer(reason)
         } else {
             Log.e(TAG, "All $releaseAttempts PTT OFF sends failed; retaining asserted state")
+            scheduleWatchdog()
         }
     }
 
@@ -230,6 +231,7 @@ class Ic705PttStateMachine(
 
     private fun completeRelease() {
         cancelReleaseTimer()
+        cancelWatchdog()
         pendingCommand = null
         releaseAttempts = 0
         lastReleaseSendSucceeded = false

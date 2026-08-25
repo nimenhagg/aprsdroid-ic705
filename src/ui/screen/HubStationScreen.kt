@@ -92,7 +92,6 @@ fun HubStationScreen(
     onOpenLogs: () -> Unit,
     onOpenMessages: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenAbout: () -> Unit,
     onClearLogs: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -152,7 +151,7 @@ fun HubStationScreen(
                         IconButton(onClick = { showTopMenu = true }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Menu"
+                                contentDescription = stringResource(R.string.action_menu)
                             )
                         }
                         DropdownMenu(
@@ -309,7 +308,7 @@ fun HubStationScreen(
         AlertDialog(
             onDismissRequest = { showClearConfirmDialog = false },
             title = { Text(stringResource(R.string.clear_log)) },
-            text = { Text("确定清空所有本地保存的台站和日志记录吗？") },
+            text = { Text(stringResource(R.string.confirm_clear_stations_and_logs)) },
             confirmButton = {
                 TextButton(
                     onClick = {

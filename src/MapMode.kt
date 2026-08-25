@@ -2,7 +2,6 @@ package org.aprsdroid.app
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -11,6 +10,7 @@ import android.graphics.Rect
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import android.view.MenuItem
+import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.maps.GoogleMap
 
@@ -41,12 +41,7 @@ class GoogleMapMode(
 ) : MapMode(tag, menu_id, title, GoogleMapAct::class.java, tileType) {
     override fun isAvailable(ctx: Context): Boolean {
         if (!BuildConfig.GOOGLE_MAPS_ENABLED) return false
-        return try {
-            ctx.packageManager.getPackageInfo(GoogleApiAvailability.GOOGLE_PLAY_SERVICES_PACKAGE, 0)
-            true
-        } catch (_: PackageManager.NameNotFoundException) {
-            false
-        }
+        return GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(ctx) == ConnectionResult.SUCCESS
     }
 }
 

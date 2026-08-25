@@ -1,13 +1,28 @@
+## 🚀 [v1.8.4-ic705] - 2026-08-25
+
+### 🛡️ PTT 安全重试、配置导出与多语言资源修复
+* **PTT 释放安全加固**：
+  - PTT OFF 连续本地发送失败后重新挂起绝对看门狗，避免状态机停止后续安全释放尝试，并增加定时重试回归测试。
+* **配置导出与地图链路修复**：
+  - 配置导出无法打开目标文档时不再误报成功，并显式使用 UTF-8 写入。
+  - MapLibre 依赖版本与 OSM 请求 User-Agent 改为共享同一版本常量，避免版本标识漂移。
+  - Google 图源可用性改为检查 Google Play 服务的实际状态，而非仅检查安装包是否存在。
+* **构建与本地化清理**：
+  - 更新 Lint Gradle DSL 写法，消除即将在 Gradle 10 移除的旧式属性赋值警告。
+  - 清理 Compose 页面与 IC-705 诊断页中的硬编码中文；默认资源提供英文回退，简体中文资源保留原有文案。
+  - README 与工程交接文档同步为当前正式发布的 ARM64/ARMv7 OpenGL 双包策略。
+* 版本元数据更新为 `1.8.4-ic705`（`versionCode 2026082584`）。
+
 ## 🚀 [v1.8.3-ic705] - 2026-08-25
 
-### 📦 核心依赖升级与 Google Maps 链路加固
+### 📦 核心依赖升级与 Google Maps 链路确认
 * **核心依赖升级（Batch 2 Dependency Upgrades）**：
   - `androidx.appcompat:appcompat` 升级至 `1.8.0`。
   - `com.google.android.material:material` 升级至 `1.14.0`。
   - `com.squareup.okhttp3:okhttp` 升级至 `5.3.0`。
-* **Google 地图链路恢复与安全回退保障**：
-  - 确认在配置有效 `MAPS_API_KEY` 构建中 Google 普通地图与 Google 卫星/混合地图正常可见与交互。
-  - 保持无 Key、无 Google Play 服务或网络不可达时安全回退至 OpenStreetMap / MapLibre，防止应用崩溃。
+* **Google 地图构建链路确认**：
+  - 保留 Google 普通地图与卫星/混合地图实现，并确认配置 `MAPS_API_KEY` 的构建会注册对应图源。
+  - 无 Key 的自编译版本会隐藏 Google 图源；无 Google Play 服务时会选择可用的 MapLibre 图源。真实受限 Key、Google 瓦片加载与交互仍需真机验证。
 * 版本元数据更新为 `1.8.3-ic705`（`versionCode 2026082583`）。
 
 ## 🚀 [v1.8.2-ic705] - 2026-08-25
@@ -24,15 +39,15 @@
   - 修复在全新安装无历史台站数据时，打开地图执行排序查询触发 `SQLiteException: near "DESC": syntax error` 崩溃的缺陷。
 * **极简顶栏与彩蛋式诊断日志**：
   - 顶栏移除常驻的调试图标，界面更加清爽均衡；支持长按顶栏标题 `APRSdroid IC-705` 1.5 秒一键生成并分享系统诊断报告。
-* **全套 V1 + V2 + V3 + V4 APK 签名方案**：
-  - 本地与 GitHub CI 构建全面启用 V1 (JAR) + V2 (Full APK) + V3 (Key Rotation) + V4 (Streaming) 全版本签名方案，保证 Android 8.0 ~ Android 17 设备极致安装兼容性。
+* **V1 + V2 + V3 + V4 APK 签名配置**：
+  - GitHub CI 与提供签名凭证的本地 Release 构建启用 V1、V2、V3、V4 签名；未配置签名凭证的本地 Release 仍为未签名 APK。
 * 版本元数据更新为 `1.8.2-ic705`（`versionCode 2026082582`）。
 
 ## 🚀 [v1.8.1-ic705] - 2026-08-25
 
 ### ⚡ MapLibre 启动稳定性修复、PTT 释放安全重试与广播加固
 * 修复 `APRSdroidApplication` 中由于 OkHttpClient 初始化先行触发 MapLibre 上下文校验导致的冷启动崩溃（`Using MapView requires calling MapLibre.getInstance(...)`）。
-* 加固 IC-705 PTT 释放状态机：引入 CI-V PTT OFF 的 ACK 握手确认、指数退避重试与硬件安全回退机制，避免弱网下意外长发。
+* 加固 IC-705 PTT 释放状态机：引入 CI-V PTT OFF 的 ACK 握手确认、定时重试与安全回退机制，避免弱网下意外长发。
 * 适配 Android 14+ 内部广播注册规范，显式使用 `RECEIVER_NOT_EXPORTED` 消除 `SecurityException` 崩溃隐患。
 * 规范化 USB TNC 权限请求与设备插拔监听，适配 Android 12+ `FLAG_IMMUTABLE` 约束。
 * 版本元数据更新为 `1.8.1-ic705`（`versionCode 2026082581`）。

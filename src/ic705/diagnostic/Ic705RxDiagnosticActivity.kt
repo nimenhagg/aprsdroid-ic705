@@ -104,7 +104,7 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
         val parsedAddress = try {
             parseNumericIpv4(targetAddress)
         } catch (e: Exception) {
-            Toast.makeText(this, "无效的 IPv4 地址: $targetAddress", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.ic705_rx_invalid_ipv4, targetAddress), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -162,7 +162,7 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
                 autoReconnect = false
             )
         } catch (e: Exception) {
-            Toast.makeText(this, "配置错误: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.ic705_rx_config_error, e.message), Toast.LENGTH_LONG).show()
             return
         }
 
@@ -180,7 +180,7 @@ class Ic705RxDiagnosticActivity : AppCompatActivity() {
                             stopReceiveOnlySession(null)
                         }
                         Ic705RxSessionEngine.Phase.FAILED -> {
-                            status.text = state.failureReason ?: "连接失败"
+                            status.text = state.failureReason ?: getString(R.string.ic705_rx_connection_failed)
                             status.setTextColor(getColor(R.color.md3_on_surface_variant))
                             stopReceiveOnlySession(null)
                         }

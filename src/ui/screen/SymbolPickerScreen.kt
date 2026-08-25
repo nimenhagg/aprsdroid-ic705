@@ -1,5 +1,6 @@
 package org.aprsdroid.app.ui.screen
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,14 +19,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.aprsdroid.app.R
 import org.aprsdroid.app.ui.components.SymbolBadge
 
-data class SymbolCategory(val name: String, val symbols: List<String>)
+data class SymbolCategory(@param:StringRes val nameRes: Int, val symbols: List<String>)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,14 +68,14 @@ fun SymbolPickerScreen(
     // Categories
     val categories = remember {
         listOf(
-            SymbolCategory("常用", listOf("/$", "/>", "/[", "/-", "/r", "/#", "/k", "/u", "/v", "/^", "/_", "/X", "/s", "/p", "/a")),
-            SymbolCategory("🚗 车辆", listOf("/>", "/k", "/u", "/v", "/j", "/p", "/a", "\\>", "\\u", "\\v")),
-            SymbolCategory("📻 基地", listOf("/-", "/r", "/#", "/T", "/S", "/H", "\\-", "\\#", "\\r")),
-            SymbolCategory("🚶 个人", listOf("/[", "/b", "/'", "\\p", "\\b", "\\s")),
-            SymbolCategory("⛅ 气象", listOf("/_", "\\_", "/W", "/w")),
-            SymbolCategory("✈️ 航行", listOf("/^", "/X", "/s", "/Y", "\\^", "\\s")),
-            SymbolCategory("主符号表 (Primary)", (33..126).map { "/${it.toChar()}" }),
-            SymbolCategory("次符号表 (Alternate)", (33..126).map { "\\${it.toChar()}" })
+            SymbolCategory(R.string.symbol_category_common, listOf("/$", "/>", "/[", "/-", "/r", "/#", "/k", "/u", "/v", "/^", "/_", "/X", "/s", "/p", "/a")),
+            SymbolCategory(R.string.symbol_category_vehicle, listOf("/>", "/k", "/u", "/v", "/j", "/p", "/a", "\\>", "\\u", "\\v")),
+            SymbolCategory(R.string.symbol_category_base, listOf("/-", "/r", "/#", "/T", "/S", "/H", "\\-", "\\#", "\\r")),
+            SymbolCategory(R.string.symbol_category_person, listOf("/[", "/b", "/'", "\\p", "\\b", "\\s")),
+            SymbolCategory(R.string.symbol_category_weather, listOf("/_", "\\_", "/W", "/w")),
+            SymbolCategory(R.string.symbol_category_navigation, listOf("/^", "/X", "/s", "/Y", "\\^", "\\s")),
+            SymbolCategory(R.string.symbol_category_primary, (33..126).map { "/${it.toChar()}" }),
+            SymbolCategory(R.string.symbol_category_alternate, (33..126).map { "\\${it.toChar()}" })
         )
     }
 
@@ -82,10 +85,10 @@ fun SymbolPickerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("选择 APRS 符号", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.symbol_picker_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onCancel) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
@@ -96,7 +99,7 @@ fun SymbolPickerScreen(
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("保存")
+                        Text(stringResource(R.string.action_save))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -134,14 +137,16 @@ fun SymbolPickerScreen(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "当前符号编码: $computedFullSymbol",
+                            text = stringResource(R.string.symbol_current_code, computedFullSymbol),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = if (isOverlayAllowed) "支持自定义覆盖字符 (0-9, A-Z)" else "标准原生符号",
+                            text = stringResource(
+                                if (isOverlayAllowed) R.string.symbol_overlay_supported else R.string.symbol_standard,
+                            ),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -154,7 +159,7 @@ fun SymbolPickerScreen(
                                 val filtered = input.uppercase().filter { overlayableChars.contains(it) }
                                 overlayText = filtered.take(1)
                             },
-                            label = { Text("覆盖", fontSize = 11.sp) },
+                            label = { Text(stringResource(R.string.symbol_overlay), fontSize = 11.sp) },
                             modifier = Modifier.width(64.dp),
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
@@ -175,7 +180,7 @@ fun SymbolPickerScreen(
                     FilterChip(
                         selected = selectedCategoryIndex == index,
                         onClick = { selectedCategoryIndex = index },
-                        label = { Text(cat.name) },
+                        label = { Text(stringResource(cat.nameRes)) },
                         modifier = Modifier.padding(horizontal = 4.dp),
                         shape = RoundedCornerShape(12.dp)
                     )

@@ -148,7 +148,7 @@ fun StationBottomSheetContent(
                     val latStr = String.format(Locale.US, "%.5f°", station.lat / 1000000.0)
                     val lonStr = String.format(Locale.US, "%.5f°", station.lon / 1000000.0)
                     Text(
-                        text = "📍 坐标: $latStr, $lonStr",
+                        text = stringResource(R.string.station_coordinates, latStr, lonStr),
                         fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -186,7 +186,7 @@ fun StationBottomSheetContent(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("发消息", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.action_send_message), fontWeight = FontWeight.SemiBold)
                 }
 
                 Button(
@@ -202,7 +202,7 @@ fun StationBottomSheetContent(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("查看轨迹", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.action_view_track), fontWeight = FontWeight.SemiBold)
                 }
 
                 OutlinedButton(
@@ -218,7 +218,7 @@ fun StationBottomSheetContent(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("导航", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.action_navigate), fontWeight = FontWeight.SemiBold)
                 }
             }
         }

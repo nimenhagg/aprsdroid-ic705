@@ -11,7 +11,7 @@ class APRSdroidApplication : Application() {
         super.onCreate()
         MapLibre.getInstance(this)
         val releaseVersion = BuildConfig.VERSION_NAME.substringBefore(' ')
-        val mapUserAgent = "APRSdroid-IC705/$releaseVersion MapLibre/11.8.6 " +
+        val mapUserAgent = "APRSdroid-IC705/$releaseVersion MapLibre/${BuildConfig.MAPLIBRE_VERSION} " +
             "(+https://github.com/nimenhagg/aprsdroid-ic705)"
         val mapHttpClient = OkHttpClient.Builder()
             .addNetworkInterceptor { chain ->

@@ -34,8 +34,9 @@ allprojects {
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = (findProperty("MOD_VERSION") ?: "1.8.3").toString()
-	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082583").toString())
+	mod_version = (findProperty("MOD_VERSION") ?: "1.8.4").toString()
+	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082584").toString())
+	maplibre_version = "13.5.1"
 	base_version = "APRSdroid v1.7.0"
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
@@ -75,6 +76,7 @@ android {
 		resValue "string", "build_version", "$build_version"
 		resValue "string", "google_maps_key", configuredMapsApiKey
 		buildConfigField "boolean", "GOOGLE_MAPS_ENABLED", (!configuredMapsApiKey.isEmpty()).toString()
+		buildConfigField "String", "MAPLIBRE_VERSION", "\"${maplibre_version}\""
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
@@ -111,8 +113,8 @@ android {
 		}
 	}
 	lint {
-		abortOnError false
-		checkReleaseBuilds false
+		abortOnError = false
+		checkReleaseBuilds = false
 		// These versions are intentionally pinned to the mutually compatible release toolchain.
 		disable += ['AndroidGradlePluginVersion', 'NewerVersionAvailable', 'LocalContextGetResourceValueCall']
 		// MapLibre brings Timber transitively; this app intentionally keeps its existing Android Log facade.
@@ -200,11 +202,11 @@ play {
 
 dependencies {
 	implementation fileTree(include: ['*.jar'], dir: 'libs')
-	arm64VulkanImplementation 'org.maplibre.gl:android-sdk-vulkan:13.5.1'
-	arm64OpenglImplementation 'org.maplibre.gl:android-sdk-opengl:13.5.1'
-	arm32OpenglImplementation 'org.maplibre.gl:android-sdk-opengl:13.5.1'
-	x86MultiImplementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.5.1'
-	x8664MultiImplementation 'org.maplibre.gl:android-sdk-vulkan-opengl:13.5.1'
+	arm64VulkanImplementation "org.maplibre.gl:android-sdk-vulkan:${maplibre_version}"
+	arm64OpenglImplementation "org.maplibre.gl:android-sdk-opengl:${maplibre_version}"
+	arm32OpenglImplementation "org.maplibre.gl:android-sdk-opengl:${maplibre_version}"
+	x86MultiImplementation "org.maplibre.gl:android-sdk-vulkan-opengl:${maplibre_version}"
+	x8664MultiImplementation "org.maplibre.gl:android-sdk-vulkan-opengl:${maplibre_version}"
 	implementation 'com.google.android.gms:play-services-maps:20.0.0'
 	implementation 'com.squareup.okhttp3:okhttp:5.3.0'
 	implementation 'androidx.core:core-ktx:1.19.0'
