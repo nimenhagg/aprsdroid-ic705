@@ -1,0 +1,1 @@
+Each persistent event is one JSON object per line with UTC wall clock time, monotonic elapsed time, severity, tag, event name, thread, structured fields and optional exception metadata. This makes logs readable by humans while remaining easy to diff, grep and parse with standard JSONL tooling.
