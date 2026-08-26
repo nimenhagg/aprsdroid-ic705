@@ -28,7 +28,7 @@ if not notes and tag:
 if not notes:
     notes = f"Release build for {tag}."
 
-body = f"# 🚀 APRSdroid IC-705 {tag}\n\n{notes}\n"
+body = f"# 🚀 APRSdroid Mod {tag}\n\n{notes}\n"
 
 with open("RELEASE_NOTES.md", "w", encoding="utf-8") as out:
     out.write(body)

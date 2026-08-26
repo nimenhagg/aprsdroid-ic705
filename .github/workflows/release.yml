@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
+      - 'Mod-v*'
   workflow_dispatch:
 
 permissions:
