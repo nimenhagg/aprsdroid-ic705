@@ -187,18 +187,21 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     }
 
     override fun onUpgrade(db: SQLiteDatabase, from: Int, to: Int) {
-        if (from <= 1 && to <= 3) {
+        // SQLiteOpenHelper can jump directly across multiple versions (for example
+        // 1 -> 4), so migrations must be selected by the source version rather
+        // than by assuming an intermediate target such as `to <= 3`.
+        if (from <= 1) {
             db.execSQL(Message.TABLE_CREATE)
         }
-        if (from == 2 && to <= 3) {
+        if (from == 2) {
             db.execSQL("ALTER TABLE message RENAME TO messages")
         }
-        if (from <= 2 && to <= 3) {
+        if (from <= 2) {
             db.execSQL("DROP TABLE position")
             db.execSQL(Station.TABLE_CREATE)
             db.execSQL(Position.TABLE_CREATE)
         }
-        if (to <= 4) {
+        if (from <= 3 && to >= 4) {
             arrayOf(Position.TABLE, Station.TABLE).forEach { tab ->
                 db.execSQL(String.format(Locale.US, TABLE_INDEX, tab, "ts", tab, "ts"))
             }
