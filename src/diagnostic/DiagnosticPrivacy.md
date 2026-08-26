@@ -1,1 +1,0 @@
-Diagnostic exports omit precise map coordinates and mask passwords, passcodes, secrets, tokens and the IC-705 username. Network interface, local addresses and routing state may be included because they are directly relevant to IC-705 Wi-Fi troubleshooting.
