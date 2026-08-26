@@ -1,0 +1,265 @@
+name: Apply IC-705 session stability patch
+
+on:
+  push:
+    branches:
+      - fix/ic705-session-stability
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/ic705-session-stability
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Patch session coordinator
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/ic705/session/Ic705RxSession.kt')
+          text = path.read_text()
+
+          def replace_once(old: str, new: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one match, got {count}: {old[:120]!r}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+          '''    val watchdogPeriodMillis: Long = 500L,
+              val channelTimeoutMillis: Long = 3_000L,
+              val handshakeStageTimeoutMillis: Long = 10_000L,''',
+          '''    val watchdogPeriodMillis: Long = 500L,
+              /** CONTROL is authoritative for whole-session liveness. */
+              val channelTimeoutMillis: Long = 5_000L,
+              /** CI-V remains latency-sensitive, but is independent from RX audio silence. */
+              val civChannelTimeoutMillis: Long = 3_000L,
+              /** RX audio may legitimately be silent for long periods, especially around TX. */
+              val audioChannelTimeoutMillis: Long = 30_000L,
+              /** Give the radio time to resume RX audio after PTT OFF is acknowledged. */
+              val audioPostTxGraceMillis: Long = 5_000L,
+              val handshakeStageTimeoutMillis: Long = 10_000L,''')
+
+          replace_once(
+          '''            watchdogPeriodMillis,
+                      channelTimeoutMillis,
+                      handshakeStageTimeoutMillis,''',
+          '''            watchdogPeriodMillis,
+                      channelTimeoutMillis,
+                      civChannelTimeoutMillis,
+                      audioChannelTimeoutMillis,
+                      audioPostTxGraceMillis,
+                      handshakeStageTimeoutMillis,''')
+
+          replace_once(
+          '''    @Volatile
+              private var lastTxCompletedMonotonicMillis = 0L
+
+              private val pttStateMachine:''',
+          '''    @Volatile
+              private var lastTxCompletedMonotonicMillis = 0L
+
+              @Volatile
+              private var audioWatchdogGraceUntilMillis = 0L
+
+              private val pttStateMachine:''')
+
+          replace_once(
+          '''            override fun onStateChanged(state: Ic705PttState) {
+                      // PTT state change hook
+                  }
+              },
+          )''',
+          '''            override fun onStateChanged(state: Ic705PttState) {
+                      if (state == Ic705PttState.RX_IDLE) {
+                          audioWatchdogGraceUntilMillis =
+                              monotonicMillis() + config.timing.audioPostTxGraceMillis
+                      }
+                  }
+              },
+              watchdogExecutor = controlExecutor,
+          )''')
+
+          replace_once(
+          '''            val started = pttStateMachine.beginTransmission()
+                      if (!started) {
+                          Log.w(TAG, "transmit() pttStateMachine.beginTransmission() returned false")
+                          return false
+                      }''',
+          '''            val started = try {
+                          pttStateMachine.beginTransmission()
+                      } catch (error: Exception) {
+                          Log.e(TAG, "transmit() failed to send PTT ON", error)
+                          reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, Ic705ChannelRole.CIV)
+                          return false
+                      }
+                      if (!started) {
+                          Log.w(TAG, "transmit() pttStateMachine.beginTransmission() returned false")
+                          return false
+                      }''')
+
+          replace_once(
+          '''                        if (!pttStateMachine.isTransmitting || closed.get() || engineState.phase != Ic705RxSessionEngine.Phase.RECEIVING) {
+                              Log.w(TAG, "startTxAudioStreaming: aborted at packet $index (transmitting=${pttStateMachine.isTransmitting}, closed=${closed.get()}, phase=${engineState.phase})")''',
+          '''                        if (!pttStateMachine.canStreamAudio || closed.get() || engineState.phase != Ic705RxSessionEngine.Phase.RECEIVING) {
+                              Log.w(TAG, "startTxAudioStreaming: aborted at packet $index (canStreamAudio=${pttStateMachine.canStreamAudio}, pttState=${pttStateMachine.state}, closed=${closed.get()}, phase=${engineState.phase})")''')
+
+          replace_once(
+          '''                    if (pttStateMachine.isTransmitting && !closed.get()) {
+                              pttStateMachine.onAudioStreamingFinished()''',
+          '''                    if (pttStateMachine.canStreamAudio && !closed.get()) {
+                              pttStateMachine.onAudioStreamingFinished()''')
+
+          replace_once(
+          '''                } finally {
+                          audioExecutor.shutdownNow()
+                          controlExecutor.shutdown()
+                          awaitAudioTermination()''',
+          '''                } finally {
+                          audioExecutor.shutdownNow()
+                          pttStateMachine.shutdown()
+                          controlExecutor.shutdown()
+                          awaitAudioTermination()''')
+
+          replace_once(
+          '''        } catch (_: RejectedExecutionException) {
+                      audioExecutor.shutdownNow()
+                      controlExecutor.shutdown()''',
+          '''        } catch (_: RejectedExecutionException) {
+                      audioExecutor.shutdownNow()
+                      pttStateMachine.shutdown()
+                      controlExecutor.shutdown()''')
+
+          replace_once(
+          '''    private fun sendTracked(role: Ic705ChannelRole, template: ByteArray) {
+              val runtime = channelRuntimes[role] ?: run {
+                  Log.w(TAG, "sendTracked($role): runtime not found")
+                  return
+              }
+              val channel = channels[role] ?: run {
+                  Log.w(TAG, "sendTracked($role): channel not found")
+                  return
+              }
+              if (!channel.isOpen) {
+                  Log.w(TAG, "sendTracked($role): channel is not open")
+                  return
+              }
+              val tracked = runtime.trackedPackets.track(template)
+              try {
+                  channel.send(tracked.data)
+              } catch (e: Exception) {
+                  Log.w(TAG, "sendTracked($role) failed: ${e.message}")
+              }
+          }''',
+          '''    @Throws(IOException::class)
+              private fun sendTracked(role: Ic705ChannelRole, template: ByteArray) {
+                  val runtime = channelRuntimes[role]
+                      ?: throw IOException("$role runtime is unavailable")
+                  val channel = channels[role]
+                      ?: throw IOException("$role UDP channel is unavailable")
+                  if (!channel.isOpen) {
+                      throw IOException("$role UDP channel is not open")
+                  }
+                  val tracked = runtime.trackedPackets.track(template)
+                  try {
+                      channel.send(tracked.data)
+                  } catch (error: Exception) {
+                      // A packet that never reached the UDP socket must not remain
+                      // eligible for a later radio retransmit request.
+                      runtime.trackedPackets.discard(tracked.sequence)
+                      if (error is IOException) throw error
+                      throw IOException("$role UDP send failed", error)
+                  }
+              }''')
+
+          replace_once(
+          '''    private fun checkWatchdog() {
+              val now = monotonicMillis()
+              val stale = channelRuntimes.values.firstOrNull { runtime ->
+                  runtime.remoteId != null &&
+                      now - runtime.lastReceivedAtMillis.get() > config.timing.channelTimeoutMillis
+              }
+              if (stale != null) {
+                  dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("${stale.role} timeout"))
+              }
+          }''',
+          '''    private fun checkWatchdog() {
+                  val now = monotonicMillis()
+                  val pttPossiblyAsserted = pttStateMachine.isTransmitting
+                  val stale = channelRuntimes.values.firstOrNull { runtime ->
+                      if (runtime.remoteId == null) return@firstOrNull false
+                      if (
+                          runtime.role == Ic705ChannelRole.AUDIO &&
+                          (pttPossiblyAsserted || now < audioWatchdogGraceUntilMillis)
+                      ) {
+                          return@firstOrNull false
+                      }
+                      val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, runtime.role)
+                      now - runtime.lastReceivedAtMillis.get() > timeout
+                  }
+                  if (stale != null) {
+                      val age = (now - stale.lastReceivedAtMillis.get()).coerceAtLeast(0L)
+                      val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, stale.role)
+                      Log.w(
+                          TAG,
+                          "watchdog stale role=${stale.role} age=${age}ms timeout=${timeout}ms " +
+                              "ptt=${pttStateMachine.state} phase=${engineState.phase} generation=$generation",
+                      )
+                      dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("${stale.role} timeout"))
+                  }
+              }''')
+
+          replace_once(
+          '''internal fun shouldSendIc705TrackedIdle(
+              millisSinceLastTracked: Long,
+              idleAfterMillis: Long,
+          ): Boolean = millisSinceLastTracked >= idleAfterMillis
+
+          private fun namedDaemonThreadFactory''',
+          '''internal fun shouldSendIc705TrackedIdle(
+              millisSinceLastTracked: Long,
+              idleAfterMillis: Long,
+          ): Boolean = millisSinceLastTracked >= idleAfterMillis
+
+          internal fun ic705ChannelWatchdogTimeoutMillis(
+              timing: Ic705RxSessionTiming,
+              role: Ic705ChannelRole,
+          ): Long = when (role) {
+              Ic705ChannelRole.CONTROL -> timing.channelTimeoutMillis
+              Ic705ChannelRole.CIV -> timing.civChannelTimeoutMillis
+              Ic705ChannelRole.AUDIO -> timing.audioChannelTimeoutMillis
+          }
+
+          private fun namedDaemonThreadFactory''')
+
+          path.write_text(text)
+          PY
+
+      - name: Remove one-off patch workflow
+        run: rm .github/workflows/ic705-session-stability-fix.yml
+
+      - name: Run IC-705 unit tests and lint
+        run: ./gradlew testArm64OpenglDebugUnitTest lintArm64OpenglDebug --no-daemon --stacktrace
+
+      - name: Commit tested patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/ic705/session/Ic705RxSession.kt .github/workflows/ic705-session-stability-fix.yml
+          git commit -m 'fix: harden IC-705 TX session recovery'
+          git push origin HEAD:fix/ic705-session-stability
