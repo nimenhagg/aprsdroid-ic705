@@ -1,12 +1,15 @@
 name: Prepare Mod-v1.9.4 Release
 
-# Bootstrap release preparation after the workflow is present on the default branch.
 on:
   push:
     branches:
       - main
     paths:
       - '.github/workflows/prepare_mod_v1_9_4.yml'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,6 +22,7 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v7
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Load and decode patch payload
