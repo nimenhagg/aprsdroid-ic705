@@ -237,6 +237,24 @@ class Ic705WifiBackendController(
                             runCatching(decoderForCallbacks::reset)
                         }
                     },
+                    onStreamRecovery = { recovery ->
+                        if (isActive(generation)) {
+                            AppLog.w(
+                                "IC705",
+                                "stream_recovery",
+                                mapOf(
+                                    "generation" to generation,
+                                    "role" to recovery.role,
+                                    "outcome" to recovery.outcome,
+                                    "attempt" to recovery.attempt,
+                                    "age_ms" to recovery.ageMillis,
+                                ),
+                            )
+                            Ic705DiagnosticState.set("stream_recovery_role", recovery.role)
+                            Ic705DiagnosticState.set("stream_recovery_outcome", recovery.outcome)
+                            Ic705DiagnosticState.set("stream_recovery_attempt", recovery.attempt)
+                        }
+                    },
                     onIssue = { issue ->
                         if (isActive(generation)) {
                             AppLog.w(

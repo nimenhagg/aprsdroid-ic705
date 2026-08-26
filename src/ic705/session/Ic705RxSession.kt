@@ -66,6 +66,10 @@ data class Ic705RxSessionTiming(
     val audioChannelTimeoutMillis: Long = 30_000L,
     /** Give the radio time to resume RX audio after PTT OFF is acknowledged. */
     val audioPostTxGraceMillis: Long = 5_000L,
+    /** How long a stream rediscovery attempt may wait for fresh traffic. */
+    val streamRecoveryResponseMillis: Long = 3_000L,
+    /** Stream-local recovery attempts before escalating to a full session reconnect. */
+    val streamRecoveryAttempts: Int = 2,
     val handshakeStageTimeoutMillis: Long = 10_000L,
     val negotiationTimeoutMillis: Long = 45_000L,
     /** RS-BA1 waits about three seconds after login before claiming the streams. */
@@ -87,6 +91,7 @@ data class Ic705RxSessionTiming(
             civChannelTimeoutMillis,
             audioChannelTimeoutMillis,
             audioPostTxGraceMillis,
+            streamRecoveryResponseMillis,
             handshakeStageTimeoutMillis,
             negotiationTimeoutMillis,
             connectionInfoSettleMillis,
@@ -95,6 +100,7 @@ data class Ic705RxSessionTiming(
             maximumReconnectMillis,
         )
         require(values.all { it > 0 }) { "IC-705 timing values must be positive" }
+        require(streamRecoveryAttempts > 0) { "streamRecoveryAttempts must be positive" }
         require(maximumReconnectMillis >= initialReconnectMillis)
     }
 }
@@ -171,6 +177,7 @@ data class Ic705RxSessionIssue(
 enum class Ic705AudioResetReason {
     UDP_DISCONTINUITY,
     SESSION_RESTART,
+    STREAM_RECOVERY,
     AUDIO_QUEUE_OVERFLOW,
 }
 
@@ -179,10 +186,24 @@ data class Ic705AudioReset(
     val discontinuity: Ic705AudioDiscontinuity? = null,
 )
 
+enum class Ic705StreamRecoveryOutcome {
+    STARTED,
+    SUCCEEDED,
+    ESCALATED,
+}
+
+data class Ic705StreamRecoveryEvent(
+    val role: Ic705ChannelRole,
+    val outcome: Ic705StreamRecoveryOutcome,
+    val attempt: Int,
+    val ageMillis: Long,
+)
+
 data class Ic705RxSessionCallbacks(
     val onStateChanged: (Ic705RxSessionEngine.State) -> Unit = {},
     val onIssue: (Ic705RxSessionIssue) -> Unit = {},
     val onAudioReset: (Ic705AudioReset) -> Unit = {},
+    val onStreamRecovery: (Ic705StreamRecoveryEvent) -> Unit = {},
 )
 
 /**
@@ -332,6 +353,12 @@ class Ic705RxSession internal constructor(
         val lastReceivedAtMillis: AtomicLong,
     )
 
+    private data class StreamRecoveryState(
+        val attempt: Int,
+        val baselineRxMillis: Long,
+        val deadlineMillis: Long,
+    )
+
     private val closed = AtomicBoolean(false)
     private val closeMonitor = Any()
     private val pendingCloseCallbacks = mutableListOf<() -> Unit>()
@@ -342,6 +369,8 @@ class Ic705RxSession internal constructor(
     private val channelRuntimes: MutableMap<Ic705ChannelRole, ChannelRuntime> =
         java.util.Collections.synchronizedMap(EnumMap<Ic705ChannelRole, ChannelRuntime>(Ic705ChannelRole::class.java))
     private val scheduledTasks = mutableMapOf<String, ScheduledFuture<*>>()
+    private val streamRecoveries =
+        EnumMap<Ic705ChannelRole, StreamRecoveryState>(Ic705ChannelRole::class.java)
 
     private val txExecutor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "ic705-tx").apply { isDaemon = true }
@@ -776,6 +805,7 @@ class Ic705RxSession internal constructor(
         channels.values.forEach { channel -> runCatching(channel::close) }
         channels.clear()
         channelRuntimes.clear()
+        streamRecoveries.clear()
         connectionAnnouncement = null
         discoveredRadioAddress = null
         localToken = 0
@@ -1449,31 +1479,144 @@ class Ic705RxSession internal constructor(
     private fun checkWatchdog() {
         val now = monotonicMillis()
         val pttPossiblyAsserted = pttStateMachine.isTransmitting
-        val stale = channelRuntimes.values.firstOrNull { runtime ->
-            if (runtime.remoteId == null) return@firstOrNull false
+        for (role in WATCHDOG_ROLE_ORDER) {
+            val runtime = channelRuntimes[role] ?: continue
+            if (runtime.remoteId == null) continue
             if (
-                runtime.role == Ic705ChannelRole.AUDIO &&
+                role == Ic705ChannelRole.AUDIO &&
                 shouldSuppressIc705AudioWatchdog(
                     pttPossiblyAsserted = pttPossiblyAsserted,
                     nowMillis = now,
                     graceUntilMillis = audioWatchdogGraceUntilMillis,
                 )
             ) {
-                return@firstOrNull false
+                continue
             }
-            val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, runtime.role)
-            now - runtime.lastReceivedAtMillis.get() > timeout
-        }
-        if (stale != null) {
-            val age = (now - stale.lastReceivedAtMillis.get()).coerceAtLeast(0L)
-            val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, stale.role)
-            Log.w(
-                TAG,
-                "watchdog stale role=${stale.role} age=${age}ms timeout=${timeout}ms " +
-                    "ptt=${pttStateMachine.state} phase=${engineState.phase} generation=$generation",
+
+            val lastRx = runtime.lastReceivedAtMillis.get()
+            val age = (now - lastRx).coerceAtLeast(0L)
+            val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, role)
+            val recovery = streamRecoveries[role]
+
+            if (recovery != null && lastRx > recovery.baselineRxMillis) {
+                streamRecoveries.remove(role)
+                cancelTask(discoveryTask(role))
+                cancelTask(discoveryTimeoutTask(role))
+                startPing(role)
+                if (role == Ic705ChannelRole.CIV && wireProfile.sendTrackedIdle) startIdle(role)
+                Log.i(TAG, "soft recovery succeeded role=$role attempt=${recovery.attempt} age=${age}ms")
+                safeCallback {
+                    callbacks.onStreamRecovery(
+                        Ic705StreamRecoveryEvent(
+                            role = role,
+                            outcome = Ic705StreamRecoveryOutcome.SUCCEEDED,
+                            attempt = recovery.attempt,
+                            ageMillis = age,
+                        ),
+                    )
+                }
+                continue
+            }
+
+            val decision = ic705WatchdogDecision(
+                role = role,
+                ageMillis = age,
+                timeoutMillis = timeout,
+                pttPossiblyAsserted = pttPossiblyAsserted,
+                activeRecoveryAttempt = recovery?.attempt,
+                recoveryDeadlineReached = recovery?.let { now >= it.deadlineMillis } ?: false,
+                maxSoftRecoveryAttempts = config.timing.streamRecoveryAttempts,
             )
-            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("${stale.role} timeout"))
+            when (decision) {
+                Ic705WatchdogDecision.HEALTHY,
+                Ic705WatchdogDecision.WAIT_FOR_SOFT_RECOVERY -> continue
+
+                Ic705WatchdogDecision.START_SOFT_RECOVERY,
+                Ic705WatchdogDecision.RETRY_SOFT_RECOVERY -> {
+                    val attempt = (recovery?.attempt ?: 0) + 1
+                    beginStreamSoftRecovery(runtime, now, age, attempt)
+                    return
+                }
+
+                Ic705WatchdogDecision.ESCALATE -> {
+                    val attempt = recovery?.attempt ?: 0
+                    streamRecoveries.remove(role)
+                    Log.w(
+                        TAG,
+                        "watchdog escalation role=$role age=${age}ms timeout=${timeout}ms " +
+                            "softAttempts=$attempt ptt=${pttStateMachine.state} " +
+                            "phase=${engineState.phase} generation=$generation",
+                    )
+                    if (role != Ic705ChannelRole.CONTROL) {
+                        safeCallback {
+                            callbacks.onStreamRecovery(
+                                Ic705StreamRecoveryEvent(
+                                    role = role,
+                                    outcome = Ic705StreamRecoveryOutcome.ESCALATED,
+                                    attempt = attempt,
+                                    ageMillis = age,
+                                ),
+                            )
+                        }
+                    }
+                    dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("$role timeout"))
+                    return
+                }
+            }
         }
+    }
+
+    private fun beginStreamSoftRecovery(
+        runtime: ChannelRuntime,
+        now: Long,
+        age: Long,
+        attempt: Int,
+    ) {
+        val role = runtime.role
+        require(role != Ic705ChannelRole.CONTROL)
+        streamRecoveries[role] = StreamRecoveryState(
+            attempt = attempt,
+            baselineRxMillis = runtime.lastReceivedAtMillis.get(),
+            deadlineMillis = now + config.timing.streamRecoveryResponseMillis,
+        )
+        cancelTask(pingTask(role))
+        cancelTask(idleTask(role))
+        cancelTask(discoveryTask(role))
+        cancelTask(discoveryTimeoutTask(role))
+
+        if (role == Ic705ChannelRole.AUDIO) {
+            notifyAudioReset(Ic705AudioResetReason.STREAM_RECOVERY)
+            synchronized(audioLifecycleLock) {
+                audioExecutor.queue.clear()
+                audioReceiver = null
+                audioWrittenInGeneration = false
+            }
+        }
+
+        Log.w(
+            TAG,
+            "soft recovery start role=$role attempt=$attempt age=${age}ms " +
+                "phase=${engineState.phase} generation=$generation",
+        )
+        safeCallback {
+            callbacks.onStreamRecovery(
+                Ic705StreamRecoveryEvent(
+                    role = role,
+                    outcome = Ic705StreamRecoveryOutcome.STARTED,
+                    attempt = attempt,
+                    ageMillis = age,
+                ),
+            )
+        }
+
+        val expectedGeneration = generation
+        sendAreYouThere(role)
+        startFixedTask(
+            key = discoveryTask(role),
+            initialDelayMillis = config.timing.discoveryPeriodMillis,
+            periodMillis = config.timing.discoveryPeriodMillis,
+            expectedGeneration = expectedGeneration,
+        ) { sendAreYouThere(role) }
     }
 
     private fun scheduleConnectionInfoSettle() {
@@ -1751,6 +1894,12 @@ class Ic705RxSession internal constructor(
         const val TX_DRAIN_WAIT_MILLIS = 150L
         const val TX_COOLDOWN_GUARD_MILLIS = 300L
 
+        val WATCHDOG_ROLE_ORDER = arrayOf(
+            Ic705ChannelRole.CONTROL,
+            Ic705ChannelRole.CIV,
+            Ic705ChannelRole.AUDIO,
+        )
+
         val HANDSHAKE_PHASES = setOf(
             Ic705RxSessionEngine.Phase.OPENING_SOCKETS,
             Ic705RxSessionEngine.Phase.CONTROL_DISCOVERY,
@@ -1802,6 +1951,37 @@ internal fun shouldSuppressIc705AudioWatchdog(
     nowMillis: Long,
     graceUntilMillis: Long,
 ): Boolean = pttPossiblyAsserted || nowMillis < graceUntilMillis
+
+internal enum class Ic705WatchdogDecision {
+    HEALTHY,
+    WAIT_FOR_SOFT_RECOVERY,
+    START_SOFT_RECOVERY,
+    RETRY_SOFT_RECOVERY,
+    ESCALATE,
+}
+
+internal fun ic705WatchdogDecision(
+    role: Ic705ChannelRole,
+    ageMillis: Long,
+    timeoutMillis: Long,
+    pttPossiblyAsserted: Boolean,
+    activeRecoveryAttempt: Int?,
+    recoveryDeadlineReached: Boolean,
+    maxSoftRecoveryAttempts: Int,
+): Ic705WatchdogDecision {
+    if (ageMillis <= timeoutMillis) return Ic705WatchdogDecision.HEALTHY
+    if (role == Ic705ChannelRole.CONTROL) return Ic705WatchdogDecision.ESCALATE
+    if (role == Ic705ChannelRole.CIV && pttPossiblyAsserted) {
+        return Ic705WatchdogDecision.ESCALATE
+    }
+    if (activeRecoveryAttempt == null) return Ic705WatchdogDecision.START_SOFT_RECOVERY
+    if (!recoveryDeadlineReached) return Ic705WatchdogDecision.WAIT_FOR_SOFT_RECOVERY
+    return if (activeRecoveryAttempt < maxSoftRecoveryAttempts) {
+        Ic705WatchdogDecision.RETRY_SOFT_RECOVERY
+    } else {
+        Ic705WatchdogDecision.ESCALATE
+    }
+}
 
 private fun namedDaemonThreadFactory(name: String): ThreadFactory = ThreadFactory { runnable ->
     Thread(runnable, name).apply { isDaemon = true }
