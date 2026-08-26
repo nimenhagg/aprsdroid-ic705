@@ -21,7 +21,6 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -57,7 +56,7 @@ fun StationBottomSheetContent(
     station: StationItem,
     myLat: Int,
     myLon: Int,
-    onSendMessage: () -> Unit,
+    onSendMessage: (() -> Unit)?,
     onViewDetails: () -> Unit,
     onNavigate: () -> Unit
 ) {
@@ -179,27 +178,29 @@ fun StationBottomSheetContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                FilledTonalButton(
-                    onClick = onSendMessage,
-                    modifier = Modifier
-                        .weight(1.1f)
-                        .height(46.dp),
-                    shape = RoundedCornerShape(23.dp),
-                    contentPadding = PaddingValues(horizontal = 6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Chat,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.action_send_message),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        softWrap = false
-                    )
+                if (onSendMessage != null) {
+                    FilledTonalButton(
+                        onClick = onSendMessage,
+                        modifier = Modifier
+                            .weight(1.1f)
+                            .height(46.dp),
+                        shape = RoundedCornerShape(23.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.action_send_message),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 }
 
                 Button(
@@ -217,7 +218,7 @@ fun StationBottomSheetContent(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = stringResource(R.string.action_view_track),
+                        text = stringResource(R.string.action_station_details),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
@@ -276,7 +277,14 @@ private fun getBearing(deg: Double): String {
 }
 
 object StationBottomSheetHelper {
-    fun show(context: Context, call: String, db: StorageDatabase, myLat: Int, myLon: Int) {
+    fun show(
+        context: Context,
+        call: String,
+        db: StorageDatabase,
+        myLat: Int,
+        myLon: Int,
+        showMessageAction: Boolean = true
+    ) {
         val cursor = db.getStations("CALL = ?", arrayOf(call), "1")
         val items = StationItem.fromCursor(cursor) // fromCursor iterates and closes cursor
         if (items.isEmpty()) {
@@ -294,11 +302,15 @@ object StationBottomSheetHelper {
                         station = station,
                         myLat = myLat,
                         myLon = myLon,
-                        onSendMessage = {
-                            dialog.dismiss()
-                            context.startActivity(
-                                Intent(context, MessageActivity::class.java).putExtra("call", station.call)
-                            )
+                        onSendMessage = if (showMessageAction) {
+                            {
+                                dialog.dismiss()
+                                context.startActivity(
+                                    Intent(context, MessageActivity::class.java).putExtra("call", station.call)
+                                )
+                            }
+                        } else {
+                            null
                         },
                         onViewDetails = {
                             dialog.dismiss()

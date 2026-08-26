@@ -13,6 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.aprsdroid.app.data.repository.MessageRepository
+import org.aprsdroid.app.ui.component.StationBottomSheetHelper
 import org.aprsdroid.app.ui.screen.MessageChatScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.aprsdroid.app.ui.viewmodel.MessageChatViewModel
@@ -47,6 +48,7 @@ class MessageActivity : StationHelper(R.string.app_messages) {
                     myCall = mycall,
                     messages = state.messages,
                     onBack = { finish() },
+                    onCallsignClick = { showTargetStation(target) },
                     onSendMessage = { msg -> sendMessage(msg) },
                     onDeleteMessage = { id ->
                         viewModel.deleteMessage(id, target)
@@ -97,6 +99,35 @@ class MessageActivity : StationHelper(R.string.app_messages) {
     override fun onPause() {
         super.onPause()
         try { unregisterReceiver(messageReceiver) } catch (_: Exception) {}
+    }
+
+    private fun showTargetStation(call: String) {
+        if (call.isBlank()) return
+
+        var myLat = 0
+        var myLon = 0
+        val position = storage.getStaPosition(mycall)
+        try {
+            if (position.count > 0 && position.moveToFirst()) {
+                val latIndex = position.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+                val lonIndex = position.getColumnIndex(StorageDatabase.Companion.Station.LON)
+                if (latIndex >= 0 && lonIndex >= 0) {
+                    myLat = position.getInt(latIndex)
+                    myLon = position.getInt(lonIndex)
+                }
+            }
+        } finally {
+            position.close()
+        }
+
+        StationBottomSheetHelper.show(
+            context = this,
+            call = call,
+            db = storage,
+            myLat = myLat,
+            myLon = myLon,
+            showMessageAction = false
+        )
     }
 
     private fun sendMessage(msg: String) {

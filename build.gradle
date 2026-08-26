@@ -89,7 +89,7 @@ android {
 	compileSdk = 37
 	defaultConfig {
 		applicationId = "me.nimenhagg.aprsdroidic705mod"
-		minSdk = 25
+		minSdk = 27
 		targetSdk = 37
 		versionName "$build_revision"
 		versionCode mod_version_code

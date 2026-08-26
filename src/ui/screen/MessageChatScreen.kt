@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,6 +78,7 @@ fun MessageChatScreen(
     myCall: String,
     messages: List<MessageItem>,
     onBack: () -> Unit,
+    onCallsignClick: () -> Unit,
     onSendMessage: (String) -> Unit,
     onDeleteMessage: (Long) -> Unit,
     onRestartMessage: (MessageItem) -> Unit,
@@ -108,7 +110,9 @@ fun MessageChatScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
+                    Column(
+                        modifier = Modifier.clickable(onClick = onCallsignClick)
+                    ) {
                         Text(
                             text = targetCall,
                             fontWeight = FontWeight.Bold,
