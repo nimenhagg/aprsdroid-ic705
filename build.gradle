@@ -32,13 +32,34 @@ allprojects {
 
 /////////////// APRSdroid specific build rules ///////////////
 
+def runGit = { List<String> args ->
+	try {
+		def command = ['git'] + args
+		def process = new ProcessBuilder(command)
+			.directory(rootProject.projectDir)
+			.redirectErrorStream(true)
+			.start()
+		def output = process.inputStream.getText('UTF-8').trim()
+		return process.waitFor() == 0 ? output : null
+	} catch (Exception ignored) {
+		return null
+	}
+}
+
+def localSourceRevision = {
+	def sha = runGit(['rev-parse', 'HEAD'])
+	if (!sha) return 'unknown'
+	def dirty = runGit(['status', '--porcelain', '--untracked-files=no'])
+	return dirty ? "${sha}-dirty" : sha
+}
+
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
 	mod_version = (findProperty("MOD_VERSION") ?: "1.9.2").toString()
 	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082692").toString())
 	maplibre_version = "13.5.1"
 	base_version = "APRSdroid v1.7.0"
-	source_revision = (findProperty("SOURCE_REVISION") ?: System.getenv("GITHUB_SHA") ?: "unknown").toString()
+	source_revision = (findProperty("SOURCE_REVISION") ?: System.getenv("GITHUB_SHA") ?: localSourceRevision()).toString()
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
 }
@@ -193,7 +214,6 @@ tasks.register('verifyReleaseVersion') {
 			if (actualTag != expectedTag) {
 				throw new GradleException("Release tag ${actualTag} does not match ${expectedTag}")
 			}
-		}
 	}
 }
 
