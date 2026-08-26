@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -260,7 +261,7 @@ class Ic705UdpChannelTest {
         assertTrue(closeDone.await(2, TimeUnit.SECONDS))
         closeThread.join(2_000L)
 
-        assertEquals(null, sendFailure.get())
+        assertNull(sendFailure.get())
         assertFalse(socket.closedDuringSend.get())
         assertFalse(channel.isOpen)
     }

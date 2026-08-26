@@ -882,6 +882,9 @@ class Ic705RxSession internal constructor(
                 }
                 else -> Unit
             }
+        } catch (_: IOException) {
+            reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, role)
+            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("$role socket I/O"))
         } catch (_: Ic705ProtocolException) {
             reportIssue(
                 Ic705RxSessionIssueCode.MALFORMED_PACKET,
@@ -1450,7 +1453,11 @@ class Ic705RxSession internal constructor(
             if (runtime.remoteId == null) return@firstOrNull false
             if (
                 runtime.role == Ic705ChannelRole.AUDIO &&
-                (pttPossiblyAsserted || now < audioWatchdogGraceUntilMillis)
+                shouldSuppressIc705AudioWatchdog(
+                    pttPossiblyAsserted = pttPossiblyAsserted,
+                    nowMillis = now,
+                    graceUntilMillis = audioWatchdogGraceUntilMillis,
+                )
             ) {
                 return@firstOrNull false
             }
@@ -1789,6 +1796,12 @@ internal fun ic705ChannelWatchdogTimeoutMillis(
     Ic705ChannelRole.CIV -> timing.civChannelTimeoutMillis
     Ic705ChannelRole.AUDIO -> timing.audioChannelTimeoutMillis
 }
+
+internal fun shouldSuppressIc705AudioWatchdog(
+    pttPossiblyAsserted: Boolean,
+    nowMillis: Long,
+    graceUntilMillis: Long,
+): Boolean = pttPossiblyAsserted || nowMillis < graceUntilMillis
 
 private fun namedDaemonThreadFactory(name: String): ThreadFactory = ThreadFactory { runnable ->
     Thread(runnable, name).apply { isDaemon = true }
