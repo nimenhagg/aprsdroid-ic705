@@ -6,7 +6,6 @@ import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
-import java.io.PrintWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -14,6 +13,8 @@ import java.util.TimeZone
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.system.exitProcess
+import org.aprsdroid.app.BuildConfig
 
 /**
  * Small persistent structured logger for field diagnostics.
@@ -44,7 +45,17 @@ object AppLog {
         if (!initialized.compareAndSet(false, true)) return
         appContext = context.applicationContext
         installCrashHandler()
-        i("APP", "process_start", mapOf("pid" to android.os.Process.myPid()))
+        i(
+            "APP",
+            "process_start",
+            mapOf(
+                "pid" to android.os.Process.myPid(),
+                "version_name" to BuildConfig.VERSION_NAME,
+                "version_code" to BuildConfig.VERSION_CODE,
+                "build_type" to BuildConfig.BUILD_TYPE,
+                "source_revision" to BuildConfig.SOURCE_REVISION,
+            ),
+        )
     }
 
     fun setState(key: String, value: Any?) {
@@ -95,7 +106,11 @@ object AppLog {
                 append(fields.entries.joinToString(" ") { (k, v) -> "$k=${sanitizeValue(k, v?.toString() ?: "null")}" })
             }
         }
-        if (error == null) Log.println(priority, safeTag, message) else Log.println(priority, safeTag, "$message\n${Log.getStackTraceString(error)}")
+        if (error == null) {
+            Log.println(priority, safeTag, message)
+        } else {
+            Log.println(priority, safeTag, "$message\n${Log.getStackTraceString(error)}")
+        }
 
         val context = appContext ?: return
         val record = buildJsonLine(priority, safeTag, event, fields, error)
@@ -164,7 +179,13 @@ object AppLog {
                 )
                 flush(1200L)
             } finally {
-                previousCrashHandler?.uncaughtException(thread, throwable)
+                val previous = previousCrashHandler
+                if (previous != null) {
+                    previous.uncaughtException(thread, throwable)
+                } else {
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                    exitProcess(10)
+                }
             }
         }
     }
