@@ -1,0 +1,51 @@
+name: Repoint Mod-v1.9.4 Tag
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/repoint_mod_v1_9_4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  repoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Repoint unpublished release tag to clean main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: Mod-v1.9.4
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; refusing to move a published tag." >&2
+            exit 1
+          fi
+          TARGET_SHA=$(git rev-parse HEAD)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -fa "$TAG" "$TARGET_SHA" -m "APRSdroid Mod 1.9.4"
+          git push --force origin "refs/tags/$TAG"
+          echo "Repointed $TAG to $TARGET_SHA"
+
+      - name: Dispatch signed release build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: Mod-v1.9.4
+        run: gh workflow run release.yml --ref "$TAG"
+
+      - name: Remove stale bootstrap branch
+        if: success()
+        run: git push origin --delete bootstrap/mod-v1.9.4 || true
