@@ -29,6 +29,30 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Restore ARM64 MinSizeRel MapLibre
+        uses: actions/cache@v4
+        with:
+          path: .cache/maplibre-minsizerel/13.5.1/arm64-v8a
+          key: maplibre-minsizerel-v1-13.5.1-arm64-v8a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
+
+      - name: Restore ARMv7 MinSizeRel MapLibre
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/cache@v4
+        with:
+          path: .cache/maplibre-minsizerel/13.5.1/armeabi-v7a
+          key: maplibre-minsizerel-v1-13.5.1-armeabi-v7a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
+
+      - name: Build MinSizeRel MapLibre Native
+        run: |
+          bash .github/scripts/build_maplibre_minsizerel.sh \
+            13.5.1 arm64-v8a \
+            "$PWD/.cache/maplibre-minsizerel/13.5.1/arm64-v8a/libmaplibre.so"
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            bash .github/scripts/build_maplibre_minsizerel.sh \
+              13.5.1 armeabi-v7a \
+              "$PWD/.cache/maplibre-minsizerel/13.5.1/armeabi-v7a/libmaplibre.so"
+          fi
+
       - name: Grant Execute Permission to Gradlew
         run: chmod +x gradlew
 
@@ -38,7 +62,17 @@ jobs:
             echo "A tagged release requires the MAPS_API_KEY secret." >&2
             exit 1
           fi
-          ./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleArm64OpenglRelease assembleArm32OpenglRelease --no-daemon --stacktrace
+
+          tasks=(
+            verifyReleaseVersion
+            testArm64OpenglDebugUnitTest
+            lintArm64OpenglDebug
+            assembleArm64OpenglRelease
+          )
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            tasks+=(assembleArm32OpenglRelease)
+          fi
+          ./gradlew "${tasks[@]}" --no-daemon --stacktrace
         env:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
@@ -63,12 +97,14 @@ jobs:
             exit 1
           fi
 
-          mkdir -p release-apks
+          BUILD_TOOLS_VERSION=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)
+          APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+          ZIPALIGN="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/zipalign"
+
+          mkdir -p release-apks "$RUNNER_TEMP/maplibre-patched"
           if [ -n "${KEYSTORE_BASE64:-}" ]; then
             echo "Signing with repository secret keystore..."
             echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > release.jks
-            BUILD_TOOLS_VERSION=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)
-            APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
           fi
 
           publish_apk() {
@@ -84,6 +120,19 @@ jobs:
               exit 1
             fi
 
+            local custom_so="$PWD/.cache/maplibre-minsizerel/13.5.1/${abi}/libmaplibre.so"
+            if [ ! -s "$custom_so" ]; then
+              echo "Missing custom MinSizeRel MapLibre library for ${abi}" >&2
+              exit 1
+            fi
+
+            local patched="$RUNNER_TEMP/maplibre-patched/${flavor}-patched.apk"
+            local aligned="$RUNNER_TEMP/maplibre-patched/${flavor}-aligned.apk"
+            python3 .github/scripts/replace_apk_maplibre.py \
+              "$source" "$abi" "$custom_so" "$patched"
+            "$ZIPALIGN" -P 16 -f 4 "$patched" "$aligned"
+            "$ZIPALIGN" -P 16 -c 4 "$aligned"
+
             local destination="release-apks/${prefix}APRSdroid-${BUILD_LABEL}-${abi}-${renderer}.apk"
             if [ -n "${KEYSTORE_BASE64:-}" ]; then
               "$APKSIGNER" sign \
@@ -95,11 +144,24 @@ jobs:
                 --ks-pass pass:"$KEYSTORE_PASSWORD" \
                 --ks-key-alias "$KEY_ALIAS" \
                 --key-pass pass:"$KEY_PASSWORD" \
-                --out "$destination" "$source"
+                --out "$destination" "$aligned"
               "$APKSIGNER" verify --verbose "$destination"
             else
-              cp "$source" "$destination"
+              cp "$aligned" "$destination"
             fi
+
+            "$ZIPALIGN" -P 16 -c 4 "$destination"
+
+            local expected_so actual_so
+            expected_so=$(sha256sum "$custom_so" | awk '{print $1}')
+            actual_so=$(unzip -p "$destination" "lib/${abi}/libmaplibre.so" | sha256sum | awk '{print $1}')
+            if [ "$actual_so" != "$expected_so" ]; then
+              echo "Packaged MapLibre hash mismatch for ${abi}" >&2
+              echo "expected=${expected_so}" >&2
+              echo "actual=${actual_so}" >&2
+              exit 1
+            fi
+            echo "Verified MinSizeRel MapLibre ${abi}: ${actual_so}"
 
             mapfile -t packaged_abis < <(
               unzip -Z1 "$destination" |
@@ -120,12 +182,18 @@ jobs:
           }
 
           publish_apk arm64Opengl arm64-v8a opengl 1 "Recommended_"
-          publish_apk arm32Opengl armeabi-v7a opengl 1 ""
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            publish_apk arm32Opengl armeabi-v7a opengl 1 ""
+          fi
 
           rm -f release.jks
           (cd release-apks && sha256sum *.apk > SHA256SUMS.txt)
           mkdir -p release-mappings
-          for flavor in arm64Opengl arm32Opengl; do
+          flavors=(arm64Opengl)
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            flavors+=(arm32Opengl)
+          fi
+          for flavor in "${flavors[@]}"; do
             if [ -f "build/outputs/mapping/${flavor}Release/mapping.txt" ]; then
               cp "build/outputs/mapping/${flavor}Release/mapping.txt" \
                 "release-mappings/${flavor}-mapping.txt"
