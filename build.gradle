@@ -214,6 +214,7 @@ tasks.register('verifyReleaseVersion') {
 			if (actualTag != expectedTag) {
 				throw new GradleException("Release tag ${actualTag} does not match ${expectedTag}")
 			}
+		}
 	}
 }
 
