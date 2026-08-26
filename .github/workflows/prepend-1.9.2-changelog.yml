@@ -2,14 +2,14 @@ name: Prepend 1.9.2 Changelog
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   prepend:
-    if: ${{ !contains(github.event.head_commit.message, 'docs: add 1.9.2 changelog') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
