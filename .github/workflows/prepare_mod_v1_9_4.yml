@@ -1,5 +1,6 @@
 name: Prepare Mod-v1.9.4 Release
 
+# Bootstrap release preparation after the workflow is present on the default branch.
 on:
   push:
     branches:
