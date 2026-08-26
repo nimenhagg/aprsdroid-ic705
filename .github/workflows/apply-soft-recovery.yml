@@ -1,0 +1,546 @@
+name: Apply IC-705 Soft Recovery
+
+on:
+  push:
+    branches:
+      - fix/ic705-soft-recovery
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  apply-and-verify:
+    if: github.event.head_commit.message != 'fix: add IC-705 stream soft recovery'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      - name: Apply soft recovery patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'pattern not found in {path}: {old[:100]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          session = 'src/ic705/session/Ic705RxSession.kt'
+          controller = 'src/ic705/backend/Ic705WifiBackendController.kt'
+          policy_test = 'test/java/org/aprsdroid/app/ic705/session/Ic705WatchdogPolicyTest.kt'
+
+          replace_once(session,
+          '''    /** Give the radio time to resume RX audio after PTT OFF is acknowledged. */
+              val audioPostTxGraceMillis: Long = 5_000L,
+              val handshakeStageTimeoutMillis: Long = 10_000L,''',
+          '''    /** Give the radio time to resume RX audio after PTT OFF is acknowledged. */
+              val audioPostTxGraceMillis: Long = 5_000L,
+              /** How long a stream rediscovery attempt may wait for fresh traffic. */
+              val streamRecoveryResponseMillis: Long = 3_000L,
+              /** Stream-local recovery attempts before escalating to a full session reconnect. */
+              val streamRecoveryAttempts: Int = 2,
+              val handshakeStageTimeoutMillis: Long = 10_000L,''')
+
+          replace_once(session,
+          '''            audioChannelTimeoutMillis,
+                      audioPostTxGraceMillis,
+                      handshakeStageTimeoutMillis,''',
+          '''            audioChannelTimeoutMillis,
+                      audioPostTxGraceMillis,
+                      streamRecoveryResponseMillis,
+                      handshakeStageTimeoutMillis,''')
+
+          replace_once(session,
+          '''        require(values.all { it > 0 }) { "IC-705 timing values must be positive" }
+                  require(maximumReconnectMillis >= initialReconnectMillis)''',
+          '''        require(values.all { it > 0 }) { "IC-705 timing values must be positive" }
+                  require(streamRecoveryAttempts > 0) { "streamRecoveryAttempts must be positive" }
+                  require(maximumReconnectMillis >= initialReconnectMillis)''')
+
+          replace_once(session,
+          '''enum class Ic705AudioResetReason {
+              UDP_DISCONTINUITY,
+              SESSION_RESTART,
+              AUDIO_QUEUE_OVERFLOW,
+          }
+
+          data class Ic705AudioReset(
+              val reason: Ic705AudioResetReason,
+              val discontinuity: Ic705AudioDiscontinuity? = null,
+          )
+
+          data class Ic705RxSessionCallbacks(
+              val onStateChanged: (Ic705RxSessionEngine.State) -> Unit = {},
+              val onIssue: (Ic705RxSessionIssue) -> Unit = {},
+              val onAudioReset: (Ic705AudioReset) -> Unit = {},
+          )''',
+          '''enum class Ic705AudioResetReason {
+              UDP_DISCONTINUITY,
+              SESSION_RESTART,
+              STREAM_RECOVERY,
+              AUDIO_QUEUE_OVERFLOW,
+          }
+
+          data class Ic705AudioReset(
+              val reason: Ic705AudioResetReason,
+              val discontinuity: Ic705AudioDiscontinuity? = null,
+          )
+
+          enum class Ic705StreamRecoveryOutcome {
+              STARTED,
+              SUCCEEDED,
+              ESCALATED,
+          }
+
+          data class Ic705StreamRecoveryEvent(
+              val role: Ic705ChannelRole,
+              val outcome: Ic705StreamRecoveryOutcome,
+              val attempt: Int,
+              val ageMillis: Long,
+          )
+
+          data class Ic705RxSessionCallbacks(
+              val onStateChanged: (Ic705RxSessionEngine.State) -> Unit = {},
+              val onIssue: (Ic705RxSessionIssue) -> Unit = {},
+              val onAudioReset: (Ic705AudioReset) -> Unit = {},
+              val onStreamRecovery: (Ic705StreamRecoveryEvent) -> Unit = {},
+          )''')
+
+          replace_once(session,
+          '''    private data class ChannelRuntime(
+                  val role: Ic705ChannelRole,
+                  var localId: Int,
+                  val trackedPackets: Ic705TrackedPacketStore,
+                  var remoteId: Int? = null,
+                  var pingSequence: Int = 0,
+                  var civSequence: Int = 0,
+                  val lastReceivedAtMillis: AtomicLong,
+              )
+
+              private val closed = AtomicBoolean(false)''',
+          '''    private data class ChannelRuntime(
+                  val role: Ic705ChannelRole,
+                  var localId: Int,
+                  val trackedPackets: Ic705TrackedPacketStore,
+                  var remoteId: Int? = null,
+                  var pingSequence: Int = 0,
+                  var civSequence: Int = 0,
+                  val lastReceivedAtMillis: AtomicLong,
+              )
+
+              private data class StreamRecoveryState(
+                  val attempt: Int,
+                  val baselineRxMillis: Long,
+                  val deadlineMillis: Long,
+              )
+
+              private val closed = AtomicBoolean(false)''')
+
+          replace_once(session,
+          '''    private val scheduledTasks = mutableMapOf<String, ScheduledFuture<*>>()
+
+              private val txExecutor = Executors.newSingleThreadExecutor { runnable ->''',
+          '''    private val scheduledTasks = mutableMapOf<String, ScheduledFuture<*>>()
+              private val streamRecoveries = EnumMap<Ic705ChannelRole, StreamRecoveryState>(Ic705ChannelRole::class.java)
+
+              private val txExecutor = Executors.newSingleThreadExecutor { runnable ->''')
+
+          replace_once(session,
+          '''        channels.values.forEach { channel -> runCatching(channel::close) }
+                  channels.clear()
+                  channelRuntimes.clear()''',
+          '''        channels.values.forEach { channel -> runCatching(channel::close) }
+                  channels.clear()
+                  channelRuntimes.clear()
+                  streamRecoveries.clear()''')
+
+          old_watchdog = '''    private fun checkWatchdog() {
+                  val now = monotonicMillis()
+                  val pttPossiblyAsserted = pttStateMachine.isTransmitting
+                  val stale = channelRuntimes.values.firstOrNull { runtime ->
+                      if (runtime.remoteId == null) return@firstOrNull false
+                      if (
+                          runtime.role == Ic705ChannelRole.AUDIO &&
+                          shouldSuppressIc705AudioWatchdog(
+                              pttPossiblyAsserted = pttPossiblyAsserted,
+                              nowMillis = now,
+                              graceUntilMillis = audioWatchdogGraceUntilMillis,
+                          )
+                      ) {
+                          return@firstOrNull false
+                      }
+                      val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, runtime.role)
+                      now - runtime.lastReceivedAtMillis.get() > timeout
+                  }
+                  if (stale != null) {
+                      val age = (now - stale.lastReceivedAtMillis.get()).coerceAtLeast(0L)
+                      val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, stale.role)
+                      Log.w(
+                          TAG,
+                          "watchdog stale role=${stale.role} age=${age}ms timeout=${timeout}ms " +
+                              "ptt=${pttStateMachine.state} phase=${engineState.phase} generation=$generation",
+                      )
+                      dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("${stale.role} timeout"))
+                  }
+              }
+'''
+
+          new_watchdog = '''    private fun checkWatchdog() {
+                  val now = monotonicMillis()
+                  val pttPossiblyAsserted = pttStateMachine.isTransmitting
+                  for (role in WATCHDOG_ROLE_ORDER) {
+                      val runtime = channelRuntimes[role] ?: continue
+                      if (runtime.remoteId == null) continue
+                      if (
+                          role == Ic705ChannelRole.AUDIO &&
+                          shouldSuppressIc705AudioWatchdog(
+                              pttPossiblyAsserted = pttPossiblyAsserted,
+                              nowMillis = now,
+                              graceUntilMillis = audioWatchdogGraceUntilMillis,
+                          )
+                      ) {
+                          continue
+                      }
+
+                      val lastRx = runtime.lastReceivedAtMillis.get()
+                      val age = (now - lastRx).coerceAtLeast(0L)
+                      val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, role)
+                      val recovery = streamRecoveries[role]
+
+                      if (recovery != null && lastRx > recovery.baselineRxMillis) {
+                          streamRecoveries.remove(role)
+                          cancelTask(discoveryTask(role))
+                          cancelTask(discoveryTimeoutTask(role))
+                          startPing(role)
+                          if (role == Ic705ChannelRole.CIV && wireProfile.sendTrackedIdle) startIdle(role)
+                          Log.i(TAG, "soft recovery succeeded role=$role attempt=${recovery.attempt} age=${age}ms")
+                          safeCallback {
+                              callbacks.onStreamRecovery(
+                                  Ic705StreamRecoveryEvent(
+                                      role = role,
+                                      outcome = Ic705StreamRecoveryOutcome.SUCCEEDED,
+                                      attempt = recovery.attempt,
+                                      ageMillis = age,
+                                  ),
+                              )
+                          }
+                          continue
+                      }
+
+                      val decision = ic705WatchdogDecision(
+                          role = role,
+                          ageMillis = age,
+                          timeoutMillis = timeout,
+                          pttPossiblyAsserted = pttPossiblyAsserted,
+                          activeRecoveryAttempt = recovery?.attempt,
+                          recoveryDeadlineReached = recovery?.let { now >= it.deadlineMillis } ?: false,
+                          maxSoftRecoveryAttempts = config.timing.streamRecoveryAttempts,
+                      )
+                      when (decision) {
+                          Ic705WatchdogDecision.HEALTHY,
+                          Ic705WatchdogDecision.WAIT_FOR_SOFT_RECOVERY -> continue
+
+                          Ic705WatchdogDecision.START_SOFT_RECOVERY,
+                          Ic705WatchdogDecision.RETRY_SOFT_RECOVERY -> {
+                              val attempt = (recovery?.attempt ?: 0) + 1
+                              beginStreamSoftRecovery(runtime, now, age, attempt)
+                              return
+                          }
+
+                          Ic705WatchdogDecision.ESCALATE -> {
+                              val attempt = recovery?.attempt ?: 0
+                              streamRecoveries.remove(role)
+                              Log.w(
+                                  TAG,
+                                  "watchdog escalation role=$role age=${age}ms timeout=${timeout}ms " +
+                                      "softAttempts=$attempt ptt=${pttStateMachine.state} " +
+                                      "phase=${engineState.phase} generation=$generation",
+                              )
+                              if (role != Ic705ChannelRole.CONTROL) {
+                                  safeCallback {
+                                      callbacks.onStreamRecovery(
+                                          Ic705StreamRecoveryEvent(
+                                              role = role,
+                                              outcome = Ic705StreamRecoveryOutcome.ESCALATED,
+                                              attempt = attempt,
+                                              ageMillis = age,
+                                          ),
+                                      )
+                                  }
+                              }
+                              dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("$role timeout"))
+                              return
+                          }
+                      }
+                  }
+              }
+
+              private fun beginStreamSoftRecovery(
+                  runtime: ChannelRuntime,
+                  now: Long,
+                  age: Long,
+                  attempt: Int,
+              ) {
+                  val role = runtime.role
+                  require(role != Ic705ChannelRole.CONTROL)
+                  streamRecoveries[role] = StreamRecoveryState(
+                      attempt = attempt,
+                      baselineRxMillis = runtime.lastReceivedAtMillis.get(),
+                      deadlineMillis = now + config.timing.streamRecoveryResponseMillis,
+                  )
+                  cancelTask(pingTask(role))
+                  cancelTask(idleTask(role))
+                  cancelTask(discoveryTask(role))
+                  cancelTask(discoveryTimeoutTask(role))
+
+                  if (role == Ic705ChannelRole.AUDIO) {
+                      notifyAudioReset(Ic705AudioResetReason.STREAM_RECOVERY)
+                      synchronized(audioLifecycleLock) {
+                          audioExecutor.queue.clear()
+                          audioReceiver = null
+                          audioWrittenInGeneration = false
+                      }
+                  }
+
+                  Log.w(
+                      TAG,
+                      "soft recovery start role=$role attempt=$attempt age=${age}ms " +
+                          "phase=${engineState.phase} generation=$generation",
+                  )
+                  safeCallback {
+                      callbacks.onStreamRecovery(
+                          Ic705StreamRecoveryEvent(
+                              role = role,
+                              outcome = Ic705StreamRecoveryOutcome.STARTED,
+                              attempt = attempt,
+                              ageMillis = age,
+                          ),
+                      )
+                  }
+
+                  val expectedGeneration = generation
+                  sendAreYouThere(role)
+                  startFixedTask(
+                      key = discoveryTask(role),
+                      initialDelayMillis = config.timing.discoveryPeriodMillis,
+                      periodMillis = config.timing.discoveryPeriodMillis,
+                      expectedGeneration = expectedGeneration,
+                  ) { sendAreYouThere(role) }
+              }
+'''
+          replace_once(session, old_watchdog, new_watchdog)
+
+          replace_once(session,
+          '''internal fun shouldSuppressIc705AudioWatchdog(
+              pttPossiblyAsserted: Boolean,
+              nowMillis: Long,
+              graceUntilMillis: Long,
+          ): Boolean = pttPossiblyAsserted || nowMillis < graceUntilMillis
+
+          private fun namedDaemonThreadFactory''',
+          '''internal fun shouldSuppressIc705AudioWatchdog(
+              pttPossiblyAsserted: Boolean,
+              nowMillis: Long,
+              graceUntilMillis: Long,
+          ): Boolean = pttPossiblyAsserted || nowMillis < graceUntilMillis
+
+          internal enum class Ic705WatchdogDecision {
+              HEALTHY,
+              WAIT_FOR_SOFT_RECOVERY,
+              START_SOFT_RECOVERY,
+              RETRY_SOFT_RECOVERY,
+              ESCALATE,
+          }
+
+          internal fun ic705WatchdogDecision(
+              role: Ic705ChannelRole,
+              ageMillis: Long,
+              timeoutMillis: Long,
+              pttPossiblyAsserted: Boolean,
+              activeRecoveryAttempt: Int?,
+              recoveryDeadlineReached: Boolean,
+              maxSoftRecoveryAttempts: Int,
+          ): Ic705WatchdogDecision {
+              if (ageMillis <= timeoutMillis) return Ic705WatchdogDecision.HEALTHY
+              if (role == Ic705ChannelRole.CONTROL) return Ic705WatchdogDecision.ESCALATE
+              if (role == Ic705ChannelRole.CIV && pttPossiblyAsserted) {
+                  return Ic705WatchdogDecision.ESCALATE
+              }
+              if (activeRecoveryAttempt == null) return Ic705WatchdogDecision.START_SOFT_RECOVERY
+              if (!recoveryDeadlineReached) return Ic705WatchdogDecision.WAIT_FOR_SOFT_RECOVERY
+              return if (activeRecoveryAttempt < maxSoftRecoveryAttempts) {
+                  Ic705WatchdogDecision.RETRY_SOFT_RECOVERY
+              } else {
+                  Ic705WatchdogDecision.ESCALATE
+              }
+          }
+
+          private fun namedDaemonThreadFactory''')
+
+          replace_once(session,
+          '''        const val TX_COOLDOWN_GUARD_MILLIS = 300L
+
+                  val HANDSHAKE_PHASES = setOf(''',
+          '''        const val TX_COOLDOWN_GUARD_MILLIS = 300L
+
+                  val WATCHDOG_ROLE_ORDER = arrayOf(
+                      Ic705ChannelRole.CONTROL,
+                      Ic705ChannelRole.CIV,
+                      Ic705ChannelRole.AUDIO,
+                  )
+
+                  val HANDSHAKE_PHASES = setOf(''')
+
+          replace_once(controller,
+          '''                    onAudioReset = { reset ->
+                                  if (isActive(generation)) {
+                                      AppLog.w(
+                                          "IC705",
+                                          "audio_reset",
+                                          mapOf("generation" to generation, "reason" to reset.reason),
+                                      )
+                                      runCatching(decoderForCallbacks::reset)
+                                  }
+                              },
+                              onIssue = { issue ->''',
+          '''                    onAudioReset = { reset ->
+                                  if (isActive(generation)) {
+                                      AppLog.w(
+                                          "IC705",
+                                          "audio_reset",
+                                          mapOf("generation" to generation, "reason" to reset.reason),
+                                      )
+                                      runCatching(decoderForCallbacks::reset)
+                                  }
+                              },
+                              onStreamRecovery = { recovery ->
+                                  if (isActive(generation)) {
+                                      AppLog.w(
+                                          "IC705",
+                                          "stream_recovery",
+                                          mapOf(
+                                              "generation" to generation,
+                                              "role" to recovery.role,
+                                              "outcome" to recovery.outcome,
+                                              "attempt" to recovery.attempt,
+                                              "age_ms" to recovery.ageMillis,
+                                          ),
+                                      )
+                                      Ic705DiagnosticState.set("stream_recovery_role", recovery.role)
+                                      Ic705DiagnosticState.set("stream_recovery_outcome", recovery.outcome)
+                                      Ic705DiagnosticState.set("stream_recovery_attempt", recovery.attempt)
+                                  }
+                              },
+                              onIssue = { issue ->''')
+
+          replace_once(policy_test,
+          '''        assertEquals(5_000L, timing.audioPostTxGraceMillis)
+              }
+''',
+          '''        assertEquals(5_000L, timing.audioPostTxGraceMillis)
+                  assertEquals(3_000L, timing.streamRecoveryResponseMillis)
+                  assertEquals(2, timing.streamRecoveryAttempts)
+              }
+
+              @Test
+              fun controlEscalatesButIdleStreamsGetBoundedSoftRecovery() {
+                  assertEquals(
+                      Ic705WatchdogDecision.ESCALATE,
+                      ic705WatchdogDecision(
+                          role = Ic705ChannelRole.CONTROL,
+                          ageMillis = 5_001L,
+                          timeoutMillis = 5_000L,
+                          pttPossiblyAsserted = false,
+                          activeRecoveryAttempt = null,
+                          recoveryDeadlineReached = false,
+                          maxSoftRecoveryAttempts = 2,
+                      ),
+                  )
+                  assertEquals(
+                      Ic705WatchdogDecision.START_SOFT_RECOVERY,
+                      ic705WatchdogDecision(
+                          role = Ic705ChannelRole.CIV,
+                          ageMillis = 3_001L,
+                          timeoutMillis = 3_000L,
+                          pttPossiblyAsserted = false,
+                          activeRecoveryAttempt = null,
+                          recoveryDeadlineReached = false,
+                          maxSoftRecoveryAttempts = 2,
+                      ),
+                  )
+                  assertEquals(
+                      Ic705WatchdogDecision.ESCALATE,
+                      ic705WatchdogDecision(
+                          role = Ic705ChannelRole.CIV,
+                          ageMillis = 3_001L,
+                          timeoutMillis = 3_000L,
+                          pttPossiblyAsserted = true,
+                          activeRecoveryAttempt = null,
+                          recoveryDeadlineReached = false,
+                          maxSoftRecoveryAttempts = 2,
+                      ),
+                  )
+                  assertEquals(
+                      Ic705WatchdogDecision.WAIT_FOR_SOFT_RECOVERY,
+                      ic705WatchdogDecision(
+                          role = Ic705ChannelRole.AUDIO,
+                          ageMillis = 31_000L,
+                          timeoutMillis = 30_000L,
+                          pttPossiblyAsserted = false,
+                          activeRecoveryAttempt = 1,
+                          recoveryDeadlineReached = false,
+                          maxSoftRecoveryAttempts = 2,
+                      ),
+                  )
+                  assertEquals(
+                      Ic705WatchdogDecision.RETRY_SOFT_RECOVERY,
+                      ic705WatchdogDecision(
+                          role = Ic705ChannelRole.AUDIO,
+                          ageMillis = 34_000L,
+                          timeoutMillis = 30_000L,
+                          pttPossiblyAsserted = false,
+                          activeRecoveryAttempt = 1,
+                          recoveryDeadlineReached = true,
+                          maxSoftRecoveryAttempts = 2,
+                      ),
+                  )
+                  assertEquals(
+                      Ic705WatchdogDecision.ESCALATE,
+                      ic705WatchdogDecision(
+                          role = Ic705ChannelRole.AUDIO,
+                          ageMillis = 37_000L,
+                          timeoutMillis = 30_000L,
+                          pttPossiblyAsserted = false,
+                          activeRecoveryAttempt = 2,
+                          recoveryDeadlineReached = true,
+                          maxSoftRecoveryAttempts = 2,
+                      ),
+                  )
+              }
+''')
+          PY
+      - name: Verify
+        run: |
+          chmod +x gradlew
+          ./gradlew testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleArm64OpenglRelease assembleArm32OpenglRelease --no-daemon --stacktrace
+        env:
+          JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
+      - name: Commit verified patch
+        run: |
+          rm .github/workflows/apply-soft-recovery.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: add IC-705 stream soft recovery"
+          git push origin HEAD:fix/ic705-soft-recovery
