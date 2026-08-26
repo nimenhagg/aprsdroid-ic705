@@ -38,6 +38,7 @@ ext {
 	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082692").toString())
 	maplibre_version = "13.5.1"
 	base_version = "APRSdroid v1.7.0"
+	source_revision = (findProperty("SOURCE_REVISION") ?: System.getenv("GITHUB_SHA") ?: "unknown").toString()
 	build_revision = "${mod_version}-ic705 (based on ${base_version})"
 	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
 }
@@ -77,6 +78,7 @@ android {
 		resValue "string", "google_maps_key", configuredMapsApiKey
 		buildConfigField "boolean", "GOOGLE_MAPS_ENABLED", (!configuredMapsApiKey.isEmpty()).toString()
 		buildConfigField "String", "MAPLIBRE_VERSION", "\"${maplibre_version}\""
+		buildConfigField "String", "SOURCE_REVISION", "\"${source_revision}\""
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
