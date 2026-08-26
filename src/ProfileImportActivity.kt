@@ -23,9 +23,9 @@ class ProfileImportActivity : Activity() {
         try {
             val dataUri = intent.data ?: throw IllegalArgumentException("Missing data URI")
             val configString = contentResolver.openInputStream(dataUri)?.use { input ->
-                val bytes = input.readBytes(MAX_PROFILE_BYTES + 1)
-                require(bytes.size <= MAX_PROFILE_BYTES) { "Profile is too large" }
-                bytes.toString(Charsets.UTF_8)
+                input.bufferedReader(Charsets.UTF_8).readText().also { text ->
+                    require(text.toByteArray(Charsets.UTF_8).size <= MAX_PROFILE_BYTES) { "Profile is too large" }
+                }
             } ?: throw IllegalArgumentException("Cannot open stream for $dataUri")
             val config = JSONObject(configString)
             val preferences = PreferenceManager.getDefaultSharedPreferences(this)
@@ -55,12 +55,12 @@ class ProfileImportActivity : Activity() {
 
             val msg = getString(R.string.profile_import_done, dataUri.path)
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-            db.addPost(System.currentTimeMillis(), StorageDatabase.Post.TYPE_INFO, getString(R.string.profile_import_activity), msg)
+            db.addPost(System.currentTimeMillis(), StorageDatabase.Companion.Post.TYPE_INFO, getString(R.string.profile_import_activity), msg)
             startActivity(Intent(this, LogActivity::class.java))
         } catch (e: Exception) {
             val errmsg = getString(R.string.profile_import_error, e.message)
             Toast.makeText(this, errmsg, Toast.LENGTH_LONG).show()
-            db.addPost(System.currentTimeMillis(), StorageDatabase.Post.TYPE_ERROR, getString(R.string.profile_import_activity), errmsg)
+            db.addPost(System.currentTimeMillis(), StorageDatabase.Companion.Post.TYPE_ERROR, getString(R.string.profile_import_activity), errmsg)
             Log.w(TAG, "Profile import failed", e)
         }
         finish()
@@ -90,10 +90,7 @@ class ProfileImportActivity : Activity() {
         const val MAX_PROFILE_BYTES = 256 * 1024
         const val MAX_STRING_LENGTH = 4096
 
-        val BLOCKED_KEYS = setOf(
-            "service_running",
-            "firstrun",
-        )
+        val BLOCKED_KEYS = setOf("service_running", "firstrun")
 
         val CORE_PROFILE_KEYS = setOf(
             "callsign", "ssid", "passcode", "digi_path", "frequency", "status",
