@@ -5,12 +5,12 @@ import android.os.Build
 import androidx.preference.PreferenceManager
 import org.aprsdroid.app.BuildConfig
 import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import java.io.FileOutputStream
 
 object DiagnosticReportBuilder {
     fun buildBundle(context: Context): File {
@@ -38,6 +38,8 @@ object DiagnosticReportBuilder {
         appendLine("Version Name: ${BuildConfig.VERSION_NAME}")
         appendLine("Version Code: ${BuildConfig.VERSION_CODE}")
         appendLine("Build Type:   ${BuildConfig.BUILD_TYPE}")
+        appendLine("Source Rev:   ${BuildConfig.SOURCE_REVISION}")
+        appendLine("Bundle Format: structured-jsonl-v1")
         appendLine()
 
         appendLine("--- [1. Device & OS Environment] ---")
