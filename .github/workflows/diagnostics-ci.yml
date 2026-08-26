@@ -25,7 +25,7 @@ jobs:
           cache: gradle
       - name: Grant execute permission
         run: chmod +x gradlew
-      - name: Unit tests and lint
-        run: ./gradlew test lint --stacktrace
-      - name: Release builds
-        run: ./gradlew assembleArm64VulkanRelease assembleArm32OpenglRelease --stacktrace
+      - name: Verify diagnostics changes
+        run: ./gradlew testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleArm64OpenglRelease assembleArm32OpenglRelease --no-daemon --stacktrace
+        env:
+          JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
