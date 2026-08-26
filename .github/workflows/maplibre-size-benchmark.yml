@@ -19,6 +19,13 @@ jobs:
           git clone --depth 1 --branch android-v13.5.1 --recurse-submodules --shallow-submodules \
             https://github.com/maplibre/maplibre-native.git maplibre-native
 
+      - name: Prepare fixed Android toolchain
+        run: |
+          if [ ! -d "$ANDROID_HOME/ndk/28.2.13676358" ]; then
+            SDKMANAGER=$(command -v sdkmanager || echo "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager")
+            yes | "$SDKMANAGER" 'ndk;28.2.13676358' >/dev/null
+          fi
+
       - name: Extend Android size flags to MinSizeRel
         working-directory: maplibre-native
         run: |
@@ -48,19 +55,21 @@ jobs:
         working-directory: maplibre-native
         run: |
           set -euo pipefail
-          NDK=$(find "$ANDROID_HOME/ndk" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)
-          CMAKE=$(find "$ANDROID_HOME/cmake" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)/bin/cmake
-          NINJA=$(find "$ANDROID_HOME/cmake" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)/bin/ninja
+          NDK="$ANDROID_HOME/ndk/28.2.13676358"
+          CMAKE=$(command -v cmake)
           SRC="$PWD/platform/android/MapLibreAndroid/src/cpp"
 
           build_one() {
             local type="$1"
             local out="$PWD/benchmark-$type"
+            local extra=()
+            if [ "$type" = MinSizeRel ]; then
+              extra+=(-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL=ON)
+            fi
             "$CMAKE" -S "$SRC" -B "$out" -G Ninja \
-              -DCMAKE_MAKE_PROGRAM="$NINJA" \
               -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
               -DANDROID_ABI=arm64-v8a \
-              -DANDROID_PLATFORM=android-23 \
+              -DANDROID_PLATFORM=android-25 \
               -DANDROID_STL=c++_static \
               -DANDROID_CPP_FEATURES=exceptions \
               -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
@@ -68,34 +77,41 @@ jobs:
               -DMLN_WITH_OPENGL=ON \
               -DMLN_WITH_VULKAN=OFF \
               -DMLN_WITH_WEBGPU=OFF \
-              -DMLN_WITH_GLFW=OFF
-            "$CMAKE" --build "$out" --target maplibre --parallel 4
+              -DMLN_WITH_GLFW=OFF \
+              "${extra[@]}"
+            "$CMAKE" --build "$out" --target maplibre --parallel "$(nproc)"
           }
 
           build_one RelWithDebInfo
           build_one MinSizeRel
 
-      - name: Compare native sizes and flags
+      - name: Strip and compare native sizes and flags
         working-directory: maplibre-native
         run: |
           set -euo pipefail
+          NDK="$ANDROID_HOME/ndk/28.2.13676358"
+          STRIP="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip"
           rel=$(find benchmark-RelWithDebInfo -type f -name libmaplibre.so | head -n1)
           min=$(find benchmark-MinSizeRel -type f -name libmaplibre.so | head -n1)
           test -n "$rel"
           test -n "$min"
-          rel_size=$(stat -c %s "$rel")
-          min_size=$(stat -c %s "$min")
+          cp "$rel" /tmp/libmaplibre-relwithdebinfo.so
+          cp "$min" /tmp/libmaplibre-minsizerel.so
+          "$STRIP" --strip-unneeded /tmp/libmaplibre-relwithdebinfo.so
+          "$STRIP" --strip-unneeded /tmp/libmaplibre-minsizerel.so
+          rel_size=$(stat -c %s /tmp/libmaplibre-relwithdebinfo.so)
+          min_size=$(stat -c %s /tmp/libmaplibre-minsizerel.so)
           saved=$((rel_size - min_size))
           python3 - "$rel_size" "$min_size" "$saved" <<'PY'
           import sys
           rel, mini, saved = map(int, sys.argv[1:])
           pct = saved * 100 / rel if rel else 0
-          print(f'RelWithDebInfo bytes={rel}')
-          print(f'MinSizeRel      bytes={mini}')
-          print(f'Saved           bytes={saved} ({pct:.2f}%)')
+          print(f'Stripped RelWithDebInfo bytes={rel}')
+          print(f'Stripped MinSizeRel      bytes={mini}')
+          print(f'Saved                    bytes={saved} ({pct:.2f}%)')
           PY
           echo 'RelWithDebInfo flags:'
           grep -m1 -E -- ' -O[0-3sz]|-flto' benchmark-RelWithDebInfo/compile_commands.json || true
           echo 'MinSizeRel flags:'
           grep -m1 -E -- ' -O[0-3sz]|-flto' benchmark-MinSizeRel/compile_commands.json || true
-          file "$rel" "$min"
+          file /tmp/libmaplibre-relwithdebinfo.so /tmp/libmaplibre-minsizerel.so
