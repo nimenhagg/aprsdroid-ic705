@@ -48,6 +48,9 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
         run: |
           chmod +x gradlew
+          echo '--- AprsPacketSummaryParser.kt ---'
+          nl -ba src/aprs/AprsPacketSummaryParser.kt | sed -n '1,150p'
+          echo '--- end parser ---'
           git diff --check
           ./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug --no-daemon --stacktrace
 
