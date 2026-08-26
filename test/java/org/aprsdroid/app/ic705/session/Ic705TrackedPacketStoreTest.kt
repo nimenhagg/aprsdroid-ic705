@@ -52,6 +52,16 @@ class Ic705TrackedPacketStoreTest {
         assertArrayEquals(expected, store.find(1))
     }
 
+    @Test
+    fun discardRemovesLocallyUnsentPacketWithoutReusingSequence() {
+        val store = Ic705TrackedPacketStore()
+        val failed = store.track(controlTemplate())
+        store.discard(failed.sequence)
+
+        assertNull(store.find(failed.sequence))
+        assertEquals(2, store.track(controlTemplate()).sequence)
+    }
+
     private fun controlTemplate() = Ic705ControlPacketCodec.encode(
         Ic705ControlPacket(
             type = Ic705ControlPacketCodec.TYPE_NULL,
