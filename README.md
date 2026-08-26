@@ -4,302 +4,260 @@ APRSdroid 的 Icom IC-705 Wi-Fi 直连修改版 / An APRSdroid fork with direct 
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-当前版本 / Current release: **1.9.1-ic705**
+**最新稳定版 / Latest release: `v1.9.2-ic705`**
+
+> `main` 可能包含尚未发布的改动。当前 `main` 在 1.9.2 之后已加入持久化结构化诊断日志、IC-705 CI-V/AUDIO 局部恢复，以及设置页手动检查更新；这些功能在创建新标签前都应视为未发布内容。
+>
+> `main` may contain unreleased changes. After 1.9.2 it includes persistent structured diagnostics, stream-local CI-V/audio recovery, and a manual Settings-only update check. Treat these as unreleased until a new tag is published.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
-> This is an unofficial community fork. It is not affiliated with Icom, the original APRSdroid project, or APRS-IS operators. Verify your local regulations, frequency, power, path, and callsign before transmitting.
+> This is an unofficial community fork. It is not affiliated with Icom, the original APRSdroid project, or APRS-IS operators. Verify local regulations, frequency, power, path, and callsign settings before transmitting.
 
 ## 中文说明
 
 ### 项目简介
 
-APRSdroid IC-705 在 [APRSdroid](https://aprsdroid.org/) 基础上增加了 IC-705 内置 Wi-Fi 的 APRS 收发能力。手机可以直接连接电台热点或与电台处于同一局域网，通过 UDP 完成会话、CI-V PTT 控制和音频传输，无需音频线、OTG 转接器或外接蓝牙 TNC。
+APRSdroid IC-705 在 [APRSdroid](https://aprsdroid.org/) 基础上增加了 IC-705 内置 Wi-Fi 的 APRS 收发能力。手机可直接连接电台热点，或与电台处于同一局域网，通过 UDP 完成会话控制、CI-V PTT 和音频传输，不需要音频线、OTG 转接器或外接蓝牙 TNC。
 
-IC-705 的 UDP Socket 会逐个绑定到 Android 的 Wi-Fi `Network`，因此电台流量可以走 Wi-Fi，APRS-IS 等互联网流量仍可使用手机的默认网络（例如 4G/5G）。
+IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因此电台流量可以走 Wi-Fi，而 APRS-IS 等互联网流量仍可走手机默认网络，例如 4G/5G。
 
 ### 主要功能
 
-- IC-705 Wi-Fi 半双工 APRS 收发：AX.25、AFSK1200、12 kHz PCM、CI-V PTT。
-- PTT 绝对超时看门狗：异常情况下尝试自动释放 PTT，降低持续发射风险。
-- IC-705 连接诊断页：查看会话状态、控制事件、音频统计和已解码帧。
-- APRS-IS TCP / HTTP POST / UDP，以及 AFSK、KISS、TNC2、Kenwood 等原 APRSdroid 连接方式。
-- 蓝牙 SPP、USB 串口和局域网 TCP TNC。
-- 智能信标、周期定位、手动位置、台站列表、消息、日志和多地图源。
-- MapLibre Native 在线栅格地图：支持高德、OpenStreetMap 与自定义瓦片；发布包按设备架构提供 Vulkan、OpenGL 或双后端构建。
-- Material 3 / Material You 界面；保留 58 个 locale 资源目录，简体中文与英文为当前维护基线。
+- IC-705 Wi-Fi 半双工 APRS 收发：AX.25、AFSK1200、12 kHz 单声道 PCM、CI-V PTT。
+- PTT 安全状态机与绝对超时看门狗；未收到电台 PTT OFF ACK 时不会假装已经回到 RX。
+- IC-705 通道健康检查：CONTROL 负责整套 session 存活；CI-V 与 AUDIO 可先进行局部 stream recovery，再在连续失败后升级为完整重连。
+- TX 期间不会因为 RX AUDIO 暂停而误判断线；PTT OFF 后为音频恢复保留 grace period。
+- 持久化结构化诊断日志：关键 App、网络、IC-705、PTT、重连和崩溃事件同时写入 Logcat 与轮转 JSONL 文件，进程重启后仍可导出。
+- 设置页可一键分享诊断 ZIP，包含文本报告与结构化事件日志。
+- 设置页提供**手动检查更新**；只有用户点击时才请求 GitHub Releases，不会开机检查、后台轮询、定时联网或自动下载安装。
+- APRS-IS TCP / HTTP POST / UDP，以及 AFSK、KISS、TNC2、Kenwood、蓝牙 SPP、USB 串口和 LAN TCP TNC 等原 APRSdroid 路径。
+- 智能信标、周期/手动定位、台站、消息、日志和多地图源。
+- Material 3 / Material You + Jetpack Compose；生产页面不再使用 `res/layout` XML 布局。
+- MapLibre Native 在线栅格地图：高德、OpenStreetMap、自定义瓦片；Google 普通/卫星图仍使用 Google Maps SDK。
 
 ### 兼容性
 
 | 项目 | 要求或状态 |
 | --- | --- |
 | Android | Android 7.1+（API 25） |
-| CPU / ABI | `arm64-v8a`、`armeabi-v7a`、`x86_64`、`x86`，按独立 APK 发布 |
 | 目标平台 | Android 17 / API 37 |
+| CPU / ABI | `arm64-v8a`、`armeabi-v7a`、`x86_64`、`x86`，源码中为独立 flavor |
+| 正式 Release | ARM64 OpenGL + ARMv7 OpenGL |
 | 电台 | Icom IC-705，启用 WLAN 与 Network User |
-| 默认控制端口 | UDP `50001`（CI-V 与音频通常使用后续端口） |
-| 默认热点地址 | 常见为 `192.168.59.1`，以电台实际网络为准 |
+| 默认控制端口 | UDP `50001` |
+| 常见电台热点地址 | `192.168.59.1`，以实际网络为准 |
 | 构建环境 | JDK 17、Android SDK API 37 |
 
-不同 IC-705 固件的菜单名称可能略有差异。建议先升级到稳定固件，并在低功率或假负载环境完成首次发射测试。
+不同 IC-705 固件的菜单名称可能略有差异。首次发射建议使用低功率或合适的假负载。
 
 ### 安装
 
-从 [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases) 下载与你设备匹配的 APK。不清楚架构时直接选择文件名以 `Recommended_` 开头的 ARM64 OpenGL 版本。
+从 [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases) 下载与你设备匹配的 APK：
 
 | 文件规格 | 适用设备 |
 | --- | --- |
-| `Recommended_...-arm64-v8a-opengl.apk` | 绝大多数现代 64 位 ARM 手机，推荐下载 |
-| `...-armeabi-v7a-opengl.apk` | 仅支持 32 位应用的 ARM 设备 |
+| `Recommended_...-arm64-v8a-opengl.apk` | 大多数现代 64 位 ARM 手机，推荐 |
+| `...-armeabi-v7a-opengl.apk` | 仍支持 32 位 ARM 应用的设备 |
 
-官方 Release 当前只发布 ARM64 与 ARMv7 两个 OpenGL APK，以降低 Vulkan 驱动兼容风险；同时提供 `SHA256SUMS.txt`。源码仍保留 ARM64 Vulkan、x86 和 x86_64 flavor，需要这些组合时可按下文说明自行构建。部分 64 位系统不能运行 32 位应用，因此 ARMv7 包不是 ARM64 设备的通用回退。
+正式 Release 当前只发布 ARM64 与 ARMv7 两个 OpenGL APK，并提供 `SHA256SUMS.txt`。源码仍保留 ARM64 Vulkan、x86 与 x86_64 变体，供自行构建。部分 64 位系统不能运行 32 位应用，因此 ARMv7 不是 ARM64 的通用回退包。
 
-若从旧签名或其他 APRSdroid 分支迁移，Android 可能要求先卸载旧应用；卸载会删除该应用的本地设置和日志，请先自行备份需要的数据。
-
-本项目的应用 ID 是 `me.nimenhagg.aprsdroidic705mod`。发布 APK 是否已签名以对应 Release 的说明和 Android 安装界面为准。
+应用 ID：`me.nimenhagg.aprsdroidic705mod`。若旧 APK 使用不同签名，Android 可能要求先卸载；卸载会删除该安装的本地设置和诊断日志。
 
 ### IC-705 配置
 
-1. 在电台中打开 `MENU` → `SET` → `WLAN & Internet` → `WLAN`。
-2. 选择电台热点模式（Access Point）或让手机与电台加入同一个路由器网络。
-3. 在 `Network User / Pass` 中建立用户名和密码。当前实现要求用户名非空，用户名和密码最长 16 个 US-ASCII 字符。
-4. 确认控制端口，默认是 `50001`。
-5. 让手机连接到电台所在 Wi-Fi。若 Android 提示该 Wi-Fi 无互联网，请选择保持连接。
+1. 在电台中启用 `MENU` → `SET` → `WLAN & Internet` → `WLAN`。
+2. 使用电台 Access Point 模式，或让手机和电台加入同一局域网。
+3. 在 `Network User / Pass` 建立用户名和密码。当前实现要求用户名非空，用户名和密码最长 16 个 US-ASCII 字符。
+4. 确认控制端口，通常为 `50001`。
+5. 让手机保持连接电台 Wi-Fi；如果 Android 提示该网络无互联网，请选择继续连接。
 
-不要在截图、Issue 或日志中公开电台的网络密码。
+不要在截图、Issue 或日志中公开电台网络密码。
 
 ### 应用配置与首次连接
 
-1. 打开“设置”，填写业余无线电呼号、SSID、数字中继路径和位置来源。
-2. 进入“连接偏好设置”，将“连接协议”设为 `IC-705 Wi-Fi`。
-3. 填写电台 IP、控制端口、Network User 用户名和密码。
-4. 可先打开“IC-705 Wi-Fi 诊断”确认握手、音频接收与 AFSK 解码状态。诊断页不会发射。
-5. 返回主页，点击单次位置或开始记录路径。首次启动时按系统提示授予必要权限。
-6. 首次发射请使用低功率或假负载，并确认 PTT 能及时释放。
+1. 打开“设置”，填写呼号、SSID、数字中继路径和位置来源。
+2. 在连接设置中将协议选为 `IC-705 Wi-Fi`。
+3. 填写电台 IP、控制端口、Network User 用户名与密码。
+4. 可先打开 IC-705 诊断页确认握手、音频接收和 AFSK 解码；诊断页不会发射。
+5. 首次发射使用低功率或假负载，并确认 PTT 能及时释放。
+
+### IC-705 连接恢复策略
+
+当前 `main` 将三类通道分开处理，而不是“任意一条 UDP 3 秒没数据就重建整个 session”：
+
+- `CONTROL`：整套 IC-705 session 的权威存活信号；超时会进入完整恢复/重连。
+- `CI-V`：低延迟控制流；空闲超时优先尝试局部 rediscovery，连续失败后才升级到完整重连。PTT 期间 CI-V 故障按射频安全优先处理。
+- `AUDIO`：允许较长 RX 静默；TX 期间不因 AUDIO RX 静默触发重连，PTT OFF 后还有恢复宽限期。长时间无音频时先局部恢复。
+
+这些策略用于提高不同 Android 厂商网络栈、线程调度和 Wi-Fi 驱动下的容错能力，但软件恢复不能替代电台侧安全操作。
+
+### 诊断与故障报告
+
+设置页的“分享系统诊断与运行日志”会生成 ZIP。当前诊断系统的重点是保留**第一现场**，而不是只抓导出瞬间的最后几百行 Logcat。
+
+持久日志会记录：
+
+- App 版本、`versionCode`、构建类型和源码 revision。
+- Android Wi-Fi Network 的 available/lost、Capabilities、LinkProperties 等变化。
+- IC-705 generation、session phase、通道选择/Socket 绑定、watchdog、soft recovery 与完整 reconnect。
+- PTT ON/OFF 请求、ACK、重试、watchdog 与 TX 状态变化。
+- 未捕获异常及栈信息。
+
+敏感字段会自动脱敏；密码、passcode、secret、token 和精确经纬度不应写入持久日志。日志位于应用 `noBackupFilesDir`，按大小轮转，覆盖安装和普通进程重启不会自动清除，卸载应用会删除。
+
+### 手动检查更新
+
+设置 → “应用支持与关于” → “检查更新”。
+
+- 仅在用户点击时访问 GitHub Releases。
+- 不在应用启动时检查。
+- 不使用 WorkManager/Alarm/后台 Service 做周期检查。
+- 不自动下载或安装 APK。
+- 有新稳定版时仅提示并打开对应 Release 页面。
 
 ### 地图引擎
 
-- 高德、OpenStreetMap 和自定义 URL 使用 MapLibre Native 13.5.1。官方 ARM64/ARMv7 包使用 OpenGL；源码中的 ARM64 Vulkan 与 x86/x86_64 双后端 flavor 可按需自行构建。
-- OpenStreetMap 使用官方在线瓦片地址、可识别的应用 User-Agent 和服务端缓存规则；地图上始终显示可点击的 `© OpenStreetMap contributors`。本应用不会预取或批量下载 OSM 瓦片。
-- Google 普通地图和卫星/混合地图继续使用 Google Maps SDK。官方 Release 在构建时注入受包名和签名证书限制的 Key，用户无需填写；自行构建未配置 Key 时会隐藏 Google 图源。
-- 地图页的顶栏、缩放、回到我的位置、坐标选择和图源菜单保持原有布局；APRS 符号、呼号标签和台站点击已改由 MapLibre 图层渲染。
-- 本项目没有加入可选的 MapLibre Offline 插件，也没有离线包下载或管理功能。自定义图源是在线 `{z}/{x}/{y}` 瓦片模板，可选 `{s}` 子域名。
+- 高德、OpenStreetMap 和自定义在线瓦片使用 MapLibre Native 13.5.1。
+- 正式 ARM64/ARMv7 Release 使用 OpenGL；源码还提供 ARM64 Vulkan 与 x86/x86_64 双后端 flavor。
+- OpenStreetMap 请求包含可识别的 User-Agent，遵循服务端缓存规则，并在地图上显示可点击的 `© OpenStreetMap contributors`。
+- Google 普通地图和卫星/混合地图使用 Google Maps SDK。正式 Release 在构建时注入受包名和签名证书限制的 Key；自行构建未配置 Key 时隐藏 Google 图源。
+- 不提供 MapLibre Offline 区域下载/管理功能，也不批量预取 OSM 瓦片。
 
 ### 权限说明
 
-应用按当前连接方式和位置来源请求权限，不会为所有后端一次性索取全部权限。
+应用按连接方式和位置来源请求权限，不会为全部后端一次性索取所有权限。
 
 | 权限 | 何时使用 |
 | --- | --- |
-| 本地网络 | Android 17 上连接 IC-705 Wi-Fi 或局域网 TCP TNC |
-| 精确/大致位置 | 智能信标、周期定位或使用电台 GPS 的 Kenwood 模式 |
-| 通知 | Android 13+ 的前台服务状态通知 |
-| 麦克风 | 仅 AFSK 音频后端；IC-705 Wi-Fi 不使用手机麦克风 |
-| 蓝牙 | 仅蓝牙 SPP / 蓝牙音频连接 |
+| 本地网络 | Android 17 上连接 IC-705 Wi-Fi 或 LAN TCP TNC |
+| 精确/大致位置 | 智能信标、周期定位或相关定位模式 |
+| 通知 | Android 13+ 前台服务状态通知 |
+| 麦克风 | AFSK 音频后端；IC-705 Wi-Fi 不使用手机麦克风 |
+| 蓝牙 | 蓝牙 SPP / 蓝牙音频路径 |
 
-拒绝必需权限后，应用不会启动对应 APRS 服务；可以在 Android 的应用信息页重新授权。
+拒绝必需权限后，应用不会启动对应 APRS 服务；可在 Android 应用信息页重新授权。
 
 ### 常见问题
 
-**找不到 IC-705 或握手失败**
+**找不到 IC-705 / 登录失败**
 
-- 确认手机仍连接电台 Wi-Fi，电台 IP 和控制端口正确。
-- 确认 Network User 凭据为 US-ASCII 且不超过 16 字符，并且没有其他客户端占用会话。
+- 确认手机仍连接电台所在 Wi-Fi，IP、端口和 Network User 凭据正确。
+- 确认没有其他客户端正在占用 IC-705 网络会话。
 - Android 17 上确认“本地网络”权限已允许。
-- 打开 IC-705 诊断页查看最近事件；网络变化后停止并重新开始诊断。
+- 使用 IC-705 诊断页和诊断 ZIP 查看最早的 network/session failure，而不是只看后续 PTT 重试。
 
-**连接电台后 APRS-IS 没有互联网**
+**连接电台后 APRS-IS 没网**
 
-- 保持蜂窝数据开启，不要手动把整个应用绑定到 Wi-Fi。
-- 本项目只绑定 IC-705 UDP Socket；设备厂商的“双通道加速”“智能切网”仍可能改变路由，可尝试关闭相关系统功能。
+- 保持蜂窝数据开启，不要把整个 App 或系统默认网络强制绑定到电台 Wi-Fi。
+- 本项目只绑定 IC-705 UDP Socket；厂商的“智能切网/双通道加速”等功能仍可能改变路由行为。
 
 **PTT 未释放**
 
-- 立即在电台上手动解除发射或关闭电台，再停止应用服务。
-- 不应仅依赖软件看门狗作为射频安全措施。复现后请附脱敏诊断信息提交 Issue。
+- 立即在电台上手动解除发射或关闭电台，再停止 App 服务。
+- 软件 PTT watchdog 是最后的容错措施，不是硬件互锁。
 
 ### 网络与安全边界
 
-- IC-705 LAN 协议和部分 APRS 服务器本身使用明文 UDP/TCP；本项目保留该兼容行为。HTTP POST 后端使用 Android 原生 `HttpURLConnection`，但裸主机配置仍按兼容规则连接明文 `http://` 端口 `8080`。请只在可信网络使用，并理解凭据与流量可能被同网段设备观察。
-- 配置文件导入直接读取 Android 文档提供器授予的 `content://` 数据流，不依赖 `_data` 列或外部存储绝对路径。
-- 应用禁用 Android 备份，但连接凭据仍保存在应用本地偏好设置中。不要在不受信任或已 Root 的设备保存敏感凭据。
-- 项目包含发射功能。软件故障、Wi-Fi 丢包或电台配置错误都可能造成意外发射；操作者始终对合法合规使用负责。
+- IC-705 LAN 协议和部分 APRS 服务器使用明文 UDP/TCP，本项目为兼容性保留该行为。
+- HTTP POST 后端使用 Android `HttpURLConnection`；裸主机配置仍兼容明文 `http://:8080/`。
+- 配置导入通过 Android 文档提供器的 `content://` 数据流读取，不依赖 `_data` 或外部存储绝对路径。
+- Android 备份已禁用，但连接凭据仍保存在应用本地偏好设置中。
+- 本项目包含发射功能；操作者始终对合法合规和射频安全负责。
 
 ### 从源码构建
 
-要求：JDK 17、Android SDK API 37。Gradle Wrapper 会固定使用 Gradle 9.5.0；首次构建会下载依赖。Java 17 是 AGP 9.3 的官方基线，本项目没有为了追求版本数字改用 Java 21。
+要求：JDK 17、Android SDK API 37。Gradle Wrapper 固定为 Gradle 9.5.0。
 
 ```bash
 git clone https://github.com/nimenhagg/aprsdroid-ic705.git
 cd aprsdroid-ic705
 
-./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleRelease --no-daemon
+./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleRelease --no-daemon --stacktrace
 ```
 
-Windows PowerShell 使用 `./gradlew.bat`。`assembleRelease` 会在 `build/outputs/apk/<变体>/release/` 下生成五个未签名 APK；可用 `assembleArm64VulkanRelease` 等任务只构建一个规格。没有发布密钥时本地 Release APK 不会自动签名。
+Windows PowerShell 使用 `./gradlew.bat`。
 
-可在 `local.properties` 中提供 Google Maps Key：
-
-```properties
-mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY
-```
-
-也可通过 `MAPS_API_KEY` 环境变量提供。Key 应限制为 Android 包名 `me.nimenhagg.aprsdroidic705mod`、对应签名证书 SHA-1，并且只允许 Maps SDK for Android；不要提交到源码仓库。
-
-主要构建版本：
+主要工具链：
 
 - Android Gradle Plugin 9.3.2
 - Gradle 9.5.0
-- Kotlin / Compose Compiler 2.3.21（AGP 9 内置 Kotlin）
+- AGP 9 built-in Kotlin / Compose Compiler 2.3.21
 - Compose BOM 2026.08.00
-- AppCompat 1.8.0, Material 1.14.0, OkHttp 5.3.0
-- MapLibre Native 13.5.1（Vulkan、OpenGL 与双后端变体）
+- AppCompat 1.8.0 / Material 1.14.0 / OkHttp 5.3.0
+- MapLibre Native 13.5.1
 - Java 17
+
+Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳入版本控制的 `local.properties` 中 `mapsApiKey` 注入。不要把 Key 提交到仓库。
 
 ### 开发与发布
 
-- Kotlin 与 Java 源码位于非标准的 `src/` 目录，单元测试位于 `test/java/`。
-- 修改 IC-705 发射链时必须保留 PTT OFF 和绝对超时看门狗的安全语义，并增加对应测试。
-- 发布时同时更新 `build.gradle`、`CHANGELOG.md`、`AI_CONTEXT.md` 和 README 中的版本信息。
-- 标签格式是 `v<版本>-ic705`，例如 `v1.9.1-ic705`；CI 会验证标签和 APK 版本一致并发布签名 APK、校验和及独立 R8 mapping 构建产物。
-- 完整的工程交接信息见 [AI_CONTEXT.md](AI_CONTEXT.md)。
+- 生产源码位于历史布局 `src/`，单元测试位于 `test/java/`。
+- UI 已迁移为 Compose Material 3；不要重新引入生产 `res/layout` 页面。
+- 修改 IC-705 发射/会话恢复代码时必须保留 PTT OFF、ACK 与 watchdog 安全语义并增加测试。
+- “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
+- 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AI_CONTEXT.md`。
+- 标签格式：`v<major.minor.patch>-ic705`，例如 `v1.9.2-ic705`。
+- Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt` 和 R8 mapping 后创建 GitHub Release。
+
+完整维护约束见 [AI_CONTEXT.md](AI_CONTEXT.md)。
 
 ## English
 
 ### Overview
 
-APRSdroid IC-705 extends [APRSdroid](https://aprsdroid.org/) with direct APRS receive and transmit support over the IC-705's built-in Wi-Fi. The phone connects to the radio's access point, or joins the same LAN, and uses UDP for session control, CI-V PTT, and audio. No audio cable, USB OTG adapter, or external Bluetooth TNC is required for this mode.
+APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-Each radio UDP socket is bound to Android's Wi-Fi `Network`. Radio traffic can therefore use Wi-Fi while APRS-IS traffic continues over the phone's default internet path, such as mobile data.
+**Latest stable release: `v1.9.2-ic705`.** The `main` branch may contain newer unreleased work.
 
 ### Highlights
 
-- Half-duplex IC-705 Wi-Fi APRS: AX.25, AFSK1200, 12 kHz PCM, and CI-V PTT.
-- An absolute PTT watchdog that attempts to release PTT after an abnormal timeout.
-- An IC-705 diagnostics screen for session events, audio statistics, and decoded frames.
-- APRS-IS TCP / HTTP POST / UDP plus APRSdroid's AFSK, KISS, TNC2, and Kenwood modes.
-- Bluetooth SPP, USB serial, and LAN TCP TNC transports.
-- SmartBeaconing, periodic/manual positions, stations, messages, logs, and multiple map sources.
-- MapLibre Native online raster maps for AMap, OpenStreetMap, and custom tiles, shipped as architecture-specific Vulkan, OpenGL, or dual-backend builds.
-- Material 3 / Material You UI. All 58 locale resource directories are retained; Simplified Chinese and English are the actively maintained baseline.
+- Half-duplex IC-705 Wi-Fi APRS using AX.25, AFSK1200, 12 kHz mono PCM and CI-V PTT.
+- PTT OFF ACK-aware safety state machine and absolute watchdog.
+- Role-specific liveness: CONTROL is session-authoritative; CI-V and AUDIO can recover locally before escalating to a full reconnect.
+- TX-aware audio watchdog behavior to avoid treating expected RX audio silence as a dead session.
+- Persistent rotating JSONL diagnostics plus logcat output, crash capture and exportable diagnostic ZIP bundles.
+- Android network lifecycle logging to distinguish an actual Wi-Fi `Network` loss from an IC-705 protocol/session failure.
+- Manual Settings-only GitHub Release check. It never runs at startup, periodically, or in the background, and it does not auto-download/install updates.
+- Jetpack Compose + Material 3 UI with no production `res/layout` screens.
+- MapLibre Native for AMap/OSM/custom raster tiles and Google Maps SDK for Google map/satellite modes.
 
-### Requirements
+### Requirements and packages
 
-| Item | Requirement or status |
+| Item | Status |
 | --- | --- |
-| Android | Android 7.1+ (API 25) |
-| CPU / ABI | Separate APKs for `arm64-v8a`, `armeabi-v7a`, `x86_64`, and `x86` |
-| Target platform | Android 17 / API 37 |
-| Radio | Icom IC-705 with WLAN and a Network User enabled |
-| Default control port | UDP `50001`; CI-V and audio normally use the following ports |
-| Typical AP address | `192.168.59.1`; verify against the radio's actual network |
-| Build environment | JDK 17 and Android SDK API 37 |
+| Android | 7.1+ / API 25 minimum |
+| Target | Android 17 / API 37 |
+| Official APKs | ARM64 OpenGL (`Recommended_...`) and ARMv7 OpenGL |
+| Radio | Icom IC-705 with WLAN and Network User enabled |
+| Control port | UDP `50001` by default |
+| Build | JDK 17, Gradle 9.5.0, AGP 9.3.2 |
 
-Menu labels can vary by radio firmware. Perform the first transmit test at low power or into a suitable dummy load.
+Download official builds from [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases). The source tree also retains ARM64 Vulkan and x86/x86_64 variants for local builds.
 
-### Install
+### Diagnostics
 
-Download the APK matching your device from [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases). If you do not know the architecture, choose the ARM64 OpenGL file whose name starts with `Recommended_`.
+Settings can export a ZIP containing a human-readable report and persistent structured event logs. Events include build/source revision, Android network changes, IC-705 session/generation state, watchdog and recovery decisions, PTT transitions and crashes. Passwords, secrets, tokens and precise coordinates are redacted.
 
-| Package | Intended devices |
-| --- | --- |
-| `Recommended_...-arm64-v8a-opengl.apk` | Most modern 64-bit ARM phones; recommended |
-| `...-armeabi-v7a-opengl.apk` | Devices that run only 32-bit ARM apps |
+### Manual update check
 
-Official Releases currently publish two OpenGL APKs, one for ARM64 and one for ARMv7, to reduce Vulkan driver risk. Each Release includes `SHA256SUMS.txt`. The source tree still provides ARM64 Vulkan plus x86 and x86_64 flavors for local builds. Some 64-bit-only Android systems cannot install 32-bit apps, so the ARMv7 build is not a universal fallback for ARM64.
-
-Android may require uninstalling an APK signed by another key or another APRSdroid fork first. Uninstalling removes that app's local preferences and logs, so back up anything you need.
-
-The application ID is `me.nimenhagg.aprsdroidic705mod`. Check the individual Release notes and Android's installer for signing details.
-
-### Configure the radio
-
-1. Enable `MENU` → `SET` → `WLAN & Internet` → `WLAN` on the IC-705.
-2. Use Access Point mode, or connect the phone and radio to the same router.
-3. Create credentials under `Network User / Pass`. The current implementation requires a non-empty username; usernames and passwords are limited to 16 US-ASCII characters.
-4. Verify the control port, normally `50001`.
-5. Connect Android to the radio's Wi-Fi. If Android reports that the network has no internet, choose to remain connected.
-
-Never post the radio password in screenshots, Issues, or logs.
-
-### Configure the app
-
-1. In Settings, enter your amateur-radio callsign, SSID, digipeater path, and location source.
-2. Open Connection Preferences and select `IC-705 Wi-Fi` as the connection protocol.
-3. Enter the radio IP, control port, Network User username, and password.
-4. Optionally run IC-705 Wi-Fi Diagnostics first. The diagnostics screen receives and decodes but does not transmit.
-5. Return to the home screen and request a single position or start tracking. Grant the permissions Android requests.
-6. Make the first transmission at low power or into a dummy load, and verify that PTT releases promptly.
-
-### Map engines
-
-- AMap, OpenStreetMap, and custom URLs use MapLibre Native 13.5.1. Official ARM64 and ARMv7 packages use OpenGL; the source-only ARM64 Vulkan and dual-backend x86/x86_64 flavors can be built when needed.
-- OpenStreetMap uses the official online tile URL, an identifiable application User-Agent, and server caching rules. A clickable `© OpenStreetMap contributors` notice remains visible on the map. The app does not prefetch or bulk-download OSM tiles.
-- Google map and satellite/hybrid modes continue to use the Google Maps SDK. Official Releases inject a package- and signing-certificate-restricted key at build time, so end users configure nothing. Source builds hide Google modes when no key is configured.
-- The existing toolbar, zoom, recenter, coordinate picker, and source menu layout is preserved. APRS symbols, callsign labels, and station taps are rendered through MapLibre layers.
-- This project does not include the optional MapLibre Offline plugin and provides no offline-region download or management UI. Custom sources are online `{z}/{x}/{y}` tile templates with optional `{s}` subdomains.
-
-### Permissions
-
-Permissions are selected from the configured backend and location source instead of requesting every capability globally.
-
-| Permission | Used for |
-| --- | --- |
-| Local network | IC-705 Wi-Fi and LAN TCP TNC on Android 17 |
-| Fine/approximate location | SmartBeaconing, periodic GPS, or Kenwood GPS mode |
-| Notifications | Foreground-service status on Android 13+ |
-| Microphone | AFSK audio backend only; IC-705 Wi-Fi does not use the phone microphone |
-| Bluetooth | Bluetooth SPP or Bluetooth audio transports only |
-
-If a required permission is denied, the corresponding APRS service is not started. You can grant it later from Android's App info screen.
-
-### Troubleshooting
-
-For discovery or login failures, verify the active Wi-Fi, radio IP, port, credentials, and Android 17 Local network permission. Another client may already own the radio session. Use the diagnostics screen for redacted session events and restart diagnostics after a network change.
-
-If APRS-IS loses internet access while the radio is connected, keep mobile data enabled. This project binds only the IC-705 UDP sockets, but vendor-specific “smart network switching” features can still override routing.
-
-If PTT remains asserted, release it on the radio or turn the radio off immediately, then stop the app service. The software watchdog is a fallback, not a substitute for RF safety procedures.
-
-### Network and security boundary
-
-- The IC-705 LAN protocol and some APRS servers use cleartext UDP/TCP. This project preserves that compatibility behavior. The HTTP POST backend uses Android's native `HttpURLConnection`, while a bare host setting still resolves to cleartext `http://` on port `8080`. Use trusted networks and assume that peers on the LAN may observe credentials or traffic.
-- Profile imports read the `content://` stream granted by Android's document provider directly; they do not query `_data` or reconstruct external-storage paths.
-- Android backup is disabled, but connection credentials are still stored in the app's local preferences. Do not store sensitive credentials on an untrusted or rooted device.
-- This software can key a transmitter. The operator remains responsible for lawful operation and for handling software, Wi-Fi, and radio failures safely.
+The update checker is intentionally explicit-user-action only. It contacts GitHub Releases only after the user taps **Check for updates** in Settings. Do not add startup, periodic, WorkManager, alarm, background-service, auto-download or auto-install behavior without an explicit product decision.
 
 ### Build from source
 
-Install JDK 17 and Android SDK API 37. The wrapper pins Gradle 9.5.0 and downloads dependencies during the first build. Java 17 remains the official AGP 9.3 baseline; this project does not require Java 21.
-
 ```bash
-git clone https://github.com/nimenhagg/aprsdroid-ic705.git
-cd aprsdroid-ic705
-
-./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleRelease --no-daemon
+./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleRelease --no-daemon --stacktrace
 ```
 
-Use `./gradlew.bat` in Windows PowerShell. `assembleRelease` writes five unsigned APKs below `build/outputs/apk/<variant>/release/`; tasks such as `assembleArm64VulkanRelease` build one package only. Local release builds remain unsigned unless signing properties are supplied.
-
-To enable Google Maps, set `mapsApiKey=YOUR_ANDROID_RESTRICTED_KEY` in `local.properties` or provide the `MAPS_API_KEY` environment variable. Restrict the key to Android package `me.nimenhagg.aprsdroidic705mod`, the SHA-1 fingerprint of the relevant signing certificate, and the Maps SDK for Android API only. Never commit it to the repository.
-
-The main toolchain is AGP 9.3.2, Gradle 9.5.0, built-in Kotlin / Compose Compiler 2.3.21, Compose BOM 2026.08.00, AppCompat 1.8.0, Material 1.14.0, OkHttp 5.3.0, MapLibre Native 13.5.1 Vulkan/OpenGL variants, and Java 17.
-
-### Contributing and releasing
-
-- Production sources use the legacy `src/` layout; unit tests live in `test/java/`.
-- Changes to IC-705 transmit code must preserve PTT OFF and absolute-watchdog safety semantics and include tests.
-- A release updates `build.gradle`, `CHANGELOG.md`, `AI_CONTEXT.md`, and the version shown here.
-- Tags use `v<version>-ic705`, for example `v1.8.6-ic705`; CI rejects a tag that does not match APK metadata and publishes signed APKs, checksums, and separate R8 mapping artifacts.
-- See [AI_CONTEXT.md](AI_CONTEXT.md) for the maintainer and AI handover guide.
+Java 17 is the project baseline. See [AI_CONTEXT.md](AI_CONTEXT.md) for current architecture, safety invariants and release rules.
 
 ## 致谢与许可证 / Credits and license
 
 - 基础项目 / Upstream: [ge0rg/APRSdroid](https://github.com/ge0rg/aprsdroid)
-- 协议与实现参考 / Protocol and implementation references: [N0BOY/FT8CN](https://github.com/N0BOY/FT8CN), [wfview](https://wfview.org/)
+- 协议与实现参考 / Protocol references: [N0BOY/FT8CN](https://github.com/N0BOY/FT8CN), [wfview](https://wfview.org/)
 - 地图引擎 / Map engine: [MapLibre Native](https://maplibre.org/maplibre-native/); OpenStreetMap data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)
 - 许可证 / License: [GNU General Public License v2.0](LICENSE)
 
-项目开发包含 AI 辅助协作；所有变更仍应由维护者审查、测试并承担发布责任。
+项目开发包含 AI 辅助协作；维护者仍负责审查、测试和发布。
 
 AI-assisted development is used in this repository; maintainers remain responsible for review, testing, and releases.
