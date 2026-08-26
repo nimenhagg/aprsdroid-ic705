@@ -1,0 +1,47 @@
+name: Prepend 1.9.2 Changelog
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  prepend:
+    if: ${{ !contains(github.event.head_commit.message, 'docs: add 1.9.2 changelog') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepend release notes once
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'mod_version = .*"1.9.2"' build.gradle
+          if grep -q '^## \[v1\.9\.2-ic705\]' CHANGELOG.md; then
+            echo '1.9.2 changelog already present.'
+            exit 0
+          fi
+          cat > /tmp/release-notes.md <<'EOF'
+          ## [v1.9.2-ic705] - 2026-08-26
+
+          ### Fixed
+          - IC-705 PTT 关闭在未收到电台 ACK 时不再回退为 `RX_IDLE`；状态保持为待释放并由绝对看门狗继续重试，避免把“本地发送成功但电台未确认”误判为 PTT 已释放。
+          - 修复数据库从历史 v1/v2 直接升级到当前 v4 时跳过中间迁移的问题。
+          - 配置文件导入增加允许键、类型、大小和字符串长度校验，并阻止 `service_running`、`firstrun` 等运行状态项被外部配置覆盖。
+          - 配置导入日志不再输出配置值明文。
+          - 将 `play-publish-credentials.json` 加入 `.gitignore`，降低 Play 发布凭据误提交风险。
+
+          ### Changed
+          - 版本更新为 `1.9.2-ic705`（`versionCode 2026082692`）。
+
+          EOF
+          cat CHANGELOG.md >> /tmp/release-notes.md
+          mv /tmp/release-notes.md CHANGELOG.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add CHANGELOG.md
+          git commit -m 'docs: add 1.9.2 changelog'
+          git push origin HEAD:main
