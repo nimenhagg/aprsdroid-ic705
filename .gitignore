@@ -22,7 +22,7 @@ wiki/
 *.keystore
 keystore/
 signing.properties
-
 release-signing.properties
+play-publish-credentials.json
 
 RELEASE_NOTES.md
