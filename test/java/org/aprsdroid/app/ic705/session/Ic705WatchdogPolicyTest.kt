@@ -15,6 +15,84 @@ class Ic705WatchdogPolicyTest {
         assertEquals(3_000L, ic705ChannelWatchdogTimeoutMillis(timing, Ic705ChannelRole.CIV))
         assertEquals(30_000L, ic705ChannelWatchdogTimeoutMillis(timing, Ic705ChannelRole.AUDIO))
         assertEquals(5_000L, timing.audioPostTxGraceMillis)
+        assertEquals(3_000L, timing.streamRecoveryResponseMillis)
+        assertEquals(2, timing.streamRecoveryAttempts)
+    }
+
+    @Test
+    fun controlEscalatesButIdleStreamsGetBoundedSoftRecovery() {
+        assertEquals(
+            Ic705WatchdogDecision.ESCALATE,
+            ic705WatchdogDecision(
+                role = Ic705ChannelRole.CONTROL,
+                ageMillis = 5_001L,
+                timeoutMillis = 5_000L,
+                pttPossiblyAsserted = false,
+                activeRecoveryAttempt = null,
+                recoveryDeadlineReached = false,
+                maxSoftRecoveryAttempts = 2,
+            ),
+        )
+        assertEquals(
+            Ic705WatchdogDecision.START_SOFT_RECOVERY,
+            ic705WatchdogDecision(
+                role = Ic705ChannelRole.CIV,
+                ageMillis = 3_001L,
+                timeoutMillis = 3_000L,
+                pttPossiblyAsserted = false,
+                activeRecoveryAttempt = null,
+                recoveryDeadlineReached = false,
+                maxSoftRecoveryAttempts = 2,
+            ),
+        )
+        assertEquals(
+            Ic705WatchdogDecision.ESCALATE,
+            ic705WatchdogDecision(
+                role = Ic705ChannelRole.CIV,
+                ageMillis = 3_001L,
+                timeoutMillis = 3_000L,
+                pttPossiblyAsserted = true,
+                activeRecoveryAttempt = null,
+                recoveryDeadlineReached = false,
+                maxSoftRecoveryAttempts = 2,
+            ),
+        )
+        assertEquals(
+            Ic705WatchdogDecision.WAIT_FOR_SOFT_RECOVERY,
+            ic705WatchdogDecision(
+                role = Ic705ChannelRole.AUDIO,
+                ageMillis = 31_000L,
+                timeoutMillis = 30_000L,
+                pttPossiblyAsserted = false,
+                activeRecoveryAttempt = 1,
+                recoveryDeadlineReached = false,
+                maxSoftRecoveryAttempts = 2,
+            ),
+        )
+        assertEquals(
+            Ic705WatchdogDecision.RETRY_SOFT_RECOVERY,
+            ic705WatchdogDecision(
+                role = Ic705ChannelRole.AUDIO,
+                ageMillis = 34_000L,
+                timeoutMillis = 30_000L,
+                pttPossiblyAsserted = false,
+                activeRecoveryAttempt = 1,
+                recoveryDeadlineReached = true,
+                maxSoftRecoveryAttempts = 2,
+            ),
+        )
+        assertEquals(
+            Ic705WatchdogDecision.ESCALATE,
+            ic705WatchdogDecision(
+                role = Ic705ChannelRole.AUDIO,
+                ageMillis = 37_000L,
+                timeoutMillis = 30_000L,
+                pttPossiblyAsserted = false,
+                activeRecoveryAttempt = 2,
+                recoveryDeadlineReached = true,
+                maxSoftRecoveryAttempts = 2,
+            ),
+        )
     }
 
     @Test
