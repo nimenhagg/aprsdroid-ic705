@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -75,7 +76,8 @@ fun SettingsScreen(
     onExportProfile: () -> Unit,
     onImportProfile: () -> Unit,
     onShareDiagnostics: () -> Unit,
-    onOpenAbout: () -> Unit
+    onCheckForUpdates: () -> Unit,
+    onOpenAbout: () -> Unit,
 ) {
     var showSsidDialog by remember { mutableStateOf(false) }
     var showDigiPathDialog by remember { mutableStateOf(false) }
@@ -234,6 +236,14 @@ fun SettingsScreen(
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
+                    title = "检查更新",
+                    summary = "仅在点击时检查 GitHub Releases，不会后台自动检查",
+                    icon = Icons.Default.SystemUpdateAlt,
+                    onClick = onCheckForUpdates,
+                    showChevron = false,
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceItem(
                     title = stringResource(R.string.about),
                     summary = "版本 " + BuildConfig.VERSION_NAME + " (" + BuildConfig.BUILD_TYPE + ")",
                     icon = Icons.Default.Info,
@@ -245,7 +255,6 @@ fun SettingsScreen(
         }
     }
 
-    // SSID Picker Dialog
     if (showSsidDialog) {
         PreferenceSelectDialog(
             title = stringResource(R.string.p_ssid_entry),
@@ -258,7 +267,6 @@ fun SettingsScreen(
         )
     }
 
-    // DigiPath Preset Dialog (No built-in presets, fully custom user managed)
     if (showDigiPathDialog) {
         DigiPathDialogCompose(
             currentPath = digiPath,
