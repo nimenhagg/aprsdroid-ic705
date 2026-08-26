@@ -31,76 +31,89 @@ jobs:
           session = Path('src/ic705/session/Ic705RxSession.kt')
           text = session.read_text()
 
-          old = '''            if (
-                runtime.role == Ic705ChannelRole.AUDIO &&
-                (pttPossiblyAsserted || now < audioWatchdogGraceUntilMillis)
-            ) {
-                return@firstOrNull false
-            }'''
-          new = '''            if (
-                runtime.role == Ic705ChannelRole.AUDIO &&
-                shouldSuppressIc705AudioWatchdog(
-                    pttPossiblyAsserted = pttPossiblyAsserted,
-                    nowMillis = now,
-                    graceUntilMillis = audioWatchdogGraceUntilMillis,
-                )
-            ) {
-                return@firstOrNull false
-            }'''
+          old = "\n".join([
+              "            if (",
+              "                runtime.role == Ic705ChannelRole.AUDIO &&",
+              "                (pttPossiblyAsserted || now < audioWatchdogGraceUntilMillis)",
+              "            ) {",
+              "                return@firstOrNull false",
+              "            }",
+          ])
+          new = "\n".join([
+              "            if (",
+              "                runtime.role == Ic705ChannelRole.AUDIO &&",
+              "                shouldSuppressIc705AudioWatchdog(",
+              "                    pttPossiblyAsserted = pttPossiblyAsserted,",
+              "                    nowMillis = now,",
+              "                    graceUntilMillis = audioWatchdogGraceUntilMillis,",
+              "                )",
+              "            ) {",
+              "                return@firstOrNull false",
+              "            }",
+          ])
           if text.count(old) != 1:
               raise SystemExit('audio watchdog suppression block mismatch')
           text = text.replace(old, new, 1)
 
-          old = '''        } catch (_: Ic705ProtocolException) {
-            reportIssue(
-                Ic705RxSessionIssueCode.MALFORMED_PACKET,
-                role,
-                packetDiagnostic(datagram.data, runtime.localId),
-            )
-        } catch (_: IllegalArgumentException) {'''
-          new = '''        } catch (_: IOException) {
-            reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, role)
-            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("$role socket I/O"))
-        } catch (_: Ic705ProtocolException) {
-            reportIssue(
-                Ic705RxSessionIssueCode.MALFORMED_PACKET,
-                role,
-                packetDiagnostic(datagram.data, runtime.localId),
-            )
-        } catch (_: IllegalArgumentException) {'''
+          old = "\n".join([
+              "        } catch (_: Ic705ProtocolException) {",
+              "            reportIssue(",
+              "                Ic705RxSessionIssueCode.MALFORMED_PACKET,",
+              "                role,",
+              "                packetDiagnostic(datagram.data, runtime.localId),",
+              "            )",
+              "        } catch (_: IllegalArgumentException) {",
+          ])
+          new = "\n".join([
+              "        } catch (_: IOException) {",
+              "            reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, role)",
+              "            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure(\"$role socket I/O\"))",
+              "        } catch (_: Ic705ProtocolException) {",
+              "            reportIssue(",
+              "                Ic705RxSessionIssueCode.MALFORMED_PACKET,",
+              "                role,",
+              "                packetDiagnostic(datagram.data, runtime.localId),",
+              "            )",
+              "        } catch (_: IllegalArgumentException) {",
+          ])
           if text.count(old) != 1:
               raise SystemExit('handleDatagram catch block mismatch')
           text = text.replace(old, new, 1)
 
-          old = '''internal fun ic705ChannelWatchdogTimeoutMillis(
-    timing: Ic705RxSessionTiming,
-    role: Ic705ChannelRole,
-): Long = when (role) {
-    Ic705ChannelRole.CONTROL -> timing.channelTimeoutMillis
-    Ic705ChannelRole.CIV -> timing.civChannelTimeoutMillis
-    Ic705ChannelRole.AUDIO -> timing.audioChannelTimeoutMillis
-}
-
-private fun namedDaemonThreadFactory'''
-          new = '''internal fun ic705ChannelWatchdogTimeoutMillis(
-    timing: Ic705RxSessionTiming,
-    role: Ic705ChannelRole,
-): Long = when (role) {
-    Ic705ChannelRole.CONTROL -> timing.channelTimeoutMillis
-    Ic705ChannelRole.CIV -> timing.civChannelTimeoutMillis
-    Ic705ChannelRole.AUDIO -> timing.audioChannelTimeoutMillis
-}
-
-internal fun shouldSuppressIc705AudioWatchdog(
-    pttPossiblyAsserted: Boolean,
-    nowMillis: Long,
-    graceUntilMillis: Long,
-): Boolean = pttPossiblyAsserted || nowMillis < graceUntilMillis
-
-private fun namedDaemonThreadFactory'''
-          if text.count(old) != 1:
+          marker = "\n".join([
+              "internal fun ic705ChannelWatchdogTimeoutMillis(",
+              "    timing: Ic705RxSessionTiming,",
+              "    role: Ic705ChannelRole,",
+              "): Long = when (role) {",
+              "    Ic705ChannelRole.CONTROL -> timing.channelTimeoutMillis",
+              "    Ic705ChannelRole.CIV -> timing.civChannelTimeoutMillis",
+              "    Ic705ChannelRole.AUDIO -> timing.audioChannelTimeoutMillis",
+              "}",
+              "",
+              "private fun namedDaemonThreadFactory",
+          ])
+          replacement = "\n".join([
+              "internal fun ic705ChannelWatchdogTimeoutMillis(",
+              "    timing: Ic705RxSessionTiming,",
+              "    role: Ic705ChannelRole,",
+              "): Long = when (role) {",
+              "    Ic705ChannelRole.CONTROL -> timing.channelTimeoutMillis",
+              "    Ic705ChannelRole.CIV -> timing.civChannelTimeoutMillis",
+              "    Ic705ChannelRole.AUDIO -> timing.audioChannelTimeoutMillis",
+              "}",
+              "",
+              "internal fun shouldSuppressIc705AudioWatchdog(",
+              "    pttPossiblyAsserted: Boolean,",
+              "    nowMillis: Long,",
+              "    graceUntilMillis: Long,",
+              "): Boolean = pttPossiblyAsserted || nowMillis < graceUntilMillis",
+              "",
+              "private fun namedDaemonThreadFactory",
+          ])
+          if text.count(marker) != 1:
               raise SystemExit('watchdog helper insertion point mismatch')
-          session.write_text(text.replace(old, new, 1))
+          text = text.replace(marker, replacement, 1)
+          session.write_text(text)
 
           udp_test = Path('test/java/org/aprsdroid/app/ic705/transport/Ic705UdpChannelTest.kt')
           test_text = udp_test.read_text()
