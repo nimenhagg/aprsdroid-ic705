@@ -203,15 +203,16 @@ android {
 	}
 }
 
+def expectedReleaseTag = "v${mod_version}-ic705"
+
 tasks.register('verifyReleaseVersion') {
 	group = 'verification'
 	description = 'Checks that a CI release tag matches the APK version metadata.'
 	doLast {
 		if (System.getenv('GITHUB_REF_TYPE') == 'tag') {
 			def actualTag = System.getenv('GITHUB_REF_NAME')
-			def expectedTag = "v${mod_version}-ic705"
-			if (actualTag != expectedTag) {
-				throw new GradleException("Release tag ${actualTag} does not match ${expectedTag}")
+			if (actualTag != expectedReleaseTag) {
+				throw new GradleException("Release tag ${actualTag} does not match ${expectedReleaseTag}")
 			}
 		}
 	}

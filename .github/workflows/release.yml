@@ -30,14 +30,14 @@ jobs:
           cache: gradle
 
       - name: Restore ARM64 MinSizeRel MapLibre
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .cache/maplibre-minsizerel/13.5.1/arm64-v8a
           key: maplibre-minsizerel-v1-13.5.1-arm64-v8a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
 
       - name: Restore ARMv7 MinSizeRel MapLibre
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .cache/maplibre-minsizerel/13.5.1/armeabi-v7a
           key: maplibre-minsizerel-v1-13.5.1-armeabi-v7a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
