@@ -14,40 +14,88 @@ jobs:
   benchmark:
     runs-on: ubuntu-24.04
     steps:
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          java-version: '17'
-          distribution: 'temurin'
       - name: Clone MapLibre Native 13.5.1
         run: |
           git clone --depth 1 --branch android-v13.5.1 --recurse-submodules --shallow-submodules \
             https://github.com/maplibre/maplibre-native.git maplibre-native
-      - name: Disable unused low-risk features
+
+      - name: Extend Android size flags to MinSizeRel
         working-directory: maplibre-native
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('platform/android/MapLibreAndroid/build.gradle.kts')
-          s = p.read_text()
-          old = 'arguments("-DMLN_WITH_OPENGL=ON")'
-          new = 'arguments("-DMLN_WITH_OPENGL=ON", "-DMLN_WITH_PMTILES=OFF", "-DMLN_WITH_GLFW=OFF")'
+
+          android_cmake = Path('platform/android/android.cmake')
+          s = android_cmake.read_text()
+          old = 'set(_OPT_CONFIGS "$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>")'
+          new = 'set(_OPT_CONFIGS "$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>")'
           if old not in s:
-              raise SystemExit('OpenGL CMake argument block not found')
-          p.write_text(s.replace(old, new, 1))
+              raise SystemExit('android.cmake optimization config anchor not found')
+          android_cmake.write_text(s.replace(old, new, 1))
+
+          wrapper = Path('platform/android/MapLibreAndroid/src/cpp/CMakeLists.txt')
+          s = wrapper.read_text()
+          old = '$<$<CONFIG:Release>:'
+          new = '$<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:'
+          count = s.count(old)
+          if count < 1:
+              raise SystemExit('Android wrapper Release flag anchors not found')
+          wrapper.write_text(s.replace(old, new))
+          print(f'extended {count} Android wrapper Release-only flags to MinSizeRel')
           PY
-      - name: Build arm64 OpenGL Release SDK
-        working-directory: maplibre-native/platform/android
-        run: |
-          make android-lib-arm-v8 BUILDTYPE=Release RENDERER=opengl JOBS=4
-      - name: Report native size
+
+      - name: Build RelWithDebInfo and MinSizeRel arm64 OpenGL libraries
         working-directory: maplibre-native
         run: |
           set -euo pipefail
-          so=$(find platform/android/MapLibreAndroid/build -type f -path '*/arm64-v8a/libmaplibre.so' | head -n 1)
-          aar=$(find platform/android/MapLibreAndroid/build/outputs/aar -type f -name '*opengl*release*.aar' | head -n 1)
-          test -n "$so"
-          stat -c 'libmaplibre.so bytes=%s path=%n' "$so"
-          if [ -n "$aar" ]; then stat -c 'AAR bytes=%s path=%n' "$aar"; fi
-          file "$so"
-          readelf -S "$so" | grep -E ' \.text| \.rodata| \.data| \.dynsym| \.dynstr' || true
+          NDK=$(find "$ANDROID_HOME/ndk" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)
+          CMAKE=$(find "$ANDROID_HOME/cmake" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)/bin/cmake
+          NINJA=$(find "$ANDROID_HOME/cmake" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n1)/bin/ninja
+          SRC="$PWD/platform/android/MapLibreAndroid/src/cpp"
+
+          build_one() {
+            local type="$1"
+            local out="$PWD/benchmark-$type"
+            "$CMAKE" -S "$SRC" -B "$out" -G Ninja \
+              -DCMAKE_MAKE_PROGRAM="$NINJA" \
+              -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+              -DANDROID_ABI=arm64-v8a \
+              -DANDROID_PLATFORM=android-23 \
+              -DANDROID_STL=c++_static \
+              -DANDROID_CPP_FEATURES=exceptions \
+              -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON \
+              -DCMAKE_BUILD_TYPE="$type" \
+              -DMLN_WITH_OPENGL=ON \
+              -DMLN_WITH_VULKAN=OFF \
+              -DMLN_WITH_WEBGPU=OFF \
+              -DMLN_WITH_GLFW=OFF
+            "$CMAKE" --build "$out" --target maplibre --parallel 4
+          }
+
+          build_one RelWithDebInfo
+          build_one MinSizeRel
+
+      - name: Compare native sizes and flags
+        working-directory: maplibre-native
+        run: |
+          set -euo pipefail
+          rel=$(find benchmark-RelWithDebInfo -type f -name libmaplibre.so | head -n1)
+          min=$(find benchmark-MinSizeRel -type f -name libmaplibre.so | head -n1)
+          test -n "$rel"
+          test -n "$min"
+          rel_size=$(stat -c %s "$rel")
+          min_size=$(stat -c %s "$min")
+          saved=$((rel_size - min_size))
+          python3 - "$rel_size" "$min_size" "$saved" <<'PY'
+          import sys
+          rel, mini, saved = map(int, sys.argv[1:])
+          pct = saved * 100 / rel if rel else 0
+          print(f'RelWithDebInfo bytes={rel}')
+          print(f'MinSizeRel      bytes={mini}')
+          print(f'Saved           bytes={saved} ({pct:.2f}%)')
+          PY
+          echo 'RelWithDebInfo flags:'
+          grep -m1 -E -- ' -O[0-3sz]|-flto' benchmark-RelWithDebInfo/compile_commands.json || true
+          echo 'MinSizeRel flags:'
+          grep -m1 -E -- ' -O[0-3sz]|-flto' benchmark-MinSizeRel/compile_commands.json || true
+          file "$rel" "$min"
