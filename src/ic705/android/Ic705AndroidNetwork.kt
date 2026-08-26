@@ -9,6 +9,8 @@ import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.SocketException
+import org.aprsdroid.app.diagnostic.AppLog
+import org.aprsdroid.app.diagnostic.Ic705DiagnosticState
 import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
 
 /**
@@ -20,21 +22,31 @@ object Ic705WifiNetworkSelector {
         val connectivity = context.getSystemService(Context.CONNECTIVITY_SERVICE)
             as? ConnectivityManager ?: return null
 
-        // 1. Prefer active network if it has Wi-Fi transport
         val active = connectivity.activeNetwork
         if (active != null) {
             val caps = connectivity.getNetworkCapabilities(active)
             if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
+                AppLog.i("IC705.NET", "wifi_selected", mapOf("network" to active.toString(), "source" to "active"))
+                Ic705DiagnosticState.set("network", active.toString())
+                Ic705DiagnosticState.set("network_status", "AVAILABLE")
                 return active
             }
         }
 
-        // 2. Safe scan for attached Wi-Fi networks (e.g. IC-705 AP without internet)
         return runCatching {
             @Suppress("DEPRECATION")
             connectivity.allNetworks.firstOrNull { network ->
                 connectivity.getNetworkCapabilities(network)
                     ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+            }
+        }.onSuccess { network ->
+            if (network != null) {
+                AppLog.i("IC705.NET", "wifi_selected", mapOf("network" to network.toString(), "source" to "scan"))
+                Ic705DiagnosticState.set("network", network.toString())
+                Ic705DiagnosticState.set("network_status", "AVAILABLE")
+            } else {
+                AppLog.w("IC705.NET", "wifi_not_found")
+                Ic705DiagnosticState.set("network_status", "NOT_FOUND")
             }
         }.getOrNull()
     }
@@ -62,16 +74,29 @@ class Ic705AndroidNetworkSocketFactory(
                 localAddress
             }
             socket.bind(bindAddress)
+            AppLog.i(
+                "IC705.NET",
+                "udp_socket_bound",
+                mapOf(
+                    "network" to network.toString(),
+                    "local" to socket.localSocketAddress.toString(),
+                ),
+            )
             return socket
         } catch (error: Exception) {
             socket.close()
+            AppLog.e(
+                "IC705.NET",
+                "udp_socket_bind_failed",
+                mapOf("network" to network.toString(), "requested_local" to localAddress.toString()),
+                error,
+            )
             if (error is SocketException) throw error
             throw SocketException("Could not bind IC-705 UDP socket to Wi-Fi").apply {
                 initCause(error)
             }
         }
     }
-
 }
 
 /** API-isolated entry point whose signature contains only project-owned types. */
@@ -87,6 +112,7 @@ object Ic705AndroidSocketFactoryProvider {
             ?.map { it.address }
             ?.filterIsInstance<Inet4Address>()
             ?.firstOrNull { !it.isAnyLocalAddress && !it.isLoopbackAddress }
+        Ic705DiagnosticState.set("network_ipv4", wifiIpv4Address?.hostAddress)
         return Ic705AndroidNetworkSocketFactory(network, wifiIpv4Address)
     }
 }
