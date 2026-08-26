@@ -20,6 +20,7 @@ object Ic705DiagnosticState {
             "network_validated",
             "network_interface",
             "network_addresses",
+            "network_ipv4",
         ).forEach { AppLog.setState("ic705.$it", null) }
     }
 }
