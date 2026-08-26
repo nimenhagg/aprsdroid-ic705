@@ -1,214 +1,338 @@
 # APRSdroid IC-705 Mod：工程与 AI 交接上下文
 
-> 本文是维护者和 AI 编程助手的事实基线。修改代码前先核对本文与实际实现；若两者冲突，以代码、测试和当前构建配置为准，并在同一次变更中修正文档。
+> 本文是维护者和 AI 编程助手的当前事实基线。若本文与代码、测试、Gradle 配置或 CI 行为冲突，以代码和可复现验证为准，并在同一次变更中修正文档。
 
-## 1. 当前发布基线
+## 1. 版本基线与 main 状态
+
+### 最新稳定版
 
 | 项目 | 当前值 |
 | --- | --- |
-| 版本 | `1.9.1-ic705` |
-| Android versionCode | `2026082591` |
-| 上游基线 | APRSdroid `v1.7.0` |
+| 最新 GitHub Release | `v1.9.2-ic705` |
+| `build.gradle` 默认版本 | `1.9.2` |
+| Android versionCode | `2026082692` |
+| 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 25`，`compileSdk 37`，`targetSdk 37` |
-| 原生 ABI | `arm64-v8a`、`armeabi-v7a`、`x86`、`x86_64` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
-| 语言/编译器 | AGP 9 内置 Kotlin `2.3.21`，Compose Compiler `2.3.21`，Java `17` |
+| Kotlin / Compose Compiler | AGP 9 built-in Kotlin `2.3.21` / Compose Compiler `2.3.21` |
+| Java | `17` |
 | 核心库 | AppCompat `1.8.0`，Material `1.14.0`，OkHttp `5.3.0`，Core-KTX `1.19.0`，Lifecycle `2.11.0` |
-| UI | 100% Jetpack Compose + Material 3 (XML layout 已全部清除) |
+| 地图 | MapLibre Native `13.5.1` + Google Maps SDK |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
-| 地图 | MapLibre Native `13.5.1` + Google Maps SDK `20.0.0` |
-| 发布标签 | `v1.9.1-ic705` |
+| UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-Java 17 是 AGP 9.3 的默认与最低 JDK 基线。没有明确需求和完整兼容性验证时，不要仅为提高版本号切换 Java 21。
+### 当前 main 的未发布变更
+
+`main` 已经位于 1.9.2 Release 之后，当前包含但尚未对应新 tag 的功能：
+
+- IC-705 session/TX 稳定性修复：TX 与 teardown 竞态、UDP send/close 同步、PTT timer 生命周期、严格发送失败传播、AUDIO TX watchdog 抑制与 PTT 后 grace。
+- CI-V / AUDIO stream-local soft recovery；连续局部恢复失败后才升级为完整 session reconnect。
+- 持久化结构化诊断日志、Android Network 生命周期日志、诊断 ZIP 导出和源码 revision 记录。
+- 设置页手动检查 GitHub Releases。
+
+**重要：不要因为 main 有新功能就把这些功能写成“已发布”。** README 应同时区分 “Latest release” 与 “Current main”。除非正在准备正式发布，否则不要顺手提高 `mod_version` / `versionCode` 或创建 tag。
+
+Java 17 是当前构建基线。没有明确需求与完整兼容性验证时，不要仅为了数字更新切换 Java 21。
 
 ## 2. 项目目标与边界
 
-本 Fork 在 APRSdroid 上增加 Icom IC-705 Wi-Fi 直连 APRS 收发，同时保留 APRS-IS、AFSK、KISS、TNC2、Kenwood、蓝牙、USB 和 TCP TNC 等原有路径。主要目标：
+本 Fork 在 APRSdroid 上增加 Icom IC-705 Wi-Fi 直连 APRS 收发，并保留 APRS-IS、AFSK、KISS、TNC2、Kenwood、蓝牙、USB、LAN TCP TNC 等原有路径。
+
+主要目标：
 
 - 手机与 IC-705 通过 WLAN UDP 会话通信，不依赖音频线或外接 TNC。
-- IC-705 UDP Socket 绑定到选定 Wi-Fi `Network`，避免把 APRS-IS 等互联网连接整体绑到无互联网的电台热点。
+- IC-705 UDP Socket 单独绑定 Android 选定 Wi-Fi `Network`，不把 APRS-IS 等互联网流量整体绑到无互联网的电台热点。
 - 使用 AX.25 + AFSK1200 + 12 kHz 单声道 PCM 进行收发，以 CI-V 控制 PTT。
-- 保留 Material 3 / Material You 界面、消息、日志、台站、地图和定位功能。
+- 在厂商 Wi-Fi 栈、线程调度和网络切换存在差异时，尽可能通过角色化 liveness 和局部恢复保持会话稳定。
+- 保留 Compose Material 3 UI、消息、日志、台站、地图和定位能力。
 
-### 明确的非目标
+### 明确的非目标 / 不应擅自改变的边界
 
-- IC-705 LAN 和用户指定的 APRS 服务器可能使用明文 UDP/TCP。`android:usesCleartextTraffic="true"` 是当前兼容性决定；1.8.0 未改变传输协议或加入 TLS。HTTP POST 使用 `HttpURLConnection`，但裸主机仍兼容明文 `http://:8080/`。除非维护者明确要求并能提供服务器/电台测试条件，不要擅自强制 TLS、删除明文能力或改变证书逻辑。
-- 不保证在模拟器中完成无线电硬件验证。协议单测、构建和 Lint 通过不能替代真机、真电台、低功率/假负载测试。
+- IC-705 LAN 协议和部分 APRS 服务器本身使用明文 UDP/TCP；`android:usesCleartextTraffic="true"` 是兼容性决定。HTTP POST 使用 `HttpURLConnection`，裸主机仍兼容 `http://:8080/`。没有明确测试条件时不要擅自强制 TLS 或删除明文能力。
+- 模拟器、JVM 单测、Lint 与 Release 构建不能替代真机、真电台、低功率/假负载验证。
+- 软件 PTT watchdog 不是硬件互锁；不能把“本地状态重置”当作“电台已经实际回到 RX”的证据。
+- 手动更新检查必须保持**显式用户操作**：不得在启动、后台、WorkManager、Alarm、前台/后台 Service 中自动或周期检查，也不得自动下载/安装 APK，除非维护者明确重新定义产品行为。
 
-## 3. 目录与构建特点
+## 3. 目录与构建结构
 
 该仓库保留 APRSdroid 的非标准单模块布局：
 
 | 路径 | 内容 |
 | --- | --- |
-| `src/` | Kotlin、Java 生产源码；AGP 9 中同时声明为 Java/Kotlin source set |
-| `src/ic705/` | IC-705 codec、transport、session、backend、diagnostic |
-| `src/audio/` | AFSK1200 与 PCM 抽象/实现 |
-| `res/` | Android XML、字符串、主题和图标 |
+| `src/` | Kotlin / Java 生产源码 |
+| `src/ic705/` | IC-705 protocol / transport / session / backend / diagnostic |
+| `src/audio/` | AFSK1200 与 PCM 相关实现 |
+| `src/diagnostic/` | 持久化日志、Network 事件、诊断快照与 ZIP 导出 |
+| `src/update/` | 手动 GitHub Release 检查 |
+| `res/` | values、drawable、mipmap、menu 等 Android 资源；**没有生产 `res/layout` 页面** |
 | `test/java/` | JVM 单元测试 |
-| `androidTest/java/` | Android 仪器测试 |
-| `.github/workflows/` | 测试、Lint、Release APK 与 GitHub Release 流水线 |
+| `androidTest/java/` | Android instrumentation 测试 |
+| `.github/workflows/` | 测试、Lint、Release APK / GitHub Release 流水线 |
 
-AGP 9 使用 built-in Kotlin：不要重新应用 `org.jetbrains.kotlin.android`。Compose 编译器插件版本应与 Kotlin 版本一致。
+AGP 9 使用 built-in Kotlin；不要重新应用 `org.jetbrains.kotlin.android`。Compose 编译器版本与 Kotlin 版本保持一致。
 
-### 地图架构
+### Product flavors / 发布包
 
-- `MapAct` 使用 MapLibre Native 13.5.1 渲染高德、OpenStreetMap 与自定义在线栅格瓦片；`GoogleMapAct` 只处理 Google 普通地图和卫星地图。图源切换必须进入对应 Activity，不要重新在 Google SDK 中实现 MapLibre 图源。
-- Gradle 保留五种互斥 product flavor：`arm64Vulkan`、`arm64Opengl`、`arm32Opengl`、`x86Multi`、`x8664Multi`。每个 APK 只包含其命名 ABI；不要重新合并成通用 APK。
-- GitHub Release 当前只构建并发布 `arm64Opengl`（文件名前缀 `Recommended_`）和 `arm32Opengl`。ARM64 Vulkan 与 x86/x86_64 双后端 flavor 仅供按需自行构建；修改依赖时仍须保证所有 flavor 可解析和编译。
-- 不依赖可选的 MapLibre Offline 插件，代码中不得引用 `org.maplibre.android.offline`，也没有离线区域下载/管理 UI。MapLibre 主 AAR 内部自带的 API 类不等于项目启用了 Offline 功能。
-- OSM 在线瓦片请求通过 MapLibre 的共享 OkHttp 客户端发送可识别的应用 User-Agent；地图页面必须始终提供可点击的 `© OpenStreetMap contributors` 署名。不得加入批量抓瓦片、预取整个区域或绕过 OSM 服务政策的功能。
-- Google Maps key 只能由 `MAPS_API_KEY` 环境变量、同名 Gradle property 或未纳入版本控制的 `local.properties` 中 `mapsApiKey` 注入，不得提交密钥。未配置 key 的自编译版本会隐藏 Google 普通/卫星图源并回退到 OSM。
-- 地图页面继续复用 `mapview.xml` 的现有 Material 控件；APRS 台站通过 GeoJSON `SymbolLayer` 呈现，缩放 10 级起显示呼号组合图标。
+Gradle 保留五种目标规格：
 
-### Release 压缩与可诊断性
+- `arm64Vulkan`
+- `arm64Opengl`
+- `arm32Opengl`
+- `x86Multi`
+- `x8664Multi`
 
-- Release 构建启用 R8 `minifyEnabled` 和 `shrinkResources`。不要重新加入全局 `-dontobfuscate`，也不要为了消除第三方 native strip 提示关闭压缩。
-- 修改 JNI、序列化、反射或 MapLibre 集成时必须在 Release 构建中验证，并仅添加必要的 keep 规则。
-- CI 为每个正式发布的 Release flavor 保存 R8 `mapping.txt`；崩溃反混淆应使用与 APK 完全匹配的映射文件。
+正式 GitHub Release 当前只发布：
 
-## 4. IC-705 数据流
+- `arm64Opengl`，文件名前缀 `Recommended_`
+- `arm32Opengl`
 
-主要调用链：
+ARM64 Vulkan 与 x86/x86_64 变体保留用于源码构建和兼容性验证。不要未经设计讨论重新合并成 Universal APK。
 
-1. `AprsService` 根据 `PrefsWrapper` 选择 `AprsBackend`。
+## 4. UI 与地图事实
+
+- 主 UI 已迁移到 Jetpack Compose + Material 3。
+- 不要恢复历史 `res/layout` 页面，也不要在 AI_CONTEXT 中继续引用已经删除的 `mapview.xml`。
+- `MapAct` 使用 MapLibre Native 渲染高德、OpenStreetMap 和自定义在线瓦片；`GoogleMapAct` 负责 Google 普通/卫星类图源。
+- APRS 台站、呼号标签等通过 MapLibre 图层渲染。
+- MapLibre Offline 区域下载/管理不是当前功能；不要把主 AAR 中存在 offline API 类误写成项目启用了离线地图。
+- OSM 必须保留可识别 User-Agent 与可点击的 `© OpenStreetMap contributors` 署名，不得批量抓瓦片或预取整个区域。
+- Google Maps Key 只允许从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳入版本控制的 `local.properties` 中 `mapsApiKey` 注入；不得提交 Key。未配置 Key 时自行构建版本隐藏 Google 图源。
+
+## 5. IC-705 数据流
+
+主要链路：
+
+1. `AprsService` 根据 `PrefsWrapper` 选择后端。
 2. `Ic705WifiBackend` 适配 APRSdroid Service/Prefs 到 `Ic705WifiBackendController`。
-3. Controller 建立 `Ic705RxSession`，并把接收 PCM 送入 `FeedableAfskDecoder`。
-4. 接收链：Wi-Fi UDP → `Ic705AudioPacketCodec` → PCM16LE → AFSK1200 → AX.25/APRS。
-5. 发射链：APRS → AX.25 → `Afsk1200PcmGenerator` → `Ic705TxAudioPacketizer` → CI-V PTT ON → Audio UDP → CI-V PTT OFF。
+3. Controller 创建一代（generation）`Ic705RxSession`，并把接收 PCM 送入 `FeedableAfskDecoder`。
+4. RX：Wi-Fi UDP → `Ic705AudioPacketCodec` → PCM16LE → AFSK1200 → AX.25/APRS。
+5. TX：APRS/AX.25 → `Afsk1200PcmGenerator` → `Ic705TxAudioPacketizer` → CI-V PTT ON → Audio UDP → CI-V PTT OFF。
 
-默认控制端口是 UDP `50001`，CI-V 和 Audio 通常为其后两个端口。协商采样率与当前编解码路径是 12 kHz。协议捕获中关于 48 kHz RS-BA1 的注释可能描述历史/参考抓包，不能据此把当前默认 DSP 链改为 48 kHz。
+默认 control 端口是 UDP `50001`。CI-V 与 AUDIO 端口由会话协商。当前 DSP/codec 路径是 12 kHz；历史协议抓包中的 48 kHz RS-BA1 注释不能作为修改当前默认采样率的依据。
 
-## 5. 射频安全不变量
+## 6. IC-705 liveness 与恢复模型
 
-修改发射代码时必须保持以下语义：
+不要重新回到“任意通道 N 秒没包就销毁整个 session”的模型。
 
-- PTT ON 只能在会话与发送条件满足后发生。
-- 音频发送结束、失败、取消、关闭或超时都必须尝试 PTT OFF。
-- `Ic705PttStateMachine` 的绝对超时看门狗默认 5 秒；PTT OFF 发送失败时看门狗继续保留，以便重试安全释放。
-- 不得在日志、异常、`toString()` 或诊断 UI 中输出 IC-705 用户名/密码明文。
-- 修改 PTT 状态机、音频包节奏、序号或会话关闭顺序时必须增加/更新测试。
+`Ic705RxSessionTiming` 当前默认值：
 
-软件看门狗不是硬件互锁。发布说明和用户文档应继续建议低功率或假负载首测。
+| 参数 | 默认值 | 语义 |
+| --- | ---: | --- |
+| CONTROL timeout | `5000 ms` | session 级权威存活信号 |
+| CI-V timeout | `3000 ms` | 控制流存活；优先局部恢复 |
+| AUDIO timeout | `30000 ms` | RX 音频允许较长静默 |
+| AUDIO post-TX grace | `5000 ms` | PTT OFF ACK 后等待 RX 音频恢复 |
+| stream recovery wait | `3000 ms` | 单次 stream rediscovery 等待新流量 |
+| stream recovery attempts | `2` | 局部恢复次数上限 |
+| watchdog cadence | `500 ms` | liveness 检查周期 |
 
-## 6. Android 17 权限与服务启动
+### 角色规则
+
+- **CONTROL**：超时属于 session 级失败，进入完整 recovery/reconnect。
+- **CI-V**：RX/空闲状态超时先做 stream rediscovery；若局部恢复连续失败，再升级完整 reconnect。PTT 期间 CI-V 是安全关键控制路径，故障不应通过“悄悄重开流”掩盖 PTT 状态不确定性。
+- **AUDIO**：允许 30 秒 RX 静默；TX 期间 AUDIO RX 静默不能触发 session teardown。PTT OFF ACK 后还有 5 秒 grace。真正长时间失活先局部恢复，失败后再升级。
+
+soft recovery 的 STARTED / SUCCEEDED / ESCALATED 等关键决策应进入 `AppLog`，便于真机诊断。
+
+## 7. TX / PTT 安全不变量
+
+`Ic705PttStateMachine` 当前状态：
+
+- `RX_IDLE`
+- `TX_STREAMING`
+- `DRAINING`
+
+必须保持以下语义：
+
+- PTT ON 只能在会话与 TX 条件满足后发生。
+- `canStreamAudio` 只在 `TX_STREAMING` 为 true；进入 `DRAINING` 后 TX audio 必须停止。
+- “radio 可能仍然被 PTT”与“允许继续发音频”是不同概念，不要合并成一个 Boolean。
+- PTT OFF 只有收到电台 ACK 后才能确认释放并回到安全 RX 状态；UDP 本地 `send()` 成功不是电台 ACK。
+- PTT OFF 失败/NAK/ACK 丢失时不得伪造 `RX_IDLE`；看门狗应保留保守状态并继续有限安全释放逻辑。
+- `shutdown()` 只终止当前 PTT coordinator 的本地 timer/callback 生命周期，防止 zombie watchdog；**shutdown 不等于电台已经释放 PTT**。
+- session 永久销毁前必须停止 TX audio，并在 CI-V transport 尚可用时尽最大可能请求 PTT OFF，然后再终止 coordinator 和 socket 生命周期。
+- 修改 PTT、ACK、音频 drain、packet sequence、retransmit 或 teardown 顺序时必须补/改测试。
+
+## 8. UDP / tracked packet 并发规则
+
+华为 Android 12 真机曾暴露以下历史竞态：session teardown 与 TX executor 同时发生时，TX 线程可能撞到 `AUDIO channel missing`、`channel not open` 或 `Socket closed`。
+
+当前约束：
+
+- UDP channel 的 send/close 生命周期必须保证不会出现可避免的本地 close/send 竞态。
+- TX loop 必须观察 session phase 与 `canStreamAudio`，不能在 recovery/teardown 后继续盲发 AUDIO。
+- 关键 PTT/控制发送不能把 transport 异常完全吞掉；调用方必须知道发送失败。
+- tracked packet 若实际 UDP send 失败，不应长期留在 retransmit store 中制造“未真正发送但以后又被重传”的假历史。
+- teardown、PTT retry/watchdog 与 reconnect generation 的生命周期必须封闭，旧 generation 不能留下继续运行的 PTT timer。
+
+不要增加 Huawei/Pixel 型号特判来掩盖这些问题；应保持设备无关的状态机语义。
+
+## 9. 持久化诊断系统
+
+正式故障报告不再依赖“导出时抓最后 600 行 logcat”。
+
+### `AppLog`
+
+`src/diagnostic/AppLog.kt`：
+
+- 同时写 Android Logcat 与应用内 JSONL。
+- 日志位于 `noBackupFilesDir/diagnostic_events/`。
+- 当前文件上限约 `1 MiB`，保留 `4` 个历史归档，加当前文件约 `5 MiB`。
+- 单线程 executor 顺序落盘。
+- 未捕获异常会记录 crash、thread、exception/stack，并尽力 flush 后交回系统/原 crash handler。
+- `process_start` 记录 PID、`VERSION_NAME`、`VERSION_CODE`、build type、`SOURCE_REVISION`。
+- 密码、passcode、secret、token、精确纬经度字段自动脱敏。
+
+### Network 诊断
+
+`NetworkEventLogger` 记录 Android `NetworkCallback` 的关键生命周期，包括 available/lost、Capabilities 与 LinkProperties 变化。目标是区分：
+
+1. Android/厂商 Wi-Fi `Network` 真正丢失；
+2. Wi-Fi 仍在，但 IC-705 CONTROL/CI-V/AUDIO/session 自身失活。
+
+### 导出
+
+设置页“分享系统诊断与运行日志”通过 `LogReportManager` 生成 ZIP，包含人类可读报告和持久 JSONL 事件文件。导出逻辑运行在后台线程并通过 `FileProvider` 分享。
+
+新增 IC-705/network/reconnect/PTT 逻辑时，优先增加**结构化事件**，不要只加难以关联的 `Log.d()` 文本。
+
+## 10. 手动更新检查
+
+实现位于 `src/update/`，设置入口位于“应用支持与关于”。
+
+必须保持：
+
+- 用户点击“检查更新”后才访问 GitHub Releases。
+- 不在 `Application` / Activity 启动时自动调用。
+- 不保存“下次检查时间”并偷偷周期联网。
+- 不引入 WorkManager、AlarmManager、后台 Service 做更新轮询。
+- 不自动下载或安装 APK。
+- 发现新稳定版时仅提示当前/最新版本并打开 GitHub Release 页面。
+- 版本比较逻辑应由 JVM 单测覆盖。
+
+若以后确实要做自动更新，必须作为独立产品决策重新设计，而不是在现有 checker 上顺手加定时逻辑。
+
+## 11. Android 17 权限与服务启动
 
 API 37 的 `ACCESS_LOCAL_NETWORK` 是运行时权限。当前策略：
 
-- IC-705 Wi-Fi (`ic705`) 与局域网 TCP TNC (`tcpip`) 在 Android 17+ 请求本地网络权限。
-- 公网 APRS-IS TCP/HTTP/UDP 不请求本地网络权限。
-- `BaseRecyclerActivity.startAprsServiceWithPermissions()` 在启动前台服务前统一组合后端权限与位置来源权限。
-- Android 13+ 请求通知权限；AFSK 后端请求麦克风；蓝牙后端请求对应蓝牙权限；定位权限由位置来源决定。
+- IC-705 Wi-Fi (`ic705`) 与 LAN TCP TNC (`tcpip`) 在 Android 17+ 请求本地网络权限。
+- 公网 APRS-IS TCP/HTTP/UDP 不因自身连接请求本地网络权限。
+- Android 13+ 前台服务通知遵守通知权限要求。
+- AFSK 后端按需请求麦克风；蓝牙路径按需请求对应蓝牙权限；定位权限由位置来源决定。
 - 停止服务不应被新增权限拦截。
+- 新增服务入口必须复用当前统一权限链，不要绕过运行时授权直接启动 APRS 服务。
 
-新增服务入口时必须复用统一启动函数，不能绕过权限链直接启动 APRS 服务。USB attach 的恢复入口属于独立的系统事件路径，修改前需单独评估后台启动限制。
+USB attach 属于系统事件路径，修改时单独评估后台启动限制。
 
-## 7. 代码约定
+## 12. 配置导入与敏感数据
 
-- 新业务代码优先 Kotlin；尊重已有 Java/JNI 边界。
-- 后台 I/O 使用现有 Executor/调度器，不在主线程做 Socket、数据库或 DSP 重活。
-- UI 新页面优先 Compose Material 3；维护旧 View 页面时不要引入第二套不一致主题。
-- 使用 AndroidX API，避免重新引入 `android.preference.*` 或旧 Support Test 包。
-- HTTP 后端使用 `HttpURLConnection`；不要重新加入 `org.apache.http.legacy` 或 Apache `DefaultHttpClient`。
-- 文档提供器 URI 必须通过 `ContentResolver` 流读取；不要查询 `_data`、把 `content://` 当作 `File`，或自行拼接 `/storage` 路径。
-- 权限与页面结果使用 AndroidX Activity Result launcher；待处理动作必须跨 Activity 重建保存，网络/Socket 关闭必须幂等。
-- 不记录口令、密钥、完整鉴权包或未经脱敏的用户数据。
-- 文档中的端口、采样率、版本与权限必须从实现核对，不凭历史 README 推断。
+- 配置导入使用 Android `OpenDocument` / `ContentResolver` 直接读取 `content://` 流。
+- 不查询 `_data`，不把 `content://` 强转成 `File`，不拼 `/storage/...` 绝对路径。
+- 导入必须保留键 allowlist、类型、大小、字符串长度限制。
+- `service_running`、`firstrun` 等运行状态不得被外部 profile 覆盖。
+- 日志、异常、诊断 UI、`toString()` 不输出密码、passcode、token、secret 或完整鉴权数据。
 
-## 8. 验证命令
+## 13. 代码约定
 
-本地发布前至少运行：
+- 新业务代码优先 Kotlin；尊重现有 Java/JNI 边界。
+- 后台 I/O 使用现有 executor/调度器，不在主线程做 Socket、数据库、DSP 或 GitHub API I/O。
+- UI 页面使用 Compose Material 3；不要为了小功能重新引入第二套 XML View 页面。
+- 使用 AndroidX API；不要重新引入 `android.preference.*` 或旧 Support Test 包。
+- HTTP 后端保持 `HttpURLConnection`，不要恢复 Apache `DefaultHttpClient` / `org.apache.http.legacy`。
+- Activity 结果与文档选择使用 Activity Result API。
+- Socket/channel close 必须幂等；异步 timer/callback 必须有明确 owner 生命周期和 shutdown/cancel 路径。
+- 文档中的端口、采样率、版本、权限和行为必须从实现核对，不从旧 README/旧 Release 文案反推当前代码。
+
+## 14. 验证命令
+
+常用完整验证：
 
 ```bash
-./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleRelease --no-daemon --stacktrace
+./gradlew verifyReleaseVersion \
+  testArm64OpenglDebugUnitTest \
+  lintArm64OpenglDebug \
+  assembleArm64OpenglRelease \
+  assembleArm32OpenglRelease \
+  --no-daemon --stacktrace
 ```
 
-Windows PowerShell 使用 `./gradlew.bat`。API 37 SDK 未安装但许可证已接受时，可以临时传入：
+需要验证全部源码 flavor 时可运行：
 
-```powershell
-./gradlew.bat testArm64OpenglDebugUnitTest '-Pandroid.builder.sdkDownload=true' --no-daemon
+```bash
+./gradlew assembleRelease --no-daemon --stacktrace
 ```
 
-对于发射链变更，还应执行以下人工验证：
+Windows PowerShell 使用 `./gradlew.bat`。
 
-1. IC-705 诊断页可连接、接收 PCM 并观察解码统计。
-2. 低功率/假负载下单次发射，确认 PTT ON、音频、PTT OFF 顺序。
-3. 发射过程中断开 Wi-Fi，确认看门狗/关闭路径会尝试释放 PTT。
-4. 电台 Wi-Fi 在线时确认蜂窝 APRS-IS 路由未被整体绑到 Wi-Fi。
-5. Android 17 真机首次授权、拒绝后重试及从设置页恢复权限。
+### IC-705 人工验证
 
-## 9. 版本与发布流程
+涉及 session/TX/recovery 的改动，自动测试通过后仍至少验证：
 
-发布必须保持以下内容一致：
+1. IC-705 诊断页能连接、持续接收 PCM、AFSK 解码正常。
+2. 低功率/假负载下单次 TX：PTT ON → audio → PTT OFF ACK 顺序正确。
+3. 连续多次 TX/RX 切换不出现假 `RX_IDLE`、AUDIO 线程继续发送或 PTT timer 累积。
+4. TX 中断网时不会发生 `Socket closed`/missing channel 导致进程崩溃；PTT 释放语义保持保守。
+5. RX AUDIO 长时间静默、PTT 期间 AUDIO 静默不会无故重建整个 session。
+6. CI-V/AUDIO timeout 优先局部恢复；CONTROL timeout 或局部恢复失败才升级完整 reconnect。
+7. 电台 Wi-Fi 在线时，APRS-IS 的默认互联网路径没有被整个 App 绑定到 Wi-Fi。
+8. Android 17 首次授权、拒绝、重新授权和本地网络权限行为正确。
+9. 故障后导出的诊断 ZIP 能看到 source revision、network lifecycle、session/generation、soft recovery 和 PTT 时间线。
 
-1. `build.gradle` 的 `mod_version` 与递增的 `mod_version_code`。
-2. `CHANGELOG.md` 顶部新增对应版本。
-3. `README.md` 和本文中的当前版本/工具链事实。
-4. 标签严格使用 `v<major.minor.patch>-ic705`。
-5. 先运行完整验证，再提交并创建标签；不要移动已经发布的标签。
+## 15. R8 与 Release 可诊断性
 
-CI 的 `verifyReleaseVersion` 会在 Tag 构建中检查标签是否等于 `v${mod_version}-ic705`。工作流随后测试、Lint，构建 ARM64/ARMv7 两个经 R8 压缩的 OpenGL APK，签名、校验 ABI/渲染后端、生成 `SHA256SUMS.txt`，并创建 GitHub Release。正式 Tag 缺少签名 secrets 时必须失败，不能发布未签名 APK；`MAPS_API_KEY` 从 GitHub Actions secret 注入。
+- Release 启用 R8 `minifyEnabled` 与 `shrinkResources`。
+- 不要重新加入全局 `-dontobfuscate`。
+- JNI、反射、序列化、MapLibre 集成变更必须在 Release 构建中验证，只添加必要 keep 规则。
+- Tag Release CI 保存正式发布 flavor 的 `mapping.txt`；反混淆必须使用与 APK 完全匹配的 mapping。
+- `BuildConfig.SOURCE_REVISION` 来自 Git/GitHub SHA，用于诊断精确确认测试 APK 对应源码；不要删掉这个字段。
 
-## 10. 更新日志写作规范
+## 16. 版本与发布流程
 
-CHANGELOG.md 是面向用户和协作者的工程记录，不是营销材料。写更新日志时遵守以下规则：
+正式发布时保持一致：
 
-### 语气与用词
+1. `build.gradle`：`mod_version` 与递增的 `mod_version_code`。
+2. `CHANGELOG.md`：顶部新增对应版本，内容只写实际进入该 tag 的改动。
+3. `README.md`：更新 Latest release，并移除/调整已经发布的 “main unreleased” 描述。
+4. `AI_CONTEXT.md`：更新发布基线与仍未发布的 main 状态。
+5. tag 使用 `v<major.minor.patch>-ic705`。
 
-- 陈述事实，不堆砌修饰。禁止使用"彻底"、"全面"、"全量"、"极致"、"丝滑"、"告别"、"淘汰"、"秒级"、"革命性"等营销词汇，除非它们是唯一准确的技术描述（几乎不可能）。
+CI `verifyReleaseVersion` 会在 tag 构建时检查 tag 与 APK 版本一致。Release workflow 会测试、Lint、构建 ARM64/ARMv7 OpenGL APK，必要时签名，校验 ABI/MapLibre 后端，生成 `SHA256SUMS.txt`、R8 mapping，并在 tag 时创建 GitHub Release。正式 tag 缺少签名 secrets 或必要 Maps Key 时必须失败，不能悄悄发布不符合预期的包。
+
+`main` 普通 push 也会触发构建验证，但不等于创建新 GitHub Release。
+
+## 17. CHANGELOG 写作规范
+
+CHANGELOG 是工程记录，不是营销文案。
+
+- 陈述事实，不堆砌“彻底、全面、极致、丝滑、革命性、告别”等营销词。
 - 不使用 emoji 作为标题或条目前缀。
-- 一个改动写一行。小修（改颜色、换图标、调边距）不要扩写成整段文字。
-- 如果一个版本只做了一件事，就写一行，不要凑篇幅。
+- 一个用户可感知或工程上重要的改动写一行；小改动不要扩成发布会文案。
+- `Added / Fixed / Changed / Removed` 按需出现，没有内容的分类不写。
+- 对安全/网络问题写清“原因 + 行为变化”，避免只有“修复 Bug”。
 
-### 格式
+示例：
 
-每个版本使用以下结构，省略没有内容的分类：
+错误：
+> 全面重构 IC-705 网络层，彻底告别断线！
 
-```markdown
-## [vX.Y.Z-ic705] - YYYY-MM-DD
+正确：
+> CI-V 与 AUDIO timeout 改为先执行 stream-local recovery；连续恢复失败后才升级为完整 session reconnect。
 
-### Added
-- 新增了什么功能，一句话说清楚。
+## 18. 历史迁移：只保留仍影响当前维护的事实
 
-### Fixed
-- 修复了什么问题。说明原因和影响，不要只写"修复 Bug"。
+以下迁移已经完成，不应在新代码中反向恢复：
 
-### Changed
-- 改变了什么行为或实现方式。
+- Gradle 9.5 / AGP 9.3.2 / built-in Kotlin / API 37 / Java 17。
+- 生产 UI 已迁移到 Compose Material 3，历史 `res/layout` 页面已删除。
+- Mapsforge 与专用离线瓦片下载器已移除；当前地图为 MapLibre + Google Maps SDK 分工。
+- 外部存储读写权限已删除；文档导入/导出使用 SAF / `ContentResolver`。
+- HTTP POST 已从 Apache HTTP 客户端迁移到 `HttpURLConnection`。
+- Release 使用 R8 压缩/资源裁剪并保留 mapping。
+- Android 17 本地网络权限已接入 IC-705 / LAN TCP TNC 路径。
+- 配置导入已经过 allowlist/类型/大小/状态项加固。
+- PTT OFF 已改为 ACK 确认语义，不允许“本地 UDP 发送成功 = 已释放”。
+- IC-705 watchdog 已从统一短超时演进为 CONTROL/CI-V/AUDIO 角色化 liveness + stream-local recovery。
+- 诊断已从依赖 logcat 尾部升级为持久化结构化事件 + Network 生命周期 + ZIP 导出。
 
-### Removed
-- 删除了什么代码、文件或功能。
-```
-
-### 禁止事项
-
-- 不要把 `AlertDialog.Builder` 换成 `MaterialAlertDialogBuilder` 写成"全面现代化重构"。
-- 不要把修一个 null 判断写成"深度安全加固"。
-- 不要用"告别 Android 2.x 古董时代"之类的说法——直接写"移除旧版 ZoomButtonsController，改用自定义缩放控件"。
-- 不要每个版本都写得像产品发布会。大部分版本就是日常迭代，如实记录即可。
-
-### 对比示例
-
-错误写法：
-> 🌟 **全面现代化重构短消息聊天界面（Material 3 极致体验）**：彻底淘汰旧版古董布局，引入如原生 Pixel 般丝滑的声明式 Compose 气泡会话……
-
-正确写法：
-> 消息聊天页从 XML RecyclerView 迁移到 Compose `MessageChatScreen`，使用 Material 3 气泡布局，支持发送状态显示和长按操作菜单。
-
-## 11. 历史迁移与交接状态
-
-- 构建链已迁移到 Gradle 9.5.0 / AGP 9.3.2 / built-in Kotlin 2.3.21 / API 37。
-- Java 源与字节码目标保持 17。
-- Android 17 本地网络权限已按 IC-705 与 LAN TNC 后端接入统一服务启动链。
-- README 已扩充为中英双语用户/开发指南，并记录五种 APK 的 ABI 与地图渲染边界。
-- Compose 迁移后无引用的 RecyclerView 外壳、旧 XML 布局和未参与构建的 `PacketDroid` 子模块已移除；根目录中实际使用的 AFSK/AX.25 路径保留。
-- 地图、铃声和运行时权限均使用 Activity Result launcher；外部存储权限已删除。配置导出使用 SAF `CreateDocument`，日志导出继续通过应用专属目录与 `FileProvider` 分享。
-- HTTP POST 后端已迁移到 `HttpURLConnection`，Gradle 与 Manifest 不再依赖 `org.apache.http.legacy`。
-- 配置导入使用 Activity Result `OpenDocument` 和 `ContentResolver` 流；不可达的 map/theme 文件选择器及 86 个无引用资源标识已从全部语言文件同步移除，默认资源、58 个 locale 目录与活动翻译保持完整。
-- Android Lint 从 1001 项降为 `No issues found`，未引入 baseline；TLS 兼容项仅做窄范围说明性抑制，行为未改。
-- Mapsforge 0.3.0、专用瓦片下载器和遗留 ProGuard 规则已移除；高德、OSM、自定义图源迁移到 MapLibre，Google 图源仍使用 Google SDK。
-- MapLibre 改为五种 ABI/后端规格：推荐 ARM64 Vulkan、ARM64 OpenGL 兼容、ARMv7 OpenGL、x86 双后端和 x86_64 双后端；未加入可选 Offline 插件或离线地图功能。
-- OSM 图源增加可识别 User-Agent 和常驻可点击署名；Google Maps key 改为构建时 secret/property 注入，未配置 key 的构建会隐藏不可用的 Google 图源。
-- Release 已启用 R8 代码混淆压缩和资源裁剪，并在 CI 中保存每种 flavor 的映射文件。推荐 ARM64 Vulkan 未签名本地 APK 由旧双后端约 40.6 MiB 降至约 18.2 MiB。
-- TLS 未修改，明文兼容行为保持不变。
-- 1.8.0 已完成 134 项 JVM 测试（133 通过、1 跳过）、Android Lint（0 error、0 warning）、五种 R8 Release APK 与 instrumentation APK 编译；APK 元数据为 API 25/37，每个 APK 仅含对应 ABI，ARM 包含指定的单后端，x86 包包含双后端。仍需在具备硬件时补做 MapLibre Vulkan/OpenGL 真机地图、Google Maps key 限制验证与 IC-705 收发验证。
+不要在本文继续堆积每个旧版本的完成清单；历史细节属于 `CHANGELOG.md` 和 Git 历史。本文只保留会影响下一次修改决策的当前事实。
