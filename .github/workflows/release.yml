@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - perf/ci-size-optimization
     tags:
       - 'v*'
   workflow_dispatch:
