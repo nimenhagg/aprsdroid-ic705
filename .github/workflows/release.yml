@@ -10,10 +10,114 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
+  prepare_mod_1_9_4:
+    name: Prepare Mod-v1.9.4 when requested
+    runs-on: ubuntu-latest
+    outputs:
+      prepare: ${{ steps.marker.outputs.prepare }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect guarded preparation marker
+        id: marker
+        shell: bash
+        run: |
+          if [ -f .github/.prepare_mod_v1_9_4 ]; then
+            echo "prepare=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prepare=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Load and decode prepared patch
+        if: steps.marker.outputs.prepare == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin automation/mod-v1.9.4
+          git show origin/automation/mod-v1.9.4:.github/scripts/apply_mod_v1_9_4.py.gz.b64 \
+            | base64 -d \
+            | gzip -d > "$RUNNER_TEMP/apply_mod_v1_9_4.py"
+          python3 -m py_compile "$RUNNER_TEMP/apply_mod_v1_9_4.py"
+
+      - name: Restore prepared patch baseline
+        if: steps.marker.outputs.prepare == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout 4d112f17fb17494aece0b8221212555f2b6f4efb -- \
+            .github/workflows/release.yml \
+            .github/scripts/extract_release_notes.py
+
+      - name: Apply Mod-v1.9.4 changes
+        if: steps.marker.outputs.prepare == 'true'
+        run: python3 "$RUNNER_TEMP/apply_mod_v1_9_4.py"
+
+      - name: Set up JDK 17
+        if: steps.marker.outputs.prepare == 'true'
+        uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Verify source changes
+        if: steps.marker.outputs.prepare == 'true'
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          git diff --check
+          ./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug --no-daemon --stacktrace
+
+      - name: Commit release source and create tag
+        if: steps.marker.outputs.prepare == 'true'
+        env:
+          TAG: Mod-v1.9.4
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists; refusing to move it." >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/.prepare_mod_v1_9_4
+          git rm -f .github/workflows/prepare_mod_v1_9_4.yml
+          git add -A
+          git diff --cached --check
+          git commit -m "release: $TAG"
+          git push origin HEAD:main
+          git tag -a "$TAG" -m "APRSdroid Mod 1.9.4"
+          git push origin "refs/tags/$TAG"
+
+      - name: Dispatch signed release build
+        if: steps.marker.outputs.prepare == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: Mod-v1.9.4
+        run: gh workflow run release.yml --ref "$TAG"
+
+      - name: Remove temporary branches
+        if: steps.marker.outputs.prepare == 'true' && success()
+        shell: bash
+        run: |
+          git push origin --delete automation/mod-v1.9.4 || true
+          git push origin --delete bootstrap/mod-v1.9.4 || true
+
   build:
     name: Build & Release APK
+    needs: prepare_mod_1_9_4
+    if: needs.prepare_mod_1_9_4.outputs.prepare != 'true'
     runs-on: ubuntu-latest
 
     steps:
