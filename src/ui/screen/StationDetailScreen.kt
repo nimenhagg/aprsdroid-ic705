@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.sp
 import org.aprsdroid.app.R
 import org.aprsdroid.app.model.LogPostItem
 import org.aprsdroid.app.model.StationItem
+import org.aprsdroid.app.ui.component.PacketHistoryCard
+import org.aprsdroid.app.ui.component.StationTagRow
 import org.aprsdroid.app.ui.components.SymbolBadge
 import java.util.Locale
 
@@ -165,27 +167,18 @@ fun StationDetailScreen(
                         stationItem?.let { item ->
                             val qrg = item.qrg
                             val comment = item.comment
-                            if (!qrg.isNullOrEmpty() || !comment.isNullOrEmpty()) {
+                            if (item.isFmo || !qrg.isNullOrEmpty() || !comment.isNullOrEmpty()) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = MaterialTheme.colorScheme.outlineVariant
                                 )
 
-                                if (!qrg.isNullOrEmpty()) {
-                                    SuggestionChip(
-                                        onClick = {},
-                                        label = { Text(stringResource(R.string.station_voice_frequency, qrg), fontWeight = FontWeight.SemiBold) },
-                                        icon = { Icon(Icons.Default.Mic, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                                        colors = SuggestionChipDefaults.suggestionChipColors(
-                                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                            labelColor = MaterialTheme.colorScheme.onTertiaryContainer
-                                        ),
-                                        shape = RoundedCornerShape(8.dp)
-                                    )
+                                if (item.isFmo || !qrg.isNullOrEmpty()) {
+                                    StationTagRow(item)
                                 }
 
                                 if (!comment.isNullOrEmpty()) {
-                                    Spacer(modifier = Modifier.height(6.dp))
+                                    if (item.isFmo || !qrg.isNullOrEmpty()) Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         text = comment,
                                         fontSize = 13.sp,
@@ -274,43 +267,7 @@ fun StationDetailScreen(
                     }
                 } else {
                     items(postList, key = { it.id }) { post ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = post.tss,
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    val status = post.status
-                                    if (!status.isNullOrEmpty()) {
-                                        Text(
-                                            text = status,
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.outline
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = post.message,
-                                    fontSize = 12.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
+                        PacketHistoryCard(post)
                     }
                 }
             } else {

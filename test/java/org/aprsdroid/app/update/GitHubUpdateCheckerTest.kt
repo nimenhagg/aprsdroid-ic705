@@ -8,10 +8,11 @@ import org.junit.Test
 class GitHubUpdateCheckerTest {
     @Test
     fun parsesReleaseTagAndBuildVersionName() {
-        assertEquals(AppVersion(1, 9, 3), parseIc705Version("v1.9.3-ic705"))
+        assertEquals(AppVersion(1, 9, 3), parseAppVersion("v1.9.3-ic705"))
+        assertEquals(AppVersion(1, 9, 4), parseAppVersion("Mod-v1.9.4"))
         assertEquals(
             AppVersion(1, 9, 2),
-            parseIc705Version("1.9.2-ic705 (based on APRSdroid v1.7.0)"),
+            parseAppVersion("1.9.2-ic705 (based on APRSdroid v1.7.0)"),
         )
     }
 
@@ -24,6 +25,6 @@ class GitHubUpdateCheckerTest {
 
     @Test
     fun rejectsStringsWithoutSemanticVersion() {
-        assertNull(parseIc705Version("unknown"))
+        assertNull(parseAppVersion("unknown"))
     }
 }

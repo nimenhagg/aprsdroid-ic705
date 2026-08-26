@@ -70,6 +70,7 @@ import androidx.core.net.toUri
 import androidx.compose.ui.unit.sp
 import org.aprsdroid.app.R
 import org.aprsdroid.app.model.StationItem
+import org.aprsdroid.app.ui.component.StationTagRow
 import org.aprsdroid.app.ui.components.SymbolBadge
 import java.util.Locale
 
@@ -432,22 +433,10 @@ fun StationCardItem(
                     }
                 }
 
-                // Middle line: Frequency badge if available
-                val qrg = item.qrg
-                if (!qrg.isNullOrEmpty()) {
+                // Middle line: FMO first, frequency second.
+                if (item.isFmo || !item.qrg.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(2.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = qrg,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
+                    StationTagRow(item)
                 }
 
                 // Bottom line: Comment / Status

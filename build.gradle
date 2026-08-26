@@ -54,13 +54,13 @@ def sourceRevisionProvider = providers.gradleProperty('SOURCE_REVISION')
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = (findProperty("MOD_VERSION") ?: "1.9.3").toString()
-	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082693").toString())
+	mod_version = (findProperty("MOD_VERSION") ?: "1.9.4").toString()
+	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082794").toString())
 	maplibre_version = "13.5.1"
 	base_version = "APRSdroid v1.7.0"
 	source_revision = sourceRevisionProvider.get().toString()
-	build_revision = "${mod_version}-ic705 (based on ${base_version})"
-	build_version = "APRSdroid IC-705 ${mod_version} (based on ${base_version}) ${build_date}"
+	build_revision = "Mod-v${mod_version}"
+	build_version = "APRSdroid Mod ${mod_version} (based on ${base_version}) ${build_date}"
 }
 
 if (!(mod_version ==~ /\d+\.\d+\.\d+/)) {
@@ -203,17 +203,17 @@ android {
 	}
 }
 
-def expectedReleaseTag = "v${mod_version}-ic705"
+def expectedReleaseTag = "Mod-v${mod_version}"
 
 tasks.register('verifyReleaseVersion') {
 	group = 'verification'
 	description = 'Checks that a CI release tag matches the APK version metadata.'
 	doLast {
-		if (System.getenv('GITHUB_REF_TYPE') == 'tag') {
-			def actualTag = System.getenv('GITHUB_REF_NAME')
-			if (actualTag != expectedReleaseTag) {
-				throw new GradleException("Release tag ${actualTag} does not match ${expectedReleaseTag}")
-			}
+		def actualTag = System.getenv('GITHUB_REF_TYPE') == 'tag'
+			? System.getenv('GITHUB_REF_NAME')
+			: System.getenv('RELEASE_TAG_OVERRIDE')
+		if (actualTag && actualTag != expectedReleaseTag) {
+			throw new GradleException("Release tag ${actualTag} does not match ${expectedReleaseTag}")
 		}
 	}
 }

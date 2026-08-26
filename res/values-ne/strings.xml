@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- APRSdroid strings.xml - this file contains strings which need to be translated -->
 <resources>
-<string name="app_name">एपिआरएस ड्रोएड</string>
+<string name="app_name">APRSdroid Mod</string>
 <string name="app_prefs">एपिआरएस ड्रोएड  प्राथमिकताहरू</string>
 <string name="app_map">एपिआरएस ड्रोएड नक्सा</string>
 <string name="app_hub">एपिआरएस ड्रोएड हब</string>

@@ -1,4 +1,4 @@
-# APRSdroid IC-705 Mod：工程与 AI 交接上下文
+# APRSdroid Mod：工程与 AI 交接上下文
 
 > 本文是维护者和 AI 编程助手的当前事实基线。若本文与代码、测试、Gradle 配置或 CI 行为冲突，以代码和可复现验证为准，并在同一次变更中修正文档。
 
@@ -8,11 +8,11 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `v1.9.3-ic705` |
-| `build.gradle` 默认版本 | `1.9.3` |
-| Android versionCode | `2026082693` |
+| 最新 GitHub Release | `Mod-v1.9.4` |
+| `build.gradle` 默认版本 | `1.9.4` |
+| Android versionCode | `2026082794` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
-| Android | `minSdk 25`，`compileSdk 37`，`targetSdk 37` |
+| Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
 | Kotlin / Compose Compiler | AGP 9 built-in Kotlin `2.3.21` / Compose Compiler `2.3.21` |
 | Java | `17` |
@@ -23,13 +23,14 @@
 
 ### 当前 main 状态
 
-本次发布准备将 `main` 与 `v1.9.3-ic705` 对齐。1.9.3 已包含：
+当前 `main` 与 `Mod-v1.9.4` 发布基线对齐。除 1.9.3 的 IC-705 稳定性、持久诊断、手动更新检查和 MapLibre Release 瘦身外，1.9.4 还包含：
 
-- IC-705 session/TX 稳定性修复：TX 与 teardown 竞态、UDP send/close 同步、PTT timer 生命周期、严格发送失败传播、AUDIO TX watchdog 抑制与 PTT 后 grace。
-- CI-V / AUDIO stream-local soft recovery；连续局部恢复失败后才升级为完整 session reconnect。
-- 持久化结构化诊断日志、Android Network 生命周期日志、诊断 ZIP 导出和源码 revision 记录。
-- 设置页显式手动检查 GitHub Releases。
-- MapLibre Android 13.5.1 Release 原生库使用 `MinSizeRel` + IPO/LTO 重新构建并在 APK 中替换，保留官方 AAR 的 API/资源/依赖及发布校验链。
+- 台站历史 APRS 报文结构化解析；原始 TNC2 数据只在用户点击“显示原始数据”后展开。
+- 首页台站单击/长按操作可互换，默认仍为单击消息、长按详情。
+- APRS-IS 可选 `BAT:xx%` 电量字段；仅 APRS-IS 生效，并遵守 43 字符 comment 预算。
+- `APFMO*` destination 的 FMO 台站识别，UI 标签顺序固定为 FMO 在前、语音频率在后。
+- 品牌统一为 `APRSdroid Mod`，版本/tag 采用 `Mod-vX.Y.Z`；更新检查仍兼容历史 `vX.Y.Z-ic705`。
+- 最低系统版本为 Android 8.1 / API 27。
 
 发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。
 

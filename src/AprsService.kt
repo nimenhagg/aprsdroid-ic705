@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.location.Location
 import android.location.LocationManager
+import android.os.BatteryManager
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -300,6 +301,33 @@ class AprsService : Service() {
         return APRSPacket(prefs.getCallSsid(), APP_VERSION, Digipeater.parseList(digipath, true), payload)
     }
 
+    private fun batteryCommentToken(): String? {
+        if (!prefs.getSendBatteryAprsIs() || prefs.getProto() != "aprsis") return null
+        val batteryManager = getSystemService(Context.BATTERY_SERVICE) as? BatteryManager ?: return null
+        val percentage = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        return if (percentage in 0..100) "BAT:${percentage}%" else null
+    }
+
+    private fun buildPositionComment(protocolFields: String, status: String): String {
+        val maxLength = 43
+        val base = StringBuilder(protocolFields.take(maxLength))
+        val userStatus = status.trim()
+        if (userStatus.isNotEmpty() && base.length < maxLength) {
+            if (base.isNotEmpty()) base.append(' ')
+            val remaining = maxLength - base.length
+            if (remaining > 0) base.append(userStatus.take(remaining))
+        }
+
+        val battery = batteryCommentToken()
+        if (battery != null) {
+            val separator = if (base.isEmpty()) "" else " "
+            if (base.length + separator.length + battery.length <= maxLength) {
+                base.append(separator).append(battery)
+            }
+        }
+        return base.toString()
+    }
+
     fun formatLoc(symbol: String, status: String, location: Location): APRSPacket {
         val sym0 = if (symbol.isNotEmpty()) symbol[0] else '/'
         val sym1 = if (symbol.length > 1) symbol[1] else '>'
@@ -309,9 +337,8 @@ class AprsService : Service() {
         val statusSpd = if (prefs.getBoolean("priv_spdbear", true)) AprsPacket.formatCourseSpeed(location) else ""
         val statusFreq = AprsPacket.formatFreq(statusSpd, prefs.getStringFloat("frequency", 0.0f))
         val statusAlt = if (prefs.getBoolean("priv_altitude", true)) AprsPacket.formatAltitude(location) else ""
-        val comment = statusSpd + statusFreq + statusAlt + " " + status
-        val safeComment = if (comment.length > 43) comment.substring(0, 43) else comment
-        return newPacket(PositionPacket(pos, safeComment, true))
+        val comment = buildPositionComment(statusSpd + statusFreq + statusAlt, status)
+        return newPacket(PositionPacket(pos, comment, true))
     }
 
     @JvmOverloads

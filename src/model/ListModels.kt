@@ -11,8 +11,11 @@ data class StationItem(
     val symbol: String,
     val lat: Int,
     val lon: Int,
-    val ts: Long
+    val ts: Long,
+    val flags: Int = 0
 ) {
+    val isFmo: Boolean
+        get() = flags and StorageDatabase.Companion.Station.FLAG_FMO != 0
     companion object {
         fun fromCursor(cursor: Cursor): List<StationItem> {
             val list = ArrayList<StationItem>(cursor.count)
@@ -24,6 +27,7 @@ data class StationItem(
             val latIdx = cursor.getColumnIndex(StorageDatabase.Companion.Station.LAT)
             val lonIdx = cursor.getColumnIndex(StorageDatabase.Companion.Station.LON)
             val tsIdx = cursor.getColumnIndex(StorageDatabase.Companion.Station.TS)
+            val flagsIdx = cursor.getColumnIndex(StorageDatabase.Companion.Station.FLAGS)
 
             while (cursor.moveToNext()) {
                 list.add(
@@ -35,7 +39,8 @@ data class StationItem(
                         symbol = if (symbolIdx >= 0) cursor.getString(symbolIdx) ?: "/$" else "/$",
                         lat = if (latIdx >= 0) cursor.getInt(latIdx) else 0,
                         lon = if (lonIdx >= 0) cursor.getInt(lonIdx) else 0,
-                        ts = if (tsIdx >= 0) cursor.getLong(tsIdx) else 0L
+                        ts = if (tsIdx >= 0) cursor.getLong(tsIdx) else 0L,
+                        flags = if (flagsIdx >= 0) cursor.getInt(flagsIdx) else 0
                     )
                 )
             }

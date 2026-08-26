@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_send_battery">是否发送电量信息？</string>
+    <string name="setting_send_battery_summary">仅 APRS-IS 生效</string>
+    <string name="setting_station_tap_action">台站单击操作</string>
+    <string name="setting_station_tap_action_summary">长按始终执行相反操作</string>
+    <string name="setting_station_tap_message">单击发消息，长按查看详情</string>
+    <string name="setting_station_tap_details">单击查看详情，长按发消息</string>
+    <string name="packet_show_raw">显示原始数据</string>
+    <string name="packet_hide_raw">隐藏原始数据</string>
+    <string name="packet_route">源 / 目标</string>
+    <string name="packet_path">中继路径</string>
+    <string name="packet_position">位置</string>
+    <string name="packet_movement">运动</string>
+    <string name="packet_course_value">航向 %1$d°</string>
+    <string name="packet_speed_value">速度 %1$d kt</string>
+    <string name="packet_altitude">海拔</string>
+    <string name="packet_frequency">频率</string>
+    <string name="packet_message">消息</string>
+    <string name="packet_comment">备注</string>
+    <string name="packet_payload">数据字段</string>
+    <string name="packet_type_position">位置报告</string>
+    <string name="packet_type_message">APRS 消息</string>
+    <string name="packet_type_status">状态报告</string>
+    <string name="packet_type_object">Object 对象</string>
+    <string name="packet_type_item">Item 项目</string>
+    <string name="packet_type_weather">气象报告</string>
+    <string name="packet_type_telemetry">遥测数据</string>
+    <string name="packet_type_mice">Mic-E 位置</string>
+    <string name="packet_type_third_party">第三方封装报文</string>
+    <string name="packet_type_unknown">APRS 报文</string>
+</resources>

@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.FileOpen
@@ -61,6 +62,8 @@ fun SettingsScreen(
     locationSourceName: String,
     mapModeTitle: String,
     showObjects: Boolean,
+    sendBatteryInfo: Boolean,
+    stationTapAction: String,
     onBack: () -> Unit,
     onOpenCallsignDialog: () -> Unit,
     onSaveSsid: (String) -> Unit,
@@ -72,6 +75,8 @@ fun SettingsScreen(
     onOpenLocationSetup: () -> Unit,
     onOpenMapModeSetup: () -> Unit,
     onToggleShowObjects: (Boolean) -> Unit,
+    onToggleSendBatteryInfo: (Boolean) -> Unit,
+    onSaveStationTapAction: (String) -> Unit,
     onOpenNotificationPrefs: () -> Unit,
     onExportProfile: () -> Unit,
     onImportProfile: () -> Unit,
@@ -81,6 +86,7 @@ fun SettingsScreen(
 ) {
     var showSsidDialog by remember { mutableStateOf(false) }
     var showDigiPathDialog by remember { mutableStateOf(false) }
+    var showStationTapDialog by remember { mutableStateOf(false) }
 
     val ssidOptions = remember {
         listOf(
@@ -199,6 +205,14 @@ fun SettingsScreen(
                     icon = Icons.Default.LocationOn,
                     onClick = onOpenLocationSetup
                 )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceSwitchItem(
+                    title = stringResource(R.string.setting_send_battery),
+                    summary = stringResource(R.string.setting_send_battery_summary),
+                    icon = Icons.Default.BatteryFull,
+                    checked = sendBatteryInfo,
+                    onCheckedChange = onToggleSendBatteryInfo
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -211,6 +225,18 @@ fun SettingsScreen(
                     summary = mapModeTitle,
                     icon = Icons.Default.Map,
                     onClick = onOpenMapModeSetup
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceValueItem(
+                    title = stringResource(R.string.setting_station_tap_action),
+                    value = if (stationTapAction == "details") {
+                        stringResource(R.string.setting_station_tap_details)
+                    } else {
+                        stringResource(R.string.setting_station_tap_message)
+                    },
+                    summary = stringResource(R.string.setting_station_tap_action_summary),
+                    icon = Icons.Default.Person,
+                    onClick = { showStationTapDialog = true }
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceSwitchItem(
@@ -263,6 +289,22 @@ fun SettingsScreen(
             onDismiss = { showSsidDialog = false },
             onSelect = { newSsid ->
                 onSaveSsid(newSsid)
+            }
+        )
+    }
+
+    if (showStationTapDialog) {
+        PreferenceSelectDialog(
+            title = stringResource(R.string.setting_station_tap_action),
+            options = listOf(
+                "message" to stringResource(R.string.setting_station_tap_message),
+                "details" to stringResource(R.string.setting_station_tap_details),
+            ),
+            selected = stationTapAction,
+            onDismiss = { showStationTapDialog = false },
+            onSelect = { action ->
+                onSaveStationTapAction(action)
+                showStationTapDialog = false
             }
         )
     }

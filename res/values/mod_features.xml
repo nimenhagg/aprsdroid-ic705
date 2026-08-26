@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_send_battery">Send battery information</string>
+    <string name="setting_send_battery_summary">Only effective in APRS-IS mode</string>
+    <string name="setting_station_tap_action">Station tap action</string>
+    <string name="setting_station_tap_action_summary">The long-press action is always the opposite action</string>
+    <string name="setting_station_tap_message">Tap to message; long press for details</string>
+    <string name="setting_station_tap_details">Tap for details; long press to message</string>
+    <string name="packet_show_raw">Show raw data</string>
+    <string name="packet_hide_raw">Hide raw data</string>
+    <string name="packet_route">Source / destination</string>
+    <string name="packet_path">Digipeater path</string>
+    <string name="packet_position">Position</string>
+    <string name="packet_movement">Movement</string>
+    <string name="packet_course_value">Course %1$d°</string>
+    <string name="packet_speed_value">Speed %1$d kt</string>
+    <string name="packet_altitude">Altitude</string>
+    <string name="packet_frequency">Frequency</string>
+    <string name="packet_message">Message</string>
+    <string name="packet_comment">Comment</string>
+    <string name="packet_payload">Payload</string>
+    <string name="packet_type_position">Position report</string>
+    <string name="packet_type_message">APRS message</string>
+    <string name="packet_type_status">Status report</string>
+    <string name="packet_type_object">Object</string>
+    <string name="packet_type_item">Item</string>
+    <string name="packet_type_weather">Weather report</string>
+    <string name="packet_type_telemetry">Telemetry</string>
+    <string name="packet_type_mice">Mic-E position</string>
+    <string name="packet_type_third_party">Third-party packet</string>
+    <string name="packet_type_unknown">APRS packet</string>
+</resources>

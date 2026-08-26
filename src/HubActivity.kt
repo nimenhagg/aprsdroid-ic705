@@ -61,8 +61,12 @@ class HubActivity : BaseRecyclerActivity() {
                             viewModel.updateServiceState()
                         }
                     },
-                    onStationClick = { item -> openMessaging(item.call) },
-                    onStationLongClick = { item -> openDetails(item.call) },
+                    onStationClick = { item ->
+                        if (prefs.getStationTapAction() == "details") openDetails(item.call) else openMessaging(item.call)
+                    },
+                    onStationLongClick = { item ->
+                        if (prefs.getStationTapAction() == "details") openMessaging(item.call) else openDetails(item.call)
+                    },
                     onOpenMap = {
                         val mode = MapModes.defaultMapMode(this, prefs)
                         startActivity(Intent(this, mode.viewClass))

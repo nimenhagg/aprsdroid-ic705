@@ -21,8 +21,8 @@ class PrefsWrapper(@JvmField val context: Context) {
 
     init {
         val currentStatus = prefs.getString("status", null)
-        if (currentStatus == null || currentStatus == "https://aprsdroid.org/" || currentStatus == "https://aprsdroid.org") {
-            prefs.edit { putString("status", "APRSDroid Mod") }
+        if (currentStatus == null || currentStatus == "https://aprsdroid.org/" || currentStatus == "https://aprsdroid.org" || currentStatus == "APRSDroid Mod") {
+            prefs.edit { putString("status", "APRSdroid Mod") }
         }
         val currentTcpServer = prefs.getString("tcp.server", null)
         if (currentTcpServer == null || currentTcpServer == "euro.aprs2.net" || currentTcpServer == "rotate.aprs.net" || currentTcpServer == "rotate.aprs2.net") {
@@ -89,6 +89,8 @@ class PrefsWrapper(@JvmField val context: Context) {
 
     fun getShowObjects(): Boolean = prefs.getBoolean("show_objects", true)
     fun getShowSatellite(): Boolean = prefs.getBoolean("show_satellite", false)
+    fun getSendBatteryAprsIs(): Boolean = prefs.getBoolean("send_battery_aprsis", false)
+    fun getStationTapAction(): String = getString("station_tap_action", "message")
 
     fun getShowAge(): Long = getStringInt("show_age", 30) * 60L * 1000L
 
@@ -129,7 +131,8 @@ class PrefsWrapper(@JvmField val context: Context) {
     }
 
     fun getVersion(): String {
-        return context.getString(R.string.build_version).split(" ").take(2).joinToString(" ")
+        val version = BuildConfig.VERSION_NAME.removePrefix("Mod-v").substringBefore(" ")
+        return "APRSdroidMod $version"
     }
 
     fun getLoginString(): String {

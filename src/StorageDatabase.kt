@@ -68,7 +68,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
 
             val TABLE_CREATE = "CREATE TABLE $TABLE ($_ID INTEGER PRIMARY KEY AUTOINCREMENT, $TS LONG, $CALL TEXT UNIQUE, $LAT INTEGER, $LON INTEGER, $SPEED INTEGER, $COURSE INTEGER, $ALT INTEGER, $SYMBOL TEXT, $COMMENT TEXT, $ORIGIN TEXT, $QRG TEXT, $FLAGS INTEGER)"
             const val TABLE_DROP = "DROP TABLE stations"
-            val COLUMNS = arrayOf(_ID, TS, CALL, LAT, LON, SYMBOL, COMMENT, SPEED, COURSE, ALT, ORIGIN, QRG)
+            val COLUMNS = arrayOf(_ID, TS, CALL, LAT, LON, SYMBOL, COMMENT, SPEED, COURSE, ALT, ORIGIN, QRG, FLAGS)
             const val COL_DIST = "((lat - %d)*(lat - %d) + (lon - %d)*(lon - %d)*%d/100) as dist"
 
             const val COLUMN_TS = 1
@@ -84,7 +84,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             const val COLUMN_QRG = 11
             const val COLUMN_FLAGS = 12
 
-            val COLUMNS_MAP = arrayOf(_ID, CALL, LAT, LON, SYMBOL, ORIGIN, QRG, COMMENT, SPEED, COURSE, TS)
+            val COLUMNS_MAP = arrayOf(_ID, CALL, LAT, LON, SYMBOL, ORIGIN, QRG, COMMENT, SPEED, COURSE, TS, FLAGS)
             const val COLUMN_MAP_CALL = 1
             const val COLUMN_MAP_LAT = 2
             const val COLUMN_MAP_LON = 3
@@ -94,10 +94,12 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             const val COLUMN_MAP_COMMENT = 7
             const val COLUMN_MAP_SPEED = 8
             const val COLUMN_MAP_CSE = 9
+            const val COLUMN_MAP_FLAGS = 11
 
             const val FLAG_MSGCAPABLE = 1
             const val FLAG_OBJECT = 2
             const val FLAG_MOVING = 4
+            const val FLAG_FMO = 8
         }
 
         object Position {
@@ -238,6 +240,12 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         cv.put(Station.SYMBOL, sym)
         cv.put(Station.COMMENT, comment)
         cv.put(Station.QRG, qrg)
+        var flags = 0
+        if (objectname != null) flags = flags or Station.FLAG_OBJECT
+        if (cse != null && cse.speed > 0) flags = flags or Station.FLAG_MOVING
+        val destination = ap.toString().substringBefore(':').substringAfter('>', "").substringBefore(',')
+        if (destination.startsWith("APFMO", ignoreCase = true)) flags = flags or Station.FLAG_FMO
+        cv.put(Station.FLAGS, flags)
         if (cse != null) {
             cv.put(Station.SPEED, cse.speed)
             cv.put(Station.COURSE, cse.course)

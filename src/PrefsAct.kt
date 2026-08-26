@@ -67,6 +67,8 @@ class PrefsAct : ComponentActivity() {
     private val locationSourceNameState = mutableStateOf("")
     private val mapModeTitleState = mutableStateOf("")
     private val showObjectsState = mutableStateOf(true)
+    private val sendBatteryInfoState = mutableStateOf(false)
+    private val stationTapActionState = mutableStateOf("message")
     private var updateCheckInFlight = false
 
     fun exportPrefs() {
@@ -89,6 +91,8 @@ class PrefsAct : ComponentActivity() {
                     locationSourceName = locationSourceNameState.value,
                     mapModeTitle = mapModeTitleState.value,
                     showObjects = showObjectsState.value,
+                    sendBatteryInfo = sendBatteryInfoState.value,
+                    stationTapAction = stationTapActionState.value,
                     onBack = { finish() },
                     onOpenCallsignDialog = {
                         PasscodeDialog(this, false).apply {
@@ -132,6 +136,14 @@ class PrefsAct : ComponentActivity() {
                     onToggleShowObjects = {
                         val newState = prefs.toggleBoolean("show_objects", true)
                         showObjectsState.value = newState
+                    },
+                    onToggleSendBatteryInfo = { enabled ->
+                        prefs.setBoolean("send_battery_aprsis", enabled)
+                        sendBatteryInfoState.value = enabled
+                    },
+                    onSaveStationTapAction = { action ->
+                        prefs.set("station_tap_action", action)
+                        stationTapActionState.value = action
                     },
                     onOpenNotificationPrefs = {
                         startActivity(Intent(this, NotificationPrefs::class.java))
@@ -219,5 +231,7 @@ class PrefsAct : ComponentActivity() {
         locationSourceNameState.value = prefs.getLocationSourceName()
         mapModeTitleState.value = MapModes.defaultMapMode(this, prefs).title ?: getString(R.string.app_map)
         showObjectsState.value = prefs.getShowObjects()
+        sendBatteryInfoState.value = prefs.getSendBatteryAprsIs()
+        stationTapActionState.value = prefs.getStationTapAction()
     }
 }

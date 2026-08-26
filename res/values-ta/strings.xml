@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- APRSdroid strings.xml - this file contains strings which need to be translated -->
 <resources>
-<string name="app_name">ஏபிஆர்எஸ்-டிராயிடு</string>
+<string name="app_name">APRSdroid Mod</string>
 <string name="app_prefs">ஏபிஆர்எஸ்-டிராயிடு விருப்பத்தேர்வுகள்</string>
 <string name="app_map">ஏபிஆர்எஸ்-டிராயிடு நிலப்படம்</string>
 <string name="app_hub">ஏபிஆர்எஸ்-டிராயிடு மையம்</string>

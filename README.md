@@ -1,14 +1,14 @@
-# APRSdroid IC-705
+# APRSdroid Mod
 
-APRSdroid 的 Icom IC-705 Wi-Fi 直连修改版 / An APRSdroid fork with direct Icom IC-705 Wi-Fi support.
+APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APRSdroid fork including direct Icom IC-705 Wi-Fi support.
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `v1.9.3-ic705`**
+**最新稳定版 / Latest release: `Mod-v1.9.4`**
 
-> `v1.9.3-ic705` 已包含当前文档所述的持久诊断、IC-705 角色化恢复、手动更新检查和 MapLibre Release 瘦身。`main` 后续仍可能出现下一版本尚未发布的改动。
+> `Mod-v1.9.4` 完成品牌统一，并加入台站报文结构化解析、可交换的台站单击/长按操作、APRS-IS 可选电量字段与 FMO 台站标记。
 >
-> `v1.9.3-ic705` includes the persistent diagnostics, role-specific IC-705 recovery, manual update check, and MapLibre release-size optimization described below. Later `main` commits may again be unreleased.
+> `Mod-v1.9.4` unifies the APRSdroid Mod brand and adds structured station-packet parsing, swappable station tap/long-press actions, optional APRS-IS battery reporting, and FMO station badges.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -18,7 +18,7 @@ APRSdroid 的 Icom IC-705 Wi-Fi 直连修改版 / An APRSdroid fork with direct 
 
 ### 项目简介
 
-APRSdroid IC-705 在 [APRSdroid](https://aprsdroid.org/) 基础上增加了 IC-705 内置 Wi-Fi 的 APRS 收发能力。手机可直接连接电台热点，或与电台处于同一局域网，通过 UDP 完成会话控制、CI-V PTT 和音频传输，不需要音频线、OTG 转接器或外接蓝牙 TNC。
+APRSdroid Mod 在 [APRSdroid](https://aprsdroid.org/) 基础上增加了 IC-705 内置 Wi-Fi 的 APRS 收发能力。手机可直接连接电台热点，或与电台处于同一局域网，通过 UDP 完成会话控制、CI-V PTT 和音频传输，不需要音频线、OTG 转接器或外接蓝牙 TNC。
 
 IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因此电台流量可以走 Wi-Fi，而 APRS-IS 等互联网流量仍可走手机默认网络，例如 4G/5G。
 
@@ -31,6 +31,10 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 - 持久化结构化诊断日志：关键 App、网络、IC-705、PTT、重连和崩溃事件同时写入 Logcat 与轮转 JSONL 文件，进程重启后仍可导出。
 - 设置页可一键分享诊断 ZIP，包含文本报告与结构化事件日志。
 - 设置页提供**手动检查更新**；只有用户点击时才请求 GitHub Releases，不会开机检查、后台轮询、定时联网或自动下载安装。
+- 台站详情中的历史 APRS 数据默认以结构化字段显示；原始 TNC2 报文通过“显示原始数据”按钮按需展开。
+- 首页台站单击/长按动作可在设置中互换；默认仍为单击发消息、长按查看详情。
+- APRS-IS 模式可选择在位置信标中附加 `BAT:xx%` 电量字段；其他射频/本地后端不发送该信息。
+- 自动识别 `APFMO*` destination 的 FMO 台站，并在台站卡片以 `FMO` → 语音频率的顺序显示标签。
 - APRS-IS TCP / HTTP POST / UDP，以及 AFSK、KISS、TNC2、Kenwood、蓝牙 SPP、USB 串口和 LAN TCP TNC 等原 APRSdroid 路径。
 - 智能信标、周期/手动定位、台站、消息、日志和多地图源。
 - Material 3 / Material You + Jetpack Compose；生产页面不再使用 `res/layout` XML 布局。
@@ -41,7 +45,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 
 | 项目 | 要求或状态 |
 | --- | --- |
-| Android | Android 7.1+（API 25） |
+| Android | Android 8.1+（API 27） |
 | 目标平台 | Android 17 / API 37 |
 | CPU / ABI | `arm64-v8a`、`armeabi-v7a`、`x86_64`、`x86`，源码中为独立 flavor |
 | 正式 Release | ARM64 OpenGL + ARMv7 OpenGL |

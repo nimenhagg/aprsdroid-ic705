@@ -132,20 +132,8 @@ fun StationBottomSheetContent(
                         .fillMaxWidth()
                         .padding(14.dp)
                 ) {
-                    val qrg = station.qrg
-                    if (!qrg.isNullOrEmpty()) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = qrg,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
+                    if (station.isFmo || !station.qrg.isNullOrEmpty()) {
+                        StationTagRow(station)
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 

@@ -15,7 +15,7 @@ internal data class AppVersion(val major: Int, val minor: Int, val patch: Int) :
     override fun toString(): String = "$major.$minor.$patch"
 }
 
-internal fun parseIc705Version(value: String): AppVersion? {
+internal fun parseAppVersion(value: String): AppVersion? {
     val match = VERSION_REGEX.find(value) ?: return null
     return AppVersion(
         major = match.groupValues[1].toIntOrNull() ?: return null,
@@ -44,7 +44,7 @@ internal object GitHubUpdateChecker {
     private val client by lazy { OkHttpClient() }
 
     fun check(currentVersionName: String, callback: (UpdateCheckResult) -> Unit) {
-        val current = parseIc705Version(currentVersionName)
+        val current = parseAppVersion(currentVersionName)
         if (current == null) {
             callback(UpdateCheckResult.Failure("无法识别当前版本：$currentVersionName"))
             return
@@ -53,7 +53,7 @@ internal object GitHubUpdateChecker {
         val request = Request.Builder()
             .url(LATEST_RELEASE_URL)
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "APRSdroid-IC705/${current}")
+            .header("User-Agent", "APRSdroid-Mod/${current}")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -74,7 +74,7 @@ internal object GitHubUpdateChecker {
                         return
                     }
                     val tag = json.optString("tag_name")
-                    val latest = parseIc705Version(tag)
+                    val latest = parseAppVersion(tag)
                     val releaseUrl = json.optString("html_url")
                     if (latest == null || releaseUrl.isBlank()) {
                         callback(UpdateCheckResult.Failure("GitHub Release 缺少有效版本信息"))
