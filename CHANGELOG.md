@@ -1,3 +1,20 @@
+## [v1.9.3-ic705] - 2026-08-26
+
+### Added
+- 增加持久化结构化诊断日志：关键 App、Android Network、IC-705 session/recovery、PTT 与崩溃事件同时写入 Logcat 和轮转 JSONL，并可从设置页导出诊断 ZIP。
+- 设置页增加手动 GitHub Releases 更新检查；仅在用户点击时联网，不在启动或后台周期检查，也不自动下载或安装 APK。
+
+### Fixed
+- 修复 IC-705 TX、session teardown 与 UDP send/close 的竞态；TX 在进入 draining/recovery 后停止音频发送，tracked packet 实际发送失败时不再留下伪重传记录。
+- 收紧 PTT timer/watchdog 生命周期，旧 session generation 不再遗留 zombie callback；PTT OFF 仍坚持以电台 ACK 作为实际释放确认。
+- CONTROL、CI-V、AUDIO 改为角色化 liveness：CI-V/AUDIO 超时优先执行 stream-local recovery，连续失败后才升级完整 reconnect；TX 期间 AUDIO RX 静默及 PTT OFF 后恢复宽限期不再误触发重连。
+
+### Changed
+- 正式 ARM64/ARMv7 OpenGL Release 保留官方 MapLibre Android 13.5.1 AAR 的 API、资源和依赖，但以同版本源码重新构建 `libmaplibre.so`，使用 CMake `MinSizeRel` + IPO/LTO，并在 APK 打包后重新执行 16 KiB `zipalign`、签名和 SHA-256 一致性校验。
+- ARM64 `libmaplibre.so` 的同条件 strip 对比由 `10,843,520` B 降至 `6,707,856` B（减少 `38.14%`）；推荐 ARM64 OpenGL APK 由 `17,837,278` B 降至 `13,417,695` B（减少 `24.78%`）。
+- APRS 符号表资源由 PNG 转为 WebP，并启用 Gradle configuration cache 以减少后续构建开销。
+- 版本更新为 `1.9.3-ic705`（`versionCode 2026082693`）。
+
 ## [v1.9.2-ic705] - 2026-08-26
 
 ### Fixed

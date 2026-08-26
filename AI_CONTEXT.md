@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `v1.9.2-ic705` |
-| `build.gradle` 默认版本 | `1.9.2` |
-| Android versionCode | `2026082692` |
+| 最新 GitHub Release | `v1.9.3-ic705` |
+| `build.gradle` 默认版本 | `1.9.3` |
+| Android versionCode | `2026082693` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 25`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -21,16 +21,17 @@
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-### 当前 main 的未发布变更
+### 当前 main 状态
 
-`main` 已经位于 1.9.2 Release 之后，当前包含但尚未对应新 tag 的功能：
+本次发布准备将 `main` 与 `v1.9.3-ic705` 对齐。1.9.3 已包含：
 
 - IC-705 session/TX 稳定性修复：TX 与 teardown 竞态、UDP send/close 同步、PTT timer 生命周期、严格发送失败传播、AUDIO TX watchdog 抑制与 PTT 后 grace。
 - CI-V / AUDIO stream-local soft recovery；连续局部恢复失败后才升级为完整 session reconnect。
 - 持久化结构化诊断日志、Android Network 生命周期日志、诊断 ZIP 导出和源码 revision 记录。
-- 设置页手动检查 GitHub Releases。
+- 设置页显式手动检查 GitHub Releases。
+- MapLibre Android 13.5.1 Release 原生库使用 `MinSizeRel` + IPO/LTO 重新构建并在 APK 中替换，保留官方 AAR 的 API/资源/依赖及发布校验链。
 
-**重要：不要因为 main 有新功能就把这些功能写成“已发布”。** README 应同时区分 “Latest release” 与 “Current main”。除非正在准备正式发布，否则不要顺手提高 `mod_version` / `versionCode` 或创建 tag。
+发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。
 
 Java 17 是当前构建基线。没有明确需求与完整兼容性验证时，不要仅为了数字更新切换 Java 21。
 
@@ -86,13 +87,14 @@ Gradle 保留五种目标规格：
 - `arm64Opengl`，文件名前缀 `Recommended_`
 - `arm32Opengl`
 
-ARM64 Vulkan 与 x86/x86_64 变体保留用于源码构建和兼容性验证。不要未经设计讨论重新合并成 Universal APK。
+ARM64 Vulkan 与 x86/x86_64 变体保留用于源码构建和兼容性验证。不要未经设计讨论重新合并成 Universal APK。Tag Release 会分别构建/缓存 ARM64 与 ARMv7 的 MapLibre `MinSizeRel` 原生库；普通 `main` 构建只验证推荐 ARM64 路径以控制 CI 时间。
 
 ## 4. UI 与地图事实
 
 - 主 UI 已迁移到 Jetpack Compose + Material 3。
 - 不要恢复历史 `res/layout` 页面，也不要在 AI_CONTEXT 中继续引用已经删除的 `mapview.xml`。
 - `MapAct` 使用 MapLibre Native 渲染高德、OpenStreetMap 和自定义在线瓦片；`GoogleMapAct` 负责 Google 普通/卫星类图源。
+- 正式 ARM64/ARMv7 OpenGL APK 仍依赖官方 MapLibre Android 13.5.1 AAR 提供 Java/Kotlin API、资源、manifest 与传递依赖；Release CI 仅从 `android-v13.5.1` 源码重建对应 ABI 的 `libmaplibre.so`，使用 `MinSizeRel` + IPO/LTO 后替换 APK 内原生库。不要把这描述成维护了一个独立 MapLibre fork。
 - APRS 台站、呼号标签等通过 MapLibre 图层渲染。
 - MapLibre Offline 区域下载/管理不是当前功能；不要把主 AAR 中存在 offline API 类误写成项目启用了离线地图。
 - OSM 必须保留可识别 User-Agent 与可点击的 `© OpenStreetMap contributors` 署名，不得批量抓瓦片或预取整个区域。
@@ -286,6 +288,7 @@ Windows PowerShell 使用 `./gradlew.bat`。
 - JNI、反射、序列化、MapLibre 集成变更必须在 Release 构建中验证，只添加必要 keep 规则。
 - Tag Release CI 保存正式发布 flavor 的 `mapping.txt`；反混淆必须使用与 APK 完全匹配的 mapping。
 - `BuildConfig.SOURCE_REVISION` 来自 Git/GitHub SHA，用于诊断精确确认测试 APK 对应源码；不要删掉这个字段。
+- MapLibre 原生瘦身通过 `.github/scripts/build_maplibre_minsizerel.sh` 与 `replace_apk_maplibre.py` 完成；替换后必须重新做 16 KiB `zipalign`、签名，并校验 APK 内 `libmaplibre.so` SHA-256 与自编译产物一致。
 
 ## 16. 版本与发布流程
 
@@ -297,7 +300,7 @@ Windows PowerShell 使用 `./gradlew.bat`。
 4. `AI_CONTEXT.md`：更新发布基线与仍未发布的 main 状态。
 5. tag 使用 `v<major.minor.patch>-ic705`。
 
-CI `verifyReleaseVersion` 会在 tag 构建时检查 tag 与 APK 版本一致。Release workflow 会测试、Lint、构建 ARM64/ARMv7 OpenGL APK，必要时签名，校验 ABI/MapLibre 后端，生成 `SHA256SUMS.txt`、R8 mapping，并在 tag 时创建 GitHub Release。正式 tag 缺少签名 secrets 或必要 Maps Key 时必须失败，不能悄悄发布不符合预期的包。
+CI `verifyReleaseVersion` 会在 tag 构建时检查 tag 与 APK 版本一致。Release workflow 会测试、Lint、构建 ARM64/ARMv7 OpenGL APK，构建并注入同版本 MapLibre `MinSizeRel` + IPO/LTO 原生库，重新执行 16 KiB 对齐与签名，校验 ABI/MapLibre 数量及原生库 SHA-256，生成 `SHA256SUMS.txt`、R8 mapping，并在 tag 时创建 GitHub Release。正式 tag 缺少签名 secrets 或必要 Maps Key 时必须失败，不能悄悄发布不符合预期的包。
 
 `main` 普通 push 也会触发构建验证，但不等于创建新 GitHub Release。
 
@@ -334,5 +337,6 @@ CHANGELOG 是工程记录，不是营销文案。
 - PTT OFF 已改为 ACK 确认语义，不允许“本地 UDP 发送成功 = 已释放”。
 - IC-705 watchdog 已从统一短超时演进为 CONTROL/CI-V/AUDIO 角色化 liveness + stream-local recovery。
 - 诊断已从依赖 logcat 尾部升级为持久化结构化事件 + Network 生命周期 + ZIP 导出。
+- 正式 ARM64/ARMv7 MapLibre OpenGL 原生库已改为同版本源码 `MinSizeRel` + IPO/LTO 构建并在发布阶段替换；APRS 符号表资源已从 PNG 转为 WebP。
 
 不要在本文继续堆积每个旧版本的完成清单；历史细节属于 `CHANGELOG.md` 和 Git 历史。本文只保留会影响下一次修改决策的当前事实。

@@ -4,11 +4,11 @@ APRSdroid 的 Icom IC-705 Wi-Fi 直连修改版 / An APRSdroid fork with direct 
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `v1.9.2-ic705`**
+**最新稳定版 / Latest release: `v1.9.3-ic705`**
 
-> `main` 可能包含尚未发布的改动。当前 `main` 在 1.9.2 之后已加入持久化结构化诊断日志、IC-705 CI-V/AUDIO 局部恢复，以及设置页手动检查更新；这些功能在创建新标签前都应视为未发布内容。
+> `v1.9.3-ic705` 已包含当前文档所述的持久诊断、IC-705 角色化恢复、手动更新检查和 MapLibre Release 瘦身。`main` 后续仍可能出现下一版本尚未发布的改动。
 >
-> `main` may contain unreleased changes. After 1.9.2 it includes persistent structured diagnostics, stream-local CI-V/audio recovery, and a manual Settings-only update check. Treat these as unreleased until a new tag is published.
+> `v1.9.3-ic705` includes the persistent diagnostics, role-specific IC-705 recovery, manual update check, and MapLibre release-size optimization described below. Later `main` commits may again be unreleased.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -35,6 +35,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 - 智能信标、周期/手动定位、台站、消息、日志和多地图源。
 - Material 3 / Material You + Jetpack Compose；生产页面不再使用 `res/layout` XML 布局。
 - MapLibre Native 在线栅格地图：高德、OpenStreetMap、自定义瓦片；Google 普通/卫星图仍使用 Google Maps SDK。
+- 正式 ARM64/ARMv7 OpenGL APK 会将官方 MapLibre 13.5.1 AAR 内的原生库替换为同版本源码构建的 `MinSizeRel` + IPO/LTO `libmaplibre.so`；Java/Kotlin API、资源和 Maven 依赖仍来自官方 AAR。
 
 ### 兼容性
 
@@ -120,6 +121,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 
 - 高德、OpenStreetMap 和自定义在线瓦片使用 MapLibre Native 13.5.1。
 - 正式 ARM64/ARMv7 Release 使用 OpenGL；源码还提供 ARM64 Vulkan 与 x86/x86_64 双后端 flavor。
+- Release CI 从 MapLibre Native `android-v13.5.1` 构建 `MinSizeRel` + IPO/LTO 原生库，替换 APK 内对应 ABI 的 `libmaplibre.so` 后重新执行 16 KiB 对齐、签名和 SHA-256 校验。
 - OpenStreetMap 请求包含可识别的 User-Agent，遵循服务端缓存规则，并在地图上显示可点击的 `© OpenStreetMap contributors`。
 - Google 普通地图和卫星/混合地图使用 Google Maps SDK。正式 Release 在构建时注入受包名和签名证书限制的 Key；自行构建未配置 Key 时隐藏 Google 图源。
 - 不提供 MapLibre Offline 区域下载/管理功能，也不批量预取 OSM 瓦片。
@@ -185,7 +187,7 @@ Windows PowerShell 使用 `./gradlew.bat`。
 - AGP 9 built-in Kotlin / Compose Compiler 2.3.21
 - Compose BOM 2026.08.00
 - AppCompat 1.8.0 / Material 1.14.0 / OkHttp 5.3.0
-- MapLibre Native 13.5.1
+- MapLibre Native 13.5.1（Release 原生库使用 MinSizeRel + IPO/LTO）
 - Java 17
 
 Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳入版本控制的 `local.properties` 中 `mapsApiKey` 注入。不要把 Key 提交到仓库。
@@ -197,7 +199,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 - 修改 IC-705 发射/会话恢复代码时必须保留 PTT OFF、ACK 与 watchdog 安全语义并增加测试。
 - “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
 - 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AI_CONTEXT.md`。
-- 标签格式：`v<major.minor.patch>-ic705`，例如 `v1.9.2-ic705`。
+- 标签格式：`v<major.minor.patch>-ic705`，例如 `v1.9.3-ic705`。
 - Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt` 和 R8 mapping 后创建 GitHub Release。
 
 完整维护约束见 [AI_CONTEXT.md](AI_CONTEXT.md)。
@@ -208,7 +210,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 
 APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-**Latest stable release: `v1.9.2-ic705`.** The `main` branch may contain newer unreleased work.
+**Latest stable release: `v1.9.3-ic705`.** The `main` branch may contain newer unreleased work.
 
 ### Highlights
 
@@ -220,7 +222,7 @@ APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdr
 - Android network lifecycle logging to distinguish an actual Wi-Fi `Network` loss from an IC-705 protocol/session failure.
 - Manual Settings-only GitHub Release check. It never runs at startup, periodically, or in the background, and it does not auto-download/install updates.
 - Jetpack Compose + Material 3 UI with no production `res/layout` screens.
-- MapLibre Native for AMap/OSM/custom raster tiles and Google Maps SDK for Google map/satellite modes.
+- MapLibre Native for AMap/OSM/custom raster tiles and Google Maps SDK for Google map/satellite modes. Official ARM64/ARMv7 OpenGL releases replace the AAR native library with a same-version `MinSizeRel` + IPO/LTO build while retaining the official AAR API/resources/dependencies.
 
 ### Requirements and packages
 
