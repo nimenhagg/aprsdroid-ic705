@@ -1,11 +1,12 @@
 package org.aprsdroid.app.ic705.session
 
-import android.util.Log
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import org.aprsdroid.app.diagnostic.AppLog
+import org.aprsdroid.app.diagnostic.Ic705DiagnosticState
 import org.aprsdroid.app.ic705.protocol.Ic705CivCommands
 
 /** States of the IC-705 PTT coordinator. */
@@ -57,6 +58,7 @@ class Ic705PttStateMachine(
         require(ackTimeoutMs > 0L) { "ackTimeoutMs must be positive" }
         require(absoluteWatchdogMs > 0L) { "absoluteWatchdogMs must be positive" }
         require(maxReleaseAttempts > 0) { "maxReleaseAttempts must be positive" }
+        publishState()
     }
 
     /** True while the radio may still have PTT asserted. */
@@ -93,12 +95,14 @@ class Ic705PttStateMachine(
     @Synchronized
     fun beginTransmission(): Boolean {
         if (shutdown || state != Ic705PttState.RX_IDLE) return false
+        AppLog.i("IC705.PTT", "ptt_on_requested")
         cancelReleaseTimer()
         pendingCommand = PendingPttCommand.ON
         try {
             sendPttCommand(true)
         } catch (error: Exception) {
             pendingCommand = null
+            AppLog.e("IC705.PTT", "ptt_on_send_failed", error = error)
             throw error
         }
         isPttAsserted.set(true)
@@ -122,9 +126,6 @@ class Ic705PttStateMachine(
     fun finishTransmission() {
         if (shutdown || state == Ic705PttState.RX_IDLE) return
         if (state == Ic705PttState.TX_STREAMING) transitionTo(Ic705PttState.DRAINING)
-        // A failure/teardown path may already have started PTT OFF while the TX
-        // worker is unwinding. Do not reset its attempt counter or create another
-        // overlapping release timer from this finally path.
         if (pendingCommand == PendingPttCommand.OFF) return
         startRelease("Transmission finished")
     }
@@ -134,7 +135,11 @@ class Ic705PttStateMachine(
         if (shutdown) return
         cancelWatchdog()
         if (isPttAsserted.get() || state != Ic705PttState.RX_IDLE) {
-            Log.w(TAG, "forceRelease: $reason (state=$state, pttAsserted=${isPttAsserted.get()})")
+            AppLog.w(
+                "IC705.PTT",
+                "force_release",
+                mapOf("reason" to reason, "state" to state, "ptt_asserted" to isPttAsserted.get()),
+            )
             if (state == Ic705PttState.TX_STREAMING) transitionTo(Ic705PttState.DRAINING)
             if (pendingCommand != PendingPttCommand.OFF) startRelease(reason)
         }
@@ -152,40 +157,49 @@ class Ic705PttStateMachine(
         cancelWatchdog()
         pendingCommand = null
         releaseAttempts = 0
-        Log.i(TAG, "PTT coordinator shutdown (state=$state, pttAsserted=${isPttAsserted.get()})")
+        AppLog.i(
+            "IC705.PTT",
+            "coordinator_shutdown",
+            mapOf("state" to state, "ptt_asserted" to isPttAsserted.get()),
+        )
+        publishState()
     }
 
     private fun handleAck() {
         when (pendingCommand) {
             PendingPttCommand.ON -> {
                 pendingCommand = null
-                Log.d(TAG, "CI-V PTT ON ACK received (state=$state)")
+                AppLog.d("IC705.PTT", "ptt_on_ack", mapOf("state" to state))
             }
             PendingPttCommand.OFF -> {
-                Log.d(TAG, "CI-V PTT OFF ACK received after $releaseAttempts attempt(s)")
+                AppLog.d("IC705.PTT", "ptt_off_ack", mapOf("attempts" to releaseAttempts))
                 completeRelease()
             }
-            null -> Log.d(TAG, "CI-V ACK received with no pending PTT command (state=$state)")
+            null -> AppLog.d("IC705.PTT", "unexpected_ack", mapOf("state" to state))
         }
     }
 
     private fun handleNak() {
         when (pendingCommand) {
             PendingPttCommand.OFF -> {
-                Log.e(TAG, "Radio rejected PTT OFF attempt $releaseAttempts (NAK)")
+                AppLog.e("IC705.PTT", "ptt_off_nak", mapOf("attempt" to releaseAttempts))
                 cancelReleaseTimer()
                 if (releaseAttempts < maxReleaseAttempts) {
                     attemptRelease("Radio rejected PTT OFF command (NAK)")
                 } else {
                     pendingCommand = null
-                    Log.e(TAG, "PTT OFF rejected after $releaseAttempts attempts; retaining asserted state")
+                    AppLog.e(
+                        "IC705.PTT",
+                        "ptt_off_rejected",
+                        mapOf("attempts" to releaseAttempts, "retaining_asserted_state" to true),
+                    )
                     scheduleWatchdog()
                 }
             }
             PendingPttCommand.ON -> forceRelease("Radio rejected PTT ON command (NAK)")
             null -> {
                 if (isTransmitting) forceRelease("Radio returned an unexpected NAK while transmitting")
-                else Log.w(TAG, "CI-V NAK received with no pending PTT command")
+                else AppLog.w("IC705.PTT", "unexpected_nak")
             }
         }
     }
@@ -201,23 +215,35 @@ class Ic705PttStateMachine(
         if (shutdown || (!isPttAsserted.get() && state == Ic705PttState.RX_IDLE)) return
         releaseAttempts += 1
         pendingCommand = PendingPttCommand.OFF
+        AppLog.i(
+            "IC705.PTT",
+            "ptt_off_attempt",
+            mapOf("attempt" to releaseAttempts, "max_attempts" to maxReleaseAttempts, "reason" to reason),
+        )
         val sendSucceeded = try {
             sendPttCommand(false)
             true
         } catch (error: Exception) {
             pendingCommand = null
-            Log.e(TAG, "PTT OFF attempt $releaseAttempts/$maxReleaseAttempts failed: $reason", error)
+            AppLog.e(
+                "IC705.PTT",
+                "ptt_off_send_failed",
+                mapOf("attempt" to releaseAttempts, "max_attempts" to maxReleaseAttempts, "reason" to reason),
+                error,
+            )
             false
         }
 
         if (releaseAttempts < maxReleaseAttempts) {
             scheduleReleaseTimer(reason)
         } else if (sendSucceeded) {
-            // A successful local UDP send is not proof that the radio actually
-            // received or executed PTT OFF. Keep the asserted state until ACK.
             scheduleReleaseTimer(reason)
         } else {
-            Log.e(TAG, "All $releaseAttempts PTT OFF sends failed; retaining asserted state")
+            AppLog.e(
+                "IC705.PTT",
+                "ptt_off_all_sends_failed",
+                mapOf("attempts" to releaseAttempts, "retaining_asserted_state" to true),
+            )
             scheduleWatchdog()
         }
     }
@@ -232,11 +258,19 @@ class Ic705PttStateMachine(
                     if (shutdown) return@synchronized
                     if (!isPttAsserted.get() && state == Ic705PttState.RX_IDLE) return@synchronized
                     if (releaseAttempts < maxReleaseAttempts) {
-                        Log.w(TAG, "No PTT OFF ACK after ${ackTimeoutMs}ms; retrying")
+                        AppLog.w(
+                            "IC705.PTT",
+                            "ptt_off_ack_timeout_retry",
+                            mapOf("timeout_ms" to ackTimeoutMs, "attempt" to releaseAttempts),
+                        )
                         attemptRelease(reason)
                     } else {
                         pendingCommand = null
-                        Log.e(TAG, "No PTT OFF ACK after $releaseAttempts sends; retaining asserted state")
+                        AppLog.e(
+                            "IC705.PTT",
+                            "ptt_off_ack_timeout",
+                            mapOf("attempts" to releaseAttempts, "retaining_asserted_state" to true),
+                        )
                         scheduleWatchdog()
                     }
                 }
@@ -274,7 +308,11 @@ class Ic705PttStateMachine(
                 synchronized(this@Ic705PttStateMachine) {
                     if (shutdown) return@synchronized
                     if (isTransmitting) {
-                        Log.e(TAG, "PTT watchdog fired after ${absoluteWatchdogMs}ms! Force-releasing PTT.")
+                        AppLog.e(
+                            "IC705.PTT",
+                            "absolute_watchdog_fired",
+                            mapOf("watchdog_ms" to absoluteWatchdogMs, "state" to state),
+                        )
                         forceRelease("PTT absolute watchdog timeout (${absoluteWatchdogMs}ms)")
                     }
                 }
@@ -296,13 +334,20 @@ class Ic705PttStateMachine(
 
     private fun transitionTo(newState: Ic705PttState) {
         if (state == newState) return
-        Log.i(TAG, "PttStateMachine: $state -> $newState")
+        val oldState = state
         state = newState
+        AppLog.i("IC705.PTT", "state_transition", mapOf("from" to oldState, "to" to newState))
+        publishState()
         actions.onStateChanged(newState)
     }
 
+    private fun publishState() {
+        Ic705DiagnosticState.set("ptt_state", state)
+        Ic705DiagnosticState.set("ptt_asserted_possible", isPttAsserted.get() || state != Ic705PttState.RX_IDLE)
+        Ic705DiagnosticState.set("can_stream_audio", canStreamAudio)
+    }
+
     companion object {
-        private const val TAG = "APRSdroid.IC705"
         const val CIV_ACK = 0xfb
         const val CIV_NAK = 0xfa
         const val DEFAULT_ACK_TIMEOUT_MS = 500L
