@@ -1,0 +1,53 @@
+name: MapLibre size benchmark
+
+on:
+  push:
+    branches:
+      - perf/ci-size-optimization
+    paths:
+      - '.github/workflows/maplibre-size-benchmark.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Clone MapLibre Native 13.5.1
+        run: |
+          git clone --depth 1 --branch android-v13.5.1 --recurse-submodules --shallow-submodules \
+            https://github.com/maplibre/maplibre-native.git maplibre-native
+      - name: Disable unused low-risk features
+        working-directory: maplibre-native
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('platform/android/MapLibreAndroid/build.gradle.kts')
+          s = p.read_text()
+          old = 'arguments("-DMLN_WITH_OPENGL=ON")'
+          new = 'arguments("-DMLN_WITH_OPENGL=ON", "-DMLN_WITH_PMTILES=OFF", "-DMLN_WITH_GLFW=OFF")'
+          if old not in s:
+              raise SystemExit('OpenGL CMake argument block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Build arm64 OpenGL Release SDK
+        working-directory: maplibre-native/platform/android
+        run: |
+          make android-lib-arm-v8 BUILDTYPE=Release RENDERER=opengl JOBS=4
+      - name: Report native size
+        working-directory: maplibre-native
+        run: |
+          set -euo pipefail
+          so=$(find platform/android/MapLibreAndroid/build -type f -path '*/arm64-v8a/libmaplibre.so' | head -n 1)
+          aar=$(find platform/android/MapLibreAndroid/build/outputs/aar -type f -name '*opengl*release*.aar' | head -n 1)
+          test -n "$so"
+          stat -c 'libmaplibre.so bytes=%s path=%n' "$so"
+          if [ -n "$aar" ]; then stat -c 'AAR bytes=%s path=%n' "$aar"; fi
+          file "$so"
+          readelf -S "$so" | grep -E ' \.text| \.rodata| \.data| \.dynsym| \.dynstr' || true
