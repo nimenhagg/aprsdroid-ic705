@@ -34,6 +34,31 @@ jobs:
       - name: Apply Mod-v1.9.4 changes
         run: python3 "$RUNNER_TEMP/apply_mod_v1_9_4.py"
 
+      - name: Repair generated APRS parser escapes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/aprs/AprsPacketSummaryParser.kt")
+          text = path.read_text(encoding="utf-8")
+
+          bad_regex = '    private val altitudeRegex = Regex("(?:^|/)A=(\\d{6})(?:$|[^0-9])")'
+          good_regex = '    private val altitudeRegex = Regex("""(?:^|/)A=(\\d{6})(?:$|[^0-9])""")'
+          bad_mice = "        payload[0] == ''' || payload[0] == '`' -> AprsPacketKind.MICE"
+          good_mice = "        payload[0] == '\\'' || payload[0] == '`' -> AprsPacketKind.MICE"
+
+          if bad_regex not in text:
+              raise SystemExit("Expected malformed altitude regex was not found")
+          if bad_mice not in text:
+              raise SystemExit("Expected malformed Mic-E character literal was not found")
+
+          text = text.replace(bad_regex, good_regex, 1)
+          text = text.replace(bad_mice, good_mice, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+
       - name: Set up JDK 17
         uses: actions/setup-java@v6
         with:
@@ -48,9 +73,6 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
         run: |
           chmod +x gradlew
-          echo '--- AprsPacketSummaryParser.kt ---'
-          nl -ba src/aprs/AprsPacketSummaryParser.kt | sed -n '1,150p'
-          echo '--- end parser ---'
           git diff --check
           ./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug --no-daemon --stacktrace
 
