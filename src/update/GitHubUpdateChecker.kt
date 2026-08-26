@@ -24,7 +24,7 @@ internal fun parseIc705Version(value: String): AppVersion? {
     )
 }
 
-sealed interface UpdateCheckResult {
+internal sealed interface UpdateCheckResult {
     data class UpToDate(val current: AppVersion, val latest: AppVersion) : UpdateCheckResult
     data class UpdateAvailable(
         val current: AppVersion,
@@ -37,7 +37,7 @@ sealed interface UpdateCheckResult {
 /**
  * One-shot update checker. It never schedules work and never runs unless [check] is called.
  */
-object GitHubUpdateChecker {
+internal object GitHubUpdateChecker {
     private const val LATEST_RELEASE_URL =
         "https://api.github.com/repos/nimenhagg/aprsdroid-ic705/releases/latest"
 
