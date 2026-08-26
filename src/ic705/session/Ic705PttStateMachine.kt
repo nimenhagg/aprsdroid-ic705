@@ -122,6 +122,10 @@ class Ic705PttStateMachine(
     fun finishTransmission() {
         if (shutdown || state == Ic705PttState.RX_IDLE) return
         if (state == Ic705PttState.TX_STREAMING) transitionTo(Ic705PttState.DRAINING)
+        // A failure/teardown path may already have started PTT OFF while the TX
+        // worker is unwinding. Do not reset its attempt counter or create another
+        // overlapping release timer from this finally path.
+        if (pendingCommand == PendingPttCommand.OFF) return
         startRelease("Transmission finished")
     }
 
@@ -132,7 +136,7 @@ class Ic705PttStateMachine(
         if (isPttAsserted.get() || state != Ic705PttState.RX_IDLE) {
             Log.w(TAG, "forceRelease: $reason (state=$state, pttAsserted=${isPttAsserted.get()})")
             if (state == Ic705PttState.TX_STREAMING) transitionTo(Ic705PttState.DRAINING)
-            startRelease(reason)
+            if (pendingCommand != PendingPttCommand.OFF) startRelease(reason)
         }
     }
 
