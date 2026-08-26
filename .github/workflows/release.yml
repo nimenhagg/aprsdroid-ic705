@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - perf/ci-size-optimization
     tags:
       - 'v*'
   workflow_dispatch:
@@ -38,7 +39,17 @@ jobs:
             echo "A tagged release requires the MAPS_API_KEY secret." >&2
             exit 1
           fi
-          ./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug assembleArm64OpenglRelease assembleArm32OpenglRelease --no-daemon --stacktrace
+
+          tasks=(
+            verifyReleaseVersion
+            testArm64OpenglDebugUnitTest
+            lintArm64OpenglDebug
+            assembleArm64OpenglRelease
+          )
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            tasks+=(assembleArm32OpenglRelease)
+          fi
+          ./gradlew "${tasks[@]}" --no-daemon --stacktrace
         env:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
@@ -120,12 +131,18 @@ jobs:
           }
 
           publish_apk arm64Opengl arm64-v8a opengl 1 "Recommended_"
-          publish_apk arm32Opengl armeabi-v7a opengl 1 ""
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            publish_apk arm32Opengl armeabi-v7a opengl 1 ""
+          fi
 
           rm -f release.jks
           (cd release-apks && sha256sum *.apk > SHA256SUMS.txt)
           mkdir -p release-mappings
-          for flavor in arm64Opengl arm32Opengl; do
+          flavors=(arm64Opengl)
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            flavors+=(arm32Opengl)
+          fi
+          for flavor in "${flavors[@]}"; do
             if [ -f "build/outputs/mapping/${flavor}Release/mapping.txt" ]; then
               cp "build/outputs/mapping/${flavor}Release/mapping.txt" \
                 "release-mappings/${flavor}-mapping.txt"
