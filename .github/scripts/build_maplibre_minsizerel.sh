@@ -14,7 +14,11 @@ esac
 : "${ANDROID_HOME:?ANDROID_HOME must point to the Android SDK}"
 NDK="$ANDROID_HOME/ndk/$NDK_VERSION"
 if [ ! -d "$NDK" ]; then
-  yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION" >/dev/null
+  SDKMANAGER="$(command -v sdkmanager || true)"
+  if [ -z "$SDKMANAGER" ]; then
+    SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+  fi
+  yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null
 fi
 
 CMAKE_BIN="$(command -v cmake)"
@@ -38,10 +42,10 @@ git clone --quiet --depth 1 --branch "android-v$VERSION" --recurse-submodules --
 cd "$WORK/maplibre-native"
 
 # AGP's Android Release variant normally maps native code to RelWithDebInfo.
-# We build MinSizeRel directly so the upstream
-# CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL=ON setting is actually selected.
-# Extend the Android-specific Release/RelWithDebInfo size flags to MinSizeRel too,
-# so the custom build keeps -Oz, LTO, ICF, section GC and the version script.
+# Build MinSizeRel directly so the upstream
+# CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL=ON setting is selected.
+# Extend Android's existing Release/RelWithDebInfo size flags to MinSizeRel too,
+# preserving -Oz, LTO, ICF, section GC and the version script.
 python3 - <<'PY'
 from pathlib import Path
 
@@ -85,7 +89,14 @@ if [ -z "$SO" ]; then
   echo "MinSizeRel libmaplibre.so was not produced" >&2
   exit 1
 fi
+
+STRIP="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip"
+if [ ! -x "$STRIP" ]; then
+  echo "llvm-strip not found in NDK $NDK_VERSION" >&2
+  exit 1
+fi
 cp "$SO" "$OUTPUT"
+"$STRIP" --strip-unneeded "$OUTPUT"
 
 READELF="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
 if [ -x "$READELF" ]; then
