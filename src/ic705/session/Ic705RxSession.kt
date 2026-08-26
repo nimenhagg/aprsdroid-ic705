@@ -58,7 +58,14 @@ data class Ic705RxSessionTiming(
     val idleAfterMillis: Long = 100L,
     val tokenRenewalMillis: Long = 60_000L,
     val watchdogPeriodMillis: Long = 500L,
-    val channelTimeoutMillis: Long = 3_000L,
+    /** CONTROL is authoritative for whole-session liveness. */
+    val channelTimeoutMillis: Long = 5_000L,
+    /** CI-V remains latency-sensitive, but is independent from RX audio silence. */
+    val civChannelTimeoutMillis: Long = 3_000L,
+    /** RX audio may legitimately be silent for long periods, especially around TX. */
+    val audioChannelTimeoutMillis: Long = 30_000L,
+    /** Give the radio time to resume RX audio after PTT OFF is acknowledged. */
+    val audioPostTxGraceMillis: Long = 5_000L,
     val handshakeStageTimeoutMillis: Long = 10_000L,
     val negotiationTimeoutMillis: Long = 45_000L,
     /** RS-BA1 waits about three seconds after login before claiming the streams. */
@@ -77,6 +84,9 @@ data class Ic705RxSessionTiming(
             tokenRenewalMillis,
             watchdogPeriodMillis,
             channelTimeoutMillis,
+            civChannelTimeoutMillis,
+            audioChannelTimeoutMillis,
+            audioPostTxGraceMillis,
             handshakeStageTimeoutMillis,
             negotiationTimeoutMillis,
             connectionInfoSettleMillis,
@@ -342,6 +352,9 @@ class Ic705RxSession internal constructor(
     @Volatile
     private var lastTxCompletedMonotonicMillis = 0L
 
+    @Volatile
+    private var audioWatchdogGraceUntilMillis = 0L
+
     private val pttStateMachine: Ic705PttStateMachine = Ic705PttStateMachine(
         actions = object : Ic705PttActions {
             override fun sendCivFrame(frame: ByteArray) {
@@ -369,9 +382,13 @@ class Ic705RxSession internal constructor(
             }
 
             override fun onStateChanged(state: Ic705PttState) {
-                // PTT state change hook
+                if (state == Ic705PttState.RX_IDLE) {
+                    audioWatchdogGraceUntilMillis =
+                        monotonicMillis() + config.timing.audioPostTxGraceMillis
+                }
             }
         },
+        watchdogExecutor = controlExecutor,
     )
 
     @Volatile
@@ -455,7 +472,13 @@ class Ic705RxSession internal constructor(
             nextTxOuterSequence = packetizer.outerSequence
             nextTxAudioSequence = packetizer.audioSequence
 
-            val started = pttStateMachine.beginTransmission()
+            val started = try {
+                pttStateMachine.beginTransmission()
+            } catch (error: Exception) {
+                Log.e(TAG, "transmit() failed to send PTT ON", error)
+                reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, Ic705ChannelRole.CIV)
+                return false
+            }
             if (!started) {
                 Log.w(TAG, "transmit() pttStateMachine.beginTransmission() returned false")
                 return false
@@ -478,8 +501,8 @@ class Ic705RxSession internal constructor(
                     val startNs = System.nanoTime()
 
                     for ((index, datagram) in datagrams.withIndex()) {
-                        if (!pttStateMachine.isTransmitting || closed.get() || engineState.phase != Ic705RxSessionEngine.Phase.RECEIVING) {
-                            Log.w(TAG, "startTxAudioStreaming: aborted at packet $index (transmitting=${pttStateMachine.isTransmitting}, closed=${closed.get()}, phase=${engineState.phase})")
+                        if (!pttStateMachine.canStreamAudio || closed.get() || engineState.phase != Ic705RxSessionEngine.Phase.RECEIVING) {
+                            Log.w(TAG, "startTxAudioStreaming: aborted at packet $index (canStreamAudio=${pttStateMachine.canStreamAudio}, pttState=${pttStateMachine.state}, closed=${closed.get()}, phase=${engineState.phase})")
                             break
                         }
                         val targetNs = startNs + (index * packetDurationNs) - leadNs
@@ -500,7 +523,7 @@ class Ic705RxSession internal constructor(
                         sendTracked(Ic705ChannelRole.AUDIO, datagram)
                     }
 
-                    if (pttStateMachine.isTransmitting && !closed.get()) {
+                    if (pttStateMachine.canStreamAudio && !closed.get()) {
                         pttStateMachine.onAudioStreamingFinished()
                         Thread.sleep(TX_DRAIN_WAIT_MILLIS)
                     }
@@ -557,6 +580,7 @@ class Ic705RxSession internal constructor(
                     dispatch(Ic705RxSessionEngine.Event.Stop)
                 } finally {
                     audioExecutor.shutdownNow()
+                    pttStateMachine.shutdown()
                     controlExecutor.shutdown()
                     awaitAudioTermination()
                     finishClose()
@@ -564,6 +588,7 @@ class Ic705RxSession internal constructor(
             }
         } catch (_: RejectedExecutionException) {
             audioExecutor.shutdownNow()
+            pttStateMachine.shutdown()
             controlExecutor.shutdown()
             Thread(
                 {
@@ -857,6 +882,9 @@ class Ic705RxSession internal constructor(
                 }
                 else -> Unit
             }
+        } catch (_: IOException) {
+            reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, role)
+            dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("$role socket I/O"))
         } catch (_: Ic705ProtocolException) {
             reportIssue(
                 Ic705RxSessionIssueCode.MALFORMED_PACKET,
@@ -1323,24 +1351,22 @@ class Ic705RxSession internal constructor(
         }
     }
 
+    @Throws(IOException::class)
     private fun sendTracked(role: Ic705ChannelRole, template: ByteArray) {
-        val runtime = channelRuntimes[role] ?: run {
-            Log.w(TAG, "sendTracked($role): runtime not found")
-            return
-        }
-        val channel = channels[role] ?: run {
-            Log.w(TAG, "sendTracked($role): channel not found")
-            return
-        }
+        val runtime = channelRuntimes[role]
+            ?: throw IOException("$role runtime is unavailable")
+        val channel = channels[role]
+            ?: throw IOException("$role UDP channel is unavailable")
         if (!channel.isOpen) {
-            Log.w(TAG, "sendTracked($role): channel is not open")
-            return
+            throw IOException("$role UDP channel is not open")
         }
         val tracked = runtime.trackedPackets.track(template)
         try {
             channel.send(tracked.data)
-        } catch (e: Exception) {
-            Log.w(TAG, "sendTracked($role) failed: ${e.message}")
+        } catch (error: Exception) {
+            runtime.trackedPackets.discard(tracked.sequence)
+            if (error is IOException) throw error
+            throw IOException("$role UDP send failed", error)
         }
     }
 
@@ -1422,11 +1448,30 @@ class Ic705RxSession internal constructor(
 
     private fun checkWatchdog() {
         val now = monotonicMillis()
+        val pttPossiblyAsserted = pttStateMachine.isTransmitting
         val stale = channelRuntimes.values.firstOrNull { runtime ->
-            runtime.remoteId != null &&
-                now - runtime.lastReceivedAtMillis.get() > config.timing.channelTimeoutMillis
+            if (runtime.remoteId == null) return@firstOrNull false
+            if (
+                runtime.role == Ic705ChannelRole.AUDIO &&
+                shouldSuppressIc705AudioWatchdog(
+                    pttPossiblyAsserted = pttPossiblyAsserted,
+                    nowMillis = now,
+                    graceUntilMillis = audioWatchdogGraceUntilMillis,
+                )
+            ) {
+                return@firstOrNull false
+            }
+            val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, runtime.role)
+            now - runtime.lastReceivedAtMillis.get() > timeout
         }
         if (stale != null) {
+            val age = (now - stale.lastReceivedAtMillis.get()).coerceAtLeast(0L)
+            val timeout = ic705ChannelWatchdogTimeoutMillis(config.timing, stale.role)
+            Log.w(
+                TAG,
+                "watchdog stale role=${stale.role} age=${age}ms timeout=${timeout}ms " +
+                    "ptt=${pttStateMachine.state} phase=${engineState.phase} generation=$generation",
+            )
             dispatch(Ic705RxSessionEngine.Event.RecoverableFailure("${stale.role} timeout"))
         }
     }
@@ -1742,6 +1787,21 @@ internal fun shouldSendIc705TrackedIdle(
     millisSinceLastTracked: Long,
     idleAfterMillis: Long,
 ): Boolean = millisSinceLastTracked >= idleAfterMillis
+
+internal fun ic705ChannelWatchdogTimeoutMillis(
+    timing: Ic705RxSessionTiming,
+    role: Ic705ChannelRole,
+): Long = when (role) {
+    Ic705ChannelRole.CONTROL -> timing.channelTimeoutMillis
+    Ic705ChannelRole.CIV -> timing.civChannelTimeoutMillis
+    Ic705ChannelRole.AUDIO -> timing.audioChannelTimeoutMillis
+}
+
+internal fun shouldSuppressIc705AudioWatchdog(
+    pttPossiblyAsserted: Boolean,
+    nowMillis: Long,
+    graceUntilMillis: Long,
+): Boolean = pttPossiblyAsserted || nowMillis < graceUntilMillis
 
 private fun namedDaemonThreadFactory(name: String): ThreadFactory = ThreadFactory { runnable ->
     Thread(runnable, name).apply { isDaemon = true }

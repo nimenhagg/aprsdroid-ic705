@@ -28,6 +28,10 @@ interface Ic705PttActions {
  * A release is considered confirmed only after a radio ACK. If local sends fail
  * or the ACK is lost, the state deliberately remains asserted and the absolute
  * watchdog keeps retrying rather than reporting a false RX state.
+ *
+ * [shutdown] terminates this coordinator's local lifetime only. It deliberately
+ * does not report RX_IDLE or clear [isRadioPttOn], because losing the local
+ * session is not evidence that the radio actually released PTT.
  */
 class Ic705PttStateMachine(
     private val actions: Ic705PttActions,
@@ -47,6 +51,7 @@ class Ic705PttStateMachine(
     private var releaseFuture: ScheduledFuture<*>? = null
     private var pendingCommand: PendingPttCommand? = null
     private var releaseAttempts = 0
+    private var shutdown = false
 
     init {
         require(ackTimeoutMs > 0L) { "ackTimeoutMs must be positive" }
@@ -54,14 +59,23 @@ class Ic705PttStateMachine(
         require(maxReleaseAttempts > 0) { "maxReleaseAttempts must be positive" }
     }
 
+    /** True while the radio may still have PTT asserted. */
     val isTransmitting: Boolean
         get() = state != Ic705PttState.RX_IDLE
+
+    /** True only while TX audio is allowed to continue being emitted. */
+    val canStreamAudio: Boolean
+        get() = state == Ic705PttState.TX_STREAMING && synchronized(this) { !shutdown }
 
     val isRadioPttOn: Boolean
         get() = isPttAsserted.get()
 
+    val isShutdown: Boolean
+        get() = synchronized(this) { shutdown }
+
     @Synchronized
     fun onCivReceived(civFrame: ByteArray) {
+        if (shutdown) return
         if (civFrame.size >= 6 &&
             (civFrame[0].toInt() and 0xff == 0xfe) &&
             (civFrame[1].toInt() and 0xff == 0xfe) &&
@@ -78,7 +92,7 @@ class Ic705PttStateMachine(
 
     @Synchronized
     fun beginTransmission(): Boolean {
-        if (state != Ic705PttState.RX_IDLE) return false
+        if (shutdown || state != Ic705PttState.RX_IDLE) return false
         cancelReleaseTimer()
         pendingCommand = PendingPttCommand.ON
         try {
@@ -94,30 +108,51 @@ class Ic705PttStateMachine(
     }
 
     @Synchronized
-    fun onAudioStreamingStarted(): Boolean = state == Ic705PttState.TX_STREAMING
+    fun onAudioStreamingStarted(): Boolean =
+        !shutdown && state == Ic705PttState.TX_STREAMING
 
     @Synchronized
     fun onAudioStreamingFinished(): Boolean {
-        if (state != Ic705PttState.TX_STREAMING) return false
+        if (shutdown || state != Ic705PttState.TX_STREAMING) return false
         transitionTo(Ic705PttState.DRAINING)
         return true
     }
 
     @Synchronized
     fun finishTransmission() {
-        if (state == Ic705PttState.RX_IDLE) return
+        if (shutdown || state == Ic705PttState.RX_IDLE) return
         if (state == Ic705PttState.TX_STREAMING) transitionTo(Ic705PttState.DRAINING)
+        // A failure/teardown path may already have started PTT OFF while the TX
+        // worker is unwinding. Do not reset its attempt counter or create another
+        // overlapping release timer from this finally path.
+        if (pendingCommand == PendingPttCommand.OFF) return
         startRelease("Transmission finished")
     }
 
     @Synchronized
     fun forceRelease(reason: String = "Forced release") {
+        if (shutdown) return
         cancelWatchdog()
         if (isPttAsserted.get() || state != Ic705PttState.RX_IDLE) {
             Log.w(TAG, "forceRelease: $reason (state=$state, pttAsserted=${isPttAsserted.get()})")
             if (state == Ic705PttState.TX_STREAMING) transitionTo(Ic705PttState.DRAINING)
-            startRelease(reason)
+            if (pendingCommand != PendingPttCommand.OFF) startRelease(reason)
         }
+    }
+
+    /**
+     * Cancels all future local PTT callbacks without claiming the radio is in RX.
+     * This is used only when the owning session is permanently being destroyed.
+     */
+    @Synchronized
+    fun shutdown() {
+        if (shutdown) return
+        shutdown = true
+        cancelReleaseTimer()
+        cancelWatchdog()
+        pendingCommand = null
+        releaseAttempts = 0
+        Log.i(TAG, "PTT coordinator shutdown (state=$state, pttAsserted=${isPttAsserted.get()})")
     }
 
     private fun handleAck() {
@@ -156,13 +191,14 @@ class Ic705PttStateMachine(
     }
 
     private fun startRelease(reason: String) {
+        if (shutdown) return
         cancelReleaseTimer()
         releaseAttempts = 0
         attemptRelease(reason)
     }
 
     private fun attemptRelease(reason: String) {
-        if (!isPttAsserted.get() && state == Ic705PttState.RX_IDLE) return
+        if (shutdown || (!isPttAsserted.get() && state == Ic705PttState.RX_IDLE)) return
         releaseAttempts += 1
         pendingCommand = PendingPttCommand.OFF
         val sendSucceeded = try {
@@ -187,11 +223,13 @@ class Ic705PttStateMachine(
     }
 
     private fun scheduleReleaseTimer(reason: String) {
+        if (shutdown) return
         cancelReleaseTimer()
         releaseFuture = watchdogExecutor.schedule(
             {
                 synchronized(this@Ic705PttStateMachine) {
                     releaseFuture = null
+                    if (shutdown) return@synchronized
                     if (!isPttAsserted.get() && state == Ic705PttState.RX_IDLE) return@synchronized
                     if (releaseAttempts < maxReleaseAttempts) {
                         Log.w(TAG, "No PTT OFF ACK after ${ackTimeoutMs}ms; retrying")
@@ -209,6 +247,7 @@ class Ic705PttStateMachine(
     }
 
     private fun completeRelease() {
+        if (shutdown) return
         cancelReleaseTimer()
         cancelWatchdog()
         pendingCommand = null
@@ -228,10 +267,12 @@ class Ic705PttStateMachine(
     }
 
     private fun scheduleWatchdog() {
+        if (shutdown) return
         cancelWatchdog()
         watchdogFuture = watchdogExecutor.schedule(
             {
                 synchronized(this@Ic705PttStateMachine) {
+                    if (shutdown) return@synchronized
                     if (isTransmitting) {
                         Log.e(TAG, "PTT watchdog fired after ${absoluteWatchdogMs}ms! Force-releasing PTT.")
                         forceRelease("PTT absolute watchdog timeout (${absoluteWatchdogMs}ms)")

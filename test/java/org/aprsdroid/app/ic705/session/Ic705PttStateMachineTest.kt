@@ -56,21 +56,26 @@ class Ic705PttStateMachineTest {
         val sm = Ic705PttStateMachine(actions)
         assertEquals(Ic705PttState.RX_IDLE, sm.state)
         assertFalse(sm.isTransmitting)
+        assertFalse(sm.canStreamAudio)
         assertFalse(sm.isRadioPttOn)
         assertTrue(sm.beginTransmission())
         assertEquals(Ic705PttState.TX_STREAMING, sm.state)
         assertTrue(sm.isTransmitting)
+        assertTrue(sm.canStreamAudio)
         assertTrue(sm.isRadioPttOn)
         assertEquals(1, actions.sentCivFrames.size)
         assertEquals(0x01.toByte(), actions.sentCivFrames[0][6])
         assertTrue(sm.onAudioStreamingFinished())
         assertEquals(Ic705PttState.DRAINING, sm.state)
+        assertTrue(sm.isTransmitting)
+        assertFalse(sm.canStreamAudio)
         sm.finishTransmission()
         assertEquals(Ic705PttState.DRAINING, sm.state)
         assertTrue(sm.isRadioPttOn)
         sm.onCivReceived(ackFrame())
         assertEquals(Ic705PttState.RX_IDLE, sm.state)
         assertFalse(sm.isTransmitting)
+        assertFalse(sm.canStreamAudio)
         assertFalse(sm.isRadioPttOn)
         assertEquals(2, actions.sentCivFrames.size)
         assertEquals(0x00.toByte(), actions.sentCivFrames[1][6])
@@ -96,12 +101,70 @@ class Ic705PttStateMachineTest {
         assertTrue(sm.beginTransmission())
         sm.forceRelease("Testing force release")
         assertEquals(Ic705PttState.DRAINING, sm.state)
+        assertFalse(sm.canStreamAudio)
         assertTrue(sm.isRadioPttOn)
         assertEquals(2, actions.sentCivFrames.size)
         assertEquals(0x00.toByte(), actions.sentCivFrames[1][6])
         sm.onCivReceived(ackFrame())
         assertEquals(Ic705PttState.RX_IDLE, sm.state)
         assertFalse(sm.isRadioPttOn)
+    }
+
+    @Test
+    fun finishDoesNotRestartAlreadyPendingRelease() {
+        val actions = FakePttActions()
+        val watchdog = Executors.newSingleThreadScheduledExecutor()
+        val sm = Ic705PttStateMachine(
+            actions = actions,
+            ackTimeoutMs = 1_000L,
+            absoluteWatchdogMs = 60_000L,
+            watchdogExecutor = watchdog,
+        )
+        try {
+            assertTrue(sm.beginTransmission())
+            sm.forceRelease("session recovery")
+            assertEquals(2, actions.civSendAttempts.get())
+            sm.finishTransmission()
+            assertEquals(2, actions.civSendAttempts.get())
+            assertEquals(Ic705PttState.DRAINING, sm.state)
+            sm.onCivReceived(ackFrame())
+            assertEquals(Ic705PttState.RX_IDLE, sm.state)
+        } finally {
+            watchdog.shutdownNow()
+        }
+    }
+
+    @Test
+    fun shutdownCancelsFutureRetriesWithoutReportingFalseIdle() {
+        val actions = FakePttActions()
+        val watchdog = Executors.newSingleThreadScheduledExecutor()
+        val sm = Ic705PttStateMachine(
+            actions = actions,
+            ackTimeoutMs = 20L,
+            absoluteWatchdogMs = 40L,
+            watchdogExecutor = watchdog,
+        )
+        try {
+            assertTrue(sm.beginTransmission())
+            assertTrue(sm.onAudioStreamingFinished())
+            sm.finishTransmission()
+            val attemptsAtShutdown = actions.civSendAttempts.get()
+            sm.shutdown()
+
+            assertTrue(sm.isShutdown)
+            assertEquals(Ic705PttState.DRAINING, sm.state)
+            assertTrue(sm.isTransmitting)
+            assertFalse(sm.canStreamAudio)
+            assertTrue(sm.isRadioPttOn)
+            assertFalse(sm.beginTransmission())
+
+            Thread.sleep(100L)
+            assertEquals(attemptsAtShutdown, actions.civSendAttempts.get())
+            assertEquals(Ic705PttState.DRAINING, sm.state)
+            assertTrue(sm.isRadioPttOn)
+        } finally {
+            watchdog.shutdownNow()
+        }
     }
 
     @Test

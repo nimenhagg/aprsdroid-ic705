@@ -7,11 +7,13 @@ import java.net.InetSocketAddress
 import java.net.SocketAddress
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -216,6 +218,54 @@ class Ic705UdpChannelTest {
         assertFalse(channel.isOpen)
     }
 
+    @Test
+    fun closeCannotInvalidateSocketDuringSend() {
+        val loopback = InetAddress.getLoopbackAddress()
+        val socketRef = AtomicReference<BlockingSendDatagramSocket>()
+        val channel = Ic705UdpChannel(
+            role = Ic705ChannelRole.AUDIO,
+            localAddress = InetSocketAddress(loopback, 0),
+            socketFactory = Ic705DatagramSocketFactory { localAddress ->
+                BlockingSendDatagramSocket(localAddress).also(socketRef::set)
+            },
+            onDatagram = {},
+        )
+        channel.setRemoteEndpoint(InetSocketAddress(loopback, 9))
+        channel.open()
+        val socket = socketRef.get()
+
+        val sendFailure = AtomicReference<Throwable?>()
+        val sendThread = Thread {
+            try {
+                channel.send(byteArrayOf(0x01))
+            } catch (error: Throwable) {
+                sendFailure.set(error)
+            }
+        }
+        sendThread.start()
+        assertTrue(socket.sendEntered.await(2, TimeUnit.SECONDS))
+
+        val closeDone = CountDownLatch(1)
+        val closeThread = Thread {
+            channel.close()
+            closeDone.countDown()
+        }
+        closeThread.start()
+
+        // close() must be blocked behind the channel lock while send() owns it.
+        assertFalse(closeDone.await(50, TimeUnit.MILLISECONDS))
+        assertFalse(socket.isClosed)
+
+        socket.allowSend.countDown()
+        sendThread.join(2_000L)
+        assertTrue(closeDone.await(2, TimeUnit.SECONDS))
+        closeThread.join(2_000L)
+
+        assertNull(sendFailure.get())
+        assertFalse(socket.closedDuringSend.get())
+        assertFalse(channel.isOpen)
+    }
+
     private class ReceiveObservingDatagramSocket(
         localAddress: InetSocketAddress,
         private val secondReceiveStarted: CountDownLatch,
@@ -229,6 +279,24 @@ class Ic705UdpChannelTest {
         override fun receive(packet: DatagramPacket) {
             if (receiveCount.incrementAndGet() == 2) secondReceiveStarted.countDown()
             super.receive(packet)
+        }
+    }
+
+    private class BlockingSendDatagramSocket(
+        localAddress: InetSocketAddress,
+    ) : DatagramSocket(null as SocketAddress?) {
+        val sendEntered = CountDownLatch(1)
+        val allowSend = CountDownLatch(1)
+        val closedDuringSend = AtomicBoolean(false)
+
+        init {
+            bind(localAddress)
+        }
+
+        override fun send(packet: DatagramPacket) {
+            sendEntered.countDown()
+            allowSend.await(2, TimeUnit.SECONDS)
+            if (isClosed) closedDuringSend.set(true)
         }
     }
 }

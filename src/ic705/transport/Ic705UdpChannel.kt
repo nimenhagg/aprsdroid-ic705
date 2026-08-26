@@ -135,15 +135,19 @@ class Ic705UdpChannel(
 
     @Throws(IOException::class)
     override fun send(data: ByteArray) {
-        val currentSocket: DatagramSocket
-        synchronized(lock) {
-            currentSocket = checkNotNull(socket) { "$role UDP channel is not open" }
-            check(configuredRemoteEndpoint != null) { "$role remote endpoint is not configured" }
-        }
         val immutablePayload = data.copyOf()
-        val target = checkNotNull(configuredRemoteEndpoint)
-        val packet = DatagramPacket(immutablePayload, immutablePayload.size, target)
-        currentSocket.send(packet)
+        synchronized(lock) {
+            val currentSocket = checkNotNull(socket) { "$role UDP channel is not open" }
+            check(!currentSocket.isClosed) { "$role UDP channel is closed" }
+            val target = checkNotNull(configuredRemoteEndpoint) {
+                "$role remote endpoint is not configured"
+            }
+            val packet = DatagramPacket(immutablePayload, immutablePayload.size, target)
+            // Keep send and local close mutually exclusive. Without this lock the
+            // close path can invalidate a socket after send() captures it but before
+            // DatagramSocket.send(), producing the observed "Socket closed" race.
+            currentSocket.send(packet)
+        }
     }
 
     override fun close() {

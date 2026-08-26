@@ -47,6 +47,19 @@ internal class Ic705TrackedPacketStore(
         return Ic705TrackedPacket(sequence, immutablePacket.copyOf())
     }
 
+    /**
+     * Removes a packet that never made it onto the UDP socket so a later radio
+     * retransmit request cannot resurrect a locally failed command.
+     *
+     * The sequence number remains consumed. Rewinding it would be unsafe once
+     * concurrent/successive packets may already have observed the next value.
+     */
+    @Synchronized
+    fun discard(sequence: Int) {
+        require(sequence in 0..0xffff)
+        entries.remove(sequence)
+    }
+
     @Synchronized
     fun find(sequence: Int): ByteArray? {
         require(sequence in 0..0xffff)
