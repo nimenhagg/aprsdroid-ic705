@@ -1,6 +1,5 @@
 package org.aprsdroid.app
 
-import android.Manifest
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -52,7 +51,6 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
 
     companion object {
         const val BACKEND_PERMISSION = 1000
-        const val REQUEST_GPS = 1010
     }
 
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
@@ -213,7 +211,7 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceItem(
                                         title = stringResource(R.string.setting_passcode),
-                                        summary = if (prefs.getPasscode().isEmpty()) {
+                                        summary = if (prefs.getString("passcode", "").isEmpty()) {
                                             stringResource(R.string.setting_passcode_missing)
                                         } else {
                                             stringResource(R.string.setting_passcode_configured)
