@@ -64,11 +64,14 @@ class NotificationPrefs : ComponentActivity() {
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val uri: Uri? = result.data?.let {
-                IntentCompat.getParcelableExtra(it, RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
+                IntentCompat.getParcelableExtra(
+                    it,
+                    RingtoneManager.EXTRA_RINGTONE_PICKED_URI,
+                    Uri::class.java,
+                )
             }
             pendingRingtoneKey?.let { key ->
-                val uriString = uri?.toString().orEmpty()
-                prefs.set(key, uriString)
+                prefs.set(key, uri?.toString().orEmpty())
                 refreshState()
             }
         }
@@ -82,7 +85,10 @@ class NotificationPrefs : ComponentActivity() {
             putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
             putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
             putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
-            putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+            putExtra(
+                RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI,
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+            )
             if (currentUri.isNotEmpty()) {
                 putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, currentUri.toUri())
             }
@@ -91,10 +97,9 @@ class NotificationPrefs : ComponentActivity() {
     }
 
     private fun getRingtoneTitle(uriString: String): String {
-        if (uriString.isEmpty()) return getString(R.string.p_msg_ring_summary)
+        if (uriString.isEmpty()) return getString(R.string.setting_notification_sound_default)
         return try {
-            val ringtone = RingtoneManager.getRingtone(this, uriString.toUri())
-            ringtone?.getTitle(this) ?: uriString
+            RingtoneManager.getRingtone(this, uriString.toUri())?.getTitle(this) ?: uriString
         } catch (_: Exception) {
             uriString
         }
@@ -127,138 +132,125 @@ class NotificationPrefs : ComponentActivity() {
                             title = {
                                 Text(
                                     text = stringResource(R.string.p__notification),
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
                                 )
                             },
                             navigationIcon = {
                                 IconButton(onClick = { finish() }) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(android.R.string.cancel)
+                                        contentDescription = stringResource(android.R.string.cancel),
                                     )
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
+                                containerColor = MaterialTheme.colorScheme.surface,
+                            ),
                         )
-                    }
+                    },
                 ) { paddingValues ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
-                            .verticalScroll(rememberScrollState())
+                            .verticalScroll(rememberScrollState()),
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
-
-                        // 1. 短消息通知
-                        PreferenceCategoryHeader(title = stringResource(R.string.p_msg))
-                        PreferenceGroupCard {
-                            PreferenceSwitchItem(
-                                title = stringResource(R.string.p_msg_led),
-                                summary = if (notifyLedState.value) stringResource(R.string.p_msg_led_on) else stringResource(R.string.p_msg_led_off),
-                                icon = Icons.Default.Highlight,
-                                checked = notifyLedState.value,
-                                onCheckedChange = { checked ->
-                                    notifyLedState.value = checked
-                                    prefs.set("notify_led", checked)
-                                }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                            PreferenceSwitchItem(
-                                title = stringResource(R.string.p_msg_vibr),
-                                summary = if (notifyVibrState.value) stringResource(R.string.p_msg_vibr_on) else stringResource(R.string.p_msg_vibr_off),
-                                icon = Icons.Default.Vibration,
-                                checked = notifyVibrState.value,
-                                onCheckedChange = { checked ->
-                                    notifyVibrState.value = checked
-                                    prefs.set("notify_vibr", checked)
-                                }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                            PreferenceItem(
-                                title = stringResource(R.string.p_msg_ring),
-                                summary = notifyRingtoneState.value,
-                                icon = Icons.Default.NotificationsActive,
-                                onClick = { pickRingtone("notify_ringtone") }
-                            )
-                        }
+                        NotificationGroup(
+                            title = stringResource(R.string.setting_notification_messages),
+                            led = notifyLedState.value,
+                            vibration = notifyVibrState.value,
+                            sound = notifyRingtoneState.value,
+                            onLedChanged = { checked ->
+                                notifyLedState.value = checked
+                                prefs.set("notify_led", checked)
+                            },
+                            onVibrationChanged = { checked ->
+                                notifyVibrState.value = checked
+                                prefs.set("notify_vibr", checked)
+                            },
+                            onSoundClick = { pickRingtone("notify_ringtone") },
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
-
-                        // 2. 位置数据包通知
-                        PreferenceCategoryHeader(title = stringResource(R.string.p_pos))
-                        PreferenceGroupCard {
-                            PreferenceSwitchItem(
-                                title = stringResource(R.string.p_msg_led),
-                                summary = if (posNotifyLedState.value) stringResource(R.string.p_msg_led_on) else stringResource(R.string.p_msg_led_off),
-                                icon = Icons.Default.Highlight,
-                                checked = posNotifyLedState.value,
-                                onCheckedChange = { checked ->
-                                    posNotifyLedState.value = checked
-                                    prefs.set("pos_notify_led", checked)
-                                }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                            PreferenceSwitchItem(
-                                title = stringResource(R.string.p_msg_vibr),
-                                summary = if (posNotifyVibrState.value) stringResource(R.string.p_msg_vibr_on) else stringResource(R.string.p_msg_vibr_off),
-                                icon = Icons.Default.Vibration,
-                                checked = posNotifyVibrState.value,
-                                onCheckedChange = { checked ->
-                                    posNotifyVibrState.value = checked
-                                    prefs.set("pos_notify_vibr", checked)
-                                }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                            PreferenceItem(
-                                title = stringResource(R.string.p_pos_ring),
-                                summary = posNotifyRingtoneState.value,
-                                icon = Icons.Default.NotificationsActive,
-                                onClick = { pickRingtone("pos_notify_ringtone") }
-                            )
-                        }
+                        NotificationGroup(
+                            title = stringResource(R.string.setting_notification_position),
+                            led = posNotifyLedState.value,
+                            vibration = posNotifyVibrState.value,
+                            sound = posNotifyRingtoneState.value,
+                            onLedChanged = { checked ->
+                                posNotifyLedState.value = checked
+                                prefs.set("pos_notify_led", checked)
+                            },
+                            onVibrationChanged = { checked ->
+                                posNotifyVibrState.value = checked
+                                prefs.set("pos_notify_vibr", checked)
+                            },
+                            onSoundClick = { pickRingtone("pos_notify_ringtone") },
+                        )
 
                         Spacer(modifier = Modifier.height(16.dp))
-
-                        // 3. 中继包通知
-                        PreferenceCategoryHeader(title = stringResource(R.string.p_dgp))
-                        PreferenceGroupCard {
-                            PreferenceSwitchItem(
-                                title = stringResource(R.string.p_msg_led),
-                                summary = if (dgpNotifyLedState.value) stringResource(R.string.p_msg_led_on) else stringResource(R.string.p_msg_led_off),
-                                icon = Icons.Default.Highlight,
-                                checked = dgpNotifyLedState.value,
-                                onCheckedChange = { checked ->
-                                    dgpNotifyLedState.value = checked
-                                    prefs.set("dgp_notify_led", checked)
-                                }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                            PreferenceSwitchItem(
-                                title = stringResource(R.string.p_msg_vibr),
-                                summary = if (dgpNotifyVibrState.value) stringResource(R.string.p_msg_vibr_on) else stringResource(R.string.p_msg_vibr_off),
-                                icon = Icons.Default.Vibration,
-                                checked = dgpNotifyVibrState.value,
-                                onCheckedChange = { checked ->
-                                    dgpNotifyVibrState.value = checked
-                                    prefs.set("dgp_notify_vibr", checked)
-                                }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                            PreferenceItem(
-                                title = stringResource(R.string.p_dgp_ring),
-                                summary = dgpNotifyRingtoneState.value,
-                                icon = Icons.Default.NotificationsActive,
-                                onClick = { pickRingtone("dgp_notify_ringtone") }
-                            )
-                        }
+                        NotificationGroup(
+                            title = stringResource(R.string.setting_notification_digipeated),
+                            led = dgpNotifyLedState.value,
+                            vibration = dgpNotifyVibrState.value,
+                            sound = dgpNotifyRingtoneState.value,
+                            onLedChanged = { checked ->
+                                dgpNotifyLedState.value = checked
+                                prefs.set("dgp_notify_led", checked)
+                            },
+                            onVibrationChanged = { checked ->
+                                dgpNotifyVibrState.value = checked
+                                prefs.set("dgp_notify_vibr", checked)
+                            },
+                            onSoundClick = { pickRingtone("dgp_notify_ringtone") },
+                        )
 
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
             }
         }
+    }
+}
+
+@androidx.compose.runtime.Composable
+private fun NotificationGroup(
+    title: String,
+    led: Boolean,
+    vibration: Boolean,
+    sound: String,
+    onLedChanged: (Boolean) -> Unit,
+    onVibrationChanged: (Boolean) -> Unit,
+    onSoundClick: () -> Unit,
+) {
+    PreferenceCategoryHeader(title = title)
+    PreferenceGroupCard {
+        PreferenceSwitchItem(
+            title = stringResource(R.string.setting_notification_led),
+            summary = stringResource(
+                if (led) R.string.setting_notification_led_on else R.string.setting_notification_led_off,
+            ),
+            icon = Icons.Default.Highlight,
+            checked = led,
+            onCheckedChange = onLedChanged,
+        )
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+        PreferenceSwitchItem(
+            title = stringResource(R.string.setting_notification_vibration),
+            summary = stringResource(
+                if (vibration) R.string.setting_notification_vibration_on else R.string.setting_notification_vibration_off,
+            ),
+            icon = Icons.Default.Vibration,
+            checked = vibration,
+            onCheckedChange = onVibrationChanged,
+        )
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+        PreferenceItem(
+            title = stringResource(R.string.setting_notification_sound),
+            summary = sound,
+            icon = Icons.Default.NotificationsActive,
+            onClick = onSoundClick,
+        )
     }
 }
