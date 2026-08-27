@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="setting_send_battery">是否发送电量信息？</string>
-    <string name="setting_send_battery_summary">仅 APRS-IS 生效</string>
-    <string name="setting_station_tap_action">台站单击操作</string>
-    <string name="setting_station_tap_action_summary">长按始终执行相反操作</string>
-    <string name="setting_station_tap_message">单击发消息，长按查看详情</string>
-    <string name="setting_station_tap_details">单击查看详情，长按发消息</string>
+    <string name="setting_send_battery">发送电量信息</string>
+    <string name="setting_send_battery_summary">仅在 APRS-IS 模式下发送</string>
+    <string name="setting_station_tap_action">点击台站</string>
+    <string name="setting_station_tap_message">发送消息</string>
+    <string name="setting_station_tap_details">查看详情</string>
+    <string name="setting_station_long_press_details">长按：查看台站详情</string>
+    <string name="setting_station_long_press_message">长按：发送消息</string>
+    <string name="setting_station_tap_message_option">发送消息（长按查看台站详情）</string>
+    <string name="setting_station_tap_details_option">查看台站详情（长按发送消息）</string>
+    <string name="setting_show_aprs_objects">显示 APRS 对象</string>
+    <string name="setting_show_aprs_objects_summary">在地图和台站列表中显示其他台站发布的对象</string>
     <string name="packet_show_raw">显示原始数据</string>
     <string name="packet_hide_raw">隐藏原始数据</string>
     <string name="packet_route">源 / 目标</string>
