@@ -6,8 +6,11 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.net.toUri
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
@@ -17,6 +20,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
+import org.aprsdroid.app.ui.component.AboutDialogContent
 import org.aprsdroid.app.ui.screen.MapScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import java.util.ArrayList
@@ -56,6 +60,7 @@ class GoogleMapAct : MapLoaderBase(),
 
         setContent {
             AprsTheme {
+                val showAboutDialog = remember { mutableStateOf(false) }
                 MapScreen(
                     title = if (targetcall.isNotEmpty()) getString(R.string.map_track_call, targetcall) else getMapTitlePrefix(),
                     isLoading = isLoadingState.value,
@@ -108,7 +113,7 @@ class GoogleMapAct : MapLoaderBase(),
                         StorageCleaner(this, storage) { onStopLoading() }.execute()
                     },
                     onOpenAbout = {
-                        AboutDialog(this).show()
+                        showAboutDialog.value = true
                     },
                     mapContent = {
                         AndroidView(
@@ -117,6 +122,19 @@ class GoogleMapAct : MapLoaderBase(),
                         )
                     }
                 )
+                if (showAboutDialog.value) {
+                    AboutDialogContent(
+                        onDismiss = { showAboutDialog.value = false },
+                        onOpenGithub = {
+                            startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    "https://github.com/nimenhagg/aprsdroid-ic705".toUri(),
+                                ),
+                            )
+                        },
+                    )
+                }
             }
         }
     }

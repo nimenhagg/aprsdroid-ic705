@@ -13,14 +13,18 @@ import android.util.Base64
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.gson.JsonObject
 import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
 import org.aprsdroid.app.map.OnlineTileSources
 import org.aprsdroid.app.map.TileUrlTemplate
+import org.aprsdroid.app.ui.component.AboutDialogContent
 import org.aprsdroid.app.ui.screen.MapScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -101,6 +105,7 @@ class MapAct : MapLoaderBase() {
 
         setContent {
             AprsTheme {
+                val showAboutDialog = remember { mutableStateOf(false) }
                 MapScreen(
                     title = if (targetcall.isNotEmpty()) getString(R.string.map_track_call, targetcall) else getMapTitlePrefix(),
                     isLoading = isLoadingState.value,
@@ -143,7 +148,7 @@ class MapAct : MapLoaderBase() {
                         StorageCleaner(this, db) { onStopLoading() }.execute()
                     },
                     onOpenAbout = {
-                        AboutDialog(this).show()
+                        showAboutDialog.value = true
                     },
                     mapContent = {
                         AndroidView(
@@ -152,6 +157,19 @@ class MapAct : MapLoaderBase() {
                         )
                     }
                 )
+                if (showAboutDialog.value) {
+                    AboutDialogContent(
+                        onDismiss = { showAboutDialog.value = false },
+                        onOpenGithub = {
+                            startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    "https://github.com/nimenhagg/aprsdroid-ic705".toUri(),
+                                ),
+                            )
+                        },
+                    )
+                }
             }
         }
     }
