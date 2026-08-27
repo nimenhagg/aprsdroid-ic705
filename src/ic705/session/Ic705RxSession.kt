@@ -1418,43 +1418,32 @@ class Ic705RxSession internal constructor(
         ) { sendAreYouThere(role) }
     }
 
-    private fun scheduleConnectionInfoSettle() {
-        cancelTask(TASK_CONNECTION_INFO_RETRY)
-        val expectedGeneration = generation
-        replaceTask(
-            TASK_CONNECTION_INFO_SETTLE,
-            controlExecutor.schedule(
-                {
-                    if (generation == expectedGeneration && !closed.get()) {
-                        dispatch(Ic705RxSessionEngine.Event.ConnectionInfoSettleTimerFired)
-                    }
-                },
-                config.timing.connectionInfoSettleMillis,
-                TimeUnit.MILLISECONDS,
-            ),
-        )
-    }
+    private fun scheduleConnectionInfoSettle() =
+        scheduleConnectionInfoTimer(Ic705ConnectionInfoTimer.SETTLE)
 
-    private fun scheduleConnectionInfoRetry() {
-        cancelTask(TASK_CONNECTION_INFO_SETTLE)
+    private fun scheduleConnectionInfoRetry() =
+        scheduleConnectionInfoTimer(Ic705ConnectionInfoTimer.RETRY)
+
+    private fun scheduleConnectionInfoTimer(timer: Ic705ConnectionInfoTimer) {
+        cancelTask(timer.conflictingTaskKey)
         val expectedGeneration = generation
         replaceTask(
-            TASK_CONNECTION_INFO_RETRY,
+            timer.taskKey,
             controlExecutor.schedule(
                 {
                     if (generation == expectedGeneration && !closed.get()) {
-                        dispatch(Ic705RxSessionEngine.Event.ConnectionInfoRetryTimerFired)
+                        dispatch(ic705ConnectionInfoTimerEvent(timer))
                     }
                 },
-                config.timing.connectionInfoRetryMillis,
+                ic705ConnectionInfoTimerDelayMillis(config.timing, timer),
                 TimeUnit.MILLISECONDS,
             ),
         )
     }
 
     private fun cancelConnectionInfoTimers() {
-        cancelTask(TASK_CONNECTION_INFO_SETTLE)
-        cancelTask(TASK_CONNECTION_INFO_RETRY)
+        cancelTask(Ic705ConnectionInfoTimer.SETTLE.taskKey)
+        cancelTask(Ic705ConnectionInfoTimer.RETRY.taskKey)
     }
 
     private fun scheduleRetry(
@@ -1604,11 +1593,8 @@ class Ic705RxSession internal constructor(
         const val CLOSE_WAIT_SLICE_MILLIS = 2_000L
         const val TASK_WATCHDOG = "watchdog"
         const val TASK_TOKEN_RENEWAL = "token-renewal"
-        const val TASK_CONNECTION_INFO_SETTLE = "connection-info-settle"
-        const val TASK_CONNECTION_INFO_RETRY = "connection-info-retry"
         const val TASK_RETRY = "retry"
         const val TASK_STAGE_TIMEOUT = "stage-timeout"
-        const val SESSION_REJECTED_COOLDOWN_MILLIS = 30_000L
         const val TX_DRAIN_WAIT_MILLIS = 150L
         const val TX_COOLDOWN_GUARD_MILLIS = 300L
 
@@ -1616,15 +1602,6 @@ class Ic705RxSession internal constructor(
             Ic705ChannelRole.CONTROL,
             Ic705ChannelRole.CIV,
             Ic705ChannelRole.AUDIO,
-        )
-
-        val HANDSHAKE_PHASES = setOf(
-            Ic705RxSessionEngine.Phase.OPENING_SOCKETS,
-            Ic705RxSessionEngine.Phase.CONTROL_DISCOVERY,
-            Ic705RxSessionEngine.Phase.AUTHENTICATING,
-            Ic705RxSessionEngine.Phase.NEGOTIATING,
-            Ic705RxSessionEngine.Phase.OPENING_STREAMS,
-            Ic705RxSessionEngine.Phase.STREAMS_READY,
         )
     }
 }
