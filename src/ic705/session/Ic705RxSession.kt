@@ -167,7 +167,7 @@ class Ic705RxSession internal constructor(
         java.util.Collections.synchronizedMap(EnumMap<Ic705ChannelRole, Ic705DatagramChannel>(Ic705ChannelRole::class.java))
     private val channelRuntimes: MutableMap<Ic705ChannelRole, ChannelRuntime> =
         java.util.Collections.synchronizedMap(EnumMap<Ic705ChannelRole, ChannelRuntime>(Ic705ChannelRole::class.java))
-    private val scheduledTasks = mutableMapOf<String, ScheduledFuture<*>>()
+    private val scheduledTasks = Ic705SessionTaskRegistry()
     private val streamRecoveries =
         EnumMap<Ic705ChannelRole, StreamRecoveryState>(Ic705ChannelRole::class.java)
 
@@ -1465,20 +1465,7 @@ class Ic705RxSession internal constructor(
             dispatch(Ic705RxSessionEngine.Event.RetryDisabled)
             return
         }
-        var delay = config.timing.initialReconnectMillis
-        repeat((attempt - 1).coerceAtLeast(0).coerceAtMost(30)) {
-            delay = (delay * 2).coerceAtMost(config.timing.maximumReconnectMillis)
-        }
-        delay = maxOf(
-            delay,
-            when (cooldown) {
-                Ic705RxSessionEngine.RetryCooldown.NORMAL -> 0L
-                Ic705RxSessionEngine.RetryCooldown.SESSION_NOT_READY ->
-                    config.timing.connectionInfoRetryMillis
-                Ic705RxSessionEngine.RetryCooldown.SESSION_REJECTED ->
-                    SESSION_REJECTED_COOLDOWN_MILLIS
-            },
-        )
+        val delay = ic705ReconnectDelayMillis(config.timing, attempt, cooldown)
         val expectedGeneration = generation
         replaceTask(
             TASK_RETRY,
@@ -1495,7 +1482,8 @@ class Ic705RxSession internal constructor(
     }
 
     private fun updateStageTimeout(state: Ic705RxSessionEngine.State) {
-        if (state.phase !in HANDSHAKE_PHASES) {
+        val timeoutMillis = ic705HandshakeTimeoutMillis(config.timing, state.phase)
+        if (timeoutMillis == null) {
             cancelTask(TASK_STAGE_TIMEOUT)
             return
         }
@@ -1516,11 +1504,7 @@ class Ic705RxSession internal constructor(
                         )
                     }
                 },
-                if (state.phase == Ic705RxSessionEngine.Phase.NEGOTIATING) {
-                    config.timing.negotiationTimeoutMillis
-                } else {
-                    config.timing.handshakeStageTimeoutMillis
-                },
+                timeoutMillis,
                 TimeUnit.MILLISECONDS,
             ),
         )
@@ -1557,16 +1541,15 @@ class Ic705RxSession internal constructor(
     }
 
     private fun replaceTask(key: String, task: ScheduledFuture<*>) {
-        scheduledTasks.put(key, task)?.cancel(false)
+        scheduledTasks.replace(key, task)
     }
 
     private fun cancelTask(key: String) {
-        scheduledTasks.remove(key)?.cancel(false)
+        scheduledTasks.cancel(key)
     }
 
     private fun cancelAllTasks() {
-        scheduledTasks.values.forEach { it.cancel(false) }
-        scheduledTasks.clear()
+        scheduledTasks.cancelAll()
     }
 
     private fun submitForGeneration(expectedGeneration: Long, block: () -> Unit) {
