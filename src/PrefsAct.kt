@@ -8,7 +8,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableStateOf
-import androidx.preference.PreferenceManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -44,7 +43,7 @@ class PrefsAct : ComponentActivity() {
                 val output = contentResolver.openOutputStream(uri)
                     ?: throw IOException(getString(R.string.config_export_open_error))
                 output.bufferedWriter(Charsets.UTF_8).use { writer ->
-                    val sp = PreferenceManager.getDefaultSharedPreferences(this)
+                    val sp = PrefsWrapper.defaultSharedPreferences(this)
                     val json = JSONObject(sp.all)
                     writer.write(json.toString(2))
                     writer.newLine()

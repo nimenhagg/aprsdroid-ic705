@@ -9,14 +9,23 @@ import android.media.AudioManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import androidx.preference.PreferenceManager
 import java.util.Locale
 import org.aprsdroid.app.location.LocationSource
 import org.aprsdroid.app.location.PeriodicGPS
 
 class PrefsWrapper(@JvmField val context: Context) {
+    companion object {
+        @JvmStatic
+        fun defaultSharedPreferences(context: Context): SharedPreferences {
+            return context.getSharedPreferences(
+                "${context.packageName}_preferences",
+                Context.MODE_PRIVATE,
+            )
+        }
+    }
+
     @JvmField
-    val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+    val prefs: SharedPreferences = defaultSharedPreferences(context)
 
     init {
         val currentStatus = prefs.getString("status", null)

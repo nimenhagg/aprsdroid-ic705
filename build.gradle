@@ -234,7 +234,6 @@ dependencies {
 	implementation 'com.squareup.okhttp3:okhttp:5.3.0'
 	implementation 'androidx.core:core-ktx:1.19.0'
 	implementation 'androidx.appcompat:appcompat:1.8.0'
-	implementation 'androidx.preference:preference-ktx:1.2.1'
 	implementation 'com.google.android.material:material:1.14.0'
 
 	def composeBom = platform('androidx.compose:compose-bom:2026.08.00')

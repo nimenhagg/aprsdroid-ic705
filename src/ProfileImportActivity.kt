@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.edit
-import androidx.preference.PreferenceManager
 import org.json.JSONObject
 
 class ProfileImportActivity : Activity() {
@@ -28,7 +27,7 @@ class ProfileImportActivity : Activity() {
                 }
             } ?: throw IllegalArgumentException("Cannot open stream for $dataUri")
             val config = JSONObject(configString)
-            val preferences = PreferenceManager.getDefaultSharedPreferences(this)
+            val preferences = PrefsWrapper.defaultSharedPreferences(this)
 
             preferences.edit {
                 val keys = config.keys()
