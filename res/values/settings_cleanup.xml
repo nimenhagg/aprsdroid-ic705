@@ -5,4 +5,26 @@
     <string name="setting_symbol_summary_mod">APRS symbol shown for this station</string>
     <string name="setting_notifications">Notifications</string>
     <string name="setting_notifications_summary">Message, position-report, and digipeat alerts</string>
+
+    <string name="identity_dialog_title">Station identity</string>
+    <string name="identity_first_run_title">Set up APRS identity</string>
+    <string name="identity_first_run_text">Enter your amateur radio callsign. An APRS-IS passcode is only required for transmitting through APRS-IS.</string>
+    <string name="identity_callsign">Callsign</string>
+    <string name="identity_callsign_invalid">Enter a valid callsign without SSID</string>
+    <string name="identity_passcode">APRS-IS passcode</string>
+    <string name="identity_passcode_optional">Optional</string>
+    <string name="identity_passcode_hint">Leave blank for read-only APRS-IS; RF modes do not use this passcode</string>
+    <string name="identity_passcode_invalid">Passcode does not match this callsign</string>
+
+    <string name="symbol_category_common_mod">Common</string>
+    <string name="symbol_category_vehicle_mod">Vehicles</string>
+    <string name="symbol_category_base_mod">Fixed stations</string>
+    <string name="symbol_category_person_mod">People</string>
+    <string name="symbol_category_weather_mod">Weather</string>
+    <string name="symbol_category_navigation_mod">Navigation</string>
+    <string name="symbol_category_primary_mod">Primary table</string>
+    <string name="symbol_category_alternate_mod">Alternate table</string>
+    <string name="symbol_current_code_mod">Symbol code: %1$s</string>
+    <string name="symbol_overlay_supported_mod">Overlay character supported: 0–9 or A–Z</string>
+    <string name="symbol_overlay_mod">Overlay</string>
 </resources>
