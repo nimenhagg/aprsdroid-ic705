@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_callsign_summary_mod">APRS 数据包使用的业余无线电呼号</string>
+    <string name="setting_ssid_dialog">选择 SSID</string>
+    <string name="setting_symbol_summary_mod">本站在 APRS 中使用的地图符号</string>
+    <string name="setting_notifications">通知设置</string>
+    <string name="setting_notifications_summary">消息、位置报告和中继通知</string>
+</resources>
