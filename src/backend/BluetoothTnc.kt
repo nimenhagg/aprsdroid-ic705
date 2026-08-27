@@ -21,7 +21,7 @@ class BluetoothTnc(
     }
 
     val btClient = prefs.getBoolean("bt.client", true)
-    val tncmac: String? = prefs.getString("bt.mac", null)
+    val tncmac: String? = prefs.getString("bt.mac", "").trim().takeIf { it.isNotEmpty() }
     val tncchannel = prefs.getStringInt("bt.channel", -1)
     var conn: BtSocketThread? = null
 
@@ -180,26 +180,11 @@ class BluetoothTnc(
             }
         }
 
-        private fun catchLog(tag: String, block: () -> Unit) {
-            Log.d(TAG, "catchLog($tag)")
-            try {
-                block()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Log.d(TAG, "$tag exception: $e")
-            }
-        }
-
         fun shutdown() {
-            Log.d(TAG, "shutdown()")
-            proto?.stop()
-            synchronized(this) {
-                val s = socket
-                if (s != null) {
-                    catchLog("socket.close") { s.close() }
-                }
-                socket = null
-            }
+            try { socket?.close() } catch (_: Exception) {}
+            socket = null
+            try { proto?.stop() } catch (_: Exception) {}
+            proto = null
         }
     }
 }
