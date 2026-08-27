@@ -6,6 +6,47 @@ import org.junit.Test
 
 class Ic705SessionTimingPolicyTest {
     @Test
+    fun connectionInfoTimersKeepConfiguredDelays() {
+        val timing = Ic705RxSessionTiming(
+            connectionInfoSettleMillis = 3_000L,
+            connectionInfoRetryMillis = 10_000L,
+        )
+
+        assertEquals(
+            3_000L,
+            ic705ConnectionInfoTimerDelayMillis(timing, Ic705ConnectionInfoTimer.SETTLE),
+        )
+        assertEquals(
+            10_000L,
+            ic705ConnectionInfoTimerDelayMillis(timing, Ic705ConnectionInfoTimer.RETRY),
+        )
+    }
+
+    @Test
+    fun connectionInfoTimerKeysRemainMutuallyExclusive() {
+        assertEquals(
+            Ic705ConnectionInfoTimer.RETRY.taskKey,
+            Ic705ConnectionInfoTimer.SETTLE.conflictingTaskKey,
+        )
+        assertEquals(
+            Ic705ConnectionInfoTimer.SETTLE.taskKey,
+            Ic705ConnectionInfoTimer.RETRY.conflictingTaskKey,
+        )
+    }
+
+    @Test
+    fun connectionInfoTimerEventsRemainDistinct() {
+        assertEquals(
+            Ic705RxSessionEngine.Event.ConnectionInfoSettleTimerFired,
+            ic705ConnectionInfoTimerEvent(Ic705ConnectionInfoTimer.SETTLE),
+        )
+        assertEquals(
+            Ic705RxSessionEngine.Event.ConnectionInfoRetryTimerFired,
+            ic705ConnectionInfoTimerEvent(Ic705ConnectionInfoTimer.RETRY),
+        )
+    }
+
+    @Test
     fun reconnectDelayUsesExponentialBackoffWithConfiguredCap() {
         val timing = Ic705RxSessionTiming(
             initialReconnectMillis = 1_000L,
