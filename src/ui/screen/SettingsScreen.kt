@@ -95,14 +95,23 @@ fun SettingsScreen(
     val ssidOptions = listOf(
         "0" to stringResource(R.string.setting_ssid_0),
         "1" to stringResource(R.string.setting_ssid_1),
+        "2" to stringResource(R.string.setting_ssid_2),
+        "3" to stringResource(R.string.setting_ssid_3),
+        "4" to stringResource(R.string.setting_ssid_4),
         "5" to stringResource(R.string.setting_ssid_5),
+        "6" to stringResource(R.string.setting_ssid_6),
         "7" to stringResource(R.string.setting_ssid_7),
         "8" to stringResource(R.string.setting_ssid_8),
         "9" to stringResource(R.string.setting_ssid_9),
         "10" to stringResource(R.string.setting_ssid_10),
+        "11" to stringResource(R.string.setting_ssid_11),
+        "12" to stringResource(R.string.setting_ssid_12),
+        "13" to stringResource(R.string.setting_ssid_13),
+        "14" to stringResource(R.string.setting_ssid_14),
         "15" to stringResource(R.string.setting_ssid_15),
     )
     val callsignDisplay = if (callsign.isEmpty()) stringResource(R.string.setting_not_set) else callsign
+    val ssidDisplay = if (ssid == "0") "0" else "-$ssid"
     val digiPathDisplay = if (digiPath.isEmpty()) stringResource(R.string.setting_direct_path) else digiPath
 
     Scaffold(
@@ -162,7 +171,7 @@ fun SettingsScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
                     title = stringResource(R.string.p_ssid),
-                    value = "-$ssid",
+                    value = ssidDisplay,
                     summary = stringResource(R.string.setting_ssid_summary),
                     icon = Icons.Default.Radio,
                     onClick = { showSsidDialog = true },
