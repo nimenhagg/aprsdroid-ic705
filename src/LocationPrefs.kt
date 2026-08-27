@@ -198,9 +198,12 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
 
                         PreferenceCategoryHeader(title = stringResource(R.string.setting_location_source))
                         PreferenceGroupCard {
-                            val currentSourceTitle = locSourceOptions
-                                .firstOrNull { it.first == locSourceState.value }
-                                ?.second ?: locSourceState.value
+                            val currentSourceTitle = when (locSourceState.value) {
+                                "smartbeaconing" -> stringResource(R.string.setting_location_source_smart_value)
+                                "periodic" -> stringResource(R.string.setting_location_source_periodic_value)
+                                "manual" -> stringResource(R.string.setting_location_source_manual_value)
+                                else -> locSourceState.value
+                            }
                             PreferenceValueItem(
                                 title = stringResource(R.string.setting_location_source),
                                 value = currentSourceTitle,
