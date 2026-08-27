@@ -39,11 +39,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 import org.aprsdroid.app.location.PeriodicGPS
 import org.aprsdroid.app.ui.component.PreferenceCategoryHeader
 import org.aprsdroid.app.ui.component.PreferenceEditDialog
@@ -53,7 +53,6 @@ import org.aprsdroid.app.ui.component.PreferenceSelectDialog
 import org.aprsdroid.app.ui.component.PreferenceSwitchItem
 import org.aprsdroid.app.ui.component.PreferenceValueItem
 import org.aprsdroid.app.ui.theme.AprsTheme
-import java.util.Locale
 
 class LocationPrefs : ComponentActivity(), PermissionHelper {
 
@@ -83,7 +82,6 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
 
     private val locSourceState = mutableStateOf("smartbeaconing")
 
-    // SmartBeaconing
     private val sbFastSpeedState = mutableStateOf("100")
     private val sbFastRateState = mutableStateOf("60")
     private val sbSlowSpeedState = mutableStateOf("5")
@@ -92,23 +90,19 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
     private val sbTurnMinState = mutableStateOf("10")
     private val sbTurnSlopeState = mutableStateOf("240")
 
-    // Periodic
     private val intervalState = mutableStateOf("10")
     private val distanceState = mutableStateOf("10")
     private val gpsActivationState = mutableStateOf("med")
     private val netLocState = mutableStateOf(false)
 
-    // Manual
     private val manualLatState = mutableStateOf("0.000")
     private val manualLonState = mutableStateOf("0.000")
     private val periodicPositionState = mutableStateOf(true)
 
-    // Location Privacy (平铺展开在定位设置最下方)
     private val ambiguityState = mutableStateOf("0")
     private val showSpdBearState = mutableStateOf(true)
     private val showAltitudeState = mutableStateOf(true)
 
-    // Dialog control
     private val editDialogKey = mutableStateOf<String?>(null)
     private val showLocSourceDialog = mutableStateOf(false)
     private val showGpsActivationDialog = mutableStateOf(false)
@@ -167,32 +161,24 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
 
         setContent {
             AprsTheme {
-                val locSourceOptions = remember {
-                    listOf(
-                        "smartbeaconing" to "SmartBeaconing™ (智能自适应速率)",
-                        "periodic" to "周期性 GPS (固定时间/距离间隔)",
-                        "manual" to "手动指定静态位置"
-                    )
-                }
-
-                val gpsActivationOptions = remember {
-                    listOf(
-                        "low" to "低耗电 (信标前 30 秒开启 GPS)",
-                        "med" to "平衡 (信标前 60 秒开启 GPS)",
-                        "high" to "高精度 (信标前 120 秒开启 GPS)",
-                        "always" to "常开 (始终保持 GPS 锁定)"
-                    )
-                }
-
-                val ambiguityOptions = remember {
-                    listOf(
-                        "0" to "精确坐标 (不模糊)",
-                        "1" to "模糊 ~0.18 km (1 位)",
-                        "2" to "模糊 ~1.8 km (2 位)",
-                        "3" to "模糊 ~18 km (3 位)",
-                        "4" to "模糊 ~180 km (4 位)"
-                    )
-                }
+                val locSourceOptions = listOf(
+                    "smartbeaconing" to stringResource(R.string.setting_location_source_smart_option),
+                    "periodic" to stringResource(R.string.setting_location_source_periodic_option),
+                    "manual" to stringResource(R.string.setting_location_source_manual_option),
+                )
+                val gpsActivationOptions = listOf(
+                    "low" to stringResource(R.string.setting_gps_low),
+                    "med" to stringResource(R.string.setting_gps_balanced),
+                    "high" to stringResource(R.string.setting_gps_high),
+                    "always" to stringResource(R.string.setting_gps_always),
+                )
+                val ambiguityOptions = listOf(
+                    "0" to stringResource(R.string.setting_ambiguity_exact),
+                    "1" to stringResource(R.string.setting_ambiguity_1),
+                    "2" to stringResource(R.string.setting_ambiguity_2),
+                    "3" to stringResource(R.string.setting_ambiguity_3),
+                    "4" to stringResource(R.string.setting_ambiguity_4),
+                )
 
                 Scaffold(
                     topBar = {
@@ -200,174 +186,178 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
                             title = {
                                 Text(
                                     text = stringResource(R.string.p__location),
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
                                 )
                             },
                             navigationIcon = {
                                 IconButton(onClick = { finish() }) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(android.R.string.cancel)
+                                        contentDescription = stringResource(android.R.string.cancel),
                                     )
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
+                                containerColor = MaterialTheme.colorScheme.surface,
+                            ),
                         )
-                    }
+                    },
                 ) { paddingValues ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(paddingValues)
-                            .verticalScroll(rememberScrollState())
+                            .verticalScroll(rememberScrollState()),
                     ) {
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // 1. 位置源选择
-                        PreferenceCategoryHeader(title = stringResource(R.string.p_locsource))
+                        PreferenceCategoryHeader(title = stringResource(R.string.setting_location_source))
                         PreferenceGroupCard {
-                            val currentSourceTitle = locSourceOptions.find { pair -> pair.first == locSourceState.value }?.second ?: locSourceState.value
+                            val currentSourceTitle = locSourceOptions
+                                .firstOrNull { it.first == locSourceState.value }
+                                ?.second ?: locSourceState.value
                             PreferenceValueItem(
-                                title = stringResource(R.string.p_locsource),
+                                title = stringResource(R.string.setting_location_source),
                                 value = currentSourceTitle,
-                                summary = stringResource(R.string.p_locsource_summary),
+                                summary = stringResource(R.string.setting_location_source_summary),
                                 icon = Icons.Default.LocationOn,
-                                onClick = { showLocSourceDialog.value = true }
+                                onClick = { showLocSourceDialog.value = true },
                             )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // 2. 根据所选模式展开配置项
                         when (locSourceState.value) {
                             "smartbeaconing" -> {
-                                PreferenceCategoryHeader(title = stringResource(R.string.p_source_smart))
+                                PreferenceCategoryHeader(title = stringResource(R.string.setting_smartbeacon_category))
                                 PreferenceGroupCard {
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_sb_fast_speed),
+                                        title = stringResource(R.string.setting_sb_fast_speed),
                                         value = "${sbFastSpeedState.value} km/h",
-                                        summary = stringResource(R.string.p_sb_fast_speed_summary),
+                                        summary = stringResource(R.string.setting_sb_fast_speed_summary),
                                         icon = Icons.Default.Speed,
-                                        onClick = { editDialogKey.value = "sb.fastspeed" }
+                                        onClick = { editDialogKey.value = "sb.fastspeed" },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_sb_fast_rate),
+                                        title = stringResource(R.string.setting_sb_fast_rate),
                                         value = "${sbFastRateState.value} s",
-                                        summary = stringResource(R.string.p_sb_fast_rate_summary),
+                                        summary = stringResource(R.string.setting_sb_fast_rate_summary),
                                         icon = Icons.Default.Timer,
-                                        onClick = { editDialogKey.value = "sb.fastrate" }
+                                        onClick = { editDialogKey.value = "sb.fastrate" },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_sb_slow_speed),
+                                        title = stringResource(R.string.setting_sb_slow_speed),
                                         value = "${sbSlowSpeedState.value} km/h",
-                                        summary = stringResource(R.string.p_sb_slow_speed_summary),
+                                        summary = stringResource(R.string.setting_sb_slow_speed_summary),
                                         icon = Icons.Default.Speed,
-                                        onClick = { editDialogKey.value = "sb.slowspeed" }
+                                        onClick = { editDialogKey.value = "sb.slowspeed" },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_sb_slow_rate),
+                                        title = stringResource(R.string.setting_sb_slow_rate),
                                         value = "${sbSlowRateState.value} s",
-                                        summary = stringResource(R.string.p_sb_slow_rate_summary),
+                                        summary = stringResource(R.string.setting_sb_slow_rate_summary),
                                         icon = Icons.Default.Timer,
-                                        onClick = { editDialogKey.value = "sb.slowrate" }
+                                        onClick = { editDialogKey.value = "sb.slowrate" },
                                     )
                                 }
 
                                 Spacer(modifier = Modifier.height(16.dp))
-                                PreferenceCategoryHeader(title = stringResource(R.string.p_corner_pegging))
+                                PreferenceCategoryHeader(title = stringResource(R.string.setting_turn_beacon_category))
                                 PreferenceGroupCard {
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_cp_turn_time),
+                                        title = stringResource(R.string.setting_turn_time),
                                         value = "${sbTurnTimeState.value} s",
-                                        summary = stringResource(R.string.p_cp_turn_time_summary),
+                                        summary = stringResource(R.string.setting_turn_time_summary),
                                         icon = Icons.Default.Timer,
-                                        onClick = { editDialogKey.value = "sb.turntime" }
+                                        onClick = { editDialogKey.value = "sb.turntime" },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_cp_turn_angle),
+                                        title = stringResource(R.string.setting_turn_angle),
                                         value = "${sbTurnMinState.value}°",
-                                        summary = stringResource(R.string.p_cp_turn_angle_summary),
+                                        summary = stringResource(R.string.setting_turn_angle_summary),
                                         icon = Icons.Default.TurnRight,
-                                        onClick = { editDialogKey.value = "sb.turnmin" }
+                                        onClick = { editDialogKey.value = "sb.turnmin" },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_cp_turn_slope),
+                                        title = stringResource(R.string.setting_turn_slope),
                                         value = sbTurnSlopeState.value,
-                                        summary = stringResource(R.string.p_cp_turn_slope_summary),
+                                        summary = stringResource(R.string.setting_turn_slope_summary),
                                         icon = Icons.Default.Speed,
-                                        onClick = { editDialogKey.value = "sb.turnslope" }
+                                        onClick = { editDialogKey.value = "sb.turnslope" },
                                     )
                                 }
                             }
+
                             "periodic" -> {
-                                PreferenceCategoryHeader(title = stringResource(R.string.p_source_periodic))
+                                PreferenceCategoryHeader(title = stringResource(R.string.setting_periodic_gps_category))
                                 PreferenceGroupCard {
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_interval),
+                                        title = stringResource(R.string.setting_time_interval),
                                         value = "${intervalState.value} min",
-                                        summary = stringResource(R.string.p_interval_summary),
+                                        summary = stringResource(R.string.setting_time_interval_summary),
                                         icon = Icons.Default.Timer,
-                                        onClick = { editDialogKey.value = "interval" }
+                                        onClick = { editDialogKey.value = "interval" },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_distance),
+                                        title = stringResource(R.string.setting_distance_interval),
                                         value = "${distanceState.value} km",
-                                        summary = stringResource(R.string.p_distance_summary),
+                                        summary = stringResource(R.string.setting_distance_interval_summary),
                                         icon = Icons.Default.Speed,
-                                        onClick = { editDialogKey.value = "distance" }
+                                        onClick = { editDialogKey.value = "distance" },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    val currentGpsTitle = gpsActivationOptions.find { pair -> pair.first == gpsActivationState.value }?.second ?: gpsActivationState.value
+                                    val currentGpsTitle = gpsActivationOptions
+                                        .firstOrNull { it.first == gpsActivationState.value }
+                                        ?.second ?: gpsActivationState.value
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_gps),
+                                        title = stringResource(R.string.setting_gps_activation),
                                         value = currentGpsTitle,
-                                        summary = stringResource(R.string.p_gps_summary),
+                                        summary = stringResource(R.string.setting_gps_activation_summary),
                                         icon = Icons.Default.GpsFixed,
-                                        onClick = { showGpsActivationDialog.value = true }
+                                        onClick = { showGpsActivationDialog.value = true },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceSwitchItem(
-                                        title = stringResource(R.string.p_netloc),
-                                        summary = stringResource(R.string.p_netloc_summary),
+                                        title = stringResource(R.string.setting_network_location),
+                                        summary = stringResource(R.string.setting_network_location_summary),
                                         icon = Icons.Default.NetworkCheck,
                                         checked = netLocState.value,
                                         onCheckedChange = { checked ->
                                             netLocState.value = checked
                                             prefs.set("netloc", checked)
-                                        }
+                                        },
                                     )
                                 }
                             }
+
                             "manual" -> {
-                                PreferenceCategoryHeader(title = stringResource(R.string.p_source_manual))
+                                PreferenceCategoryHeader(title = stringResource(R.string.setting_manual_position_category))
                                 PreferenceGroupCard {
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_source_lat),
+                                        title = stringResource(R.string.setting_latitude),
                                         value = manualLatState.value,
-                                        summary = stringResource(R.string.p_source_coord),
+                                        summary = stringResource(R.string.setting_decimal_degrees),
                                         icon = Icons.Default.LocationOn,
-                                        onClick = { editDialogKey.value = "manual_lat" }
+                                        onClick = { editDialogKey.value = "manual_lat" },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceValueItem(
-                                        title = stringResource(R.string.p_source_lon),
+                                        title = stringResource(R.string.setting_longitude),
                                         value = manualLonState.value,
-                                        summary = stringResource(R.string.p_source_coord),
+                                        summary = stringResource(R.string.setting_decimal_degrees),
                                         icon = Icons.Default.LocationOn,
-                                        onClick = { editDialogKey.value = "manual_lon" }
+                                        onClick = { editDialogKey.value = "manual_lon" },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceItem(
-                                        title = stringResource(R.string.p_source_from_map),
-                                        summary = "在地图上十字准星处点击选取坐标",
+                                        title = stringResource(R.string.setting_pick_on_map),
+                                        summary = stringResource(R.string.setting_pick_on_map_summary),
                                         icon = Icons.Default.Map,
                                         onClick = {
                                             val intent = Intent(this@LocationPrefs, MapAct::class.java).apply {
@@ -376,34 +366,34 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
                                                 putExtra("lon", manualLonState.value.toFloatOrNull() ?: 0.0f)
                                             }
                                             mapLocationPicker.launch(intent)
-                                        }
+                                        },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceItem(
-                                        title = stringResource(R.string.p_source_get_last),
-                                        summary = "读取系统上一次锁定的 GPS 真实位置",
+                                        title = stringResource(R.string.setting_use_last_location),
+                                        summary = stringResource(R.string.setting_use_last_location_summary),
                                         icon = Icons.Default.AddLocation,
-                                        onClick = { copyGpsToManual() }
+                                        onClick = { copyGpsToManual() },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceSwitchItem(
-                                        title = stringResource(R.string.p_source_auto),
-                                        summary = stringResource(R.string.p_source_auto_summary),
+                                        title = stringResource(R.string.setting_repeat_manual_position),
+                                        summary = stringResource(R.string.setting_repeat_manual_position_summary),
                                         icon = Icons.Default.Timer,
                                         checked = periodicPositionState.value,
                                         onCheckedChange = { checked ->
                                             periodicPositionState.value = checked
                                             prefs.set("periodicposition", checked)
-                                        }
+                                        },
                                     )
                                     if (periodicPositionState.value) {
                                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                         PreferenceValueItem(
-                                            title = stringResource(R.string.p_interval),
+                                            title = stringResource(R.string.setting_time_interval),
                                             value = "${intervalState.value} min",
-                                            summary = stringResource(R.string.p_interval_summary),
+                                            summary = stringResource(R.string.setting_time_interval_summary),
                                             icon = Icons.Default.Timer,
-                                            onClick = { editDialogKey.value = "interval" }
+                                            onClick = { editDialogKey.value = "interval" },
                                         )
                                     }
                                 }
@@ -412,48 +402,48 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // 3. 位置隐私 (平铺展开在定位设置最下方)
-                        PreferenceCategoryHeader(title = stringResource(R.string.p_privacy))
+                        PreferenceCategoryHeader(title = stringResource(R.string.setting_location_privacy_category))
                         PreferenceGroupCard {
-                            val currentAmbiguityLabel = ambiguityOptions.find { it.first == ambiguityState.value }?.second ?: ambiguityState.value
+                            val currentAmbiguityLabel = ambiguityOptions
+                                .firstOrNull { it.first == ambiguityState.value }
+                                ?.second ?: ambiguityState.value
                             PreferenceValueItem(
-                                title = stringResource(R.string.p_priv_ambiguity),
+                                title = stringResource(R.string.setting_position_ambiguity),
                                 value = currentAmbiguityLabel,
-                                summary = stringResource(R.string.p_priv_ambiguity_summary),
+                                summary = stringResource(R.string.setting_position_ambiguity_summary),
                                 icon = Icons.Default.BlurOn,
-                                onClick = { showAmbiguityDialog.value = true }
+                                onClick = { showAmbiguityDialog.value = true },
                             )
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                             PreferenceSwitchItem(
-                                title = stringResource(R.string.p_priv_spdbear),
-                                summary = stringResource(R.string.p_priv_spdbear_summary),
+                                title = stringResource(R.string.setting_include_speed_course),
+                                summary = stringResource(R.string.setting_include_speed_course_summary),
                                 icon = Icons.Default.Speed,
                                 checked = showSpdBearState.value,
                                 onCheckedChange = { checked ->
                                     showSpdBearState.value = checked
                                     prefs.set("priv_spdbear", checked)
-                                }
+                                },
                             )
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                             PreferenceSwitchItem(
-                                title = stringResource(R.string.p_priv_altitude),
-                                summary = stringResource(R.string.p_priv_altitude_summary),
+                                title = stringResource(R.string.setting_include_altitude),
+                                summary = stringResource(R.string.setting_include_altitude_summary),
                                 icon = Icons.Default.Height,
                                 checked = showAltitudeState.value,
                                 onCheckedChange = { checked ->
                                     showAltitudeState.value = checked
                                     prefs.set("priv_altitude", checked)
-                                }
+                                },
                             )
                         }
 
                         Spacer(modifier = Modifier.height(32.dp))
                     }
 
-                    // Dialogs
                     if (showLocSourceDialog.value) {
                         PreferenceSelectDialog(
-                            title = stringResource(R.string.p_locsource),
+                            title = stringResource(R.string.setting_location_source),
                             options = locSourceOptions,
                             selected = locSourceState.value,
                             onDismiss = { showLocSourceDialog.value = false },
@@ -461,48 +451,50 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
                                 locSourceState.value = selected
                                 prefs.set("loc_source", selected)
                                 if (selected != "manual") {
-                                    checkPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_GPS)
+                                    checkPermissions(
+                                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                                        REQUEST_GPS,
+                                    )
                                 }
-                            }
+                            },
                         )
                     }
 
                     if (showGpsActivationDialog.value) {
                         PreferenceSelectDialog(
-                            title = stringResource(R.string.p_gps),
+                            title = stringResource(R.string.setting_gps_activation),
                             options = gpsActivationOptions,
                             selected = gpsActivationState.value,
                             onDismiss = { showGpsActivationDialog.value = false },
                             onSelect = { selected ->
                                 gpsActivationState.value = selected
                                 prefs.set("gps_activation", selected)
-                            }
+                            },
                         )
                     }
 
                     if (showAmbiguityDialog.value) {
                         PreferenceSelectDialog(
-                            title = stringResource(R.string.p_priv_ambiguity),
+                            title = stringResource(R.string.setting_position_ambiguity),
                             options = ambiguityOptions,
                             selected = ambiguityState.value,
                             onDismiss = { showAmbiguityDialog.value = false },
                             onSelect = { selected ->
                                 ambiguityState.value = selected
                                 prefs.set("priv_ambiguity", selected)
-                            }
+                            },
                         )
                     }
 
                     editDialogKey.value?.let { key ->
-                        val currentVal = prefs.getString(key, "")
                         PreferenceEditDialog(
-                            title = "修改参数",
-                            initialValue = currentVal,
+                            title = stringResource(R.string.setting_edit_value),
+                            initialValue = prefs.getString(key, ""),
                             onDismiss = { editDialogKey.value = null },
                             onSave = { newValue ->
                                 prefs.set(key, newValue)
                                 refreshState()
-                            }
+                            },
                         )
                     }
                 }
