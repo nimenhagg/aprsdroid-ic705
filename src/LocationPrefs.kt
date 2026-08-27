@@ -21,11 +21,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddLocation
 import androidx.compose.material.icons.filled.BlurOn
-import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Height
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TurnRight
@@ -91,9 +89,6 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
     private val sbTurnSlopeState = mutableStateOf("240")
 
     private val intervalState = mutableStateOf("10")
-    private val distanceState = mutableStateOf("10")
-    private val gpsActivationState = mutableStateOf("med")
-    private val netLocState = mutableStateOf(false)
 
     private val manualLatState = mutableStateOf("0.000")
     private val manualLonState = mutableStateOf("0.000")
@@ -105,7 +100,6 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
 
     private val editDialogKey = mutableStateOf<String?>(null)
     private val showLocSourceDialog = mutableStateOf(false)
-    private val showGpsActivationDialog = mutableStateOf(false)
     private val showAmbiguityDialog = mutableStateOf(false)
 
     private fun refreshState() {
@@ -120,9 +114,6 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
         sbTurnSlopeState.value = prefs.getString("sb.turnslope", "240")
 
         intervalState.value = prefs.getString("interval", "10")
-        distanceState.value = prefs.getString("distance", "10")
-        gpsActivationState.value = prefs.getString("gps_activation", "med")
-        netLocState.value = prefs.getBoolean("netloc", false)
 
         manualLatState.value = prefs.getString("manual_lat", "0.000")
         manualLonState.value = prefs.getString("manual_lon", "0.000")
@@ -165,12 +156,6 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
                     "smartbeaconing" to stringResource(R.string.setting_location_source_smart_option),
                     "periodic" to stringResource(R.string.setting_location_source_periodic_option),
                     "manual" to stringResource(R.string.setting_location_source_manual_option),
-                )
-                val gpsActivationOptions = listOf(
-                    "low" to stringResource(R.string.setting_gps_low),
-                    "med" to stringResource(R.string.setting_gps_balanced),
-                    "high" to stringResource(R.string.setting_gps_high),
-                    "always" to stringResource(R.string.setting_gps_always),
                 )
                 val ambiguityOptions = listOf(
                     "0" to stringResource(R.string.setting_ambiguity_exact),
@@ -303,36 +288,6 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
                                         icon = Icons.Default.Timer,
                                         onClick = { editDialogKey.value = "interval" },
                                     )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_distance_interval),
-                                        value = "${distanceState.value} km",
-                                        summary = stringResource(R.string.setting_distance_interval_summary),
-                                        icon = Icons.Default.Speed,
-                                        onClick = { editDialogKey.value = "distance" },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    val currentGpsTitle = gpsActivationOptions
-                                        .firstOrNull { it.first == gpsActivationState.value }
-                                        ?.second ?: gpsActivationState.value
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_gps_activation),
-                                        value = currentGpsTitle,
-                                        summary = stringResource(R.string.setting_gps_activation_summary),
-                                        icon = Icons.Default.GpsFixed,
-                                        onClick = { showGpsActivationDialog.value = true },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceSwitchItem(
-                                        title = stringResource(R.string.setting_network_location),
-                                        summary = stringResource(R.string.setting_network_location_summary),
-                                        icon = Icons.Default.NetworkCheck,
-                                        checked = netLocState.value,
-                                        onCheckedChange = { checked ->
-                                            netLocState.value = checked
-                                            prefs.set("netloc", checked)
-                                        },
-                                    )
                                 }
                             }
 
@@ -456,19 +411,6 @@ class LocationPrefs : ComponentActivity(), PermissionHelper {
                                         REQUEST_GPS,
                                     )
                                 }
-                            },
-                        )
-                    }
-
-                    if (showGpsActivationDialog.value) {
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.setting_gps_activation),
-                            options = gpsActivationOptions,
-                            selected = gpsActivationState.value,
-                            onDismiss = { showGpsActivationDialog.value = false },
-                            onSelect = { selected ->
-                                gpsActivationState.value = selected
-                                prefs.set("gps_activation", selected)
                             },
                         )
                     }
