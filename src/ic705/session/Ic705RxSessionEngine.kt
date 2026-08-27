@@ -146,13 +146,20 @@ object Ic705RxSessionEngine {
         }
 
         if (event is Event.StatusNotReady) {
-            if (!state.connectionInfoSent || state.streamEndpoints != null) return unchanged(state)
-            return when {
-                event.errorCode == 0 && event.disconnectFlag == 0 -> Transition(
+            return when (
+                ic705ConnectionInfoStatusDecision(
+                    connectionInfoSent = state.connectionInfoSent,
+                    hasStreamEndpoints = state.streamEndpoints != null,
+                    errorCode = event.errorCode,
+                    disconnectFlag = event.disconnectFlag,
+                )
+            ) {
+                Ic705ConnectionInfoStatusDecision.IGNORE -> unchanged(state)
+                Ic705ConnectionInfoStatusDecision.RETRY_SAME_SESSION -> Transition(
                     state = state.copy(failureReason = "radio session not ready"),
                     actions = listOf(Action.ScheduleConnectionInfoRetry),
                 )
-                else -> recover(
+                Ic705ConnectionInfoStatusDecision.REJECT_SESSION -> recover(
                     state = state,
                     reason = "radio session allocation rejected",
                     cooldown = RetryCooldown.SESSION_REJECTED,
@@ -161,24 +168,30 @@ object Ic705RxSessionEngine {
         }
 
         if (event is Event.ConnectionInfoRetryTimerFired) {
-            if (!state.connectionInfoSent || state.streamEndpoints != null) return unchanged(state)
-            if (state.connectionInfoAttempts >= MAX_CONNECTION_INFO_ATTEMPTS) {
-                return recover(
+            return when (
+                ic705ConnectionInfoRetryDecision(
+                    connectionInfoSent = state.connectionInfoSent,
+                    hasStreamEndpoints = state.streamEndpoints != null,
+                    attempts = state.connectionInfoAttempts,
+                )
+            ) {
+                Ic705ConnectionInfoRetryDecision.IGNORE -> unchanged(state)
+                Ic705ConnectionInfoRetryDecision.EXHAUSTED -> recover(
                     state = state,
                     reason = "radio session not ready after connection-info retries",
                     cooldown = RetryCooldown.SESSION_NOT_READY,
                 )
+                Ic705ConnectionInfoRetryDecision.RETRY -> Transition(
+                    state = state.copy(
+                        connectionInfoAttempts = state.connectionInfoAttempts + 1,
+                        failureReason = "waiting for radio session allocation",
+                    ),
+                    actions = listOf(
+                        Action.SendConnectionInfo,
+                        Action.ScheduleConnectionInfoRetry,
+                    ),
+                )
             }
-            return Transition(
-                state = state.copy(
-                    connectionInfoAttempts = state.connectionInfoAttempts + 1,
-                    failureReason = "waiting for radio session allocation",
-                ),
-                actions = listOf(
-                    Action.SendConnectionInfo,
-                    Action.ScheduleConnectionInfoRetry,
-                ),
-            )
         }
 
         val eventActions = mutableListOf<Action>()
@@ -371,6 +384,4 @@ object Ic705RxSessionEngine {
     )
 
     private fun unchanged(state: State): Transition = Transition(state)
-
-    private const val MAX_CONNECTION_INFO_ATTEMPTS = 4
 }
