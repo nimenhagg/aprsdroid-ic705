@@ -15,7 +15,6 @@ import org.aprsdroid.app.ic705.session.Ic705TxAudioPacketizer
 
 import java.io.IOException
 import java.net.InetAddress
-import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.security.SecureRandom
 import java.util.EnumMap
@@ -41,212 +40,12 @@ import org.aprsdroid.app.ic705.protocol.Ic705ControlPacketCodec
 import org.aprsdroid.app.ic705.protocol.Ic705HandshakeCodec
 import org.aprsdroid.app.ic705.protocol.Ic705PingPacket
 import org.aprsdroid.app.ic705.protocol.Ic705ProtocolException
-import org.aprsdroid.app.ic705.protocol.Ic705WireByteOrder
 import org.aprsdroid.app.ic705.transport.Ic705ChannelRole
 import org.aprsdroid.app.ic705.transport.Ic705DatagramChannel
 import org.aprsdroid.app.ic705.transport.Ic705DatagramChannelFactory
 import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
 import org.aprsdroid.app.ic705.transport.Ic705ReceivedDatagram
 import org.aprsdroid.app.ic705.transport.Ic705UdpChannel
-
-data class Ic705RxSessionTiming(
-    val discoveryPeriodMillis: Long = 500L,
-    val discoveryTimeoutMillis: Long = 10_000L,
-    /** RS-BA1 maintains each active LAN control channel at a 10 Hz cadence. */
-    val pingPeriodMillis: Long = 100L,
-    val idleCheckPeriodMillis: Long = 100L,
-    val idleAfterMillis: Long = 100L,
-    val tokenRenewalMillis: Long = 60_000L,
-    val watchdogPeriodMillis: Long = 500L,
-    /** CONTROL is authoritative for whole-session liveness. */
-    val channelTimeoutMillis: Long = 5_000L,
-    /** CI-V remains latency-sensitive, but is independent from RX audio silence. */
-    val civChannelTimeoutMillis: Long = 3_000L,
-    /** RX audio may legitimately be silent for long periods, especially around TX. */
-    val audioChannelTimeoutMillis: Long = 30_000L,
-    /** Give the radio time to resume RX audio after PTT OFF is acknowledged. */
-    val audioPostTxGraceMillis: Long = 5_000L,
-    /** How long a stream rediscovery attempt may wait for fresh traffic. */
-    val streamRecoveryResponseMillis: Long = 3_000L,
-    /** Stream-local recovery attempts before escalating to a full session reconnect. */
-    val streamRecoveryAttempts: Int = 2,
-    val handshakeStageTimeoutMillis: Long = 10_000L,
-    val negotiationTimeoutMillis: Long = 45_000L,
-    /** RS-BA1 waits about three seconds after login before claiming the streams. */
-    val connectionInfoSettleMillis: Long = 3_000L,
-    val connectionInfoRetryMillis: Long = 10_000L,
-    val initialReconnectMillis: Long = 1_000L,
-    val maximumReconnectMillis: Long = 30_000L,
-) {
-    init {
-        val values = listOf(
-            discoveryPeriodMillis,
-            discoveryTimeoutMillis,
-            pingPeriodMillis,
-            idleCheckPeriodMillis,
-            idleAfterMillis,
-            tokenRenewalMillis,
-            watchdogPeriodMillis,
-            channelTimeoutMillis,
-            civChannelTimeoutMillis,
-            audioChannelTimeoutMillis,
-            audioPostTxGraceMillis,
-            streamRecoveryResponseMillis,
-            handshakeStageTimeoutMillis,
-            negotiationTimeoutMillis,
-            connectionInfoSettleMillis,
-            connectionInfoRetryMillis,
-            initialReconnectMillis,
-            maximumReconnectMillis,
-        )
-        require(values.all { it > 0 }) { "IC-705 timing values must be positive" }
-        require(streamRecoveryAttempts > 0) { "streamRecoveryAttempts must be positive" }
-        require(maximumReconnectMillis >= initialReconnectMillis)
-    }
-}
-
-/** Credentials are deliberately excluded from [toString]. */
-class Ic705RxSessionConfig(
-    val radioAddress: InetAddress,
-    val controlPort: Int,
-    val username: String,
-    private val password: String,
-    val clientName: String = "APRSdroid",
-    val autoReconnect: Boolean = true,
-    val timing: Ic705RxSessionTiming = Ic705RxSessionTiming(),
-) {
-    init {
-        require(controlPort in 1..0xffff) { "controlPort must be a valid UDP port" }
-        require(username.isNotBlank()) { "username must not be blank" }
-        require(username.length <= 16) { "username must be at most 16 characters" }
-        require(password.length <= 16) { "password must be at most 16 characters" }
-        require(clientName.isNotBlank()) { "clientName must not be blank" }
-        require(clientName.length <= 16) { "clientName must be at most 16 characters" }
-        require(username.all { it.code <= 0x7f }) { "username must contain US-ASCII only" }
-        require(password.all { it.code <= 0x7f }) { "password must contain US-ASCII only" }
-        require(clientName.all { it.code <= 0x7f }) { "clientName must contain US-ASCII only" }
-    }
-
-    internal fun passwordValue(): String = password
-
-    override fun toString(): String =
-        "Ic705RxSessionConfig(radioAddress=$radioAddress, controlPort=$controlPort, " +
-            "username=<redacted>, password=<redacted>, clientName=$clientName, " +
-            "autoReconnect=$autoReconnect)"
-}
-
-enum class Ic705RxSessionIssueCode {
-    SOCKET_IO,
-    MALFORMED_PACKET,
-    AUDIO_QUEUE_OVERFLOW,
-}
-
-enum class Ic705PacketReceiverKind {
-    LOCAL,
-    ZERO,
-    OTHER,
-    ABSENT,
-}
-
-enum class Ic705PacketRejectionKind {
-    HEADER_TOO_SHORT,
-    DECLARED_LENGTH_MISMATCH,
-    RECEIVER_ZERO,
-    RECEIVER_OTHER,
-    PACKET_CODEC,
-}
-
-/** Credential-safe packet metadata for real-radio diagnostics; never contains payload bytes or IDs. */
-data class Ic705PacketDiagnostic(
-    val length: Int,
-    val declaredLength: Int?,
-    val commonType: Int?,
-    val receiverKind: Ic705PacketReceiverKind,
-    val payloadLength: Int?,
-    val requestReply: Int?,
-    val requestType: Int?,
-    val rejection: Ic705PacketRejectionKind,
-)
-
-data class Ic705RxSessionIssue(
-    val code: Ic705RxSessionIssueCode,
-    val channel: Ic705ChannelRole?,
-    val packet: Ic705PacketDiagnostic? = null,
-)
-
-enum class Ic705AudioResetReason {
-    UDP_DISCONTINUITY,
-    SESSION_RESTART,
-    STREAM_RECOVERY,
-    AUDIO_QUEUE_OVERFLOW,
-}
-
-data class Ic705AudioReset(
-    val reason: Ic705AudioResetReason,
-    val discontinuity: Ic705AudioDiscontinuity? = null,
-)
-
-enum class Ic705StreamRecoveryOutcome {
-    STARTED,
-    SUCCEEDED,
-    ESCALATED,
-}
-
-data class Ic705StreamRecoveryEvent(
-    val role: Ic705ChannelRole,
-    val outcome: Ic705StreamRecoveryOutcome,
-    val attempt: Int,
-    val ageMillis: Long,
-)
-
-data class Ic705RxSessionCallbacks(
-    val onStateChanged: (Ic705RxSessionEngine.State) -> Unit = {},
-    val onIssue: (Ic705RxSessionIssue) -> Unit = {},
-    val onAudioReset: (Ic705AudioReset) -> Unit = {},
-    val onStreamRecovery: (Ic705StreamRecoveryEvent) -> Unit = {},
-)
-
-/**
- * Wire-level A/B profile used only by package-local hardware diagnostics.
- * Public application constructors always use [WFVIEW].
- */
-internal enum class Ic705RxWireProfile(
-    val initialTrackedSequence: Int,
-    val initialAuthInnerSequence: Int,
-    val randomizeTokenRequest: Boolean,
-    val randomizeClientId: Boolean,
-    val sendTrackedIdle: Boolean,
-    val replyToUnknownRetransmit: Boolean,
-    val readySequence: Int,
-    val startPingBeforeReady: Boolean,
-    val loginAdvancesAuthSequence: Boolean,
-    val repeatReadyOnDuplicateDiscovery: Boolean,
-) {
-    WFVIEW(
-        initialTrackedSequence = 1,
-        initialAuthInnerSequence = 0x30,
-        randomizeTokenRequest = true,
-        randomizeClientId = true,
-        sendTrackedIdle = true,
-        replyToUnknownRetransmit = true,
-        readySequence = 1,
-        startPingBeforeReady = true,
-        loginAdvancesAuthSequence = true,
-        repeatReadyOnDuplicateDiscovery = true,
-    ),
-    RIGPLANE_DIAGNOSTIC(
-        initialTrackedSequence = 0,
-        initialAuthInnerSequence = 0,
-        randomizeTokenRequest = false,
-        randomizeClientId = false,
-        sendTrackedIdle = false,
-        replyToUnknownRetransmit = false,
-        readySequence = 0,
-        startPingBeforeReady = false,
-        loginAdvancesAuthSequence = false,
-        repeatReadyOnDuplicateDiscovery = false,
-    ),
-}
 
 /**
  * Runtime coordinator for an IC-705 receive-only LAN session.
@@ -870,7 +669,7 @@ class Ic705RxSession internal constructor(
         datagram: Ic705ReceivedDatagram,
     ) {
         val role = runtime.role
-        if (role == Ic705ChannelRole.AUDIO && looksLikeAudio(datagram.data)) {
+        if (role == Ic705ChannelRole.AUDIO && looksLikeIc705Audio(datagram.data)) {
             enqueueAudio(expectedGeneration, runtime, datagram.data)
         } else {
             submitForGeneration(expectedGeneration) { handleDatagram(runtime, datagram) }
@@ -894,17 +693,17 @@ class Ic705RxSession internal constructor(
                 runtime.lastReceivedAtMillis.set(monotonicMillis())
                 return
             }
-            validateCommonEnvelope(datagram.data, runtime.localId)
+            validateIc705CommonEnvelope(datagram.data, runtime.localId)
             runtime.lastReceivedAtMillis.set(monotonicMillis())
             when {
                 datagram.data.size == Ic705ControlPacketCodec.PACKET_SIZE -> {
                     handleControlPacket(runtime, datagram.data, datagram.source)
                 }
                 role == Ic705ChannelRole.CONTROL &&
-                    datagram.data.size in AUTHENTICATED_PACKET_SIZES -> {
+                    datagram.data.size in IC705_AUTHENTICATED_PACKET_SIZES -> {
                     handleControlSessionPacket(datagram.data)
                 }
-                isVariableRetransmit(datagram.data) -> handleRetransmit(runtime, datagram.data)
+                isIc705VariableRetransmit(datagram.data) -> handleRetransmit(runtime, datagram.data)
                 role == Ic705ChannelRole.CIV &&
                     datagram.data.size > Ic705CivDatagramCodec.HEADER_SIZE &&
                     (datagram.data[0x10].toInt() and 0xff) == Ic705CivDatagramCodec.CIV_MARKER -> {
@@ -919,13 +718,13 @@ class Ic705RxSession internal constructor(
             reportIssue(
                 Ic705RxSessionIssueCode.MALFORMED_PACKET,
                 role,
-                packetDiagnostic(datagram.data, runtime.localId),
+                ic705PacketDiagnostic(datagram.data, runtime.localId),
             )
         } catch (_: IllegalArgumentException) {
             reportIssue(
                 Ic705RxSessionIssueCode.MALFORMED_PACKET,
                 role,
-                packetDiagnostic(datagram.data, runtime.localId),
+                ic705PacketDiagnostic(datagram.data, runtime.localId),
             )
         }
     }
@@ -1155,7 +954,7 @@ class Ic705RxSession internal constructor(
                     )
                 }
             }
-            else -> if (isVariableRetransmit(data)) handleRetransmit(control, data)
+            else -> if (isIc705VariableRetransmit(data)) handleRetransmit(control, data)
         }
     }
 
@@ -1462,7 +1261,7 @@ class Ic705RxSession internal constructor(
                         reportIssue(
                             Ic705RxSessionIssueCode.MALFORMED_PACKET,
                             Ic705ChannelRole.AUDIO,
-                            packetDiagnostic(data, runtime.localId),
+                            ic705PacketDiagnostic(data, runtime.localId),
                         )
                     }
                 }
@@ -1789,44 +1588,6 @@ class Ic705RxSession internal constructor(
         safeCallback { callbacks.onIssue(Ic705RxSessionIssue(code, role, packet)) }
     }
 
-    private fun packetDiagnostic(data: ByteArray, localId: Int): Ic705PacketDiagnostic {
-        val declaredLength = if (data.size >= 4) Ic705WireByteOrder.readInt32Le(data, 0) else null
-        val commonType = if (data.size >= 6) Ic705WireByteOrder.readUInt16Le(data, 4) else null
-        val receiverKind = if (data.size < Ic705ControlPacketCodec.PACKET_SIZE) {
-            Ic705PacketReceiverKind.ABSENT
-        } else {
-            when (Ic705WireByteOrder.readInt32Le(data, 0x0c)) {
-                localId -> Ic705PacketReceiverKind.LOCAL
-                0 -> Ic705PacketReceiverKind.ZERO
-                else -> Ic705PacketReceiverKind.OTHER
-            }
-        }
-        val rejection = when {
-            data.size < Ic705ControlPacketCodec.PACKET_SIZE -> {
-                Ic705PacketRejectionKind.HEADER_TOO_SHORT
-            }
-            declaredLength != data.size -> Ic705PacketRejectionKind.DECLARED_LENGTH_MISMATCH
-            receiverKind == Ic705PacketReceiverKind.ZERO -> Ic705PacketRejectionKind.RECEIVER_ZERO
-            receiverKind == Ic705PacketReceiverKind.OTHER -> Ic705PacketRejectionKind.RECEIVER_OTHER
-            else -> Ic705PacketRejectionKind.PACKET_CODEC
-        }
-        val hasAuthenticatedHeader = data.size in AUTHENTICATED_PACKET_SIZES
-        return Ic705PacketDiagnostic(
-            length = data.size,
-            declaredLength = declaredLength,
-            commonType = commonType,
-            receiverKind = receiverKind,
-            payloadLength = if (hasAuthenticatedHeader) {
-                Ic705WireByteOrder.readUInt16Be(data, 0x12)
-            } else {
-                null
-            },
-            requestReply = if (hasAuthenticatedHeader) data[0x14].toInt() and 0xff else null,
-            requestType = if (hasAuthenticatedHeader) data[0x15].toInt() and 0xff else null,
-            rejection = rejection,
-        )
-    }
-
     private fun notifyAudioReset(reason: Ic705AudioResetReason) {
         synchronized(audioLifecycleLock) {
             audioReceiver?.reset()
@@ -1837,32 +1598,6 @@ class Ic705RxSession internal constructor(
     private fun safeCallback(block: () -> Unit) {
         runCatching(block)
     }
-
-    private fun validateCommonEnvelope(data: ByteArray, expectedReceiverId: Int) {
-        if (data.size < Ic705ControlPacketCodec.PACKET_SIZE) {
-            throw Ic705ProtocolException("Datagram is shorter than the common Icom header")
-        }
-        val declaredLength = Ic705WireByteOrder.readInt32Le(data, 0)
-        if (declaredLength != data.size) {
-            throw Ic705ProtocolException("Datagram length does not match its common header")
-        }
-        val receiverId = Ic705WireByteOrder.readInt32Le(data, 0x0c)
-        if (receiverId != expectedReceiverId) {
-            throw Ic705ProtocolException("Datagram receiver ID does not match this channel")
-        }
-    }
-
-    private fun isVariableRetransmit(data: ByteArray): Boolean =
-        data.size > Ic705ControlPacketCodec.PACKET_SIZE &&
-            data.size % 2 == 0 &&
-            Ic705WireByteOrder.readUInt16Le(data, 0x04) == Ic705ControlPacketCodec.TYPE_RETRANSMIT
-
-    private fun looksLikeAudio(data: ByteArray): Boolean = runCatching {
-        data.size > Ic705AudioPacketCodec.HEADER_SIZE &&
-            Ic705WireByteOrder.readInt32Le(data, 0) == data.size &&
-            Ic705WireByteOrder.readUInt16Le(data, 0x04) != Ic705ControlPacketCodec.TYPE_RETRANSMIT &&
-            Ic705WireByteOrder.readUInt16Be(data, 0x16) == data.size - Ic705AudioPacketCodec.HEADER_SIZE
-    }.getOrDefault(false)
 
     private fun nextAuthInnerSequence(): Int {
         val result = authInnerSequence
@@ -1908,78 +1643,6 @@ class Ic705RxSession internal constructor(
             Ic705RxSessionEngine.Phase.OPENING_STREAMS,
             Ic705RxSessionEngine.Phase.STREAMS_READY,
         )
-
-        val AUTHENTICATED_PACKET_SIZES = setOf(
-            Ic705HandshakeCodec.TOKEN_PACKET_SIZE,
-            Ic705HandshakeCodec.STATUS_PACKET_SIZE,
-            Ic705HandshakeCodec.LOGIN_RESPONSE_PACKET_SIZE,
-            Ic705ConnectionInfoCodec.PACKET_SIZE,
-        )
-    }
-}
-
-/** wfview encodes the route IPv4 suffix and bound UDP port into each client ID. */
-internal fun ic705ClientIdForEndpoint(localAddress: InetAddress?, localPort: Int): Int {
-    require(localPort in 1..0xffff) { "localPort must be a bound UDP port" }
-    if (localAddress is Inet4Address && !localAddress.isAnyLocalAddress) {
-        val octets = localAddress.address
-        return ((octets[2].toInt() and 0xff) shl 24) or
-            ((octets[3].toInt() and 0xff) shl 16) or
-            localPort
-    }
-    // rigplane's endpoint-derived form is the safe fallback for socket providers
-    // that cannot expose the selected route's concrete IPv4.
-    return 0x0001_0000 or localPort
-}
-
-internal fun shouldSendIc705TrackedIdle(
-    millisSinceLastTracked: Long,
-    idleAfterMillis: Long,
-): Boolean = millisSinceLastTracked >= idleAfterMillis
-
-internal fun ic705ChannelWatchdogTimeoutMillis(
-    timing: Ic705RxSessionTiming,
-    role: Ic705ChannelRole,
-): Long = when (role) {
-    Ic705ChannelRole.CONTROL -> timing.channelTimeoutMillis
-    Ic705ChannelRole.CIV -> timing.civChannelTimeoutMillis
-    Ic705ChannelRole.AUDIO -> timing.audioChannelTimeoutMillis
-}
-
-internal fun shouldSuppressIc705AudioWatchdog(
-    pttPossiblyAsserted: Boolean,
-    nowMillis: Long,
-    graceUntilMillis: Long,
-): Boolean = pttPossiblyAsserted || nowMillis < graceUntilMillis
-
-internal enum class Ic705WatchdogDecision {
-    HEALTHY,
-    WAIT_FOR_SOFT_RECOVERY,
-    START_SOFT_RECOVERY,
-    RETRY_SOFT_RECOVERY,
-    ESCALATE,
-}
-
-internal fun ic705WatchdogDecision(
-    role: Ic705ChannelRole,
-    ageMillis: Long,
-    timeoutMillis: Long,
-    pttPossiblyAsserted: Boolean,
-    activeRecoveryAttempt: Int?,
-    recoveryDeadlineReached: Boolean,
-    maxSoftRecoveryAttempts: Int,
-): Ic705WatchdogDecision {
-    if (ageMillis <= timeoutMillis) return Ic705WatchdogDecision.HEALTHY
-    if (role == Ic705ChannelRole.CONTROL) return Ic705WatchdogDecision.ESCALATE
-    if (role == Ic705ChannelRole.CIV && pttPossiblyAsserted) {
-        return Ic705WatchdogDecision.ESCALATE
-    }
-    if (activeRecoveryAttempt == null) return Ic705WatchdogDecision.START_SOFT_RECOVERY
-    if (!recoveryDeadlineReached) return Ic705WatchdogDecision.WAIT_FOR_SOFT_RECOVERY
-    return if (activeRecoveryAttempt < maxSoftRecoveryAttempts) {
-        Ic705WatchdogDecision.RETRY_SOFT_RECOVERY
-    } else {
-        Ic705WatchdogDecision.ESCALATE
     }
 }
 
