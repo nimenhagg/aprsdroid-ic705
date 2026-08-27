@@ -41,7 +41,6 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
 
         class BackendInfo(
             @JvmField val create: (AprsService, PrefsWrapper) -> AprsBackend,
-            @JvmField val prefxml: Int,
             @JvmField val permissions: Set<String>,
             @JvmField val duplex: Int,
             @JvmField val need_passcode: Int
@@ -49,7 +48,6 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
 
         class ProtoInfo(
             @JvmField val create: ((AprsService, InputStream, OutputStream) -> TncProto)?,
-            @JvmField val prefxml: Int,
             @JvmField val link: String?
         ) {
             fun link(): String? = link
@@ -69,24 +67,24 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
 
         @JvmField
         val backend_collection = mapOf(
-            "udp" to BackendInfo({ _, p -> UdpUploader(p) }, R.xml.backend_udp, emptySet(), CAN_XMIT, PASSCODE_REQUIRED),
-            "http" to BackendInfo({ _, p -> HttpPostUploader(p) }, R.xml.backend_http, emptySet(), CAN_XMIT, PASSCODE_REQUIRED),
-            "afsk" to BackendInfo({ s, p -> AfskUploader(s, p) }, 0, setOf(Manifest.permission.RECORD_AUDIO), CAN_DUPLEX, PASSCODE_NONE),
-            "ic705" to BackendInfo({ s, p -> Ic705WifiBackend(s, p) }, 0, emptySet(), CAN_DUPLEX, PASSCODE_NONE),
-            "tcp" to BackendInfo({ s, p -> TcpUploader(s, p) }, R.xml.backend_tcp, emptySet(), CAN_DUPLEX, PASSCODE_OPTIONAL),
-            "bluetooth" to BackendInfo({ s, p -> BluetoothTnc(s, p) }, R.xml.backend_bluetooth, setOf(BLUETOOTH_PERMISSION), CAN_DUPLEX, PASSCODE_NONE),
-            "tcpip" to BackendInfo({ s, p -> TcpUploader(s, p) }, R.xml.backend_tcptnc, emptySet(), CAN_DUPLEX, PASSCODE_NONE),
-            "usb" to BackendInfo({ s, p -> UsbTnc(s, p) }, R.xml.backend_usb, emptySet(), CAN_DUPLEX, PASSCODE_NONE)
+            "udp" to BackendInfo({ _, p -> UdpUploader(p) }, emptySet(), CAN_XMIT, PASSCODE_REQUIRED),
+            "http" to BackendInfo({ _, p -> HttpPostUploader(p) }, emptySet(), CAN_XMIT, PASSCODE_REQUIRED),
+            "afsk" to BackendInfo({ s, p -> AfskUploader(s, p) }, setOf(Manifest.permission.RECORD_AUDIO), CAN_DUPLEX, PASSCODE_NONE),
+            "ic705" to BackendInfo({ s, p -> Ic705WifiBackend(s, p) }, emptySet(), CAN_DUPLEX, PASSCODE_NONE),
+            "tcp" to BackendInfo({ s, p -> TcpUploader(s, p) }, emptySet(), CAN_DUPLEX, PASSCODE_OPTIONAL),
+            "bluetooth" to BackendInfo({ s, p -> BluetoothTnc(s, p) }, setOf(BLUETOOTH_PERMISSION), CAN_DUPLEX, PASSCODE_NONE),
+            "tcpip" to BackendInfo({ s, p -> TcpUploader(s, p) }, emptySet(), CAN_DUPLEX, PASSCODE_NONE),
+            "usb" to BackendInfo({ s, p -> UsbTnc(s, p) }, emptySet(), CAN_DUPLEX, PASSCODE_NONE)
         )
 
         @JvmField
         val proto_collection = mapOf(
-            "aprsis" to ProtoInfo({ s, isStream, osStream -> AprsIsProto(s, isStream, osStream) }, R.xml.proto_aprsis, "aprsis"),
-            "afsk" to ProtoInfo(null, R.xml.proto_afsk, null),
-            "ic705" to ProtoInfo(null, R.xml.proto_ic705, null),
-            "kiss" to ProtoInfo({ s, isStream, osStream -> KissProto(s, isStream, osStream) }, R.xml.proto_kiss, "link"),
-            "tnc2" to ProtoInfo({ _, isStream, osStream -> Tnc2Proto(isStream, osStream) }, R.xml.proto_tnc2, "link"),
-            "kenwood" to ProtoInfo({ s, isStream, osStream -> KenwoodProto(s, isStream, osStream) }, R.xml.proto_kenwood, "link")
+            "aprsis" to ProtoInfo({ s, isStream, osStream -> AprsIsProto(s, isStream, osStream) }, "aprsis"),
+            "afsk" to ProtoInfo(null, null),
+            "ic705" to ProtoInfo(null, null),
+            "kiss" to ProtoInfo({ s, isStream, osStream -> KissProto(s, isStream, osStream) }, "link"),
+            "tnc2" to ProtoInfo({ _, isStream, osStream -> Tnc2Proto(isStream, osStream) }, "link"),
+            "kenwood" to ProtoInfo({ s, isStream, osStream -> KenwoodProto(s, isStream, osStream) }, "link")
         )
 
         @JvmStatic
@@ -154,11 +152,5 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
                 ?: throw IllegalArgumentException("No protocol handler for " + service.prefs.getProto())
             return creator(service, isStream, osStream)
         }
-
-        @JvmStatic
-        fun prefxml_proto(prefs: PrefsWrapper): Int = defaultProtoInfo(prefs).prefxml
-
-        @JvmStatic
-        fun prefxml_backend(prefs: PrefsWrapper): Int = defaultBackendInfo(prefs).prefxml
     }
 }
