@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_callsign_summary_mod">Amateur radio callsign used in APRS packets</string>
+    <string name="setting_ssid_dialog">Select SSID</string>
+    <string name="setting_symbol_summary_mod">APRS symbol shown for this station</string>
+    <string name="setting_notifications">Notifications</string>
+    <string name="setting_notifications_summary">Message, position-report, and digipeat alerts</string>
+</resources>
