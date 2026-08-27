@@ -4,7 +4,12 @@
     <string name="setting_ssid_dialog">选择 SSID</string>
     <string name="setting_symbol_summary_mod">本站在 APRS 中使用的地图符号</string>
     <string name="setting_notifications">通知设置</string>
-    <string name="setting_notifications_summary">消息、位置报告和中继通知</string>
+    <string name="setting_notifications_summary">管理 Android 系统通知频道</string>
+    <string name="setting_notification_channels_category">Android 通知频道</string>
+    <string name="setting_notification_messages_channel">APRS 消息</string>
+    <string name="setting_notification_messages_channel_summary">设置收到消息时的声音、振动与显示方式</string>
+    <string name="setting_notification_status_channel">服务与位置状态</string>
+    <string name="setting_notification_status_channel_summary">设置前台服务和位置状态通知</string>
 
     <string name="identity_dialog_title">台站身份</string>
     <string name="identity_first_run_title">设置 APRS 台站身份</string>
