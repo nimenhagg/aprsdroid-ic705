@@ -73,7 +73,10 @@ class PrefsAct : ComponentActivity() {
     private var updateCheckInFlight = false
 
     fun exportPrefs() {
-        val filename = String.format("profile-%s.aprs", SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date()))
+        val filename = String.format(
+            "profile-%s.aprs",
+            SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date()),
+        )
         profileExportPicker.launch(filename)
     }
 
@@ -173,7 +176,7 @@ class PrefsAct : ComponentActivity() {
                     onCheckForUpdates = { checkForUpdatesManually() },
                     onOpenAbout = {
                         AboutDialog(this).show()
-                    }
+                    },
                 )
             }
         }
@@ -186,11 +189,11 @@ class PrefsAct : ComponentActivity() {
 
     private fun checkForUpdatesManually() {
         if (updateCheckInFlight) {
-            Toast.makeText(this, "正在检查更新…", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.update_check_in_progress, Toast.LENGTH_SHORT).show()
             return
         }
         updateCheckInFlight = true
-        Toast.makeText(this, "正在检查 GitHub Releases…", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.update_check_github, Toast.LENGTH_SHORT).show()
         AppLog.i("UPDATE", "manual_check_started", mapOf("current" to BuildConfig.VERSION_NAME))
 
         GitHubUpdateChecker.check(BuildConfig.VERSION_NAME) { result ->
@@ -206,7 +209,7 @@ class PrefsAct : ComponentActivity() {
                         )
                         Toast.makeText(
                             this,
-                            "已是最新版本：${result.current}",
+                            getString(R.string.update_up_to_date, result.current),
                             Toast.LENGTH_LONG,
                         ).show()
                     }
@@ -217,19 +220,23 @@ class PrefsAct : ComponentActivity() {
                             mapOf("current" to result.current, "latest" to result.latest),
                         )
                         MaterialAlertDialogBuilder(this)
-                            .setTitle("发现新版本 ${result.latest}")
-                            .setMessage("当前版本：${result.current}\n可前往 GitHub Release 查看更新说明和下载。")
+                            .setTitle(getString(R.string.update_available_title, result.latest))
+                            .setMessage(getString(R.string.update_available_message, result.current))
                             .setNegativeButton(android.R.string.cancel, null)
-                            .setPositiveButton("查看发布页") { _, _ ->
+                            .setPositiveButton(R.string.update_open_release) { _, _ ->
                                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(result.releaseUrl)))
                             }
                             .show()
                     }
                     is UpdateCheckResult.Failure -> {
-                        AppLog.w("UPDATE", "manual_check_failed", mapOf("reason" to result.message))
+                        AppLog.w(
+                            "UPDATE",
+                            "manual_check_failed",
+                            mapOf("reason" to result.message),
+                        )
                         Toast.makeText(
                             this,
-                            "检查更新失败：${result.message}",
+                            getString(R.string.update_check_failed, result.message),
                             Toast.LENGTH_LONG,
                         ).show()
                     }
