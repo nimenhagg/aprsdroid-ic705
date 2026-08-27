@@ -27,7 +27,7 @@ class MessageService(val s: AprsService) {
     fun storeNotifyMessage(ts: Long, srccall: String, msg: MessagePacket) {
         val isNew = s.db.addMessage(ts, srccall, msg)
         if (isNew) {
-            ServiceNotifier.instance.notifyMessage(s, s.prefs, srccall, msg.messageBody)
+            ServiceNotifier.instance.notifyMessage(s, srccall, msg.messageBody)
         }
 
         s.sendBroadcast(

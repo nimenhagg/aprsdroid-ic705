@@ -102,8 +102,7 @@ class ServiceNotifier {
         return ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
-    @Suppress("UNUSED_PARAMETER")
-    fun notifyMessage(ctx: Service, prefs: PrefsWrapper, call: String, message: String) {
+    fun notifyMessage(ctx: Service, call: String, message: String) {
         try {
             val n = newMessageNotification(ctx, call, message)
             getNotificationMgr(ctx).notify(getCallNumber(call), n)
@@ -116,9 +115,7 @@ class ServiceNotifier {
         } catch (_: Exception) {}
     }
 
-    @JvmOverloads
-    @Suppress("UNUSED_PARAMETER")
-    fun notifyPosition(ctx: Service, prefs: PrefsWrapper, status: String, prefix: String = "pos_") {
+    fun notifyPosition(ctx: Service, status: String) {
         try {
             val n = newNotification(ctx, status)
             getNotificationMgr(ctx).notify(SERVICE_NOTIFICATION, n)

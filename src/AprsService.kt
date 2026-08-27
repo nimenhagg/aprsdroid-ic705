@@ -375,7 +375,7 @@ class AprsService : Service() {
             stopSelf()
         } else {
             val message = "${prefs.getCallSsid()}: $result"
-            ServiceNotifier.instance.notifyPosition(this, prefs, message)
+            ServiceNotifier.instance.notifyPosition(this, message)
         }
     }
 
@@ -395,7 +395,7 @@ class AprsService : Service() {
             ) {
                 Log.i(TAG, "got digipeated own packet")
                 val msg = getString(R.string.got_digipeated, fap.lastUsedDigi, fap.aprsInformation.toString())
-                ServiceNotifier.instance.notifyPosition(this, prefs, msg, "dgp_")
+                ServiceNotifier.instance.notifyPosition(this, msg)
                 return
             }
 
