@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   finalize:
@@ -111,6 +112,8 @@ jobs:
           PY
 
       - name: Remove one-shot finalizer and tag release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git config user.name "nimenhagg"
@@ -121,3 +124,4 @@ jobs:
           git push origin HEAD:main
           git tag -a Mod-v1.9.5 -m "Mod-v1.9.5"
           git push origin Mod-v1.9.5
+          gh workflow run release.yml --ref Mod-v1.9.5
