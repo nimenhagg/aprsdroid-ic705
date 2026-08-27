@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -40,7 +41,6 @@ fun SymbolPickerScreen(
 ) {
     val overlayableChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-    // Parse initial symbol and overlay
     var selectedBaseSymbol by remember {
         val base = if (initialSymbol.length >= 2) {
             val ov = initialSymbol[0]
@@ -66,7 +66,6 @@ fun SymbolPickerScreen(
         selectedBaseSymbol
     }
 
-    // Categories
     val categories = remember {
         listOf(
             SymbolCategory(R.string.symbol_category_common, listOf("/$", "/>", "/[", "/-", "/r", "/#", "/k", "/u", "/v", "/^", "/_", "/X", "/s", "/p", "/a")),
@@ -93,14 +92,17 @@ fun SymbolPickerScreen(
                     }
                 },
                 actions = {
-                    Button(
+                    FilledTonalButton(
                         onClick = { onSaveSymbol(computedFullSymbol) },
-                        modifier = Modifier.padding(end = 8.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .height(44.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp)
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.action_save))
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text(stringResource(R.string.action_save), fontWeight = FontWeight.SemiBold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -115,42 +117,41 @@ fun SymbolPickerScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Preview & Overlay Input Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(20.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 14.dp),
+                shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                 )
             ) {
                 Row(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Preview Icon Box
                     SymbolBadge(
                         symbol = computedFullSymbol,
-                        size = 56.dp
+                        size = 52.dp
                     )
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = stringResource(R.string.symbol_current_code, computedFullSymbol),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Text(
-                            text = stringResource(
-                                if (isOverlayAllowed) R.string.symbol_overlay_supported else R.string.symbol_standard,
-                            ),
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        if (isOverlayAllowed) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(R.string.symbol_overlay_supported),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     if (isOverlayAllowed) {
@@ -170,8 +171,6 @@ fun SymbolPickerScreen(
                 }
             }
 
-            // Compact Material 3 category chips. A plain LazyRow avoids the
-            // tab-row minimum width/indicator that made short labels look oversized.
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -197,7 +196,6 @@ fun SymbolPickerScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Grid of Symbols
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 56.dp),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
@@ -209,6 +207,7 @@ fun SymbolPickerScreen(
                     val isSelected = selectedBaseSymbol == sym ||
                             (selectedBaseSymbol.length > 1 && sym.length > 1 &&
                                     selectedBaseSymbol[1] == sym[1] && selectedBaseSymbol[0] == sym[0])
+
                     Box(
                         modifier = Modifier
                             .aspectRatio(1f)
@@ -231,8 +230,29 @@ fun SymbolPickerScreen(
                     ) {
                         SymbolBadge(
                             symbol = sym,
-                            size = 36.dp
+                            size = 42.dp,
+                            drawContainer = false
                         )
+
+                        if (isSelected) {
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(5.dp)
+                                    .size(18.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
