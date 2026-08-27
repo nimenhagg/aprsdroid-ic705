@@ -60,7 +60,9 @@ fun SettingsScreen(
     symbol: String,
     backendName: String,
     locationSourceName: String,
+    mapModeTag: String,
     mapModeTitle: String,
+    mapModeOptions: List<Pair<String, String>>,
     showObjects: Boolean,
     sendBatteryInfo: Boolean,
     stationTapAction: String,
@@ -73,7 +75,7 @@ fun SettingsScreen(
     onOpenSymbolPicker: () -> Unit,
     onOpenConnectionSetup: () -> Unit,
     onOpenLocationSetup: () -> Unit,
-    onOpenMapModeSetup: () -> Unit,
+    onSaveMapMode: (String) -> Unit,
     onToggleShowObjects: (Boolean) -> Unit,
     onToggleSendBatteryInfo: (Boolean) -> Unit,
     onSaveStationTapAction: (String) -> Unit,
@@ -86,20 +88,21 @@ fun SettingsScreen(
 ) {
     var showSsidDialog by remember { mutableStateOf(false) }
     var showDigiPathDialog by remember { mutableStateOf(false) }
+    var showMapModeDialog by remember { mutableStateOf(false) }
     var showStationTapDialog by remember { mutableStateOf(false) }
 
-    val ssidOptions = remember {
-        listOf(
-            "0" to "0 - 主台站 (Primary Station)",
-            "1" to "1 - 附加台站 (Digi / WX / Mobile)",
-            "5" to "5 - 其他设备 / 智能手机 (Smartphones / IC-705)",
-            "7" to "7 - 手持对讲机 (HTs / Walkie-Talkies)",
-            "8" to "8 - 船用电台 (Marine)",
-            "9" to "9 - 车载移动台 (Primary Mobile)",
-            "10" to "10 - 互联网接入点 / 网关 (IGate)",
-            "15" to "15 - 备用移动台 (Other Mobile)"
-        )
-    }
+    val ssidOptions = listOf(
+        "0" to stringResource(R.string.setting_ssid_0),
+        "1" to stringResource(R.string.setting_ssid_1),
+        "5" to stringResource(R.string.setting_ssid_5),
+        "7" to stringResource(R.string.setting_ssid_7),
+        "8" to stringResource(R.string.setting_ssid_8),
+        "9" to stringResource(R.string.setting_ssid_9),
+        "10" to stringResource(R.string.setting_ssid_10),
+        "15" to stringResource(R.string.setting_ssid_15),
+    )
+    val callsignDisplay = if (callsign.isEmpty()) stringResource(R.string.setting_not_set) else callsign
+    val digiPathDisplay = if (digiPath.isEmpty()) stringResource(R.string.setting_direct_path) else digiPath
 
     Scaffold(
         topBar = {
@@ -146,12 +149,11 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 1. APRS 核心台站配置
             PreferenceCategoryHeader(title = stringResource(R.string.p__aprs))
             PreferenceGroupCard {
                 PreferenceValueItem(
-                    title = stringResource(R.string.p_callsign_nossid),
-                    value = callsign.ifEmpty { "未设置" },
+                    title = stringResource(R.string.setting_callsign_no_ssid),
+                    value = callsignDisplay,
                     summary = stringResource(R.string.p_callsign_summary),
                     icon = Icons.Default.Person,
                     onClick = onOpenCallsignDialog
@@ -160,15 +162,15 @@ fun SettingsScreen(
                 PreferenceValueItem(
                     title = stringResource(R.string.p_ssid),
                     value = "-$ssid",
-                    summary = stringResource(R.string.p_ssid_summary),
+                    summary = stringResource(R.string.setting_ssid_summary),
                     icon = Icons.Default.Radio,
                     onClick = { showSsidDialog = true }
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
                     title = stringResource(R.string.p_aprs_path),
-                    value = digiPath.ifEmpty { "DIRECT (直发)" },
-                    summary = stringResource(R.string.p_aprs_path_summary),
+                    value = digiPathDisplay,
+                    summary = stringResource(R.string.setting_digi_path_summary),
                     icon = Icons.Default.Route,
                     onClick = { showDigiPathDialog = true }
                 )
@@ -183,7 +185,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 2. 连接与通信模式
             PreferenceCategoryHeader(title = stringResource(R.string.p__connection))
             PreferenceGroupCard {
                 PreferenceItem(
@@ -196,7 +197,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. 定位与信标
             PreferenceCategoryHeader(title = stringResource(R.string.p__position))
             PreferenceGroupCard {
                 PreferenceItem(
@@ -217,14 +217,14 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. 地图与显示
             PreferenceCategoryHeader(title = stringResource(R.string.setting_map_display_category))
             PreferenceGroupCard {
-                PreferenceItem(
-                    title = stringResource(R.string.p_map_source),
-                    summary = mapModeTitle,
+                PreferenceValueItem(
+                    title = stringResource(R.string.setting_default_map_source),
+                    value = mapModeTitle,
+                    summary = stringResource(R.string.setting_default_map_source_summary),
                     icon = Icons.Default.Map,
-                    onClick = onOpenMapModeSetup
+                    onClick = { showMapModeDialog = true }
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
@@ -254,7 +254,6 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 5. 更多与诊断
             PreferenceCategoryHeader(title = stringResource(R.string.setting_support_about_category))
             PreferenceGroupCard {
                 PreferenceItem(
@@ -295,9 +294,17 @@ fun SettingsScreen(
             options = ssidOptions,
             selected = ssid,
             onDismiss = { showSsidDialog = false },
-            onSelect = { newSsid ->
-                onSaveSsid(newSsid)
-            }
+            onSelect = onSaveSsid,
+        )
+    }
+
+    if (showMapModeDialog) {
+        PreferenceSelectDialog(
+            title = stringResource(R.string.setting_default_map_source),
+            options = mapModeOptions,
+            selected = mapModeTag,
+            onDismiss = { showMapModeDialog = false },
+            onSelect = onSaveMapMode,
         )
     }
 
@@ -321,15 +328,9 @@ fun SettingsScreen(
         DigiPathDialogCompose(
             currentPath = digiPath,
             userPresets = userDigiPresets,
-            onSavePath = { newPath ->
-                onSaveDigiPath(newPath)
-            },
-            onAddPreset = { newPreset ->
-                onAddDigiPreset(newPreset)
-            },
-            onDeletePreset = { preset ->
-                onDeleteDigiPreset(preset)
-            },
+            onSavePath = onSaveDigiPath,
+            onAddPreset = onAddDigiPreset,
+            onDeletePreset = onDeleteDigiPreset,
             onDismiss = { showDigiPathDialog = false }
         )
     }

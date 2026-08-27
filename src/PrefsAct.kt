@@ -65,6 +65,7 @@ class PrefsAct : ComponentActivity() {
     private val symbolState = mutableStateOf("/$")
     private val backendNameState = mutableStateOf("")
     private val locationSourceNameState = mutableStateOf("")
+    private val mapModeTagState = mutableStateOf("amap")
     private val mapModeTitleState = mutableStateOf("")
     private val showObjectsState = mutableStateOf(true)
     private val sendBatteryInfoState = mutableStateOf(false)
@@ -78,9 +79,14 @@ class PrefsAct : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MapModes.initialize(this)
 
         setContent {
             AprsTheme {
+                val availableMapModes = MapModes.all_mapmodes
+                    .filter { it.isAvailable(this) }
+                    .map { mode -> mode.tag to (mode.title ?: mode.tag) }
+
                 SettingsScreen(
                     callsign = callsignState.value,
                     ssid = ssidState.value,
@@ -89,7 +95,9 @@ class PrefsAct : ComponentActivity() {
                     symbol = symbolState.value,
                     backendName = backendNameState.value,
                     locationSourceName = locationSourceNameState.value,
+                    mapModeTag = mapModeTagState.value,
                     mapModeTitle = mapModeTitleState.value,
+                    mapModeOptions = availableMapModes,
                     showObjects = showObjectsState.value,
                     sendBatteryInfo = sendBatteryInfoState.value,
                     stationTapAction = stationTapActionState.value,
@@ -112,14 +120,22 @@ class PrefsAct : ComponentActivity() {
                         current.add(preset)
                         prefs.saveDigiPathPresets(current)
                         userDigiPresetsState.value = current
-                        Toast.makeText(this, "已保存预设: $preset", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            getString(R.string.digi_path_preset_saved, preset),
+                            Toast.LENGTH_SHORT,
+                        ).show()
                     },
                     onDeleteDigiPreset = { preset ->
                         val current = HashSet(prefs.getDigiPathPresets())
                         current.remove(preset)
                         prefs.saveDigiPathPresets(current)
                         userDigiPresetsState.value = current
-                        Toast.makeText(this, "已删除预设: $preset", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this,
+                            getString(R.string.digi_path_preset_deleted, preset),
+                            Toast.LENGTH_SHORT,
+                        ).show()
                     },
                     onOpenSymbolPicker = {
                         startActivity(Intent(this, PrefSymbolAct::class.java))
@@ -130,8 +146,9 @@ class PrefsAct : ComponentActivity() {
                     onOpenLocationSetup = {
                         startActivity(Intent(this, LocationPrefs::class.java))
                     },
-                    onOpenMapModeSetup = {
-                        MapModes.startMap(this, prefs, null)
+                    onSaveMapMode = { tag ->
+                        MapModes.setDefault(prefs, tag)
+                        refreshPrefsState()
                     },
                     onToggleShowObjects = {
                         val newState = prefs.toggleBoolean("show_objects", true)
@@ -229,7 +246,9 @@ class PrefsAct : ComponentActivity() {
         symbolState.value = prefs.getString("symbol", "/$")
         backendNameState.value = prefs.getBackendName()
         locationSourceNameState.value = prefs.getLocationSourceName()
-        mapModeTitleState.value = MapModes.defaultMapMode(this, prefs).title ?: getString(R.string.app_map)
+        val mapMode = MapModes.defaultMapMode(this, prefs)
+        mapModeTagState.value = mapMode.tag
+        mapModeTitleState.value = mapMode.title ?: getString(R.string.app_map)
         showObjectsState.value = prefs.getShowObjects()
         sendBatteryInfoState.value = prefs.getSendBatteryAprsIs()
         stationTapActionState.value = prefs.getStationTapAction()
