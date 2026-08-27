@@ -44,7 +44,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
+import org.aprsdroid.app.ui.component.PasscodeDialogCompose
 import org.aprsdroid.app.ui.component.PreferenceCategoryHeader
 import org.aprsdroid.app.ui.component.PreferenceEditDialog
 import org.aprsdroid.app.ui.component.PreferenceGroupCard
@@ -104,6 +106,7 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
     private val showBluetoothDeviceDialog = mutableStateOf(false)
     private val showBaudRateDialog = mutableStateOf(false)
     private val showAfskOutputDialog = mutableStateOf(false)
+    private val showPasscodeDialog = mutableStateOf(false)
 
     private fun refreshState() {
         protoState.value = prefs.getString("proto", "aprsis")
@@ -344,7 +347,7 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                                             stringResource(R.string.setting_passcode_configured)
                                         },
                                         icon = Icons.Default.Password,
-                                        onClick = { PasscodeDialog(this@BackendPrefs, false).show() },
+                                        onClick = { showPasscodeDialog.value = true },
                                     )
                                 }
                             }
@@ -695,6 +698,24 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                             onSelect = { output ->
                                 afskOutputState.value = output
                                 prefs.set("afsk.output", output)
+                            },
+                        )
+                    }
+
+                    if (showPasscodeDialog.value) {
+                        PasscodeDialogCompose(
+                            initialCallsign = prefs.getCallsign(),
+                            initialPasscode = prefs.getString("passcode", ""),
+                            firstRun = false,
+                            onDismiss = { showPasscodeDialog.value = false },
+                            onSave = { call, pass ->
+                                prefs.prefs.edit {
+                                    putString("callsign", call)
+                                    putString("passcode", pass)
+                                    putBoolean("firstrun", false)
+                                }
+                                showPasscodeDialog.value = false
+                                refreshState()
                             },
                         )
                     }
