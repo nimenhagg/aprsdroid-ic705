@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Route
@@ -110,14 +111,14 @@ fun SettingsScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.app_prefs),
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(android.R.string.cancel)
+                            contentDescription = stringResource(android.R.string.cancel),
                         )
                     }
                 },
@@ -125,27 +126,27 @@ fun SettingsScreen(
                     IconButton(onClick = onImportProfile) {
                         Icon(
                             imageVector = Icons.Default.FileOpen,
-                            contentDescription = stringResource(R.string.profile_load)
+                            contentDescription = stringResource(R.string.profile_load),
                         )
                     }
                     IconButton(onClick = onExportProfile) {
                         Icon(
                             imageVector = Icons.Default.Save,
-                            contentDescription = stringResource(R.string.profile_export)
+                            contentDescription = stringResource(R.string.profile_export),
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
-        }
+        },
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -154,9 +155,9 @@ fun SettingsScreen(
                 PreferenceValueItem(
                     title = stringResource(R.string.setting_callsign_no_ssid),
                     value = callsignDisplay,
-                    summary = stringResource(R.string.p_callsign_summary),
+                    summary = stringResource(R.string.setting_callsign_summary_mod),
                     icon = Icons.Default.Person,
-                    onClick = onOpenCallsignDialog
+                    onClick = onOpenCallsignDialog,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
@@ -164,7 +165,7 @@ fun SettingsScreen(
                     value = "-$ssid",
                     summary = stringResource(R.string.setting_ssid_summary),
                     icon = Icons.Default.Radio,
-                    onClick = { showSsidDialog = true }
+                    onClick = { showSsidDialog = true },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
@@ -172,14 +173,14 @@ fun SettingsScreen(
                     value = digiPathDisplay,
                     summary = stringResource(R.string.setting_digi_path_summary),
                     icon = Icons.Default.Route,
-                    onClick = { showDigiPathDialog = true }
+                    onClick = { showDigiPathDialog = true },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
                     title = stringResource(R.string.p_symbol),
-                    summary = stringResource(R.string.p_symbol_summary) + ": " + symbol,
+                    summary = stringResource(R.string.setting_symbol_summary_mod) + ": " + symbol,
                     icon = Icons.Default.LocationOn,
-                    onClick = onOpenSymbolPicker
+                    onClick = onOpenSymbolPicker,
                 )
             }
 
@@ -191,7 +192,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.p_connsetup),
                     summary = backendName,
                     icon = Icons.Default.CellTower,
-                    onClick = onOpenConnectionSetup
+                    onClick = onOpenConnectionSetup,
                 )
             }
 
@@ -200,10 +201,10 @@ fun SettingsScreen(
             PreferenceCategoryHeader(title = stringResource(R.string.p__position))
             PreferenceGroupCard {
                 PreferenceItem(
-                    title = stringResource(R.string.p_locsource),
+                    title = stringResource(R.string.setting_location_source),
                     summary = locationSourceName,
                     icon = Icons.Default.LocationOn,
-                    onClick = onOpenLocationSetup
+                    onClick = onOpenLocationSetup,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceSwitchItem(
@@ -211,7 +212,7 @@ fun SettingsScreen(
                     summary = stringResource(R.string.setting_send_battery_summary),
                     icon = Icons.Default.BatteryFull,
                     checked = sendBatteryInfo,
-                    onCheckedChange = onToggleSendBatteryInfo
+                    onCheckedChange = onToggleSendBatteryInfo,
                 )
             }
 
@@ -224,7 +225,7 @@ fun SettingsScreen(
                     value = mapModeTitle,
                     summary = stringResource(R.string.setting_default_map_source_summary),
                     icon = Icons.Default.Map,
-                    onClick = { showMapModeDialog = true }
+                    onClick = { showMapModeDialog = true },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
@@ -240,7 +241,7 @@ fun SettingsScreen(
                         stringResource(R.string.setting_station_long_press_details)
                     },
                     icon = Icons.Default.Person,
-                    onClick = { showStationTapDialog = true }
+                    onClick = { showStationTapDialog = true },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceSwitchItem(
@@ -248,7 +249,14 @@ fun SettingsScreen(
                     summary = stringResource(R.string.setting_show_aprs_objects_summary),
                     icon = Icons.Default.Layers,
                     checked = showObjects,
-                    onCheckedChange = onToggleShowObjects
+                    onCheckedChange = onToggleShowObjects,
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceItem(
+                    title = stringResource(R.string.setting_notifications),
+                    summary = stringResource(R.string.setting_notifications_summary),
+                    icon = Icons.Default.Notifications,
+                    onClick = onOpenNotificationPrefs,
                 )
             }
 
@@ -261,7 +269,7 @@ fun SettingsScreen(
                     summary = stringResource(R.string.setting_share_diagnostics_summary),
                     icon = Icons.Default.BugReport,
                     onClick = onShareDiagnostics,
-                    showChevron = false
+                    showChevron = false,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
@@ -280,7 +288,7 @@ fun SettingsScreen(
                         BuildConfig.BUILD_TYPE,
                     ),
                     icon = Icons.Default.Info,
-                    onClick = onOpenAbout
+                    onClick = onOpenAbout,
                 )
             }
 
@@ -290,7 +298,7 @@ fun SettingsScreen(
 
     if (showSsidDialog) {
         PreferenceSelectDialog(
-            title = stringResource(R.string.p_ssid_entry),
+            title = stringResource(R.string.setting_ssid_dialog),
             options = ssidOptions,
             selected = ssid,
             onDismiss = { showSsidDialog = false },
@@ -320,7 +328,7 @@ fun SettingsScreen(
             onSelect = { action ->
                 onSaveStationTapAction(action)
                 showStationTapDialog = false
-            }
+            },
         )
     }
 
@@ -331,7 +339,7 @@ fun SettingsScreen(
             onSavePath = onSaveDigiPath,
             onAddPreset = onAddDigiPreset,
             onDeletePreset = onDeleteDigiPreset,
-            onDismiss = { showDigiPathDialog = false }
+            onDismiss = { showDigiPathDialog = false },
         )
     }
 }
