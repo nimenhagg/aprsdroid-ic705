@@ -2,14 +2,11 @@ package org.aprsdroid.app
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.Log
-import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.ComponentDialog
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,13 +24,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -42,11 +39,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
-import org.aprsdroid.app.ui.theme.AprsTheme
 import java.io.File
 import java.io.FileOutputStream
 import java.security.KeyStore
 import java.security.cert.X509Certificate
+import org.aprsdroid.app.ui.theme.AprsTheme
 
 class KeyfileImportActivity : ComponentActivity() {
     companion object {
@@ -61,109 +58,14 @@ class KeyfileImportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "created: $intent")
-        showPasswordDialog()
-    }
-
-    private fun showPasswordDialog() {
-        val dialog = object : ComponentDialog(this) {
-            override fun onCreate(savedInstanceState: Bundle?) {
-                super.onCreate(savedInstanceState)
-                window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-                val composeView = ComposeView(this@KeyfileImportActivity).apply {
-                    setContent {
-                        AprsTheme {
-                            var password by remember { mutableStateOf("") }
-                            AlertDialog(
-                                onDismissRequest = {
-                                    dismiss()
-                                    finish()
-                                },
-                                shape = RoundedCornerShape(28.dp),
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                                title = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.VpnKey,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                        Text(
-                                            text = stringResource(R.string.ssl_import_activity),
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 20.sp
-                                        )
-                                    }
-                                },
-                                text = {
-                                    Column(
-                                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.ssl_import_password),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        OutlinedTextField(
-                                            value = password,
-                                            onValueChange = { password = it },
-                                            visualTransformation = PasswordVisualTransformation(),
-                                            keyboardOptions = KeyboardOptions(
-                                                keyboardType = KeyboardType.Password,
-                                                imeAction = ImeAction.Done
-                                            ),
-                                            keyboardActions = KeyboardActions(
-                                                onDone = {
-                                                    dismiss()
-                                                    importKey(password)
-                                                }
-                                            ),
-                                            singleLine = true,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    }
-                                },
-                                confirmButton = {
-                                    Button(
-                                        onClick = {
-                                            dismiss()
-                                            importKey(password)
-                                        },
-                                        shape = RoundedCornerShape(20.dp)
-                                    ) {
-                                        Text(stringResource(android.R.string.ok))
-                                    }
-                                },
-                                dismissButton = {
-                                    TextButton(
-                                        onClick = {
-                                            dismiss()
-                                            finish()
-                                        },
-                                        shape = RoundedCornerShape(20.dp)
-                                    ) {
-                                        Text(stringResource(android.R.string.cancel))
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-                setContentView(
-                    composeView,
-                    ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    )
+        setContent {
+            AprsTheme {
+                KeyfilePasswordDialog(
+                    onDismiss = { finish() },
+                    onImport = ::importKey,
                 )
             }
         }
-        dialog.setOnCancelListener { finish() }
-        dialog.show()
     }
 
     private fun importKey(password: String) {
@@ -211,4 +113,78 @@ class KeyfileImportActivity : ComponentActivity() {
         }
         finish()
     }
+}
+
+@Composable
+private fun KeyfilePasswordDialog(
+    onDismiss: () -> Unit,
+    onImport: (String) -> Unit,
+) {
+    var password by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.VpnKey,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
+                Text(
+                    text = stringResource(R.string.ssl_import_activity),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                )
+            }
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stringResource(R.string.ssl_import_password),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { onImport(password) },
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onImport(password) },
+                shape = RoundedCornerShape(20.dp),
+            ) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(20.dp),
+            ) {
+                Text(stringResource(android.R.string.cancel))
+            }
+        },
+    )
 }

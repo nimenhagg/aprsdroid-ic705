@@ -7,9 +7,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.aprsdroid.app.data.repository.StationRepository
+import org.aprsdroid.app.ui.component.PasscodeDialogCompose
 import org.aprsdroid.app.ui.screen.HubStationScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.aprsdroid.app.ui.viewmodel.HubViewModel
@@ -19,6 +22,7 @@ class HubActivity : BaseRecyclerActivity() {
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     private val repository: StationRepository by lazy { StationRepository(storage) }
     private val viewModel: HubViewModel by lazy { HubViewModel(repository, prefs) }
+    private val firstRunDialogVisible = mutableStateOf(false)
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -77,6 +81,27 @@ class HubActivity : BaseRecyclerActivity() {
                         StorageCleaner(this, storage) { viewModel.refresh() }.execute()
                     }
                 )
+
+                if (firstRunDialogVisible.value) {
+                    PasscodeDialogCompose(
+                        initialCallsign = prefs.getCallsign(),
+                        initialPasscode = prefs.getString("passcode", ""),
+                        firstRun = true,
+                        onDismiss = {
+                            firstRunDialogVisible.value = false
+                            if (prefs.getCallsign().isEmpty()) finish()
+                        },
+                        onSave = { call, pass ->
+                            prefs.prefs.edit {
+                                putString("callsign", call)
+                                putString("passcode", pass)
+                                putBoolean("firstrun", false)
+                            }
+                            firstRunDialogVisible.value = false
+                            viewModel.refresh()
+                        },
+                    )
+                }
             }
         }
 
@@ -94,7 +119,7 @@ class HubActivity : BaseRecyclerActivity() {
         viewModel.refresh()
 
         if (prefs.getBoolean("firstrun", true) || prefs.getCallsign().isEmpty()) {
-            PasscodeDialog(this, true).show()
+            firstRunDialogVisible.value = true
         }
     }
 

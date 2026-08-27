@@ -1,20 +1,26 @@
 package org.aprsdroid.app
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.compose.ui.res.stringResource
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.diagnostic.LogReportManager
+import org.aprsdroid.app.ui.component.AboutDialogContent
+import org.aprsdroid.app.ui.component.PasscodeDialogCompose
 import org.aprsdroid.app.ui.screen.SettingsScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.aprsdroid.app.update.GitHubUpdateChecker
@@ -73,6 +79,9 @@ class PrefsAct : ComponentActivity() {
     private val showObjectsState = mutableStateOf(true)
     private val sendBatteryInfoState = mutableStateOf(false)
     private val stationTapActionState = mutableStateOf("message")
+    private val identityDialogVisible = mutableStateOf(false)
+    private val aboutDialogVisible = mutableStateOf(false)
+    private val updateAvailableState = mutableStateOf<UpdateCheckResult.UpdateAvailable?>(null)
     private var updateCheckInFlight = false
 
     fun exportPrefs() {
@@ -113,9 +122,7 @@ class PrefsAct : ComponentActivity() {
                     stationTapAction = stationTapActionState.value,
                     onBack = { finish() },
                     onOpenCallsignDialog = {
-                        PasscodeDialog(this, false).apply {
-                            setOnDismissListener { refreshPrefsState() }
-                        }.show()
+                        identityDialogVisible.value = true
                     },
                     onSaveSsid = { newSsid ->
                         prefs.set("ssid", newSsid)
@@ -198,9 +205,73 @@ class PrefsAct : ComponentActivity() {
                     },
                     onCheckForUpdates = { checkForUpdatesManually() },
                     onOpenAbout = {
-                        AboutDialog(this).show()
+                        aboutDialogVisible.value = true
                     },
                 )
+
+                if (identityDialogVisible.value) {
+                    PasscodeDialogCompose(
+                        initialCallsign = prefs.getCallsign(),
+                        initialPasscode = prefs.getString("passcode", ""),
+                        firstRun = false,
+                        onDismiss = {
+                            identityDialogVisible.value = false
+                            refreshPrefsState()
+                        },
+                        onSave = { call, pass ->
+                            prefs.prefs.edit {
+                                putString("callsign", call)
+                                putString("passcode", pass)
+                                putBoolean("firstrun", false)
+                            }
+                            identityDialogVisible.value = false
+                            refreshPrefsState()
+                        },
+                    )
+                }
+
+                if (aboutDialogVisible.value) {
+                    AboutDialogContent(
+                        onDismiss = { aboutDialogVisible.value = false },
+                        onOpenGithub = {
+                            startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    "https://github.com/nimenhagg/aprsdroid-ic705".toUri(),
+                                ),
+                            )
+                        },
+                    )
+                }
+
+                updateAvailableState.value?.let { update ->
+                    AlertDialog(
+                        onDismissRequest = { updateAvailableState.value = null },
+                        title = {
+                            Text(stringResource(R.string.update_available_title, update.latest))
+                        },
+                        text = {
+                            Text(stringResource(R.string.update_available_message, update.current))
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    updateAvailableState.value = null
+                                    startActivity(
+                                        Intent(Intent.ACTION_VIEW, update.releaseUrl.toUri()),
+                                    )
+                                },
+                            ) {
+                                Text(stringResource(R.string.update_open_release))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { updateAvailableState.value = null }) {
+                                Text(stringResource(android.R.string.cancel))
+                            }
+                        },
+                    )
+                }
             }
         }
     }
@@ -242,14 +313,7 @@ class PrefsAct : ComponentActivity() {
                             "manual_check_update_available",
                             mapOf("current" to result.current, "latest" to result.latest),
                         )
-                        MaterialAlertDialogBuilder(this)
-                            .setTitle(getString(R.string.update_available_title, result.latest))
-                            .setMessage(getString(R.string.update_available_message, result.current))
-                            .setNegativeButton(android.R.string.cancel, null)
-                            .setPositiveButton(R.string.update_open_release) { _, _ ->
-                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(result.releaseUrl)))
-                            }
-                            .show()
+                        updateAvailableState.value = result
                     }
                     is UpdateCheckResult.Failure -> {
                         AppLog.w(
