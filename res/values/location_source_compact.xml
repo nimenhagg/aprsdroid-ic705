@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_location_source_smart_value">SmartBeaconing™</string>
+    <string name="setting_location_source_periodic_value">Periodic GPS</string>
+    <string name="setting_location_source_manual_value">Manual position</string>
+</resources>
