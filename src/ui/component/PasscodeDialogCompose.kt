@@ -36,9 +36,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 import org.aprsdroid.app.AprsPacket
 import org.aprsdroid.app.R
-import java.util.Locale
 
 @Composable
 fun PasscodeDialogCompose(
@@ -46,15 +46,17 @@ fun PasscodeDialogCompose(
     initialPasscode: String,
     firstRun: Boolean = false,
     onDismiss: () -> Unit,
-    onSave: (callsign: String, passcode: String) -> Unit
+    onSave: (callsign: String, passcode: String) -> Unit,
 ) {
-    var rawCall by remember { mutableStateOf(initialCallsign.filter { it.isLetterOrDigit() }.uppercase(Locale.US)) }
+    var rawCall by remember {
+        mutableStateOf(initialCallsign.filter { it.isLetterOrDigit() }.uppercase(Locale.US))
+    }
     var passcode by remember { mutableStateOf(initialPasscode) }
     val focusManager = LocalFocusManager.current
 
     val trimmedCall = rawCall.trim().uppercase(Locale.US)
     val isCallValid = trimmedCall.length in 3..7 && trimmedCall.matches(Regex("^[0-9A-Z]{3,7}$"))
-    val isPassValid = if (passcode.isEmpty()) true else AprsPacket.passcodeAllowed(trimmedCall, passcode, true)
+    val isPassValid = passcode.isEmpty() || AprsPacket.passcodeAllowed(trimmedCall, passcode, true)
     val canSave = isCallValid && isPassValid
 
     AlertDialog(
@@ -64,18 +66,20 @@ fun PasscodeDialogCompose(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Key,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
                 Text(
-                    text = stringResource(if (firstRun) R.string.fr_title else R.string.p_passcode_entry),
+                    text = stringResource(
+                        if (firstRun) R.string.identity_first_run_title else R.string.identity_dialog_title,
+                    ),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
+                    fontSize = 20.sp,
                 )
             }
         },
@@ -85,23 +89,25 @@ fun PasscodeDialogCompose(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (firstRun) {
                     Text(
-                        text = stringResource(R.string.fr_text),
+                        text = stringResource(R.string.identity_first_run_text),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
-                // Callsign Input (pure callsign without SSID)
                 OutlinedTextField(
                     value = rawCall,
                     onValueChange = { input ->
-                        rawCall = input.filter { it.isLetterOrDigit() }.take(7).uppercase(Locale.US)
+                        rawCall = input
+                            .filter { it.isLetterOrDigit() }
+                            .take(7)
+                            .uppercase(Locale.US)
                     },
-                    label = { Text(stringResource(R.string.p_callsign_nossid)) },
+                    label = { Text(stringResource(R.string.identity_callsign)) },
                     placeholder = { Text("N0CALL") },
                     leadingIcon = {
                         Icon(Icons.Default.Person, contentDescription = null)
@@ -109,62 +115,63 @@ fun PasscodeDialogCompose(
                     singleLine = true,
                     isError = rawCall.isNotEmpty() && !isCallValid,
                     supportingText = if (rawCall.isNotEmpty() && !isCallValid) {
-                        { Text(stringResource(R.string.p_callsign_entry)) }
-                    } else null,
+                        { Text(stringResource(R.string.identity_callsign_invalid)) }
+                    } else {
+                        null
+                    },
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Characters,
                         autoCorrectEnabled = false,
-                        imeAction = ImeAction.Next
+                        imeAction = ImeAction.Next,
                     ),
                     keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) },
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
-                // Passcode Input
                 OutlinedTextField(
                     value = passcode,
                     onValueChange = { passcode = it.trim() },
-                    label = { Text(stringResource(R.string.p_passcode)) },
-                    placeholder = { Text("12345 (可选)") },
+                    label = { Text(stringResource(R.string.identity_passcode)) },
+                    placeholder = { Text(stringResource(R.string.identity_passcode_optional)) },
                     leadingIcon = {
                         Icon(Icons.Default.Key, contentDescription = null)
                     },
                     singleLine = true,
                     isError = passcode.isNotEmpty() && !isPassValid,
                     supportingText = {
-                        if (passcode.isNotEmpty() && !isPassValid) {
-                            Text(stringResource(R.string.wrongpasscode))
-                        } else {
-                            Text(stringResource(R.string.anon_warning))
-                        }
+                        Text(
+                            stringResource(
+                                if (passcode.isNotEmpty() && !isPassValid) {
+                                    R.string.identity_passcode_invalid
+                                } else {
+                                    R.string.identity_passcode_hint
+                                },
+                            ),
+                        )
                     },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Done
+                        imeAction = ImeAction.Done,
                     ),
                     keyboardActions = KeyboardActions(
                         onDone = {
                             focusManager.clearFocus()
-                            if (canSave) {
-                                onSave(trimmedCall, passcode)
-                            }
-                        }
+                            if (canSave) onSave(trimmedCall, passcode)
+                        },
                     ),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    if (canSave) {
-                        onSave(trimmedCall, passcode)
-                    }
+                    if (canSave) onSave(trimmedCall, passcode)
                 },
                 enabled = canSave,
-                shape = RoundedCornerShape(20.dp)
+                shape = RoundedCornerShape(20.dp),
             ) {
                 Text(stringResource(android.R.string.ok))
             }
@@ -172,10 +179,10 @@ fun PasscodeDialogCompose(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                shape = RoundedCornerShape(20.dp)
+                shape = RoundedCornerShape(20.dp),
             ) {
                 Text(stringResource(android.R.string.cancel))
             }
-        }
+        },
     )
 }
