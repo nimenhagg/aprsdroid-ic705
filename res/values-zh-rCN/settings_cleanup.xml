@@ -5,4 +5,26 @@
     <string name="setting_symbol_summary_mod">本站在 APRS 中使用的地图符号</string>
     <string name="setting_notifications">通知设置</string>
     <string name="setting_notifications_summary">消息、位置报告和中继通知</string>
+
+    <string name="identity_dialog_title">台站身份</string>
+    <string name="identity_first_run_title">设置 APRS 台站身份</string>
+    <string name="identity_first_run_text">请输入业余无线电呼号。只有通过 APRS-IS 发送数据时才需要 APRS-IS 验证码。</string>
+    <string name="identity_callsign">呼号</string>
+    <string name="identity_callsign_invalid">请输入不含 SSID 的有效呼号</string>
+    <string name="identity_passcode">APRS-IS 验证码</string>
+    <string name="identity_passcode_optional">可选</string>
+    <string name="identity_passcode_hint">留空时 APRS-IS 仅接收；无线电模式不使用此验证码</string>
+    <string name="identity_passcode_invalid">验证码与当前呼号不匹配</string>
+
+    <string name="symbol_category_common_mod">常用</string>
+    <string name="symbol_category_vehicle_mod">车辆</string>
+    <string name="symbol_category_base_mod">固定台</string>
+    <string name="symbol_category_person_mod">人员</string>
+    <string name="symbol_category_weather_mod">气象</string>
+    <string name="symbol_category_navigation_mod">导航</string>
+    <string name="symbol_category_primary_mod">主符号表</string>
+    <string name="symbol_category_alternate_mod">次符号表</string>
+    <string name="symbol_current_code_mod">符号编码：%1$s</string>
+    <string name="symbol_overlay_supported_mod">支持覆盖字符：0–9 或 A–Z</string>
+    <string name="symbol_overlay_mod">覆盖字符</string>
 </resources>
