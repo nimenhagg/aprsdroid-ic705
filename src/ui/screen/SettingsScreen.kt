@@ -234,14 +234,18 @@ fun SettingsScreen(
                     } else {
                         stringResource(R.string.setting_station_tap_message)
                     },
-                    summary = stringResource(R.string.setting_station_tap_action_summary),
+                    summary = if (stationTapAction == "details") {
+                        stringResource(R.string.setting_station_long_press_message)
+                    } else {
+                        stringResource(R.string.setting_station_long_press_details)
+                    },
                     icon = Icons.Default.Person,
                     onClick = { showStationTapDialog = true }
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceSwitchItem(
-                    title = stringResource(R.string.map_objects),
-                    summary = "在地图与列表中展示其他中继与网关生成的 Objects",
+                    title = stringResource(R.string.setting_show_aprs_objects),
+                    summary = stringResource(R.string.setting_show_aprs_objects_summary),
                     icon = Icons.Default.Layers,
                     checked = showObjects,
                     onCheckedChange = onToggleShowObjects
@@ -297,8 +301,8 @@ fun SettingsScreen(
         PreferenceSelectDialog(
             title = stringResource(R.string.setting_station_tap_action),
             options = listOf(
-                "message" to stringResource(R.string.setting_station_tap_message),
-                "details" to stringResource(R.string.setting_station_tap_details),
+                "message" to stringResource(R.string.setting_station_tap_message_option),
+                "details" to stringResource(R.string.setting_station_tap_details_option),
             ),
             selected = stationTapAction,
             onDismiss = { showStationTapDialog = false },
