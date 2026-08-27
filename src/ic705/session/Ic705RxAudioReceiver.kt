@@ -80,27 +80,27 @@ class Ic705RxAudioReceiver(
             return Ic705AudioReceiveResult.ACCEPTED
         }
 
-        val forwardDistance = sequenceDistance(expectedSequence, actualSequence)
+        val forwardDistance = ic705AudioSequenceDistance(expectedSequence, actualSequence)
         return when {
             forwardDistance == 0 -> {
                 deliver(actualSequence, samples)
                 drainContiguousPending()
                 Ic705AudioReceiveResult.ACCEPTED
             }
-            forwardDistance >= HALF_SEQUENCE_SPACE -> {
+            forwardDistance >= IC705_AUDIO_HALF_SEQUENCE_SPACE -> {
                 // This packet arrived after its place in the output stream. The gap was
                 // already handled when newer audio was released, so resetting again here
                 // would turn one network discontinuity into two demodulator resets.
                 Ic705AudioReceiveResult.OUT_OF_ORDER_DROPPED
             }
-            forwardDistance > MAX_REORDER_PACKETS -> {
+            forwardDistance > IC705_AUDIO_MAX_REORDER_PACKETS -> {
                 reportGapAndDeliver(expectedSequence, actualSequence, samples)
                 drainContiguousPending()
                 Ic705AudioReceiveResult.ACCEPTED
             }
             else -> {
                 pendingAudio[actualSequence] = samples
-                if (pendingAudio.size >= MAX_REORDER_PACKETS) {
+                if (pendingAudio.size >= IC705_AUDIO_MAX_REORDER_PACKETS) {
                     releaseNearestPending(expectedSequence)
                     Ic705AudioReceiveResult.ACCEPTED
                 } else {
@@ -117,14 +117,10 @@ class Ic705RxAudioReceiver(
         pendingAudio.clear()
     }
 
-    private fun incrementSequence(sequence: Int): Int = (sequence + 1) and 0xffff
-
-    private fun sequenceDistance(from: Int, to: Int): Int = (to - from) and 0xffff
-
     private fun deliver(sequence: Int, samples: ShortArray) {
         sink.write(samples)
         lastDeliveredSequence = sequence
-        nextAudioSequence = incrementSequence(sequence)
+        nextAudioSequence = incrementIc705AudioSequence(sequence)
     }
 
     private fun drainContiguousPending() {
@@ -136,17 +132,17 @@ class Ic705RxAudioReceiver(
     }
 
     private fun releaseNearestPending(expectedSequence: Int) {
-        val sequence = pendingAudio.keys.minByOrNull { sequenceDistance(expectedSequence, it) } ?: return
+        val sequence = pendingAudio.keys.minByOrNull { ic705AudioSequenceDistance(expectedSequence, it) } ?: return
         val samples = pendingAudio.remove(sequence) ?: return
         reportGapAndDeliver(expectedSequence, sequence, samples)
         drainContiguousPending()
     }
 
     private fun reportGapAndDeliver(expectedSequence: Int, actualSequence: Int, samples: ShortArray) {
-        val missingPacketCount = sequenceDistance(expectedSequence, actualSequence)
-        if (missingPacketCount <= MAX_CONCEALED_PACKETS) {
+        val missingPacketCount = ic705AudioSequenceDistance(expectedSequence, actualSequence)
+        if (missingPacketCount <= IC705_AUDIO_MAX_CONCEALED_PACKETS) {
             val concealedSampleCount = (0 until missingPacketCount).sumOf { offset ->
-                samplesPerReceivePacket((expectedSequence + offset) and 0xffff)
+                ic705SamplesPerReceivePacket((expectedSequence + offset) and 0xffff)
             }
             val concealed = ShortArray(concealedSampleCount + samples.size)
             samples.copyInto(concealed, destinationOffset = concealedSampleCount)
@@ -162,23 +158,5 @@ class Ic705RxAudioReceiver(
             ),
         )
         deliver(actualSequence, samples)
-    }
-
-    private fun samplesPerReceivePacket(sequence: Int): Int =
-        if (sequence and 1 == 0) LARGE_RX_PACKET_SAMPLES else SMALL_RX_PACKET_SAMPLES
-
-    private companion object {
-        const val HALF_SEQUENCE_SPACE = 0x8000
-        // IC-705 sends roughly 100 audio datagrams per second. Four packets absorb
-        // ordinary Wi-Fi scheduling jitter while adding at most about 40 ms when a
-        // packet is genuinely lost.
-        const val MAX_REORDER_PACKETS = 4
-        // A successful 48 kHz RS-BA1 capture shows alternating 682/278-sample
-        // packets (960 samples, or 20 ms, per pair), starting with the larger
-        // packet at sequence zero. Conceal an isolated loss with equal-duration
-        // silence so the AFSK decoder keeps a correct time base.
-        const val LARGE_RX_PACKET_SAMPLES = 682
-        const val SMALL_RX_PACKET_SAMPLES = 278
-        const val MAX_CONCEALED_PACKETS = 2
     }
 }
