@@ -10,7 +10,6 @@
         <item name="android:windowActivityTransitions">true</item>
         <item name="android:windowAnimationStyle">@style/Animation.Material3.Activity</item>
 
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
         <item name="android:dialogTheme">@style/Material3DialogTheme</item>
         <item name="android:alertDialogTheme">@style/Material3AlertDialogTheme</item>
         <item name="dialogTheme">@style/Material3DialogTheme</item>

@@ -3,7 +3,6 @@ package org.aprsdroid.app
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import androidx.preference.PreferenceManager
 
 class APRSdroid : Activity() {
     fun replaceAct(act: Class<*>) {
@@ -16,7 +15,8 @@ class APRSdroid : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val sp = PreferenceManager.getDefaultSharedPreferences(this)
+        val prefs = PrefsWrapper(this)
+        val sp = prefs.prefs
 
         @Suppress("DEPRECATION")
         val device = intent.getParcelableExtra<android.os.Parcelable>("device")
@@ -24,7 +24,7 @@ class APRSdroid : Activity() {
             startService(AprsService.intent(this, AprsService.SERVICE))
         }
 
-        val mapmode = MapModes.defaultMapMode(this, PrefsWrapper(this))
+        val mapmode = MapModes.defaultMapMode(this, prefs)
         when (sp.getString("activity", "hub")) {
             "hub" -> replaceAct(HubActivity::class.java)
             "map" -> replaceAct(mapmode.viewClass)

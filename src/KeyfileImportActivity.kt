@@ -42,7 +42,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
-import androidx.preference.PreferenceManager
 import org.aprsdroid.app.ui.theme.AprsTheme
 import java.io.File
 import java.io.FileOutputStream
@@ -196,7 +195,7 @@ class KeyfileImportActivity : ComponentActivity() {
                 ks.store(fos, KEYSTORE_PASS)
                 fos.close()
 
-                PreferenceManager.getDefaultSharedPreferences(this)
+                PrefsWrapper.defaultSharedPreferences(this)
                     .edit { putString("callsign", callsign) }
 
                 val msg = getString(R.string.ssl_import_ok, callsign)

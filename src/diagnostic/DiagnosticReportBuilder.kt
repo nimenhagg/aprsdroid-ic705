@@ -2,8 +2,8 @@ package org.aprsdroid.app.diagnostic
 
 import android.content.Context
 import android.os.Build
-import androidx.preference.PreferenceManager
 import org.aprsdroid.app.BuildConfig
+import org.aprsdroid.app.PrefsWrapper
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -77,7 +77,7 @@ object DiagnosticReportBuilder {
         appendLine()
 
         appendLine("--- [5. Relevant Preferences] ---")
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val prefs = PrefsWrapper.defaultSharedPreferences(context)
         val keys = listOf(
             "proto",
             "link",
