@@ -4,7 +4,12 @@
     <string name="setting_ssid_dialog">Select SSID</string>
     <string name="setting_symbol_summary_mod">APRS symbol shown for this station</string>
     <string name="setting_notifications">Notifications</string>
-    <string name="setting_notifications_summary">Message, position-report, and digipeat alerts</string>
+    <string name="setting_notifications_summary">Manage Android notification channels</string>
+    <string name="setting_notification_channels_category">Android notification channels</string>
+    <string name="setting_notification_messages_channel">APRS messages</string>
+    <string name="setting_notification_messages_channel_summary">Sound, vibration, and visibility for received-message alerts</string>
+    <string name="setting_notification_status_channel">Service &amp; position status</string>
+    <string name="setting_notification_status_channel_summary">Foreground service and position-status notifications</string>
 
     <string name="identity_dialog_title">Station identity</string>
     <string name="identity_first_run_title">Set up APRS identity</string>
