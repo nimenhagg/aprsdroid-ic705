@@ -1,0 +1,123 @@
+name: Finalize Mod-v1.9.5
+
+on:
+  workflow_run:
+    workflows:
+      - Build and Publish Release APK
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Guard release state
+        env:
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags
+          CURRENT_MAIN=$(git rev-parse origin/main)
+          if [ "$CURRENT_MAIN" != "$TESTED_SHA" ]; then
+            echo "main moved after the successful validation run; refusing to tag." >&2
+            exit 1
+          fi
+          grep -F 'mod_version = (findProperty("MOD_VERSION") ?: "1.9.5")' build.gradle
+          grep -F 'mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082795")' build.gradle
+          if git ls-remote --exit-code --tags origin refs/tags/Mod-v1.9.5 >/dev/null 2>&1; then
+            echo "Mod-v1.9.5 already exists; refusing to move it." >&2
+            exit 1
+          fi
+
+      - name: Finalize release documentation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          readme = Path('README.md')
+          text = readme.read_text(encoding='utf-8')
+          text = text.replace(
+              '**最新稳定版 / Latest release: `Mod-v1.9.4`**',
+              '**最新稳定版 / Latest release: `Mod-v1.9.5`**',
+              1,
+          )
+          text = text.replace(
+              '> `Mod-v1.9.4` 完成品牌统一，并加入台站报文结构化解析、可交换的台站单击/长按操作、APRS-IS 可选电量字段与 FMO 台站标记。',
+              '> `Mod-v1.9.5` 彻底整理现代设置流程：统一中英文术语、补全 0–15 全部 APRS SSID、修正默认地图图源与 APRS-IS 验证码状态，并将通知设置交还 Android 通知频道管理。',
+              1,
+          )
+          text = text.replace(
+              '> `Mod-v1.9.4` unifies the APRSdroid Mod brand and adds structured station-packet parsing, swappable station tap/long-press actions, optional APRS-IS battery reporting, and FMO station badges.',
+              '> `Mod-v1.9.5` completes a settings cleanup: consistent copy, all APRS SSIDs 0–15, corrected default-map and APRS-IS passcode behavior, and Android notification-channel management.',
+              1,
+          )
+          readme.write_text(text, encoding='utf-8')
+
+          context = Path('AI_CONTEXT.md')
+          text = context.read_text(encoding='utf-8')
+          text = text.replace('| 最新 GitHub Release | `Mod-v1.9.4` |', '| 最新 GitHub Release | `Mod-v1.9.5` |', 1)
+          text = text.replace('| `build.gradle` 默认版本 | `1.9.4` |', '| `build.gradle` 默认版本 | `1.9.5` |', 1)
+          text = text.replace('| Android versionCode | `2026082794` |', '| Android versionCode | `2026082795` |', 1)
+          replacement = '''### 当前 main 状态
+
+当前 `main` 与 `Mod-v1.9.5` 发布基线对齐。除 1.9.4 已有的结构化报文、电量字段、台站操作切换和 FMO 标记外，1.9.5 还完成了设置层清理：
+
+- 主设置、连接、定位、SmartBeaconing、通知和符号选择流程统一为更清晰的 Material 3 文案与交互。
+- APRS SSID 选择恢复完整 `0..15`，长选项对话框可滚动；SSID 0 明确表示不附加后缀。
+- “默认地图图源”改为真正保存默认图源，不再误打开地图。
+- APRS-IS 验证码未设置时不再错误显示为“已设置”。
+- 周期 GPS 页面只展示当前实现实际生效的时间间隔，隐藏未被 `PeriodicGPS` 消费的旧兼容参数。
+- Android 8.1+ 通知设置直接进入系统 Notification Channel，不再把旧式 per-notification LED/振动/铃声字段伪装成有效设置。
+- APRS Objects 等开关按目标布尔值写入，避免 UI 状态与存储状态反向切换。
+
+发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。'''
+          text, count = re.subn(
+              r'### 当前 main 状态\n\n.*?\n\nJava 17 是当前构建基线。',
+              replacement + '\n\nJava 17 是当前构建基线。',
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('failed to update AI_CONTEXT current-main section')
+          context.write_text(text, encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          text = changelog.read_text(encoding='utf-8')
+          text = text.replace(
+              '- 恢复主设置页的通知设置入口。',
+              '- 恢复主设置页的通知设置入口，并改为直接管理 Android 8.1+ 系统通知频道，避免继续暴露在受支持系统上无效的旧式单通知 LED/振动/铃声开关。',
+              1,
+          )
+          text = text.replace(
+              '- 修复 APRS-IS 验证码未设置时仍显示“已设置”的状态判断。',
+              '- 修复 APRS-IS 验证码未设置时仍显示“已设置”的状态判断。\n- APRS SSID 选择恢复完整 0–15，并让长选项对话框可滚动；SSID 0 明确表示不附加后缀。\n- 周期 GPS 设置页移除当前 `PeriodicGPS` 实现并未消费的距离、GPS 启用策略和网络定位开关，避免保存无实际效果的配置。\n- APRS Objects 开关改为按目标布尔值写入，避免状态切换与 Compose UI 不一致。',
+              1,
+          )
+          changelog.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Remove one-shot finalizer and tag release
+        run: |
+          set -euo pipefail
+          git config user.name "nimenhagg"
+          git config user.email "119995761+nimenhagg@users.noreply.github.com"
+          git rm .github/workflows/finalize_mod_v1_9_5.yml
+          git add README.md AI_CONTEXT.md CHANGELOG.md
+          git commit -m "release: finalize Mod-v1.9.5"
+          git push origin HEAD:main
+          git tag -a Mod-v1.9.5 -m "Mod-v1.9.5"
+          git push origin Mod-v1.9.5
