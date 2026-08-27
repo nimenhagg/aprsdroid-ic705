@@ -4,11 +4,11 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v1.9.5`**
+**最新稳定版 / Latest release: `Mod-v1.9.6`**
 
-> `Mod-v1.9.5` 彻底整理现代设置流程：统一中英文术语、补全 0–15 全部 APRS SSID、修正默认地图图源与 APRS-IS 验证码状态，并将通知设置交还 Android 通知频道管理。
+> `Mod-v1.9.6` 修复位置来源当前值过长导致设置卡片异常挤压换行的问题，并修正 GitHub Release Notes 的版本识别与标题生成。
 >
-> `Mod-v1.9.5` completes a settings cleanup: consistent copy, all APRS SSIDs 0–15, corrected default-map and APRS-IS passcode behavior, and Android notification-channel management.
+> `Mod-v1.9.6` fixes the location-source value layout regression and corrects GitHub Release Notes tag/version handling.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -203,7 +203,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 - 修改 IC-705 发射/会话恢复代码时必须保留 PTT OFF、ACK 与 watchdog 安全语义并增加测试。
 - “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
 - 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AI_CONTEXT.md`。
-- 标签格式：`v<major.minor.patch>-ic705`，例如 `v1.9.3-ic705`。
+- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v1.9.6`。
 - Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt` 和 R8 mapping 后创建 GitHub Release。
 
 完整维护约束见 [AI_CONTEXT.md](AI_CONTEXT.md)。
@@ -214,7 +214,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 
 APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-**Latest stable release: `v1.9.3-ic705`.** The `main` branch may contain newer unreleased work.
+**Latest stable release: `Mod-v1.9.6`.**
 
 ### Highlights
 
@@ -232,7 +232,7 @@ APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdr
 
 | Item | Status |
 | --- | --- |
-| Android | 7.1+ / API 25 minimum |
+| Android | 8.1+ / API 27 minimum |
 | Target | Android 17 / API 37 |
 | Official APKs | ARM64 OpenGL (`Recommended_...`) and ARMv7 OpenGL |
 | Radio | Icom IC-705 with WLAN and Network User enabled |

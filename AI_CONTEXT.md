@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v1.9.5` |
-| `build.gradle` 默认版本 | `1.9.5` |
-| Android versionCode | `2026082795` |
+| 最新 GitHub Release | `Mod-v1.9.6` |
+| `build.gradle` 默认版本 | `1.9.6` |
+| Android versionCode | `2026082796` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -23,15 +23,12 @@
 
 ### 当前 main 状态
 
-当前 `main` 与 `Mod-v1.9.5` 发布基线对齐。除 1.9.4 已有的结构化报文、电量字段、台站操作切换和 FMO 标记外，1.9.5 还完成了设置层清理：
+当前 `main` 与 `Mod-v1.9.6` 发布基线对齐。1.9.6 是 1.9.5 之后的补丁版本：
 
-- 主设置、连接、定位、SmartBeaconing、通知和符号选择流程统一为更清晰的 Material 3 文案与交互。
-- APRS SSID 选择恢复完整 `0..15`，长选项对话框可滚动；SSID 0 明确表示不附加后缀。
-- “默认地图图源”改为真正保存默认图源，不再误打开地图。
-- APRS-IS 验证码未设置时不再错误显示为“已设置”。
-- 周期 GPS 页面只展示当前实现实际生效的时间间隔，隐藏未被 `PeriodicGPS` 消费的旧兼容参数。
-- Android 8.1+ 通知设置直接进入系统 Notification Channel，不再把旧式 per-notification LED/振动/铃声字段伪装成有效设置。
-- APRS Objects 等开关按目标布尔值写入，避免 UI 状态与存储状态反向切换。
+- 修复位置设置页“位置来源”当前值使用完整说明时挤压左侧标题和摘要、造成异常逐字换行的问题；当前值使用短标签，选择对话框继续显示完整说明。
+- APRS 符号资源和 symbol code / sprite 索引映射未在本补丁版本中改变。
+- Release Notes 生成器优先采用显式 tag，并对 `Mod-vX.Y.Z` 生成正确标题，避免把 `main` 或重复的 `Mod` 写入发布说明。
+- 正式 Release 仍发布 ARM64 OpenGL 推荐包、ARMv7 OpenGL 包与 `SHA256SUMS.txt`，并保留对应 R8 mapping 作为 Actions artifact。
 
 发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。
 
@@ -300,7 +297,7 @@ Windows PowerShell 使用 `./gradlew.bat`。
 2. `CHANGELOG.md`：顶部新增对应版本，内容只写实际进入该 tag 的改动。
 3. `README.md`：更新 Latest release，并移除/调整已经发布的 “main unreleased” 描述。
 4. `AI_CONTEXT.md`：更新发布基线与仍未发布的 main 状态。
-5. tag 使用 `v<major.minor.patch>-ic705`。
+5. tag 使用 `Mod-v<major.minor.patch>`。
 
 CI `verifyReleaseVersion` 会在 tag 构建时检查 tag 与 APK 版本一致。Release workflow 会测试、Lint、构建 ARM64/ARMv7 OpenGL APK，构建并注入同版本 MapLibre `MinSizeRel` + IPO/LTO 原生库，重新执行 16 KiB 对齐与签名，校验 ABI/MapLibre 数量及原生库 SHA-256，生成 `SHA256SUMS.txt`、R8 mapping，并在 tag 时创建 GitHub Release。正式 tag 缺少签名 secrets 或必要 Maps Key 时必须失败，不能悄悄发布不符合预期的包。
 
