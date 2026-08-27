@@ -10,10 +10,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.os.Build
-import android.os.Vibrator
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -30,7 +28,6 @@ class ServiceNotifier {
     val callIdMap = mutableMapOf<String, Int>()
 
     fun setupChannels(ctx: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val nm = ctx.getSystemService(NotificationManager::class.java)
         nm?.createNotificationChannel(
             NotificationChannel("status", ctx.getString(R.string.aprsservice), NotificationManager.IMPORTANCE_LOW)
@@ -40,14 +37,8 @@ class ServiceNotifier {
         )
     }
 
-    fun newNotificationBuilder(ctx: Service, channel: String): Notification.Builder {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(ctx, channel)
-        } else {
-            @Suppress("DEPRECATION")
-            Notification.Builder(ctx)
-        }
-    }
+    fun newNotificationBuilder(ctx: Service, channel: String): Notification.Builder =
+        Notification.Builder(ctx, channel)
 
     fun newNotification(ctx: Service, status: String): Notification {
         val i = Intent(ctx, APRSdroid::class.java).apply {
@@ -111,45 +102,10 @@ class ServiceNotifier {
         return ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
-    fun setupNotification(n: Notification, ctx: Context, prefs: PrefsWrapper, default: Boolean, prefix: String) {
-        try {
-            if (prefs.getBoolean(prefix + "notify_led", default)) {
-                @Suppress("DEPRECATION")
-                n.ledARGB = Color.YELLOW
-                @Suppress("DEPRECATION")
-                n.ledOnMS = 300
-                @Suppress("DEPRECATION")
-                n.ledOffMS = 1000
-                @Suppress("DEPRECATION")
-                n.flags = n.flags or Notification.FLAG_SHOW_LIGHTS
-            }
-            if (prefs.getBoolean(prefix + "notify_vibr", default)) {
-                val v = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    (ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager)?.defaultVibrator
-                } else {
-                    @Suppress("DEPRECATION")
-                    ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-                }
-                val pattern = longArrayOf(0, 200, 200)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    v?.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
-                } else {
-                    @Suppress("DEPRECATION")
-                    v?.vibrate(pattern, -1)
-                }
-            }
-            val sound = prefs.getString(prefix + "notify_ringtone", null)
-            if (!sound.isNullOrEmpty()) {
-                @Suppress("DEPRECATION")
-                n.sound = sound.toUri()
-            }
-        } catch (_: Exception) {}
-    }
-
+    @Suppress("UNUSED_PARAMETER")
     fun notifyMessage(ctx: Service, prefs: PrefsWrapper, call: String, message: String) {
         try {
             val n = newMessageNotification(ctx, call, message)
-            setupNotification(n, ctx, prefs, true, "")
             getNotificationMgr(ctx).notify(getCallNumber(call), n)
         } catch (_: Exception) {}
     }
@@ -161,10 +117,10 @@ class ServiceNotifier {
     }
 
     @JvmOverloads
+    @Suppress("UNUSED_PARAMETER")
     fun notifyPosition(ctx: Service, prefs: PrefsWrapper, status: String, prefix: String = "pos_") {
         try {
             val n = newNotification(ctx, status)
-            setupNotification(n, ctx, prefs, false, prefix)
             getNotificationMgr(ctx).notify(SERVICE_NOTIFICATION, n)
         } catch (_: Exception) {}
     }
