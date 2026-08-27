@@ -196,19 +196,21 @@ jobs:
           text = text.replace('| 最新 GitHub Release | `Mod-v1.9.4` |', '| 最新 GitHub Release | `Mod-v1.9.5` |', 1)
           text = text.replace('| `build.gradle` 默认版本 | `1.9.4` |', '| `build.gradle` 默认版本 | `1.9.5` |', 1)
           text = text.replace('| Android versionCode | `2026082794` |', '| Android versionCode | `2026082795` |', 1)
-          replacement = '''### 当前 main 状态
-
-当前 `main` 与 `Mod-v1.9.5` 发布基线对齐。除 1.9.4 已有的结构化报文、电量字段、台站操作切换和 FMO 标记外，1.9.5 还完成了设置层清理：
-
-- 主设置、连接、定位、SmartBeaconing、通知和符号选择流程统一为更清晰的 Material 3 文案与交互。
-- APRS SSID 选择恢复完整 `0..15`，长选项对话框可滚动；SSID 0 明确表示不附加后缀。
-- “默认地图图源”改为真正保存默认图源，不再误打开地图。
-- APRS-IS 验证码未设置时不再错误显示为“已设置”。
-- 周期 GPS 页面只展示当前实现实际生效的时间间隔，隐藏未被 `PeriodicGPS` 消费的旧兼容参数。
-- Android 8.1+ 通知设置直接进入系统 Notification Channel，不再把旧式 per-notification LED/振动/铃声字段伪装成有效设置。
-- APRS Objects 等开关按目标布尔值写入，避免 UI 状态与存储状态反向切换。
-
-发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。'''
+          replacement = "\n".join([
+              '### 当前 main 状态',
+              '',
+              '当前 `main` 与 `Mod-v1.9.5` 发布基线对齐。除 1.9.4 已有的结构化报文、电量字段、台站操作切换和 FMO 标记外，1.9.5 还完成了设置层清理：',
+              '',
+              '- 主设置、连接、定位、SmartBeaconing、通知和符号选择流程统一为更清晰的 Material 3 文案与交互。',
+              '- APRS SSID 选择恢复完整 `0..15`，长选项对话框可滚动；SSID 0 明确表示不附加后缀。',
+              '- “默认地图图源”改为真正保存默认图源，不再误打开地图。',
+              '- APRS-IS 验证码未设置时不再错误显示为“已设置”。',
+              '- 周期 GPS 页面只展示当前实现实际生效的时间间隔，隐藏未被 `PeriodicGPS` 消费的旧兼容参数。',
+              '- Android 8.1+ 通知设置直接进入系统 Notification Channel，不再把旧式 per-notification LED/振动/铃声字段伪装成有效设置。',
+              '- APRS Objects 等开关按目标布尔值写入，避免 UI 状态与存储状态反向切换。',
+              '',
+              '发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。',
+          ])
           text, count = re.subn(
               r'### 当前 main 状态\n\n.*?\n\nJava 17 是当前构建基线。',
               replacement + '\n\nJava 17 是当前构建基线。',
@@ -235,7 +237,6 @@ jobs:
           changelog.write_text(text, encoding='utf-8')
           PY
 
-          # Restore the normal release workflow from this one-shot commit's parent.
           git show HEAD^:.github/workflows/release.yml > .github/workflows/release.yml
           rm -f .github/workflows/finalize_mod_v1_9_5.yml
 
