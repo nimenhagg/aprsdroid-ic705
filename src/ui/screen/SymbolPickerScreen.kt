@@ -5,9 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -18,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -169,52 +170,63 @@ fun SymbolPickerScreen(
                 }
             }
 
-            // Category Scrollable Chips
-            PrimaryScrollableTabRow(
-                selectedTabIndex = selectedCategoryIndex,
-                edgePadding = 16.dp,
-                containerColor = Color.Transparent,
-                divider = {}
+            // Compact Material 3 category chips. A plain LazyRow avoids the
+            // tab-row minimum width/indicator that made short labels look oversized.
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                categories.forEachIndexed { index, cat ->
+                itemsIndexed(categories) { index, cat ->
+                    val selected = selectedCategoryIndex == index
                     FilterChip(
-                        selected = selectedCategoryIndex == index,
+                        selected = selected,
                         onClick = { selectedCategoryIndex = index },
-                        label = { Text(stringResource(cat.nameRes)) },
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        label = {
+                            Text(
+                                text = stringResource(cat.nameRes),
+                                fontSize = 14.sp,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                            )
+                        },
+                        modifier = Modifier.height(36.dp),
+                        shape = RoundedCornerShape(10.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Grid of Symbols
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 56.dp),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(currentSymbolList, key = { it }) { sym ->
-                    val isSelected = selectedBaseSymbol == sym || (selectedBaseSymbol.length > 1 && sym.length > 1 && selectedBaseSymbol[1] == sym[1] && selectedBaseSymbol[0] == sym[0])
+                    val isSelected = selectedBaseSymbol == sym ||
+                            (selectedBaseSymbol.length > 1 && sym.length > 1 &&
+                                    selectedBaseSymbol[1] == sym[1] && selectedBaseSymbol[0] == sym[0])
                     Box(
                         modifier = Modifier
                             .aspectRatio(1f)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(
-                                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                if (isSelected) MaterialTheme.colorScheme.secondaryContainer
                                 else MaterialTheme.colorScheme.surfaceContainerLow
                             )
                             .border(
                                 width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(14.dp)
+                                color = if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f)
+                                },
+                                shape = RoundedCornerShape(16.dp)
                             )
-                            .clickable {
-                                selectedBaseSymbol = sym
-                            },
+                            .clickable { selectedBaseSymbol = sym },
                         contentAlignment = Alignment.Center
                     ) {
                         SymbolBadge(
