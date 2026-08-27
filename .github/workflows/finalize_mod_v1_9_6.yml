@@ -1,0 +1,167 @@
+name: Finalize and Publish Mod-v1.9.6
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/finalize_mod_v1_9_6.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  finalize:
+    name: Prepare docs, tag, and dispatch full release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Guard release baseline
+        env:
+          EXPECTED_PARENT: 15cce3ddeb263d3a4b61f0e732d792635e34445a
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PARENT"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          if git ls-remote --exit-code --tags origin refs/tags/Mod-v1.9.6 >/dev/null 2>&1; then
+            echo "Mod-v1.9.6 already exists; refusing to replace it." >&2
+            exit 1
+          fi
+          grep -F 'setting_location_source_smart_value' src/LocationPrefs.kt
+
+      - name: Update version, changelog, docs, and release notes generator
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          # build.gradle
+          p = Path('build.gradle')
+          text = p.read_text(encoding='utf-8')
+          old = 'mod_version = (findProperty("MOD_VERSION") ?: "1.9.5").toString()'
+          new = 'mod_version = (findProperty("MOD_VERSION") ?: "1.9.6").toString()'
+          if text.count(old) != 1:
+              raise SystemExit('unexpected build.gradle mod_version baseline')
+          text = text.replace(old, new, 1)
+          old = 'mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082795").toString())'
+          new = 'mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082796").toString())'
+          if text.count(old) != 1:
+              raise SystemExit('unexpected build.gradle versionCode baseline')
+          text = text.replace(old, new, 1)
+          p.write_text(text, encoding='utf-8')
+
+          # CHANGELOG.md
+          p = Path('CHANGELOG.md')
+          text = p.read_text(encoding='utf-8')
+          if '[Mod-v1.9.6]' in text:
+              raise SystemExit('Mod-v1.9.6 already present in CHANGELOG')
+          entry = '''## [Mod-v1.9.6] - 2026-08-27
+
+### Fixed
+- 修复位置设置页在 SmartBeaconing™ 为当前位置来源时，右侧值标签使用完整说明导致左侧标题和摘要被极端压缩换行的问题；设置页当前值改用短标签，选择对话框仍保留详细说明。
+- 修正 Release Notes 生成逻辑：显式传入的 tag 优先于工作流环境变量，并按 `Mod-vX.Y.Z` 正确生成标题，避免再次出现 `main` 或重复 `Mod` 的发布说明标题。
+
+### Changed
+- 版本更新为 `Mod-v1.9.6`（`versionCode 2026082796`）。
+
+'''
+          p.write_text(entry + text, encoding='utf-8')
+
+          # README.md
+          p = Path('README.md')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace(
+              '**最新稳定版 / Latest release: `Mod-v1.9.5`**',
+              '**最新稳定版 / Latest release: `Mod-v1.9.6`**',
+              1,
+          )
+          text = text.replace(
+              '> `Mod-v1.9.5` 彻底整理现代设置流程：统一中英文术语、补全 0–15 全部 APRS SSID、修正默认地图图源与 APRS-IS 验证码状态，并将通知设置交还 Android 通知频道管理。',
+              '> `Mod-v1.9.6` 修复位置来源当前值过长导致设置卡片异常挤压换行的问题，并修正 GitHub Release Notes 的版本识别与标题生成。',
+              1,
+          )
+          text = text.replace(
+              '> `Mod-v1.9.5` completes a settings cleanup: consistent copy, all APRS SSIDs 0–15, corrected default-map and APRS-IS passcode behavior, and Android notification-channel management.',
+              '> `Mod-v1.9.6` fixes the location-source value layout regression and corrects GitHub Release Notes tag/version handling.',
+              1,
+          )
+          text = re.sub(
+              r'\*\*Latest stable release: `[^`]+`\.\*\*(?: The `main` branch may contain newer unreleased work\.)?',
+              '**Latest stable release: `Mod-v1.9.6`.**',
+              text,
+              count=1,
+          )
+          text = text.replace('| Android | 7.1+ / API 25 minimum |', '| Android | 8.1+ / API 27 minimum |')
+          text = text.replace(
+              '- 标签格式：`v<major.minor.patch>-ic705`，例如 `v1.9.3-ic705`。',
+              '- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v1.9.6`。',
+          )
+          p.write_text(text, encoding='utf-8')
+
+          # AI_CONTEXT.md
+          p = Path('AI_CONTEXT.md')
+          text = p.read_text(encoding='utf-8')
+          text = text.replace('| 最新 GitHub Release | `Mod-v1.9.5` |', '| 最新 GitHub Release | `Mod-v1.9.6` |', 1)
+          text = text.replace('| `build.gradle` 默认版本 | `1.9.5` |', '| `build.gradle` 默认版本 | `1.9.6` |', 1)
+          text = text.replace('| Android versionCode | `2026082795` |', '| Android versionCode | `2026082796` |', 1)
+          replacement = '''### 当前 main 状态
+
+当前 `main` 与 `Mod-v1.9.6` 发布基线对齐。1.9.6 是 1.9.5 之后的补丁版本：
+
+- 修复位置设置页“位置来源”当前值使用完整说明时挤压左侧标题和摘要、造成异常逐字换行的问题；当前值使用短标签，选择对话框继续显示完整说明。
+- APRS 符号资源和 symbol code / sprite 索引映射未在本补丁版本中改变。
+- Release Notes 生成器优先采用显式 tag，并对 `Mod-vX.Y.Z` 生成正确标题，避免把 `main` 或重复的 `Mod` 写入发布说明。
+- 正式 Release 仍发布 ARM64 OpenGL 推荐包、ARMv7 OpenGL 包与 `SHA256SUMS.txt`，并保留对应 R8 mapping 作为 Actions artifact。
+
+发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。'''
+          text, count = re.subn(
+              r'### 当前 main 状态\n\n.*?\n\nJava 17 是当前构建基线。',
+              replacement + '\n\nJava 17 是当前构建基线。',
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('failed to update AI_CONTEXT current-main section')
+          text = text.replace('5. tag 使用 `v<major.minor.patch>-ic705`。', '5. tag 使用 `Mod-v<major.minor.patch>`。')
+          p.write_text(text, encoding='utf-8')
+
+          # Release notes generator: explicit argument wins; exact changelog heading; clean title.
+          p = Path('.github/scripts/extract_release_notes.py')
+          p.write_text('''import os\nimport re\nimport sys\nimport subprocess\n\ntag = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("GITHUB_REF_NAME", "")\n\nnotes = ""\nif os.path.exists("CHANGELOG.md") and tag:\n    try:\n        with open("CHANGELOG.md", "r", encoding="utf-8") as f:\n            text = f.read()\n        pattern = rf"(?ms)^##\\s+\\[?{re.escape(tag)}\\]?[^\\n]*\\n(.*?)(?=^##\\s+|\\Z)"\n        m = re.search(pattern, text)\n        if m:\n            notes = m.group(1).strip()\n    except Exception as e:\n        print(f"Error reading CHANGELOG.md: {e}")\n\nif not notes and tag:\n    try:\n        notes = subprocess.check_output(["git", "tag", "-l", "--format=%(contents)", tag], text=True).strip()\n    except Exception:\n        notes = ""\n\nif not notes:\n    notes = f"Release build for {tag or 'unknown version'}."\n\ndisplay_version = tag.removeprefix("Mod-v") if tag else "unknown"\nbody = f"# APRSdroid Mod {display_version}\\n\\n{notes}\\n"\n\nwith open("RELEASE_NOTES.md", "w", encoding="utf-8") as out:\n    out.write(body)\n\nprint(f"Generated RELEASE_NOTES.md for {tag or 'unknown version'}")\n''', encoding='utf-8')
+          PY
+
+          python3 .github/scripts/extract_release_notes.py Mod-v1.9.6
+          grep -F '# APRSdroid Mod 1.9.6' RELEASE_NOTES.md
+          grep -F '修复位置设置页' RELEASE_NOTES.md
+          rm -f RELEASE_NOTES.md
+
+      - name: Commit clean release baseline, tag, and dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
+          test "$remote_main" = "$GITHUB_SHA"
+
+          rm -f .github/workflows/finalize_mod_v1_9_6.yml
+          git config user.name "nimenhagg"
+          git config user.email "119995761+nimenhagg@users.noreply.github.com"
+          git add build.gradle CHANGELOG.md README.md AI_CONTEXT.md .github/scripts/extract_release_notes.py
+          git add -u .github/workflows/finalize_mod_v1_9_6.yml
+          git commit -m "release: prepare Mod-v1.9.6"
+          clean_sha=$(git rev-parse HEAD)
+          git push origin HEAD:main
+
+          git tag -a Mod-v1.9.6 "$clean_sha" -m "Mod-v1.9.6"
+          git push origin Mod-v1.9.6
+          gh workflow run release.yml --ref Mod-v1.9.6
+
+          echo "Prepared Mod-v1.9.6 at $clean_sha"
