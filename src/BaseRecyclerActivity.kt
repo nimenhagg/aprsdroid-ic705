@@ -1,24 +1,26 @@
 package org.aprsdroid.app
 
 import android.content.Intent
-import androidx.core.net.toUri
 import android.os.Bundle
-import android.view.MenuItem
-import android.view.View
-import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.google.android.material.appbar.MaterialToolbar
+import androidx.core.net.toUri
 
-abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, PermissionHelper {
+/**
+ * Shared host for Compose screens that still need APRS service permission handling
+ * and common navigation helpers.
+ *
+ * UI chrome belongs to each Compose screen; this class intentionally carries no
+ * AppCompat ActionBar/menu responsibilities.
+ */
+abstract class BaseRecyclerActivity : ComponentActivity(), LoadingIndicator, PermissionHelper {
 
     companion object {
         private const val APRS_SERVICE_PERMISSION = 1020
         private const val STATE_PENDING_SERVICE_ACTION = "pending_service_action"
     }
 
-    var menu_id: Int = 0
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
     private var pendingServiceAction: String? = null
     override var pendingPermissionAction: Int? = null
@@ -60,12 +62,6 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
     override fun onStartLoading() {}
     override fun onStopLoading() {}
 
-    fun setLongTitle(resId: Int, subtitle: String) {
-        val t = getString(resId) + ": " + subtitle
-        title = t
-        supportActionBar?.title = t
-    }
-
     fun openDetails(call: String) {
         val i = Intent(this, StationActivity::class.java).apply {
             data = call.toUri()
@@ -94,59 +90,6 @@ abstract class BaseRecyclerActivity : AppCompatActivity(), LoadingIndicator, Per
             putExtra(AprsService.BODY, message)
         }
         sendBroadcast(i)
-    }
-
-    fun trackOnMap(call: String) {
-        val text = getString(R.string.map_track_call, call)
-        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
-        MapModes.startMap(this, prefs, call)
-    }
-
-    fun callsignAction(id: Int, call: String): Boolean {
-        return when (id) {
-            R.id.details -> {
-                openDetails(call)
-                true
-            }
-            R.id.message -> {
-                openMessaging(call)
-                true
-            }
-            R.id.map -> {
-                trackOnMap(call)
-                true
-            }
-            R.id.aprsfi -> {
-                val url = String.format("https://aprs.fi/info/a/%s?utm_source=aprsdroid&utm_medium=inapp&utm_campaign=aprsfi", call)
-                UrlOpener.open(this, url)
-                true
-            }
-            R.id.qrzcom -> {
-                val basecall = call.split(Regex("[- ]+"))[0]
-                val url = "https://qrz.com/db/" + basecall
-                UrlOpener.open(this, url)
-                true
-            }
-            else -> false
-        }
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            android.R.id.home -> {
-                finish()
-                true
-            }
-            R.id.preferences -> {
-                startActivity(Intent(this, PrefsAct::class.java))
-                true
-            }
-            R.id.about -> {
-                AboutDialog(this).show()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
     }
 
     // PermissionHelper defaults

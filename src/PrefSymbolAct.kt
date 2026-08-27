@@ -1,13 +1,13 @@
 package org.aprsdroid.app
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import org.aprsdroid.app.ui.screen.SymbolPickerScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 
-class PrefSymbolAct : AppCompatActivity() {
+class PrefSymbolAct : ComponentActivity() {
 
     private val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 

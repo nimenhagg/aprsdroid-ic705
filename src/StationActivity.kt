@@ -6,21 +6,21 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.net.toUri
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import org.aprsdroid.app.model.LogPostItem
 import org.aprsdroid.app.model.StationItem
 import org.aprsdroid.app.ui.screen.StationDetailScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import java.util.concurrent.Executors
 
-class StationActivity : AppCompatActivity() {
+class StationActivity : ComponentActivity() {
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     private val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }

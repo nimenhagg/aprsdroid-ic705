@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.edit
@@ -14,7 +13,6 @@ import androidx.core.net.toUri
 abstract class MapMenuHelper : ComponentActivity(), LoadingIndicator {
     open val TAG = "APRSdroid.MapMenu"
 
-    var menu_id: Int = R.id.map
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
     var targetcall: String = ""
     var showObjects: Boolean = false

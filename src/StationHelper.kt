@@ -1,32 +1,15 @@
 package org.aprsdroid.app
 
-import android.content.res.Configuration
-import android.view.Menu
-import android.view.MenuItem
-
-abstract class StationHelper(val titleId: Int) : BaseRecyclerActivity() {
+/**
+ * Shared callsign target resolver for Compose station/message screens.
+ *
+ * The old AppCompat ActionBar/context-menu hooks were removed after those actions
+ * moved into the Compose UI.
+ */
+abstract class StationHelper : BaseRecyclerActivity() {
     val targetcall: String? by lazy {
         intent.dataString?.removePrefix("call:")?.removePrefix("sms:")?.takeIf { it.isNotEmpty() }
             ?: intent.getStringExtra("call")
             ?: intent.getStringExtra("targetcall")
-    }
-
-    override fun onResume() {
-        super.onResume()
-        setLongTitle(titleId, targetcall ?: "")
-    }
-
-    override fun onConfigurationChanged(c: Configuration) {
-        super.onConfigurationChanged(c)
-        setLongTitle(titleId, targetcall ?: "")
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.context_call, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return callsignAction(item.itemId, targetcall ?: "")
     }
 }

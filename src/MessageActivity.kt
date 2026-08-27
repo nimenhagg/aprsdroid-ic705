@@ -18,7 +18,7 @@ import org.aprsdroid.app.ui.screen.MessageChatScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.aprsdroid.app.ui.viewmodel.MessageChatViewModel
 
-class MessageActivity : StationHelper(R.string.app_messages) {
+class MessageActivity : StationHelper() {
 
     companion object {
         const val TAG = "APRSdroid.Message"

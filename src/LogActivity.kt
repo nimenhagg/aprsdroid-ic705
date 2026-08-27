@@ -37,7 +37,6 @@ class LogActivity : BaseRecyclerActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        menu_id = R.id.log
 
         setContent {
             AprsTheme {
