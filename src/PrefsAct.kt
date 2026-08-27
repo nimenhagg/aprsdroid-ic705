@@ -59,7 +59,7 @@ class PrefsAct : ComponentActivity() {
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 
     private val callsignState = mutableStateOf("")
-    private val ssidState = mutableStateOf("5")
+    private val ssidState = mutableStateOf("10")
     private val digiPathState = mutableStateOf("WIDE1-1")
     private val userDigiPresetsState = mutableStateOf<Set<String>>(emptySet())
     private val symbolState = mutableStateOf("/$")
@@ -153,9 +153,9 @@ class PrefsAct : ComponentActivity() {
                         MapModes.setDefault(prefs, tag)
                         refreshPrefsState()
                     },
-                    onToggleShowObjects = {
-                        val newState = prefs.toggleBoolean("show_objects", true)
-                        showObjectsState.value = newState
+                    onToggleShowObjects = { enabled ->
+                        prefs.setBoolean("show_objects", enabled)
+                        showObjectsState.value = enabled
                     },
                     onToggleSendBatteryInfo = { enabled ->
                         prefs.setBoolean("send_battery_aprsis", enabled)
