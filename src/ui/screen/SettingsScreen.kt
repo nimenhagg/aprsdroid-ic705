@@ -45,6 +45,7 @@ import org.aprsdroid.app.BuildConfig
 import org.aprsdroid.app.R
 import org.aprsdroid.app.ui.component.DigiPathDialogCompose
 import org.aprsdroid.app.ui.component.PreferenceCategoryHeader
+import org.aprsdroid.app.ui.component.PreferenceEditDialog
 import org.aprsdroid.app.ui.component.PreferenceGroupCard
 import org.aprsdroid.app.ui.component.PreferenceItem
 import org.aprsdroid.app.ui.component.PreferenceSelectDialog
@@ -59,11 +60,15 @@ fun SettingsScreen(
     digiPath: String,
     userDigiPresets: Set<String>,
     symbol: String,
+    frequency: String,
+    status: String,
     backendName: String,
     locationSourceName: String,
     mapModeTag: String,
     mapModeTitle: String,
     mapModeOptions: List<Pair<String, String>>,
+    mapCustomUrl: String,
+    mapCustomSubdomains: String,
     showObjects: Boolean,
     sendBatteryInfo: Boolean,
     stationTapAction: String,
@@ -74,9 +79,13 @@ fun SettingsScreen(
     onAddDigiPreset: (String) -> Unit,
     onDeleteDigiPreset: (String) -> Unit,
     onOpenSymbolPicker: () -> Unit,
+    onSaveFrequency: (String) -> Unit,
+    onSaveStatus: (String) -> Unit,
     onOpenConnectionSetup: () -> Unit,
     onOpenLocationSetup: () -> Unit,
     onSaveMapMode: (String) -> Unit,
+    onSaveMapCustomUrl: (String) -> Unit,
+    onSaveMapCustomSubdomains: (String) -> Unit,
     onToggleShowObjects: (Boolean) -> Unit,
     onToggleSendBatteryInfo: (Boolean) -> Unit,
     onSaveStationTapAction: (String) -> Unit,
@@ -89,7 +98,11 @@ fun SettingsScreen(
 ) {
     var showSsidDialog by remember { mutableStateOf(false) }
     var showDigiPathDialog by remember { mutableStateOf(false) }
+    var showFrequencyDialog by remember { mutableStateOf(false) }
+    var showStatusDialog by remember { mutableStateOf(false) }
     var showMapModeDialog by remember { mutableStateOf(false) }
+    var showMapCustomUrlDialog by remember { mutableStateOf(false) }
+    var showMapCustomSubdomainsDialog by remember { mutableStateOf(false) }
     var showStationTapDialog by remember { mutableStateOf(false) }
 
     val ssidOptions = listOf(
@@ -113,6 +126,8 @@ fun SettingsScreen(
     val callsignDisplay = if (callsign.isEmpty()) stringResource(R.string.setting_not_set) else callsign
     val ssidDisplay = if (ssid == "0") "0" else "-$ssid"
     val digiPathDisplay = if (digiPath.isEmpty()) stringResource(R.string.setting_direct_path) else digiPath
+    val frequencyDisplay = if (frequency.isEmpty()) stringResource(R.string.setting_not_set) else frequency
+    val statusDisplay = if (status.isEmpty()) stringResource(R.string.setting_not_set) else status
 
     Scaffold(
         topBar = {
@@ -216,6 +231,22 @@ fun SettingsScreen(
                     onClick = onOpenLocationSetup,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceValueItem(
+                    title = stringResource(R.string.p_frequency),
+                    value = frequencyDisplay,
+                    summary = stringResource(R.string.p_frequency_summary),
+                    icon = Icons.Default.Radio,
+                    onClick = { showFrequencyDialog = true },
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceValueItem(
+                    title = stringResource(R.string.p_status),
+                    value = statusDisplay,
+                    summary = stringResource(R.string.p_status_summary),
+                    icon = Icons.Default.Info,
+                    onClick = { showStatusDialog = true },
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceSwitchItem(
                     title = stringResource(R.string.setting_send_battery),
                     summary = stringResource(R.string.setting_send_battery_summary),
@@ -236,6 +267,24 @@ fun SettingsScreen(
                     icon = Icons.Default.Map,
                     onClick = { showMapModeDialog = true },
                 )
+                if (mapModeTag == "custom") {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    PreferenceItem(
+                        title = stringResource(R.string.p_map_custom_url),
+                        summary = mapCustomUrl.ifEmpty { stringResource(R.string.p_map_custom_url_summary) },
+                        icon = Icons.Default.Map,
+                        onClick = { showMapCustomUrlDialog = true },
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    PreferenceItem(
+                        title = stringResource(R.string.p_map_custom_subdomains),
+                        summary = mapCustomSubdomains.ifEmpty {
+                            stringResource(R.string.p_map_custom_subdomains_summary)
+                        },
+                        icon = Icons.Default.Map,
+                        onClick = { showMapCustomSubdomainsDialog = true },
+                    )
+                }
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
                     title = stringResource(R.string.setting_station_tap_action),
@@ -315,6 +364,26 @@ fun SettingsScreen(
         )
     }
 
+    if (showFrequencyDialog) {
+        PreferenceEditDialog(
+            title = stringResource(R.string.p_frequency),
+            initialValue = frequency,
+            label = stringResource(R.string.p_frequency_summary),
+            onDismiss = { showFrequencyDialog = false },
+            onSave = onSaveFrequency,
+        )
+    }
+
+    if (showStatusDialog) {
+        PreferenceEditDialog(
+            title = stringResource(R.string.p_status_entry),
+            initialValue = status,
+            label = stringResource(R.string.p_status_summary),
+            onDismiss = { showStatusDialog = false },
+            onSave = { onSaveStatus(it.take(42)) },
+        )
+    }
+
     if (showMapModeDialog) {
         PreferenceSelectDialog(
             title = stringResource(R.string.setting_default_map_source),
@@ -322,6 +391,26 @@ fun SettingsScreen(
             selected = mapModeTag,
             onDismiss = { showMapModeDialog = false },
             onSelect = onSaveMapMode,
+        )
+    }
+
+    if (showMapCustomUrlDialog) {
+        PreferenceEditDialog(
+            title = stringResource(R.string.p_map_custom_url),
+            initialValue = mapCustomUrl,
+            label = stringResource(R.string.p_map_custom_url_summary),
+            onDismiss = { showMapCustomUrlDialog = false },
+            onSave = onSaveMapCustomUrl,
+        )
+    }
+
+    if (showMapCustomSubdomainsDialog) {
+        PreferenceEditDialog(
+            title = stringResource(R.string.p_map_custom_subdomains),
+            initialValue = mapCustomSubdomains,
+            label = stringResource(R.string.p_map_custom_subdomains_summary),
+            onDismiss = { showMapCustomSubdomainsDialog = false },
+            onSave = onSaveMapCustomSubdomains,
         )
     }
 

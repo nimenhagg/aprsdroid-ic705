@@ -63,10 +63,14 @@ class PrefsAct : ComponentActivity() {
     private val digiPathState = mutableStateOf("WIDE1-1")
     private val userDigiPresetsState = mutableStateOf<Set<String>>(emptySet())
     private val symbolState = mutableStateOf("/$")
+    private val frequencyState = mutableStateOf("")
+    private val statusState = mutableStateOf("")
     private val backendNameState = mutableStateOf("")
     private val locationSourceNameState = mutableStateOf("")
     private val mapModeTagState = mutableStateOf("amap")
     private val mapModeTitleState = mutableStateOf("")
+    private val mapCustomUrlState = mutableStateOf("")
+    private val mapCustomSubdomainsState = mutableStateOf("")
     private val showObjectsState = mutableStateOf(true)
     private val sendBatteryInfoState = mutableStateOf(false)
     private val stationTapActionState = mutableStateOf("message")
@@ -96,11 +100,15 @@ class PrefsAct : ComponentActivity() {
                     digiPath = digiPathState.value,
                     userDigiPresets = userDigiPresetsState.value,
                     symbol = symbolState.value,
+                    frequency = frequencyState.value,
+                    status = statusState.value,
                     backendName = backendNameState.value,
                     locationSourceName = locationSourceNameState.value,
                     mapModeTag = mapModeTagState.value,
                     mapModeTitle = mapModeTitleState.value,
                     mapModeOptions = availableMapModes,
+                    mapCustomUrl = mapCustomUrlState.value,
+                    mapCustomSubdomains = mapCustomSubdomainsState.value,
                     showObjects = showObjectsState.value,
                     sendBatteryInfo = sendBatteryInfoState.value,
                     stationTapAction = stationTapActionState.value,
@@ -143,6 +151,14 @@ class PrefsAct : ComponentActivity() {
                     onOpenSymbolPicker = {
                         startActivity(Intent(this, PrefSymbolAct::class.java))
                     },
+                    onSaveFrequency = { value ->
+                        prefs.set("frequency", value.trim())
+                        refreshPrefsState()
+                    },
+                    onSaveStatus = { value ->
+                        prefs.set("status", value.take(42))
+                        refreshPrefsState()
+                    },
                     onOpenConnectionSetup = {
                         startActivity(Intent(this, BackendPrefs::class.java))
                     },
@@ -151,6 +167,14 @@ class PrefsAct : ComponentActivity() {
                     },
                     onSaveMapMode = { tag ->
                         MapModes.setDefault(prefs, tag)
+                        refreshPrefsState()
+                    },
+                    onSaveMapCustomUrl = { value ->
+                        prefs.set("map_custom_url", value.trim())
+                        refreshPrefsState()
+                    },
+                    onSaveMapCustomSubdomains = { value ->
+                        prefs.set("map_custom_subdomains", value.trim())
                         refreshPrefsState()
                     },
                     onToggleShowObjects = { enabled ->
@@ -251,11 +275,15 @@ class PrefsAct : ComponentActivity() {
         digiPathState.value = prefs.getString("digi_path", "WIDE1-1")
         userDigiPresetsState.value = prefs.getDigiPathPresets()
         symbolState.value = prefs.getString("symbol", "/$")
+        frequencyState.value = prefs.getString("frequency", "")
+        statusState.value = prefs.getString("status", getString(R.string.default_status))
         backendNameState.value = prefs.getBackendName()
         locationSourceNameState.value = prefs.getLocationSourceName()
         val mapMode = MapModes.defaultMapMode(this, prefs)
         mapModeTagState.value = mapMode.tag
         mapModeTitleState.value = mapMode.title ?: getString(R.string.app_map)
+        mapCustomUrlState.value = prefs.getString("map_custom_url", "")
+        mapCustomSubdomainsState.value = prefs.getString("map_custom_subdomains", "")
         showObjectsState.value = prefs.getShowObjects()
         sendBatteryInfoState.value = prefs.getSendBatteryAprsIs()
         stationTapActionState.value = prefs.getStationTapAction()
