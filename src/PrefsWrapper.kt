@@ -1,19 +1,18 @@
 package org.aprsdroid.app
 
-import org.aprsdroid.app.location.LocationSource
-import org.aprsdroid.app.location.PeriodicGPS
-
 import android.Manifest
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.media.AudioManager
-import androidx.preference.PreferenceManager
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.preference.PreferenceManager
 import java.util.Locale
+import org.aprsdroid.app.location.LocationSource
+import org.aprsdroid.app.location.PeriodicGPS
 
 class PrefsWrapper(@JvmField val context: Context) {
     @JvmField
@@ -21,11 +20,21 @@ class PrefsWrapper(@JvmField val context: Context) {
 
     init {
         val currentStatus = prefs.getString("status", null)
-        if (currentStatus == null || currentStatus == "https://aprsdroid.org/" || currentStatus == "https://aprsdroid.org" || currentStatus == "APRSDroid Mod") {
+        if (
+            currentStatus == null ||
+            currentStatus == "https://aprsdroid.org/" ||
+            currentStatus == "https://aprsdroid.org" ||
+            currentStatus == "APRSDroid Mod"
+        ) {
             prefs.edit { putString("status", "APRSdroid Mod") }
         }
         val currentTcpServer = prefs.getString("tcp.server", null)
-        if (currentTcpServer == null || currentTcpServer == "euro.aprs2.net" || currentTcpServer == "rotate.aprs.net" || currentTcpServer == "rotate.aprs2.net") {
+        if (
+            currentTcpServer == null ||
+            currentTcpServer == "euro.aprs2.net" ||
+            currentTcpServer == "rotate.aprs.net" ||
+            currentTcpServer == "rotate.aprs2.net"
+        ) {
             prefs.edit { putString("tcp.server", "china.aprs2.net") }
         }
     }
@@ -113,20 +122,45 @@ class PrefsWrapper(@JvmField val context: Context) {
     }
 
     fun getLocationSourceName(): String {
-        return getListItemName("loc_source", LocationSource.DEFAULT_CONNTYPE(),
-            R.array.p_locsource_ev, R.array.p_locsource_e)
+        return when (getString("loc_source", LocationSource.DEFAULT_CONNTYPE())) {
+            "smartbeaconing" -> context.getString(R.string.setting_location_source_smart_option)
+            "periodic" -> context.getString(R.string.setting_location_source_periodic_option)
+            "manual" -> context.getString(R.string.setting_location_source_manual_option)
+            else -> context.getString(R.string.setting_location_source)
+        }
     }
 
     fun getBackendName(): String {
-        val proto = getListItemName("proto", AprsBackend.DEFAULT_PROTO(),
-            R.array.p_conntype_ev, R.array.p_conntype_e)
-        val link = AprsBackend.defaultProtoInfo(this).link()
-        return when (link) {
-            "aprsis" -> String.format(Locale.US, "%s, %s", proto,
-                getListItemName(link, AprsBackend.DEFAULT_CONNTYPE(), R.array.p_aprsis_ev, R.array.p_aprsis_e))
-            "link" -> String.format(Locale.US, "%s, %s", proto,
-                getListItemName(link, AprsBackend.DEFAULT_CONNTYPE(), R.array.p_link_ev, R.array.p_link_e))
+        val proto = getString("proto", AprsBackend.DEFAULT_PROTO())
+        val protoName = when (proto) {
+            "aprsis" -> context.getString(R.string.setting_proto_aprsis)
+            "ic705" -> context.getString(R.string.setting_proto_ic705)
+            "afsk" -> context.getString(R.string.setting_proto_afsk)
+            "kiss" -> context.getString(R.string.setting_proto_kiss)
+            "kenwood" -> context.getString(R.string.setting_proto_kenwood)
+            "tnc2" -> context.getString(R.string.setting_proto_tnc2)
             else -> proto
+        }
+        return when (AprsBackend.defaultProtoInfo(this).link()) {
+            "aprsis" -> {
+                val linkName = when (getString("aprsis", AprsBackend.DEFAULT_CONNTYPE())) {
+                    "tcp" -> context.getString(R.string.setting_aprsis_tcp)
+                    "udp" -> context.getString(R.string.setting_aprsis_udp)
+                    "http" -> context.getString(R.string.setting_aprsis_http)
+                    else -> getString("aprsis", AprsBackend.DEFAULT_CONNTYPE())
+                }
+                "$protoName · $linkName"
+            }
+            "link" -> {
+                val linkName = when (getString("link", AprsBackend.DEFAULT_CONNTYPE())) {
+                    "bluetooth" -> context.getString(R.string.setting_tnc_bluetooth)
+                    "tcpip" -> context.getString(R.string.setting_tnc_tcp)
+                    "usb" -> context.getString(R.string.setting_tnc_usb)
+                    else -> getString("link", AprsBackend.DEFAULT_CONNTYPE())
+                }
+                "$protoName · $linkName"
+            }
+            else -> protoName
         }
     }
 
@@ -143,16 +177,28 @@ class PrefsWrapper(@JvmField val context: Context) {
         val filterdist = getStringInt("tcp.filterdist", 50)
         val userfilter = getString("tcp.filter", "")
         val hasLocationPermission =
-            ContextCompat.checkSelfPermission(service, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(service, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val lastloc = if (!hasLocationPermission) "" else try {
-            val locMan = service.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-            val provider = PeriodicGPS.bestProvider(locMan)
-            if (locMan != null && provider != null) {
-                AprsPacket.formatRangeFilter(locMan.getLastKnownLocation(provider), filterdist)
-            } else ""
-        } catch (_: Throwable) {
+            ContextCompat.checkSelfPermission(
+                service,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(
+                    service,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ) == PackageManager.PERMISSION_GRANTED
+        val lastloc = if (!hasLocationPermission) {
             ""
+        } else {
+            try {
+                val locMan = service.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+                val provider = PeriodicGPS.bestProvider(locMan)
+                if (locMan != null && provider != null) {
+                    AprsPacket.formatRangeFilter(locMan.getLastKnownLocation(provider), filterdist)
+                } else {
+                    ""
+                }
+            } catch (_: Throwable) {
+                ""
+            }
         }
         return if (filterdist == 0) {
             String.format(Locale.US, " filter %s %s", userfilter, lastloc)
@@ -164,7 +210,11 @@ class PrefsWrapper(@JvmField val context: Context) {
     fun getProto(): String = getString("proto", "aprsis")
     fun getAfskHQ(): Boolean = true
     fun getAfskBluetooth(): Boolean = getBoolean("afsk.btsco", false)
-    fun getAfskOutput(): Int = if (getAfskBluetooth()) AudioManager.STREAM_VOICE_CALL else getStringInt("afsk.output", 0)
+    fun getAfskOutput(): Int = if (getAfskBluetooth()) {
+        AudioManager.STREAM_VOICE_CALL
+    } else {
+        getStringInt("afsk.output", 0)
+    }
 
     fun getDigiPathPresets(): Set<String> {
         return prefs.getStringSet("digi_path_user_presets", emptySet())?.toSet() ?: emptySet()
