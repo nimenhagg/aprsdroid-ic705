@@ -172,6 +172,12 @@ jobs:
         id: finalize
         run: |
           set -euo pipefail
+          git fetch origin main --tags
+          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "main moved after this release run started; refusing stale finalization." >&2
+            exit 1
+          fi
+
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -237,7 +243,8 @@ jobs:
           changelog.write_text(text, encoding='utf-8')
           PY
 
-          git show HEAD^:.github/workflows/release.yml > .github/workflows/release.yml
+          git show 2f87032ee3b4d168c6f5d2fcd089fb1fb2525405:.github/workflows/release.yml > .github/workflows/release.yml
+          grep -F 'name: Build and Publish Release APK' .github/workflows/release.yml
           rm -f .github/workflows/finalize_mod_v1_9_5.yml
 
           git config user.name "nimenhagg"
