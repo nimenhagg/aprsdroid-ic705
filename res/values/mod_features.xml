@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="setting_send_battery">Send battery information</string>
-    <string name="setting_send_battery_summary">Only effective in APRS-IS mode</string>
-    <string name="setting_station_tap_action">Station tap action</string>
-    <string name="setting_station_tap_action_summary">The long-press action is always the opposite action</string>
-    <string name="setting_station_tap_message">Tap to message; long press for details</string>
-    <string name="setting_station_tap_details">Tap for details; long press to message</string>
+    <string name="setting_send_battery_summary">Only sent in APRS-IS mode</string>
+    <string name="setting_station_tap_action">Tap station</string>
+    <string name="setting_station_tap_message">Send message</string>
+    <string name="setting_station_tap_details">View details</string>
+    <string name="setting_station_long_press_details">Long press: View station details</string>
+    <string name="setting_station_long_press_message">Long press: Send message</string>
+    <string name="setting_station_tap_message_option">Send message (long press for station details)</string>
+    <string name="setting_station_tap_details_option">View station details (long press to send message)</string>
+    <string name="setting_show_aprs_objects">Show APRS objects</string>
+    <string name="setting_show_aprs_objects_summary">Show objects published by other stations on the map and station list</string>
     <string name="packet_show_raw">Show raw data</string>
     <string name="packet_hide_raw">Hide raw data</string>
     <string name="packet_route">Source / destination</string>
