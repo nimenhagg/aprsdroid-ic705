@@ -11,6 +11,13 @@
     <string name="setting_station_tap_details_option">View station details (long press to send message)</string>
     <string name="setting_show_aprs_objects">Show APRS objects</string>
     <string name="setting_show_aprs_objects_summary">Show objects published by other stations on the map and station list</string>
+    <string name="setting_map_display_category">Map &amp; display</string>
+    <string name="setting_support_about_category">Support &amp; about</string>
+    <string name="setting_share_diagnostics">Share diagnostics</string>
+    <string name="setting_share_diagnostics_summary">Export network, radio-link, and database runtime diagnostics</string>
+    <string name="setting_check_updates">Check for updates</string>
+    <string name="setting_check_updates_summary">Check GitHub Releases only when tapped</string>
+    <string name="setting_version_summary">Version %1$s (%2$s)</string>
     <string name="packet_show_raw">Show raw data</string>
     <string name="packet_hide_raw">Hide raw data</string>
     <string name="packet_route">Source / destination</string>
