@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v1.9.4` |
-| `build.gradle` 默认版本 | `1.9.4` |
-| Android versionCode | `2026082794` |
+| 最新 GitHub Release | `Mod-v1.9.5` |
+| `build.gradle` 默认版本 | `1.9.5` |
+| Android versionCode | `2026082795` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -23,14 +23,15 @@
 
 ### 当前 main 状态
 
-当前 `main` 与 `Mod-v1.9.4` 发布基线对齐。除 1.9.3 的 IC-705 稳定性、持久诊断、手动更新检查和 MapLibre Release 瘦身外，1.9.4 还包含：
+当前 `main` 与 `Mod-v1.9.5` 发布基线对齐。除 1.9.4 已有的结构化报文、电量字段、台站操作切换和 FMO 标记外，1.9.5 还完成了设置层清理：
 
-- 台站历史 APRS 报文结构化解析；原始 TNC2 数据只在用户点击“显示原始数据”后展开。
-- 首页台站单击/长按操作可互换，默认仍为单击消息、长按详情。
-- APRS-IS 可选 `BAT:xx%` 电量字段；仅 APRS-IS 生效，并遵守 43 字符 comment 预算。
-- `APFMO*` destination 的 FMO 台站识别，UI 标签顺序固定为 FMO 在前、语音频率在后。
-- 品牌统一为 `APRSdroid Mod`，版本/tag 采用 `Mod-vX.Y.Z`；更新检查仍兼容历史 `vX.Y.Z-ic705`。
-- 最低系统版本为 Android 8.1 / API 27。
+- 主设置、连接、定位、SmartBeaconing、通知和符号选择流程统一为更清晰的 Material 3 文案与交互。
+- APRS SSID 选择恢复完整 `0..15`，长选项对话框可滚动；SSID 0 明确表示不附加后缀。
+- “默认地图图源”改为真正保存默认图源，不再误打开地图。
+- APRS-IS 验证码未设置时不再错误显示为“已设置”。
+- 周期 GPS 页面只展示当前实现实际生效的时间间隔，隐藏未被 `PeriodicGPS` 消费的旧兼容参数。
+- Android 8.1+ 通知设置直接进入系统 Notification Channel，不再把旧式 per-notification LED/振动/铃声字段伪装成有效设置。
+- APRS Objects 等开关按目标布尔值写入，避免 UI 状态与存储状态反向切换。
 
 发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。
 

@@ -1,16 +1,19 @@
-name: Build and Publish Mod-v1.9.5
+name: Build and Publish Release APK
 
 on:
   push:
     branches:
       - main
+    tags:
+      - 'Mod-v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Validate, build, sign, and publish Mod-v1.9.5
+    name: Build & Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -18,16 +21,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Guard one-shot release
-        run: |
-          set -euo pipefail
-          grep -F 'mod_version = (findProperty("MOD_VERSION") ?: "1.9.5")' build.gradle
-          grep -F 'mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082795")' build.gradle
-          if git ls-remote --exit-code --tags origin refs/tags/Mod-v1.9.5 >/dev/null 2>&1; then
-            echo "Mod-v1.9.5 already exists; refusing to replace it." >&2
-            exit 1
-          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -43,6 +36,7 @@ jobs:
           key: maplibre-minsizerel-v1-13.5.1-arm64-v8a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
 
       - name: Restore ARMv7 MinSizeRel MapLibre
+        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/cache@v6
         with:
           path: .cache/maplibre-minsizerel/13.5.1/armeabi-v7a
@@ -50,37 +44,41 @@ jobs:
 
       - name: Build MinSizeRel MapLibre Native
         run: |
-          set -euo pipefail
           bash .github/scripts/build_maplibre_minsizerel.sh \
             13.5.1 arm64-v8a \
             "$PWD/.cache/maplibre-minsizerel/13.5.1/arm64-v8a/libmaplibre.so"
-          bash .github/scripts/build_maplibre_minsizerel.sh \
-            13.5.1 armeabi-v7a \
-            "$PWD/.cache/maplibre-minsizerel/13.5.1/armeabi-v7a/libmaplibre.so"
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            bash .github/scripts/build_maplibre_minsizerel.sh \
+              13.5.1 armeabi-v7a \
+              "$PWD/.cache/maplibre-minsizerel/13.5.1/armeabi-v7a/libmaplibre.so"
+          fi
 
       - name: Grant Execute Permission to Gradlew
         run: chmod +x gradlew
 
-      - name: Run Tests, Lint, and Build Release APKs
+      - name: Run Tests, Lint, and Build Release APK
+        run: |
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -z "${MAPS_API_KEY:-}" ]; then
+            echo "A tagged release requires the MAPS_API_KEY secret." >&2
+            exit 1
+          fi
+
+          tasks=(
+            verifyReleaseVersion
+            testArm64OpenglDebugUnitTest
+            lintArm64OpenglDebug
+            assembleArm64OpenglRelease
+          )
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            tasks+=(assembleArm32OpenglRelease)
+          fi
+          ./gradlew "${tasks[@]}" --no-daemon --stacktrace
         env:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-          RELEASE_TAG_OVERRIDE: Mod-v1.9.5
-        run: |
-          set -euo pipefail
-          if [ -z "${MAPS_API_KEY:-}" ]; then
-            echo "Mod-v1.9.5 requires the MAPS_API_KEY secret." >&2
-            exit 1
-          fi
-          ./gradlew \
-            verifyReleaseVersion \
-            testArm64OpenglDebugUnitTest \
-            lintArm64OpenglDebug \
-            assembleArm64OpenglRelease \
-            assembleArm32OpenglRelease \
-            --no-daemon --stacktrace
 
       - name: Prepare, Verify, and Sign Release APKs
+        id: sign_app
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -88,55 +86,82 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -z "${KEYSTORE_BASE64:-}" ] || [ -z "${KEYSTORE_PASSWORD:-}" ] || [ -z "${KEY_ALIAS:-}" ] || [ -z "${KEY_PASSWORD:-}" ]; then
-            echo "Mod-v1.9.5 requires all signing secrets." >&2
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            BUILD_LABEL="$GITHUB_REF_NAME"
+          else
+            BUILD_LABEL=$(git rev-parse --short HEAD)
+          fi
+
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -z "${KEYSTORE_BASE64:-}" ]; then
+            echo "A tagged release requires KEYSTORE_BASE64 and its signing secrets." >&2
             exit 1
           fi
 
-          BUILD_LABEL="Mod-v1.9.5"
           BUILD_TOOLS_VERSION=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)
           APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
           ZIPALIGN="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/zipalign"
 
-          mkdir -p release-apks "$RUNNER_TEMP/maplibre-patched" release-mappings
-          echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > release.jks
+          mkdir -p release-apks "$RUNNER_TEMP/maplibre-patched"
+          if [ -n "${KEYSTORE_BASE64:-}" ]; then
+            echo "Signing with repository secret keystore..."
+            echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > release.jks
+          fi
 
           publish_apk() {
             local flavor="$1"
             local abi="$2"
             local renderer="$3"
-            local prefix="$4"
+            local maplibre_count="$4"
+            local prefix="$5"
             local source
             source=$(find "build/outputs/apk/${flavor}/release" -name "*.apk" -print -quit)
-            test -n "$source"
+            if [ -z "$source" ]; then
+              echo "Missing APK for ${flavor}" >&2
+              exit 1
+            fi
 
             local custom_so="$PWD/.cache/maplibre-minsizerel/13.5.1/${abi}/libmaplibre.so"
-            test -s "$custom_so"
+            if [ ! -s "$custom_so" ]; then
+              echo "Missing custom MinSizeRel MapLibre library for ${abi}" >&2
+              exit 1
+            fi
 
             local patched="$RUNNER_TEMP/maplibre-patched/${flavor}-patched.apk"
             local aligned="$RUNNER_TEMP/maplibre-patched/${flavor}-aligned.apk"
-            python3 .github/scripts/replace_apk_maplibre.py "$source" "$abi" "$custom_so" "$patched"
+            python3 .github/scripts/replace_apk_maplibre.py \
+              "$source" "$abi" "$custom_so" "$patched"
             "$ZIPALIGN" -P 16 -f 4 "$patched" "$aligned"
             "$ZIPALIGN" -P 16 -c 4 "$aligned"
 
             local destination="release-apks/${prefix}APRSdroid-${BUILD_LABEL}-${abi}-${renderer}.apk"
-            "$APKSIGNER" sign \
-              --v1-signing-enabled false \
-              --v2-signing-enabled true \
-              --v3-signing-enabled true \
-              --v4-signing-enabled true \
-              --ks release.jks \
-              --ks-pass pass:"$KEYSTORE_PASSWORD" \
-              --ks-key-alias "$KEY_ALIAS" \
-              --key-pass pass:"$KEY_PASSWORD" \
-              --out "$destination" "$aligned"
-            "$APKSIGNER" verify --verbose "$destination"
+            if [ -n "${KEYSTORE_BASE64:-}" ]; then
+              "$APKSIGNER" sign \
+                --v1-signing-enabled false \
+                --v2-signing-enabled true \
+                --v3-signing-enabled true \
+                --v4-signing-enabled true \
+                --ks release.jks \
+                --ks-pass pass:"$KEYSTORE_PASSWORD" \
+                --ks-key-alias "$KEY_ALIAS" \
+                --key-pass pass:"$KEY_PASSWORD" \
+                --out "$destination" "$aligned"
+              "$APKSIGNER" verify --verbose "$destination"
+            else
+              cp "$aligned" "$destination"
+            fi
+
             "$ZIPALIGN" -P 16 -c 4 "$destination"
 
             local expected_so actual_so
             expected_so=$(sha256sum "$custom_so" | awk '{print $1}')
             actual_so=$(unzip -p "$destination" "lib/${abi}/libmaplibre.so" | sha256sum | awk '{print $1}')
-            test "$actual_so" = "$expected_so"
+            if [ "$actual_so" != "$expected_so" ]; then
+              echo "Packaged MapLibre hash mismatch for ${abi}" >&2
+              echo "expected=${expected_so}" >&2
+              echo "actual=${actual_so}" >&2
+              exit 1
+            fi
+            echo "Verified MinSizeRel MapLibre ${abi}: ${actual_so}"
 
             mapfile -t packaged_abis < <(
               unzip -Z1 "$destination" |
@@ -150,113 +175,37 @@ jobs:
 
             local actual_maplibre_count
             actual_maplibre_count=$(unzip -Z1 "$destination" | grep -c '/libmaplibre')
-            if [ "$actual_maplibre_count" -ne 1 ]; then
+            if [ "$actual_maplibre_count" -ne "$maplibre_count" ]; then
               echo "Unexpected MapLibre backend count in ${destination}: ${actual_maplibre_count}" >&2
               exit 1
             fi
           }
 
-          publish_apk arm64Opengl arm64-v8a opengl "Recommended_"
-          publish_apk arm32Opengl armeabi-v7a opengl ""
-          rm -f release.jks
-          (cd release-apks && sha256sum *.apk > SHA256SUMS.txt)
-
-          for flavor in arm64Opengl arm32Opengl; do
-            if [ -f "build/outputs/mapping/${flavor}Release/mapping.txt" ]; then
-              cp "build/outputs/mapping/${flavor}Release/mapping.txt" "release-mappings/${flavor}-mapping.txt"
-            fi
-          done
-          ls -lh release-apks release-mappings
-
-      - name: Finalize documentation and restore normal workflow
-        id: finalize
-        run: |
-          set -euo pipefail
-          git fetch origin main --tags
-          if [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
-            echo "main moved after this release run started; refusing stale finalization." >&2
-            exit 1
+          publish_apk arm64Opengl arm64-v8a opengl 1 "Recommended_"
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            publish_apk arm32Opengl armeabi-v7a opengl 1 ""
           fi
 
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          readme = Path('README.md')
-          text = readme.read_text(encoding='utf-8')
-          text = text.replace('**最新稳定版 / Latest release: `Mod-v1.9.4`**', '**最新稳定版 / Latest release: `Mod-v1.9.5`**', 1)
-          text = text.replace(
-              '> `Mod-v1.9.4` 完成品牌统一，并加入台站报文结构化解析、可交换的台站单击/长按操作、APRS-IS 可选电量字段与 FMO 台站标记。',
-              '> `Mod-v1.9.5` 彻底整理现代设置流程：统一中英文术语、补全 0–15 全部 APRS SSID、修正默认地图图源与 APRS-IS 验证码状态，并将通知设置交还 Android 通知频道管理。',
-              1,
-          )
-          text = text.replace(
-              '> `Mod-v1.9.4` unifies the APRSdroid Mod brand and adds structured station-packet parsing, swappable station tap/long-press actions, optional APRS-IS battery reporting, and FMO station badges.',
-              '> `Mod-v1.9.5` completes a settings cleanup: consistent copy, all APRS SSIDs 0–15, corrected default-map and APRS-IS passcode behavior, and Android notification-channel management.',
-              1,
-          )
-          readme.write_text(text, encoding='utf-8')
-
-          context = Path('AI_CONTEXT.md')
-          text = context.read_text(encoding='utf-8')
-          text = text.replace('| 最新 GitHub Release | `Mod-v1.9.4` |', '| 最新 GitHub Release | `Mod-v1.9.5` |', 1)
-          text = text.replace('| `build.gradle` 默认版本 | `1.9.4` |', '| `build.gradle` 默认版本 | `1.9.5` |', 1)
-          text = text.replace('| Android versionCode | `2026082794` |', '| Android versionCode | `2026082795` |', 1)
-          replacement = "\n".join([
-              '### 当前 main 状态',
-              '',
-              '当前 `main` 与 `Mod-v1.9.5` 发布基线对齐。除 1.9.4 已有的结构化报文、电量字段、台站操作切换和 FMO 标记外，1.9.5 还完成了设置层清理：',
-              '',
-              '- 主设置、连接、定位、SmartBeaconing、通知和符号选择流程统一为更清晰的 Material 3 文案与交互。',
-              '- APRS SSID 选择恢复完整 `0..15`，长选项对话框可滚动；SSID 0 明确表示不附加后缀。',
-              '- “默认地图图源”改为真正保存默认图源，不再误打开地图。',
-              '- APRS-IS 验证码未设置时不再错误显示为“已设置”。',
-              '- 周期 GPS 页面只展示当前实现实际生效的时间间隔，隐藏未被 `PeriodicGPS` 消费的旧兼容参数。',
-              '- Android 8.1+ 通知设置直接进入系统 Notification Channel，不再把旧式 per-notification LED/振动/铃声字段伪装成有效设置。',
-              '- APRS Objects 等开关按目标布尔值写入，避免 UI 状态与存储状态反向切换。',
-              '',
-              '发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。',
-          ])
-          text, count = re.subn(
-              r'### 当前 main 状态\n\n.*?\n\nJava 17 是当前构建基线。',
-              replacement + '\n\nJava 17 是当前构建基线。',
-              text,
-              count=1,
-              flags=re.S,
-          )
-          if count != 1:
-              raise SystemExit('failed to update AI_CONTEXT current-main section')
-          context.write_text(text, encoding='utf-8')
-
-          changelog = Path('CHANGELOG.md')
-          text = changelog.read_text(encoding='utf-8')
-          text = text.replace(
-              '- 恢复主设置页的通知设置入口。',
-              '- 恢复主设置页的通知设置入口，并改为直接管理 Android 8.1+ 系统通知频道，避免继续暴露在受支持系统上无效的旧式单通知 LED/振动/铃声开关。',
-              1,
-          )
-          text = text.replace(
-              '- 修复 APRS-IS 验证码未设置时仍显示“已设置”的状态判断。',
-              '- 修复 APRS-IS 验证码未设置时仍显示“已设置”的状态判断。\n- APRS SSID 选择恢复完整 0–15，并让长选项对话框可滚动；SSID 0 明确表示不附加后缀。\n- 周期 GPS 设置页移除当前 `PeriodicGPS` 实现并未消费的距离、GPS 启用策略和网络定位开关，避免保存无实际效果的配置。\n- APRS Objects 开关改为按目标布尔值写入，避免状态切换与 Compose UI 不一致。',
-              1,
-          )
-          changelog.write_text(text, encoding='utf-8')
-          PY
-
-          git show 2f87032ee3b4d168c6f5d2fcd089fb1fb2525405:.github/workflows/release.yml > .github/workflows/release.yml
-          grep -F 'name: Build and Publish Release APK' .github/workflows/release.yml
-          rm -f .github/workflows/finalize_mod_v1_9_5.yml
-
-          git config user.name "nimenhagg"
-          git config user.email "119995761+nimenhagg@users.noreply.github.com"
-          git add README.md AI_CONTEXT.md CHANGELOG.md .github/workflows/release.yml
-          git add -u .github/workflows
-          git commit -m "release: finalize Mod-v1.9.5"
-          git push origin HEAD:main
-          echo "clean_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          rm -f release.jks
+          (cd release-apks && sha256sum *.apk > SHA256SUMS.txt)
+          mkdir -p release-mappings
+          flavors=(arm64Opengl)
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            flavors+=(arm32Opengl)
+          fi
+          for flavor in "${flavors[@]}"; do
+            if [ -f "build/outputs/mapping/${flavor}Release/mapping.txt" ]; then
+              cp "build/outputs/mapping/${flavor}Release/mapping.txt" \
+                "release-mappings/${flavor}-mapping.txt"
+            fi
+          done
+          echo "build_label=${BUILD_LABEL}" >> "$GITHUB_OUTPUT"
+          ls -lh release-apks
+          ls -lh release-mappings
 
       - name: Extract Release Notes from CHANGELOG
-        run: python3 .github/scripts/extract_release_notes.py Mod-v1.9.5
+        if: startsWith(github.ref, 'refs/tags/')
+        run: python3 .github/scripts/extract_release_notes.py
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v7
@@ -273,11 +222,10 @@ jobs:
           path: release-mappings/*.txt
           if-no-files-found: error
 
-      - name: Publish GitHub Release
+      - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v3
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          tag_name: Mod-v1.9.5
-          target_commitish: ${{ steps.finalize.outputs.clean_sha }}
           files: |
             release-apks/*.apk
             release-apks/SHA256SUMS.txt

@@ -4,11 +4,11 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v1.9.4`**
+**最新稳定版 / Latest release: `Mod-v1.9.5`**
 
-> `Mod-v1.9.4` 完成品牌统一，并加入台站报文结构化解析、可交换的台站单击/长按操作、APRS-IS 可选电量字段与 FMO 台站标记。
+> `Mod-v1.9.5` 彻底整理现代设置流程：统一中英文术语、补全 0–15 全部 APRS SSID、修正默认地图图源与 APRS-IS 验证码状态，并将通知设置交还 Android 通知频道管理。
 >
-> `Mod-v1.9.4` unifies the APRSdroid Mod brand and adds structured station-packet parsing, swappable station tap/long-press actions, optional APRS-IS battery reporting, and FMO station badges.
+> `Mod-v1.9.5` completes a settings cleanup: consistent copy, all APRS SSIDs 0–15, corrected default-map and APRS-IS passcode behavior, and Android notification-channel management.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
