@@ -218,7 +218,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 4. 地图与显示
-            PreferenceCategoryHeader(title = stringResource(R.string.app_map))
+            PreferenceCategoryHeader(title = stringResource(R.string.setting_map_display_category))
             PreferenceGroupCard {
                 PreferenceItem(
                     title = stringResource(R.string.p_map_source),
@@ -255,19 +255,19 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 5. 更多与诊断
-            PreferenceCategoryHeader(title = "应用支持与关于")
+            PreferenceCategoryHeader(title = stringResource(R.string.setting_support_about_category))
             PreferenceGroupCard {
                 PreferenceItem(
-                    title = "分享系统诊断与运行日志",
-                    summary = "导出网络连接、射频链路与数据库运行报告",
+                    title = stringResource(R.string.setting_share_diagnostics),
+                    summary = stringResource(R.string.setting_share_diagnostics_summary),
                     icon = Icons.Default.BugReport,
                     onClick = onShareDiagnostics,
                     showChevron = false
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
-                    title = "检查更新",
-                    summary = "仅在点击时检查 GitHub Releases，不会后台自动检查",
+                    title = stringResource(R.string.setting_check_updates),
+                    summary = stringResource(R.string.setting_check_updates_summary),
                     icon = Icons.Default.SystemUpdateAlt,
                     onClick = onCheckForUpdates,
                     showChevron = false,
@@ -275,7 +275,11 @@ fun SettingsScreen(
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
                     title = stringResource(R.string.about),
-                    summary = "版本 " + BuildConfig.VERSION_NAME + " (" + BuildConfig.BUILD_TYPE + ")",
+                    summary = stringResource(
+                        R.string.setting_version_summary,
+                        BuildConfig.VERSION_NAME,
+                        BuildConfig.BUILD_TYPE,
+                    ),
                     icon = Icons.Default.Info,
                     onClick = onOpenAbout
                 )

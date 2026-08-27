@@ -11,6 +11,13 @@
     <string name="setting_station_tap_details_option">查看台站详情（长按发送消息）</string>
     <string name="setting_show_aprs_objects">显示 APRS 对象</string>
     <string name="setting_show_aprs_objects_summary">在地图和台站列表中显示其他台站发布的对象</string>
+    <string name="setting_map_display_category">地图与显示</string>
+    <string name="setting_support_about_category">支持与关于</string>
+    <string name="setting_share_diagnostics">分享诊断日志</string>
+    <string name="setting_share_diagnostics_summary">导出网络连接、射频链路和数据库运行信息</string>
+    <string name="setting_check_updates">检查更新</string>
+    <string name="setting_check_updates_summary">仅在点击时检查 GitHub Releases</string>
+    <string name="setting_version_summary">版本 %1$s（%2$s）</string>
     <string name="packet_show_raw">显示原始数据</string>
     <string name="packet_hide_raw">隐藏原始数据</string>
     <string name="packet_route">源 / 目标</string>
