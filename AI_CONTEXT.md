@@ -16,21 +16,23 @@
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
 | Kotlin / Compose Compiler | AGP 9 built-in Kotlin `2.3.21` / Compose Compiler `2.3.21` |
 | Java | `17` |
-| 核心库 | AppCompat `1.8.0`，Material `1.14.0`，OkHttp `5.3.0`，Core-KTX `1.19.0`，Lifecycle `2.11.0` |
+| 核心库 | Material `1.14.0`，OkHttp `5.3.0`，Core-KTX `1.19.0`，Activity Compose `1.13.0`，Lifecycle runtime-compose `2.11.0` |
 | 地图 | MapLibre Native `13.5.1` + Google Maps SDK |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
 ### 当前 main 状态
 
-当前 `main` 与 `Mod-v1.9.6` 发布基线对齐。1.9.6 是 1.9.5 之后的补丁版本：
+最新稳定发布仍是 `Mod-v1.9.6`，但当前 `main` 已进入 **1.9.6 之后的未发布维护/重构线**，不能再把 `main` 与稳定 tag 描述为完全对齐。
 
-- 修复位置设置页“位置来源”当前值使用完整说明时挤压左侧标题和摘要、造成异常逐字换行的问题；当前值使用短标签，选择对话框继续显示完整说明。
-- APRS 符号资源和 symbol code / sprite 索引映射未在本补丁版本中改变。
-- Release Notes 生成器优先采用显式 tag，并对 `Mod-vX.Y.Z` 生成正确标题，避免把 `main` 或重复的 `Mod` 写入发布说明。
-- 正式 Release 仍发布 ARM64 OpenGL 推荐包、ARMv7 OpenGL 包与 `SHA256SUMS.txt`，并保留对应 R8 mapping 作为 Actions artifact。
+当前未发布维护工作以行为保持和去遗留为主：
 
-发布提交本身没有已知的下一版本用户可见未发布功能。后续 `main` 一旦继续开发，README 与本文仍必须重新区分 “Latest release” 与 “Current main”，不得把未打 tag 的功能写成已发布。
+- 地图 About、APRS-IS passcode 等旧 `ComponentDialog + ComposeView` 兼容壳已移除，现有 Compose 页面直接托管 Material 3 对话框状态。
+- AndroidX Preference 依赖、旧 Preference XML/主题以及已经失去入口的通知 LED/振动/铃声配置与资源已清理；Android 8.1+ 通知行为以 `NotificationChannel` 为唯一设置源。
+- IC-705 session 将音频乱序、sequence 规则、任务注册表、timing、connection-info 重试判定等低风险纯逻辑拆为独立 policy/组件并增加 JVM 单测；PTT、TX pacing、鉴权 wire 行为和 CI-V 安全语义没有为了结构调整而重写。
+- 清理不再使用的直接依赖和旧构建遗留；MapLibre/Google Maps 的 `AndroidView(MapView)` 互操作保持不变。
+
+`Mod-v1.9.6` 仍是回滚与正式发布基线。README 必须继续区分 “Latest release” 与 “Current main”，未打 tag 的维护结果不得写成已发布功能。
 
 Java 17 是当前构建基线。没有明确需求与完整兼容性验证时，不要仅为了数字更新切换 Java 21。
 
@@ -337,5 +339,6 @@ CHANGELOG 是工程记录，不是营销文案。
 - IC-705 watchdog 已从统一短超时演进为 CONTROL/CI-V/AUDIO 角色化 liveness + stream-local recovery。
 - 诊断已从依赖 logcat 尾部升级为持久化结构化事件 + Network 生命周期 + ZIP 导出。
 - 正式 ARM64/ARMv7 MapLibre OpenGL 原生库已改为同版本源码 `MinSizeRel` + IPO/LTO 构建并在发布阶段替换；APRS 符号表资源已从 PNG 转为 WebP。
+- AndroidX Preference 与 AppCompat 的直接依赖已移除；设置页和兼容对话框已收敛为 Compose/Material 3，通知配置由系统 NotificationChannel 管理。
 
 不要在本文继续堆积每个旧版本的完成清单；历史细节属于 `CHANGELOG.md` 和 Git 历史。本文只保留会影响下一次修改决策的当前事实。
