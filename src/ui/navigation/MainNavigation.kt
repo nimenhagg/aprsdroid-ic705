@@ -22,6 +22,11 @@ object MainRoutes {
     const val MAP = "map"
     const val MESSAGES = "messages"
     const val PACKETS = "packets"
+    const val CHAT = "chat/{call}"
+
+    fun chat(call: String): String = "chat/$call"
+
+    fun isTopLevel(route: String?): Boolean = route == STATIONS || route == MAP || route == MESSAGES || route == PACKETS
 
     fun normalizeStartDestination(route: String?): String = when (route) {
         MAP -> MAP

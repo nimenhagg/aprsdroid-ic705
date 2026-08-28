@@ -2,6 +2,7 @@ package org.aprsdroid.app
 
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -11,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,10 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import org.aprsdroid.app.data.repository.LogRepository
 import org.aprsdroid.app.data.repository.MapStationRepository
 import org.aprsdroid.app.data.repository.MessageRepository
@@ -35,11 +39,13 @@ import org.aprsdroid.app.ui.screen.ConversationsScreen
 import org.aprsdroid.app.ui.screen.EmbeddedMapScreen
 import org.aprsdroid.app.ui.screen.HubStationScreen
 import org.aprsdroid.app.ui.screen.LogScreen
+import org.aprsdroid.app.ui.screen.MessageChatScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.aprsdroid.app.ui.viewmodel.ConversationsViewModel
 import org.aprsdroid.app.ui.viewmodel.HubViewModel
 import org.aprsdroid.app.ui.viewmodel.LogViewModel
 import org.aprsdroid.app.ui.viewmodel.MapViewModel
+import org.aprsdroid.app.ui.viewmodel.MessageChatViewModel
 
 class HubActivity : BaseRecyclerActivity() {
 
@@ -54,9 +60,11 @@ class HubActivity : BaseRecyclerActivity() {
     private val mapRepository: MapStationRepository by lazy { MapStationRepository(storage, prefs) }
     private val viewModel: HubViewModel by lazy { HubViewModel(stationRepository, prefs) }
     private val conversationsViewModel: ConversationsViewModel by lazy { ConversationsViewModel(messageRepository) }
+    private val messageChatViewModel: MessageChatViewModel by lazy { MessageChatViewModel(messageRepository) }
     private val logViewModel: LogViewModel by lazy { LogViewModel(logRepository) }
     private val mapViewModel: MapViewModel by lazy { MapViewModel(mapRepository, prefs.getShowObjects()) }
     private val firstRunDialogVisible = mutableStateOf(false)
+    private var activeChatCall: String? = null
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -69,6 +77,7 @@ class HubActivity : BaseRecyclerActivity() {
     private val messageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             conversationsViewModel.refresh()
+            activeChatCall?.let { messageChatViewModel.refresh(it) }
         }
     }
 
@@ -90,6 +99,7 @@ class HubActivity : BaseRecyclerActivity() {
             AprsTheme {
                 val hubState = viewModel.uiState.collectAsStateWithLifecycle().value
                 val conversationsState = conversationsViewModel.uiState.collectAsStateWithLifecycle().value
+                val chatState = messageChatViewModel.uiState.collectAsStateWithLifecycle().value
                 val logState = logViewModel.uiState.collectAsStateWithLifecycle().value
                 val mapState = mapViewModel.uiState.collectAsStateWithLifecycle().value
                 val navController = rememberNavController()
@@ -123,19 +133,25 @@ class HubActivity : BaseRecyclerActivity() {
                                     },
                                     onToggleTracking = { toggleTracking() },
                                     onStationClick = { item ->
-                                        if (prefs.getStationTapAction() == "details") openDetails(item.call) else openMessaging(item.call)
+                                        if (prefs.getStationTapAction() == "details") {
+                                            openDetails(item.call)
+                                        } else {
+                                            navController.navigate(MainRoutes.chat(item.call))
+                                        }
                                     },
                                     onStationLongClick = { item ->
-                                        if (prefs.getStationTapAction() == "details") openMessaging(item.call) else openDetails(item.call)
+                                        if (prefs.getStationTapAction() == "details") {
+                                            navController.navigate(MainRoutes.chat(item.call))
+                                        } else {
+                                            openDetails(item.call)
+                                        }
                                     },
                                     onOpenMap = { navController.navigateTopLevel(MainRoutes.MAP) },
                                     onOpenLogs = { navController.navigateTopLevel(MainRoutes.PACKETS) },
                                     onOpenMessages = { navController.navigateTopLevel(MainRoutes.MESSAGES) },
                                     onOpenSettings = { startActivity(Intent(this@HubActivity, PrefsAct::class.java)) },
                                     onClearLogs = {
-                                        StorageCleaner(this@HubActivity, storage) {
-                                            refreshTopLevelState()
-                                        }.execute()
+                                        StorageCleaner(this@HubActivity, storage) { refreshTopLevelState() }.execute()
                                     }
                                 )
                             }
@@ -148,9 +164,7 @@ class HubActivity : BaseRecyclerActivity() {
                                     showObjects = mapState.showObjects,
                                     myLat = hubState.myLat,
                                     myLon = hubState.myLon,
-                                    onShowObjectsChanged = { showObjects ->
-                                        mapViewModel.refresh(showObjects)
-                                    },
+                                    onShowObjectsChanged = { showObjects -> mapViewModel.refresh(showObjects) },
                                     onStationClick = { call -> showMapStation(call) },
                                     onBack = { navController.navigateTopLevel(MainRoutes.STATIONS) },
                                     onOpenPackets = { navController.navigateTopLevel(MainRoutes.PACKETS) },
@@ -171,7 +185,7 @@ class HubActivity : BaseRecyclerActivity() {
                                 ConversationsScreen(
                                     conversations = conversationsState.conversations,
                                     onBack = { navController.navigateTopLevel(MainRoutes.STATIONS) },
-                                    onOpenConversation = { call -> openMessaging(call) },
+                                    onOpenConversation = { call -> navController.navigate(MainRoutes.chat(call)) },
                                     onDeleteConversation = { call ->
                                         conversationsViewModel.deleteConversation(call)
                                         Toast.makeText(this@HubActivity, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
@@ -180,7 +194,48 @@ class HubActivity : BaseRecyclerActivity() {
                                         conversationsViewModel.clearAllConversations()
                                         Toast.makeText(this@HubActivity, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                                     },
-                                    onStartNewConversation = { call -> openMessaging(call) }
+                                    onStartNewConversation = { call -> navController.navigate(MainRoutes.chat(call)) }
+                                )
+                            }
+
+                            composable(
+                                route = MainRoutes.CHAT,
+                                arguments = listOf(navArgument("call") { type = NavType.StringType })
+                            ) { backStackEntry ->
+                                val target = backStackEntry.arguments?.getString("call").orEmpty()
+                                DisposableEffect(target) {
+                                    activeChatCall = target
+                                    if (target.isNotEmpty()) {
+                                        ServiceNotifier.instance.cancelMessage(this@HubActivity, target)
+                                        messageChatViewModel.refresh(target)
+                                    }
+                                    onDispose {
+                                        if (activeChatCall == target) activeChatCall = null
+                                    }
+                                }
+
+                                MessageChatScreen(
+                                    targetCall = target,
+                                    myCall = prefs.getCallSsid(),
+                                    messages = chatState.messages.filter { it.call.equals(target, ignoreCase = true) },
+                                    onBack = { navController.popBackStack() },
+                                    onCallsignClick = { showMapStation(target, showMessageAction = false) },
+                                    onSendMessage = { message -> sendChatMessage(target, message) },
+                                    onDeleteMessage = { id -> messageChatViewModel.deleteMessage(id, target) },
+                                    onRestartMessage = { item ->
+                                        messageChatViewModel.restartMessage(item, target) {
+                                            sendBroadcast(AprsService.privateIntent(this@HubActivity, AprsService.MESSAGETX))
+                                        }
+                                    },
+                                    onAbortMessage = { item ->
+                                        messageChatViewModel.abortMessage(item, target) {
+                                            sendBroadcast(AprsService.privateIntent(this@HubActivity, AprsService.MESSAGE))
+                                        }
+                                    },
+                                    onClearAllMessages = { messageChatViewModel.clearAll(target) },
+                                    onExportLogs = {
+                                        LogExporter(this@HubActivity, storage, "call = '$target'") {}.execute()
+                                    }
                                 )
                             }
 
@@ -224,10 +279,12 @@ class HubActivity : BaseRecyclerActivity() {
                         }
                     }
 
-                    MainNavigationBar(
-                        selectedRoute = selectedRoute,
-                        onDestinationSelected = { route -> navController.navigateTopLevel(route) }
-                    )
+                    if (MainRoutes.isTopLevel(selectedRoute)) {
+                        MainNavigationBar(
+                            selectedRoute = selectedRoute,
+                            onDestinationSelected = { route -> navController.navigateTopLevel(route) }
+                        )
+                    }
                 }
 
                 if (firstRunDialogVisible.value) {
@@ -270,7 +327,28 @@ class HubActivity : BaseRecyclerActivity() {
         }
     }
 
-    private fun showMapStation(call: String) {
+    private fun sendChatMessage(target: String, message: String) {
+        if (target.isBlank() || message.isEmpty()) return
+        val values = ContentValues().apply {
+            put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+            put(StorageDatabase.Companion.Message.RETRYCNT, 0)
+            put(StorageDatabase.Companion.Message.CALL, target)
+            put(StorageDatabase.Companion.Message.MSGID, storage.createMsgId(target))
+            put(StorageDatabase.Companion.Message.TYPE, StorageDatabase.Companion.Message.TYPE_OUT_NEW)
+            put(StorageDatabase.Companion.Message.TEXT, message)
+        }
+        storage.addMessage(values)
+        sendMessageBroadcast(target, message)
+        sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGE))
+        messageChatViewModel.refresh(target)
+        conversationsViewModel.refresh()
+
+        if (!AprsService.running) {
+            Toast.makeText(this, R.string.msg_stored_offline, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showMapStation(call: String, showMessageAction: Boolean = true) {
         var myLat = 0
         var myLon = 0
         val position = storage.getStaPosition(prefs.getCallSsid())
@@ -284,7 +362,14 @@ class HubActivity : BaseRecyclerActivity() {
         } finally {
             position.close()
         }
-        StationBottomSheetHelper.show(this, call, storage, myLat, myLon)
+        StationBottomSheetHelper.show(
+            context = this,
+            call = call,
+            db = storage,
+            myLat = myLat,
+            myLon = myLon,
+            showMessageAction = showMessageAction
+        )
     }
 
     private fun refreshTopLevelState() {
@@ -305,6 +390,7 @@ class HubActivity : BaseRecyclerActivity() {
         ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
         ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
         refreshTopLevelState()
+        activeChatCall?.let { messageChatViewModel.refresh(it) }
 
         if (prefs.getBoolean("firstrun", true) || prefs.getCallsign().isEmpty()) firstRunDialogVisible.value = true
     }
