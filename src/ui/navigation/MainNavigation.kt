@@ -13,7 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import org.aprsdroid.app.R
 
@@ -73,8 +72,12 @@ fun MainNavigationBar(
 }
 
 fun NavHostController.navigateTopLevel(route: String) {
+    if (currentDestination?.route == route) return
     navigate(route) {
-        popUpTo(graph.findStartDestination().id) {
+        // Pop to the graph entry itself, not the graph's start destination.
+        // This keeps Stations from being a special "pop-only" case and makes
+        // every bottom-navigation destination use the same navigate/restore path.
+        popUpTo(graph.id) {
             saveState = true
         }
         launchSingleTop = true

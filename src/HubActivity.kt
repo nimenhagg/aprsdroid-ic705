@@ -139,21 +139,18 @@ class HubActivity : BaseRecyclerActivity() {
                                 when {
                                     MainRoutes.isTopLevel(fromRoute) && MainRoutes.isTopLevel(toRoute) -> {
                                         val direction = if (topLevelIndex(toRoute) >= topLevelIndex(fromRoute)) 1 else -1
-                                        fadeIn(
+                                        slideInHorizontally(
                                             animationSpec = tween(durationMillis = 140, easing = FastOutSlowInEasing),
-                                            initialAlpha = 0.94f
-                                        ) + slideInHorizontally(
-                                            animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
-                                            initialOffsetX = { width -> direction * width / 16 }
+                                            initialOffsetX = { width -> direction * width / 24 }
                                         )
                                     }
                                     toRoute == MainRoutes.CHAT -> {
                                         fadeIn(
-                                            animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
-                                            initialAlpha = 0.92f
+                                            animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+                                            initialAlpha = 0f
                                         ) + slideInHorizontally(
-                                            animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-                                            initialOffsetX = { width -> width / 10 }
+                                            animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing),
+                                            initialOffsetX = { width -> width / 4 }
                                         )
                                     }
                                     else -> fadeIn(
@@ -168,21 +165,18 @@ class HubActivity : BaseRecyclerActivity() {
                                 when {
                                     MainRoutes.isTopLevel(fromRoute) && MainRoutes.isTopLevel(toRoute) -> {
                                         val direction = if (topLevelIndex(toRoute) >= topLevelIndex(fromRoute)) 1 else -1
-                                        fadeOut(
-                                            animationSpec = tween(durationMillis = 90),
-                                            targetAlpha = 0.96f
-                                        ) + slideOutHorizontally(
-                                            animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
-                                            targetOffsetX = { width -> -direction * width / 32 }
+                                        slideOutHorizontally(
+                                            animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
+                                            targetOffsetX = { width -> -direction * width / 48 }
                                         )
                                     }
                                     toRoute == MainRoutes.CHAT -> {
                                         fadeOut(
-                                            animationSpec = tween(durationMillis = 90),
-                                            targetAlpha = 0.96f
+                                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                            targetAlpha = 0.75f
                                         ) + slideOutHorizontally(
-                                            animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
-                                            targetOffsetX = { width -> -width / 24 }
+                                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                            targetOffsetX = { width -> -width * 12 / 100 }
                                         )
                                     }
                                     else -> fadeOut(
@@ -197,21 +191,18 @@ class HubActivity : BaseRecyclerActivity() {
                                 when {
                                     fromRoute == MainRoutes.CHAT -> {
                                         fadeIn(
-                                            animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
-                                            initialAlpha = 0.94f
+                                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                            initialAlpha = 0.75f
                                         ) + slideInHorizontally(
-                                            animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
-                                            initialOffsetX = { width -> -width / 24 }
+                                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                            initialOffsetX = { width -> -width * 12 / 100 }
                                         )
                                     }
                                     MainRoutes.isTopLevel(fromRoute) && MainRoutes.isTopLevel(toRoute) -> {
                                         val direction = if (topLevelIndex(toRoute) >= topLevelIndex(fromRoute)) 1 else -1
-                                        fadeIn(
+                                        slideInHorizontally(
                                             animationSpec = tween(durationMillis = 140, easing = FastOutSlowInEasing),
-                                            initialAlpha = 0.94f
-                                        ) + slideInHorizontally(
-                                            animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
-                                            initialOffsetX = { width -> direction * width / 16 }
+                                            initialOffsetX = { width -> direction * width / 24 }
                                         )
                                     }
                                     else -> fadeIn(
@@ -226,21 +217,18 @@ class HubActivity : BaseRecyclerActivity() {
                                 when {
                                     fromRoute == MainRoutes.CHAT -> {
                                         fadeOut(
-                                            animationSpec = tween(durationMillis = 100),
-                                            targetAlpha = 0.95f
+                                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                            targetAlpha = 0f
                                         ) + slideOutHorizontally(
-                                            animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
-                                            targetOffsetX = { width -> width / 10 }
+                                            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                            targetOffsetX = { width -> width / 4 }
                                         )
                                     }
                                     MainRoutes.isTopLevel(fromRoute) && MainRoutes.isTopLevel(toRoute) -> {
                                         val direction = if (topLevelIndex(toRoute) >= topLevelIndex(fromRoute)) 1 else -1
-                                        fadeOut(
-                                            animationSpec = tween(durationMillis = 90),
-                                            targetAlpha = 0.96f
-                                        ) + slideOutHorizontally(
-                                            animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
-                                            targetOffsetX = { width -> -direction * width / 32 }
+                                        slideOutHorizontally(
+                                            animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
+                                            targetOffsetX = { width -> -direction * width / 48 }
                                         )
                                     }
                                     else -> fadeOut(
