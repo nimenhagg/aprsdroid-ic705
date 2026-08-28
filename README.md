@@ -4,11 +4,11 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.0.1`**
+**最新稳定版 / Latest release: `Mod-v2.0.2`**
 
-> `Mod-v2.0.1` 收紧台站/报文列表默认密度并新增不覆盖系统字号的“紧凑列表”，同时修复一级导航过度淡入淡出和通知设置首帧卡顿。
+> `Mod-v2.0.2` 统一通知设置与项目其它设置页的 Material 动效，并移除频道初始化、隐藏页面刷新和重复地图可用性检查造成的可感知停顿；2.0.1 的紧凑列表与主导航体验保持不变。
 >
-> `Mod-v2.0.1` tightens station/packet list density, adds an optional compact mode that still respects system font scaling, and fixes excessive top-level cross-fades plus notification-settings first-frame stutter.
+> `Mod-v2.0.2` aligns notification-settings motion with the rest of Settings and removes channel-initialization, hidden-refresh, and repeated map-availability stalls while retaining the 2.0.1 compact-list and navigation improvements.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -36,7 +36,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 - 台站页以状态卡展示完整呼号和 APRS 运行状态，跟踪启停位于状态卡，单次发送位置使用 Extended FAB。
 - 台站与报文列表默认密度比 2.0.0 更紧凑，并提供“紧凑列表”开关；该开关只调整 padding、间距和图标尺寸，不覆盖 Android 系统字体缩放。
 - 系统字体较大时优先压缩非核心留白并限制台站备注行数，正文仍按系统 fontScale 正常放大。
-- 通知设置已并入主设置 Activity 的 Compose 导航；NotificationChannel 的确保过程在后台线程完成，不再阻塞通知设置首帧。
+- 通知设置保留在主设置 Activity 内，以与项目既有 Activity motion 相同的位移/透明度参数打开；NotificationChannel 在应用后台预热，真正发送通知前有同步兜底，进入通知设置和点击频道入口本身不等待频道创建。
 - 台站详情中的历史 APRS 数据默认以结构化字段显示；原始 TNC2 报文通过“显示原始数据”按钮按需展开。
 - 首页台站单击/长按动作可在设置中互换；默认仍为单击发消息、长按查看详情。
 - APRS-IS 模式可选择在位置信标中附加 `BAT:xx%` 电量字段；其他射频/本地后端不发送该信息。
@@ -212,7 +212,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 - 修改 IC-705 发射/会话恢复代码时必须保留 PTT OFF、ACK 与 watchdog 安全语义并增加测试。
 - “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
 - 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AI_CONTEXT.md`。
-- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.0.1`。
+- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.0.2`。
 - Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt` 和 R8 mapping 后创建 GitHub Release。
 
 完整维护约束见 [AI_CONTEXT.md](AI_CONTEXT.md)。
@@ -223,7 +223,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 
 APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-**Latest stable release: `Mod-v2.0.1`.**
+**Latest stable release: `Mod-v2.0.2`.**
 
 ### Highlights
 
@@ -237,7 +237,7 @@ APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdr
 - Material 3 bottom navigation for Stations / Map / Messages / Packets under one top-level Navigation Compose host; in-app chat is a secondary route with source-aware Back behavior.
 - Short directional Material-style transitions replace the default full-page Navigation Compose cross-fade for top-level destinations; chat retains secondary forward/back hierarchy motion.
 - Station and packet lists use tighter default spacing and offer a persistent Compact lists option that changes geometry without overriding Android font scaling.
-- Notification settings are embedded in the Settings Compose navigation; notification-channel setup runs off the UI thread so it does not block the child screen's first frame.
+- Notification settings stay inside the main Settings Activity, reuse the app's existing Material activity-motion geometry/timing, and do not wait for NotificationChannel creation when opening the child page or a system channel page.
 - MapLibre Native and Google Maps are embedded in the top-level map destination; legacy map Activities remain only for coordinate chooser and compatibility paths.
 - Jetpack Compose + Material 3 UI with no production `res/layout` screens.
 - MapLibre Native for AMap/OSM/custom raster tiles and Google Maps SDK for Google map/satellite modes. Official ARM64/ARMv7 OpenGL releases replace the AAR native library with a same-version `MinSizeRel` + IPO/LTO build while retaining the official AAR API/resources/dependencies.
