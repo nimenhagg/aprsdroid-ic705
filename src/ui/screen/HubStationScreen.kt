@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,12 +23,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PlayArrow
@@ -102,9 +98,7 @@ fun HubStationScreen(
     var showClearConfirmDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .navigationBarsPadding(),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
@@ -140,31 +134,6 @@ fun HubStationScreen(
                             expanded = showTopMenu,
                             onDismissRequest = { showTopMenu = false }
                         ) {
-                            // Temporary top-level navigation until the single-activity shell lands.
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.show_map)) },
-                                leadingIcon = { Icon(Icons.Default.Map, contentDescription = null) },
-                                onClick = {
-                                    showTopMenu = false
-                                    onOpenMap()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.app_messages)) },
-                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
-                                onClick = {
-                                    showTopMenu = false
-                                    onOpenMessages()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.show_log)) },
-                                leadingIcon = { Icon(Icons.Default.History, contentDescription = null) },
-                                onClick = {
-                                    showTopMenu = false
-                                    onOpenLogs()
-                                }
-                            )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.preferences)) },
                                 leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
@@ -451,7 +420,6 @@ fun StationCardItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Sliced HD Symbol Badge
             SymbolBadge(
                 symbol = item.symbol,
                 size = 46.dp
@@ -460,7 +428,6 @@ fun StationCardItem(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                // Top line: Callsign + Distance & Bearing / Time
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -514,13 +481,11 @@ fun StationCardItem(
                     }
                 }
 
-                // Middle line: FMO first, frequency second.
                 if (item.isFmo || !item.qrg.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     StationTagRow(item)
                 }
 
-                // Bottom line: Comment / Status
                 val comment = item.comment
                 if (!comment.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))

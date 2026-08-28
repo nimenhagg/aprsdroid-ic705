@@ -55,6 +55,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.aprsdroid.app.HubActivity
 import org.aprsdroid.app.R
 import org.aprsdroid.app.model.ConversationItem
 import org.aprsdroid.app.ui.components.SymbolBadge
@@ -69,6 +70,7 @@ fun ConversationsScreen(
     onClearAllConversations: () -> Unit,
     onStartNewConversation: (String) -> Unit
 ) {
+    val embeddedTopLevel = LocalContext.current is HubActivity
     var showNewDialog by remember { mutableStateOf(false) }
     var targetCallInput by remember { mutableStateOf("") }
     var conversationToDelete by remember { mutableStateOf<String?>(null) }
@@ -77,7 +79,7 @@ fun ConversationsScreen(
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .navigationBarsPadding(),
+            .then(if (embeddedTopLevel) Modifier else Modifier.navigationBarsPadding()),
         topBar = {
             TopAppBar(
                 title = {
@@ -88,11 +90,13 @@ fun ConversationsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.action_back)
-                        )
+                    if (!embeddedTopLevel) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.action_back)
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -158,7 +162,6 @@ fun ConversationsScreen(
         }
     }
 
-    // New Conversation Dialog
     if (showNewDialog) {
         AlertDialog(
             onDismissRequest = { showNewDialog = false },
@@ -206,7 +209,6 @@ fun ConversationsScreen(
         )
     }
 
-    // Delete single conversation confirmation
     conversationToDelete?.let { call ->
         AlertDialog(
             onDismissRequest = { conversationToDelete = null },
@@ -230,7 +232,6 @@ fun ConversationsScreen(
         )
     }
 
-    // Clear all conversations confirmation
     if (showClearAllDialog) {
         AlertDialog(
             onDismissRequest = { showClearAllDialog = false },

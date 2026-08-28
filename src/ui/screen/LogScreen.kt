@@ -79,6 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.aprsdroid.app.HubActivity
 import org.aprsdroid.app.R
 import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.model.LogPostItem
@@ -99,10 +100,11 @@ fun LogScreen(
     onClearLogs: () -> Unit
 ) {
     val context = LocalContext.current
+    val embeddedTopLevel = context is HubActivity
     var showMenu by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-    var selectedFilterType by remember { mutableIntStateOf(-1) } // -1: All
+    var selectedFilterType by remember { mutableIntStateOf(-1) }
     var showClearConfirmDialog by remember { mutableStateOf(false) }
 
     val filteredItems = remember(items, searchQuery, selectedFilterType) {
@@ -128,7 +130,7 @@ fun LogScreen(
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
-            .navigationBarsPadding(),
+            .then(if (embeddedTopLevel) Modifier else Modifier.navigationBarsPadding()),
         topBar = {
             TopAppBar(
                 title = {
@@ -147,11 +149,13 @@ fun LogScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.action_back)
-                        )
+                    if (!embeddedTopLevel) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.action_back)
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -161,11 +165,13 @@ fun LogScreen(
                             contentDescription = stringResource(R.string.action_search)
                         )
                     }
-                    IconButton(onClick = onOpenMap) {
-                        Icon(
-                            imageVector = Icons.Default.Map,
-                            contentDescription = stringResource(R.string.show_map)
-                        )
+                    if (!embeddedTopLevel) {
+                        IconButton(onClick = onOpenMap) {
+                            Icon(
+                                imageVector = Icons.Default.Map,
+                                contentDescription = stringResource(R.string.show_map)
+                            )
+                        }
                     }
                     Box {
                         IconButton(onClick = { showMenu = true }) {
@@ -178,14 +184,16 @@ fun LogScreen(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.show_hub)) },
-                                leadingIcon = { Icon(Icons.Default.Radio, contentDescription = null) },
-                                onClick = {
-                                    showMenu = false
-                                    onOpenHub()
-                                }
-                            )
+                            if (!embeddedTopLevel) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.show_hub)) },
+                                    leadingIcon = { Icon(Icons.Default.Radio, contentDescription = null) },
+                                    onClick = {
+                                        showMenu = false
+                                        onOpenHub()
+                                    }
+                                )
+                            }
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.preferences)) },
                                 leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
@@ -227,56 +235,58 @@ fun LogScreen(
             )
         },
         bottomBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 3.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            if (!embeddedTopLevel) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 3.dp
                 ) {
-                    FilledTonalButton(
-                        onClick = onSendPosition,
+                    Row(
                         modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(24.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.MyLocation,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(R.string.singlelog),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                        FilledTonalButton(
+                            onClick = onSendPosition,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MyLocation,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.singlelog),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
 
-                    Button(
-                        onClick = onToggleTracking,
-                        modifier = Modifier
-                            .weight(1.2f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(
-                            imageVector = if (isRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(if (isRunning) R.string.stoplog else R.string.startlog),
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Button(
+                            onClick = onToggleTracking,
+                            modifier = Modifier
+                                .weight(1.2f)
+                                .height(48.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = if (isRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(if (isRunning) R.string.stoplog else R.string.startlog),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }
@@ -287,7 +297,6 @@ fun LogScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Search and Filter Bar
             AnimatedVisibility(visible = showSearch) {
                 Column(
                     modifier = Modifier
@@ -459,7 +468,6 @@ private fun LogPacketCard(
                 .fillMaxWidth()
                 .padding(10.dp)
         ) {
-            // Header: Timestamp + Badge + Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -502,7 +510,6 @@ private fun LogPacketCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Body: Annotated Monospace Packet Text
             val msg = item.message
             val isPacket = (item.type == StorageDatabase.Companion.Post.TYPE_POST ||
                     item.type == StorageDatabase.Companion.Post.TYPE_INCMG ||

@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -56,12 +55,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import org.aprsdroid.app.HubActivity
 import org.aprsdroid.app.MapMode
 import org.aprsdroid.app.R
 
@@ -90,6 +91,7 @@ fun MapScreen(
     onOpenAbout: () -> Unit = {},
     mapContent: @Composable () -> Unit
 ) {
+    val embeddedTopLevel = LocalContext.current is HubActivity
     var showMenu by remember { mutableStateOf(false) }
     var showLayerSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
@@ -107,20 +109,24 @@ fun MapScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(android.R.string.cancel)
-                        )
+                    if (!embeddedTopLevel) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(android.R.string.cancel)
+                            )
+                        }
                     }
                 },
                 actions = {
                     if (!isCoordinateChooser) {
-                        IconButton(onClick = onOpenLogs) {
-                            Icon(
-                                imageVector = Icons.Default.History,
-                                contentDescription = stringResource(R.string.app_name)
-                            )
+                        if (!embeddedTopLevel) {
+                            IconButton(onClick = onOpenLogs) {
+                                Icon(
+                                    imageVector = Icons.Default.History,
+                                    contentDescription = stringResource(R.string.app_name)
+                                )
+                            }
                         }
                         IconButton(onClick = { showLayerSheet = true }) {
                             Icon(
@@ -131,7 +137,7 @@ fun MapScreen(
                         IconButton(onClick = { showMenu = !showMenu }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More"
+                                contentDescription = stringResource(R.string.action_menu)
                             )
                         }
 
@@ -206,10 +212,8 @@ fun MapScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Map Rendering Container
             mapContent()
 
-            // Loading Indicator (Top-End)
             if (isLoading) {
                 Surface(
                     shape = CircleShape,
@@ -229,7 +233,6 @@ fun MapScreen(
                 }
             }
 
-            // Crosshair in coordinate chooser mode
             if (isCoordinateChooser) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -241,7 +244,6 @@ fun MapScreen(
                 )
             }
 
-            // OSM Attribution
             if (showOsmAttribution) {
                 Surface(
                     onClick = onOsmAttributionClick,
@@ -260,7 +262,6 @@ fun MapScreen(
                 }
             }
 
-            // Chooser Mode Bottom Bar
             if (isCoordinateChooser) {
                 Surface(
                     shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
@@ -295,7 +296,6 @@ fun MapScreen(
                 }
             }
 
-            // Floating Controls on the Right Edge
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -306,7 +306,6 @@ fun MapScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // My Location FAB
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -324,7 +323,6 @@ fun MapScreen(
                     }
                 }
 
-                // Vertical Zoom Pill
                 Surface(
                     shape = RoundedCornerShape(24.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -367,7 +365,6 @@ fun MapScreen(
         }
     }
 
-    // Map Layer Selection Sheet
     if (showLayerSheet) {
         ModalBottomSheet(
             onDismissRequest = { showLayerSheet = false },
