@@ -30,6 +30,8 @@ class Ic705WifiBackend(
 
     private class ServiceBridge(private val service: AprsService) : Ic705BackendService {
         override fun postPosterStarted() = service.postPosterStarted()
+        override fun postLinkOn(link: Int) = service.postLinkOn(link)
+        override fun postLinkOff(link: Int) = service.postLinkOff(link)
         override fun postAbort(message: String) = service.postAbort(message)
         override fun postSubmit(text: String) = service.postSubmit(text)
         override fun getString(resId: Int): String = service.getString(resId)
