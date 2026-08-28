@@ -16,6 +16,7 @@ import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.diagnostic.Ic705DiagnosticState
 import org.aprsdroid.app.ic705.android.Ic705AndroidSocketFactoryProvider
 import org.aprsdroid.app.ic705.protocol.Ic705AudioPacketCodec
+import org.aprsdroid.app.ic705.session.Ic705PacketRejectionKind
 import org.aprsdroid.app.ic705.session.Ic705RadioSession
 import org.aprsdroid.app.ic705.session.Ic705RxSession
 import org.aprsdroid.app.ic705.session.Ic705RxSessionCallbacks
@@ -230,6 +231,7 @@ class Ic705WifiBackendController(
         AppLog.i("IC705", "generation_create", mapOf("generation" to generation, "initial" to initialAttempt))
         Ic705DiagnosticState.set("generation", generation)
         Ic705DiagnosticState.set("controller", "CONNECTING")
+        Ic705DiagnosticState.set("possible_stale_generation", false)
         var newDecoder: PcmSink? = null
         try {
             val decoderForCallbacks = decoderFactory.create(
@@ -273,6 +275,10 @@ class Ic705WifiBackendController(
                     },
                     onIssue = { issue ->
                         if (isActive(generation)) {
+                            val packet = issue.packet
+                            val possibleStaleGeneration =
+                                generation > 1 &&
+                                    packet?.rejection == Ic705PacketRejectionKind.RECEIVER_OTHER
                             AppLog.w(
                                 "IC705",
                                 "session_issue",
@@ -280,8 +286,20 @@ class Ic705WifiBackendController(
                                     "generation" to generation,
                                     "code" to issue.code,
                                     "channel" to issue.channel,
+                                    "packet_length" to packet?.length,
+                                    "declared_length" to packet?.declaredLength,
+                                    "common_type" to packet?.commonType,
+                                    "receiver_kind" to packet?.receiverKind,
+                                    "payload_length" to packet?.payloadLength,
+                                    "request_reply" to packet?.requestReply,
+                                    "request_type" to packet?.requestType,
+                                    "rejection" to packet?.rejection,
+                                    "possible_stale_generation" to possibleStaleGeneration,
                                 ),
                             )
+                            if (possibleStaleGeneration) {
+                                Ic705DiagnosticState.set("possible_stale_generation", true)
+                            }
                         }
                     },
                 ),
