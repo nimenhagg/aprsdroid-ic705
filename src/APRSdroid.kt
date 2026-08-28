@@ -3,14 +3,21 @@ package org.aprsdroid.app
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import org.aprsdroid.app.ui.navigation.MainRoutes
 
 class APRSdroid : Activity() {
-    fun replaceAct(act: Class<*>) {
-        val i = Intent(this, act).apply {
-            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        }
-        startActivity(i)
+    private fun replaceAct(intent: Intent) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        startActivity(intent)
         finish()
+    }
+
+    private fun openHub(startDestination: String = MainRoutes.STATIONS) {
+        replaceAct(
+            Intent(this, HubActivity::class.java).apply {
+                putExtra(HubActivity.EXTRA_START_DESTINATION, startDestination)
+            }
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,10 +33,11 @@ class APRSdroid : Activity() {
 
         val mapmode = MapModes.defaultMapMode(this, prefs)
         when (sp.getString("activity", "hub")) {
-            "hub" -> replaceAct(HubActivity::class.java)
-            "map" -> replaceAct(mapmode.viewClass)
-            "log" -> replaceAct(LogActivity::class.java)
-            else -> replaceAct(HubActivity::class.java)
+            "hub" -> openHub()
+            // Map remains on the legacy Activity until its lifecycle-heavy migration lands.
+            "map" -> replaceAct(Intent(this, mapmode.viewClass))
+            "log" -> openHub(MainRoutes.PACKETS)
+            else -> openHub()
         }
     }
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_stations">台站</string>
+    <string name="nav_map">地图</string>
+    <string name="nav_messages">消息</string>
+    <string name="nav_packets">报文</string>
+</resources>

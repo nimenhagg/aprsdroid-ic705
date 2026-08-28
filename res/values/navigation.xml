@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nav_stations">Stations</string>
+    <string name="nav_map">Map</string>
+    <string name="nav_messages">Messages</string>
+    <string name="nav_packets">Packets</string>
+</resources>
