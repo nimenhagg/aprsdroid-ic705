@@ -1,3 +1,16 @@
+## [Mod-v2.0.4] - 2026-08-28
+
+### Fixed
+- 修复四个底栏一级页面切换仍对整页执行横向位移、在台站等重页面上造成掉帧的问题；顶层 `NavHost` 现在不再做整页 enter/exit/pop 转场，只保留 Material 3 底栏自身的选中动效，并恢复 `findStartDestination()` 的保存/恢复路径以保持“台站”根页常驻。
+- 修复聊天返回时 Android predictive back、Navigation Compose pop motion 与应用自定义 Activity motion 叠加的问题；聊天重新作为 `MessageActivity` 二级页面，由 Android 系统窗口与 BackDispatcher 统一负责前进/返回动画，顶部返回按钮也走同一 BackDispatcher。
+- 修复通知设置与连接/定位等其它设置子页动效模型不一致的问题；通知设置改为轻量 `NotificationSettingsActivity`，页面创建和频道入口都不执行或等待 NotificationChannel 创建。
+- 修复消息通知点击需要先唤醒 `HubActivity`、再由 Compose `LaunchedEffect` 二次启动聊天的问题；通知 PendingIntent 现在一次建立 `HubActivity(消息) → MessageActivity` Activity 栈，返回直接落到消息主页。
+
+### Changed
+- 删除全局 `android:windowAnimationStyle` 和四个 `m3_activity_*` 自定义窗口动画资源；聊天、台站详情、通知设置、连接/定位设置等普通二级 Activity 使用 Android 平台默认 Activity motion 与 predictive back。
+- 打开单个 NotificationChannel 详情仍会跨应用进入 Android 系统 Settings；应用侧不再等待频道创建，但系统 Settings 冷启动或厂商系统自身掉帧不属于 APRSdroid 可完全消除的范围。
+- 版本更新为 `Mod-v2.0.4`（`versionCode 2026082902`）。
+
 ## [Mod-v2.0.3] - 2026-08-28
 
 ### Fixed
@@ -231,7 +244,7 @@
 - 增加 CI-V PTT OFF 的 ACK 握手确认与定时重试机制。
 - 适配 Android 14+ 广播注册规范，使用 `RECEIVER_NOT_EXPORTED`。
 - 规范化 USB TNC 权限请求与设备插拔监听，适配 Android 12+ 约束。
-- 版本元数据更新为 1.8.1-ic705。
+- 版本更新为 1.8.1-ic705。
 
 ## [v1.8.0-ic705] - 2026-08-24
 
@@ -250,7 +263,7 @@
 - 优先使用 Vulkan 渲染，不支持则回退 OpenGL。
 - APRS 符号、标签等地图元素迁移至 GeoJSON/SymbolLayer 实现。
 - Google 图源切换路由优化，不再由 Google SDK 代绘其他瓦片。
-- 版本元数据更新为 1.7.1-ic705。
+- 版本更新为 1.7.1-ic705。
 
 ### Removed
 - 删除旧 Mapsforge 聚合 JAR 及专用瓦片下载器。

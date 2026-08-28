@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v2.0.3` |
-| `build.gradle` 默认版本 | `2.0.3` |
-| Android versionCode | `2026082901` |
+| 最新 GitHub Release | `Mod-v2.0.4` |
+| `build.gradle` 默认版本 | `2.0.4` |
+| Android versionCode | `2026082902` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -23,21 +23,23 @@
 
 ### 当前 main 状态
 
-`Mod-v2.0.3` 是当前发布基线。2.0.0 将之前分散在多个一级 Activity 的主界面收敛为一个顶层导航宿主；2.0.1 调整信息密度与主导航表现；2.0.2 修正通知设置动效和首帧/返回性能；2.0.3 将四个底栏目的地的导航语义彻底对称并统一聊天层级动效：
+`Mod-v2.0.4` 是当前发布基线。2.0.4 根据 Android 17 Settings 的系统导航边界重新收口主导航与二级页面：四个底栏 root 只由 Navigation Compose 管理状态，不做整页转场；聊天、台站详情、通知设置等二级页面使用 Activity 边界并尽量让 Android 平台统一负责返回与 predictive back：
 
 - `HubActivity` 承载 Navigation Compose `NavHost`，四个一级目的地固定为 `stations` / `map` / `messages` / `packets`，手机界面使用 Material 3 Bottom Navigation。
-- `navigateTopLevel()` 使用 `popUpTo(graph.id) { saveState = true }` + `launchSingleTop = true` + `restoreState = true`，四个一级目的地都走相同的 navigate/restore 路径。不要改回 `graph.findStartDestination().id`；后者会让作为 start destination 的 `stations` 再次变成特殊 pop-only 路径。
-- 一级 destination 切换不做整页 alpha 混合；当前仅使用低幅横向 translation：目标页约 140 ms、`width / 24` 进入，来源页约 120 ms、`width / 48` 退出，以减少台站 LazyColumn 和 APRS symbol Canvas 在转场期间的合成开销。
-- `chat/{call}` 是二级 route，前进/返回与项目既有 `m3_activity_*` motion 对齐：前景进入 280 ms、约 25% 位移；底层退出/返回 240 ms、约 12% 位移并使用 0.75 alpha；聊天返回仍依赖真实 back stack 回到实际来源一级页。
-- `chat/{call}` 进入时隐藏底部导航；从台站、消息或地图进入聊天后使用真实 back stack 返回来源页。
-- 消息通知直接进入 `HubActivity`，先建立“消息”一级目的地再进入 `chat/{call}`；冷启动和 `singleTop` 已有实例都通过同一 intent 消费逻辑处理，因此返回落到消息列表。
+- `navigateTopLevel()` 使用 `popUpTo(graph.findStartDestination().id) { saveState = true }` + `launchSingleTop = true` + `restoreState = true`。`stations` 作为 start destination 保持常驻；四个 root 的整页 transition 已显式设为 `EnterTransition.None` / `ExitTransition.None`，不要再给重页面添加全屏 fade/slide。
+- 四个一级 destination 的可见 motion 只来自 Material 3 `NavigationBar` 自身的选中状态；MapView、LazyColumn 与 APRS symbol Canvas 不参与根页面整页动画。
+- 点对点聊天不再是 `chat/{call}` Compose route；`MessageActivity` 是正式二级页面。台站、消息或地图打开聊天时直接 `startActivity()`，关闭 Activity 后自然回到实际来源 Hub route。
+- `MessageActivity` 与 `StationActivity` 的 Compose toolbar Back 使用 `onBackPressedDispatcher.onBackPressed()`，与系统返回键/预测返回共享权威 Back 入口。不要在这些页面重新叠加 NavHost pop transition。
+- 消息通知不再先唤醒 `HubActivity` 后由 Compose `LaunchedEffect` 二次启动聊天；`ServiceNotifier` 使用 Activity 数组一次建立 `HubActivity(EXTRA_START_DESTINATION=messages) → MessageActivity` 系统任务栈，因此通知进入聊天后 Back 落到消息主页。
+- `HubActivity` 不再保存或消费 `EXTRA_CHAT_CALL`；它只处理一级 start destination。
 - 顶层地图直接内嵌 MapLibre 或 Google `MapView`；高德/OSM/自定义使用 MapLibre，Google 普通/卫星使用 Google Maps，切换图源不再启动另一个顶层 Activity。
-- `MapAct` / `GoogleMapAct` 仍保留用于坐标选择器和兼容入口；`MessageActivity` 等兼容 Activity 也未被强行删除。这里的“单 Activity”指四个一级页面和应用内聊天的统一导航壳，不代表整个 APK 只能声明一个 Activity。
+- `MapAct` / `GoogleMapAct` 仍保留用于坐标选择器和兼容入口；整个 APK 采用“一级页面单 Hub + 二级页面按需 Activity”的混合架构，不追求所有页面强制单 Activity。
 - 台站页顶栏只承担当前页面标题与页面级菜单；完整呼号和 APRS 状态位于状态卡，跟踪启停在状态卡内，单次发送位置使用 Extended FAB。
 - 顶层消息/地图/报文在宿主模式下不显示与 Bottom Navigation 重复的返回箭头或跨页快捷入口；旧独立 Activity 模式仍可保留兼容控件。
-- 通知设置不再使用独立 `NotificationPrefs` Activity，也不再使用嵌套 `NavHost` 切换整棵设置树；`PrefsAct` 以覆盖层显示通知子页。进入时前景按既有 Activity motion 从右侧约 25% 滑入并淡入，底层主设置约向左 12% 且降至 75% 不透明度，返回反向。
+- 通知设置使用轻量 `NotificationSettingsActivity`，parent 为 `PrefsAct`。旧 `NotificationPrefs` 已删除，`PrefsAct` 内的通知覆盖层、`AnimatedVisibility` 和手写 graphicsLayer motion 也已删除。
 - NotificationChannel 为进程级一次确保：`APRSdroidApplication` 后台预热，`ServiceNotifier.start()` / `notifyMessage()` / `notifyPosition()` 在真正发送前保留同步兜底。进入通知设置和点击系统频道详情入口不得等待 `createNotificationChannel()`。
-- 通知子页可见时，从 Android 系统频道设置返回不会刷新被覆盖的整张主设置页；主设置中的可用地图模式也在 Compose 生命周期内 memoize，避免子页切换重复执行 Google Play Services 可用性检查。
+- 打开单个 NotificationChannel 详情会启动 Android 系统 Settings Activity，这是跨应用边界；APRSdroid 不再人为增加等待，但系统 Settings 的冷启动/厂商实现掉帧不能由应用完全消除。
+- `DefaultTheme` 不再设置全局 `android:windowAnimationStyle`；旧 `Animation.Material3.Activity` 与 `m3_activity_enter/exit/pop_*` 资源已删除。普通二级 Activity 使用 Android 平台窗口 motion / predictive back，不要重新全局覆盖。
 - 台站与报文列表的默认 padding/间距较 2.0.0 收紧，并提供持久化 `ui.compact_lists` 开关。紧凑模式只改变 padding、间距、圆角和 symbol/图标尺寸，不得覆盖 Android 系统 fontScale。
 - 系统 fontScale 较大时优先减少非核心留白和备注占用；当前台站备注在 `fontScale >= 1.15` 时最多一行，正文仍按系统字体比例缩放。
 
@@ -102,15 +104,15 @@ ARM64 Vulkan 与 x86/x86_64 变体保留用于源码构建和兼容性验证。�
 ## 4. UI、导航与地图事实
 
 - 主 UI 已迁移到 Jetpack Compose + Material 3；不要恢复历史 `res/layout` 页面，也不要在 AI_CONTEXT 中继续引用已经删除的 `mapview.xml`。
-- 四个一级页面由 `HubActivity` + Navigation Compose 管理：`stations`、`map`、`messages`、`packets`。底栏切换必须使用 `navigateTopLevel()`；当前实现 pop 到 `graph.id` 保存当前一级页状态，再 navigate/restore 目标 route。不要使用 `findStartDestination()` 作为 `popUpTo` 目标，否则 `stations` 会重新成为特殊的根节点返回路径。
-- 一级页面转场故意不使用整页 fade/cross-fade；当前是 140/120 ms 的低幅横向 slide，减少重页面（尤其台站列表和 symbol Canvas）的 GPU alpha 合成成本。不要为了“更明显”重新叠加全屏透明度动画。
-- `chat/{call}` 是二级 route。台站 → 聊天 → Back 必须回台站；消息 → 聊天 → Back 必须回消息；地图台站 Bottom Sheet → 聊天 → Back 必须回地图。
-- 聊天层级 motion 与项目 Activity motion 保持一致：前进时聊天前景从右侧约 25% 进入、280 ms；底层向左约 12% 并降至约 0.75 alpha、240 ms；返回使用对应反向 240 ms transition。不要另写一套轻微 10%/4% 位移参数。
-- 消息通知使用 `HubActivity.EXTRA_CHAT_CALL` 请求宿主建立“消息 → 聊天”栈；不要改回通知直接启动 `MessageActivity`，否则冷启动返回语义会退化。
-- `PrefsAct` 内部负责主设置与通知设置子页；旧 `NotificationPrefs` Activity 已删除。通知子页是同 Activity 内的覆盖层，不使用单独嵌套 `NavHost`。打开单个 Android NotificationChannel 详情仍然通过系统 Settings Activity，这是系统边界。
-- 通知子页的 motion 与项目 `m3_activity_*` 参数保持一致：前进时子页从右侧约 25% 进入并淡入，底层向左约 12% 且 alpha 降到约 0.75；返回方向相反。避免为这一页再引入独立的一套 180ms 整页 slide。
-- NotificationChannel setup 不得成为通知设置导航的同步或异步等待条件。当前 `APRSdroidApplication` 后台预热一次，`ServiceNotifier` 在真正发通知前同步兜底；设置页只负责立即导航到应用内通知页或 Android 系统频道页。
-- 通知子页显示期间 `PrefsAct.onResume()` 不刷新被覆盖的根设置；可用地图模式列表通过 `remember` 固定在当前 Compose 生命周期内，避免从系统频道页返回时重复做 Google Play Services availability 检查。
+- 四个一级页面由 `HubActivity` + Navigation Compose 管理：`stations`、`map`、`messages`、`packets`。底栏切换必须使用 `navigateTopLevel()`；当前实现使用 `popUpTo(graph.findStartDestination().id) + saveState/restoreState + launchSingleTop`，让 `stations` 保持为常驻 start destination。
+- 四个 root 的 `NavHost` enter/exit/popEnter/popExit 全部为 `None`。不要为底栏 root 恢复 cross-fade、全屏 alpha 或横向 slide；一级页面视觉切换只需要 NavigationBar 选中动效。
+- 聊天使用 `MessageActivity`，不是 Navigation Compose 二级 route。台站 → 聊天 → Back 回台站；消息 → 聊天 → Back 回消息；地图台站 Bottom Sheet → 聊天 → Back 回地图，这依赖 Activity 返回到原 Hub route，而不是人工 `fromStation/fromMessages` 标记。
+- `MessageActivity` / `StationActivity` 的 toolbar Back 通过 `OnBackPressedDispatcher`，让按钮返回、系统返回键与 predictive back 走同一入口。不要在 Activity 返回外再叠 Compose pop transition。
+- 消息通知使用 `PendingIntent.getActivities()` 一次建立 `HubActivity(messages) → MessageActivity` 栈；冷启动通知 Back 落到消息主页。不要恢复 `EXTRA_CHAT_CALL + LaunchedEffect` 二次导航。
+- `PrefsAct` 是主设置 Activity；通知设置使用独立轻量 `NotificationSettingsActivity`，连接设置使用 `BackendPrefs`，定位设置使用 `LocationPrefs`。这种二级 Activity 边界是有意设计，用于让 Android 系统统一处理窗口 motion / predictive back。
+- `NotificationSettingsActivity` 不做 NotificationChannel 初始化，只画 Compose 页面并立即打开对应系统频道详情。打开 Android NotificationChannel 详情仍通过系统 Settings Activity，这是跨应用边界。
+- NotificationChannel setup 不得成为通知设置导航的同步或异步等待条件。当前 `APRSdroidApplication` 后台预热一次，`ServiceNotifier` 在真正发通知前同步兜底。
+- `DefaultTheme` 不得重新配置全局 `windowAnimationStyle` 来覆盖所有 Activity；旧 `m3_activity_*` XML 已删除。需要特殊转场时必须先证明平台默认无法满足，并限定到明确场景，而不是全 App 覆盖。
 - `ui.compact_lists` 是台站/报文列表的共享 UI-only 偏好；设置页和两页溢出菜单可切换。该偏好不得修改系统字体倍率，紧凑模式只调整几何密度。
 - 大字号适配应优先减少留白、图标和次要文本占用，而不是屏蔽用户 fontScale；当前 `fontScale >= 1.15` 时台站备注限制为一行。
 - 顶层 `map` destination 内根据当前 `MapMode` 使用嵌入式 MapLibre 或 Google Maps renderer。MapLibre 负责高德、OpenStreetMap、自定义在线瓦片；Google Maps SDK 负责 Google 普通/卫星图源。
@@ -263,9 +265,11 @@ USB attach 属于系统事件路径，修改时单独评估后台启动限制。
 - 后台 I/O 使用现有 executor/调度器，不在主线程做 Socket、数据库、DSP 或 GitHub API I/O。
 - NotificationManager / NotificationChannel 的 Binder 调用不得绑在设置导航首帧，也不得让“打开通知设置/系统频道页”等待其完成；实际发送通知前可以保留必要的同步兜底。
 - UI 页面使用 Compose Material 3；不要为了小功能重新引入第二套 XML View 页面。
-- 四个一级页面必须继续通过主 `NavHost` 切换；不要用 `startActivity()`、`REORDER_TO_FRONT` 或多个 Activity 各自复制 Bottom Navigation 来模拟一级导航。
-- 一级 `navigateTopLevel()` 应保持 `popUpTo(graph.id) + saveState/restoreState + launchSingleTop` 的对等语义；不要为了套用示例代码退回 `findStartDestination()`，否则台站根页面会再次走不同的 pop transition 生命周期。
-- 二级页面若进入主导航栈，应依赖真实 back stack 返回来源，不要保存 `fromStation` / `fromMessages` 一类人工来源标记。
+- 四个一级页面必须继续通过主 `NavHost` 切换；不要用多个 Activity 各自复制 Bottom Navigation 来模拟一级导航。
+- 一级 `navigateTopLevel()` 当前采用 `popUpTo(graph.findStartDestination().id) + saveState/restoreState + launchSingleTop`；同时根 NavHost transition 必须保持 `None`。不要为了视觉效果给四个 root 加整页 fade/slide。
+- 二级页面可以使用独立 Activity，尤其当平台 predictive back / 系统窗口动画比自定义 Compose transition 更合适时。返回按钮优先走 `OnBackPressedDispatcher`，不要同时叠 Activity window animation 与 Compose pop animation。
+- 不要重新添加全局 `android:windowAnimationStyle` 或 `m3_activity_*` 动画覆盖所有 Activity；平台默认 motion 是当前基线。
+- 通知点击聊天必须保持一次性 `HubActivity(messages) → MessageActivity` 系统任务栈，不要恢复 Hub 收到 extra 后再异步启动聊天的二段式流程。
 - 使用 AndroidX API；不要重新引入 `android.preference.*` 或旧 Support Test 包。
 - HTTP 后端保持 `HttpURLConnection`，不要恢复 Apache `DefaultHttpClient` / `org.apache.http.legacy`。
 - Activity 结果与文档选择使用 Activity Result API。
@@ -354,10 +358,13 @@ CHANGELOG 是工程记录，不是营销文案。
 
 - Gradle 9.5 / AGP 9.3.2 / built-in Kotlin / API 37 / Java 17。
 - 生产 UI 已迁移到 Compose Material 3，历史 `res/layout` 页面已删除。
-- 四个一级页面已从多 Activity 导航收敛为 `HubActivity` + Navigation Compose；四个 root 当前统一使用 `popUpTo(graph.id)` 的保存/恢复路径，`stations` 不再因是 start destination 走特殊 pop-only 语义。
-- 顶层 destination 的默认 cross-fade/整页 alpha 合成已移除，当前使用低幅纯横移；聊天层级动效与项目 `m3_activity_*` 参数统一。不要通过 `findStartDestination()` 或重新加全屏 fade 把这两个回归带回。
-- 通知设置已从独立 Activity 和嵌套 `NavHost` 收敛为 `PrefsAct` 内覆盖层；其动效与项目既有 Activity motion 参数一致。NotificationChannel 使用应用后台预热 + 真正发送前兜底，不得重新让设置导航等待频道创建。
-- 通知子页覆盖根设置时不执行根设置 `onResume` 刷新；可用地图模式在当前 Compose 生命周期内 memoize，避免系统频道页返回造成无意义重计算。
+- 四个一级页面已从多 Activity 导航收敛为 `HubActivity` + Navigation Compose；root destination 保持独立保存状态，但顶层页面不再执行整页动画。
+- `stations` 是 NavGraph start destination，`navigateTopLevel()` 当前使用 `findStartDestination()` 保存/恢复路径；由于根转场为 `None`，不再通过改变 pop 目标来追求“动画对称”。
+- 聊天已从主 NavHost 二级 route 迁回 `MessageActivity`，由 Android Activity / predictive back 负责层级返回；不要重新叠加 Compose pop motion。
+- 消息通知直接构造 `HubActivity(messages) → MessageActivity` 系统任务栈，不经过 Compose `LaunchedEffect` 二次打开聊天。
+- 通知设置已从旧 `NotificationPrefs`、嵌套 NavHost 和 `PrefsAct` 覆盖层演进为轻量 `NotificationSettingsActivity`；NotificationChannel 使用应用后台预热 + 真正发送前兜底，不得重新让设置导航等待频道创建。
+- 全局自定义 Activity `windowAnimationStyle` 与 `m3_activity_*` 资源已删除，普通二级 Activity 采用 Android 平台 motion / predictive back。不要为了“统一”再次覆盖全 App 窗口动画。
+- 打开 Android NotificationChannel 详情属于跨应用 Settings 边界；系统 Settings 的冷启动卡顿需要与 APRSdroid 自己的同 App 页面卡顿区分诊断。
 - 台站/报文列表已有标准与紧凑两档几何密度，并保持系统 fontScale；不要用全局缩字号代替密度设计。
 - Mapsforge 与专用离线瓦片下载器已移除；当前地图为 MapLibre + Google Maps SDK 分工，主地图已内嵌到顶层 `map` destination。
 - 外部存储读写权限已删除；文档导入/导出使用 SAF / `ContentResolver`。
