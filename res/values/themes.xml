@@ -6,9 +6,9 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:fitsSystemWindows">true</item>
 
-        <!-- Android 14-17 Material Motion Transitions -->
-        <item name="android:windowActivityTransitions">true</item>
-        <item name="android:windowAnimationStyle">@style/Animation.Material3.Activity</item>
+        <!-- Keep ordinary Activity navigation on the platform transition stack.
+             This allows Android predictive back and window motion to share one
+             authoritative animation path instead of layering app-wide overrides. -->
 
         <item name="android:dialogTheme">@style/Material3DialogTheme</item>
         <item name="android:alertDialogTheme">@style/Material3AlertDialogTheme</item>
@@ -31,13 +31,6 @@
     <style name="TextAppearance.Material3.Subtitle" parent="@android:style/TextAppearance.Material.Widget.ActionBar.Subtitle">
         <item name="android:textSize">13sp</item>
         <item name="android:fontFamily">sans-serif</item>
-    </style>
-
-    <style name="Animation.Material3.Activity" parent="@android:style/Animation.Activity">
-        <item name="android:activityOpenEnterAnimation">@anim/m3_activity_enter</item>
-        <item name="android:activityOpenExitAnimation">@anim/m3_activity_exit</item>
-        <item name="android:activityCloseEnterAnimation">@anim/m3_activity_pop_enter</item>
-        <item name="android:activityCloseExitAnimation">@anim/m3_activity_pop_exit</item>
     </style>
 
     <style name="MapViewTheme" parent="DefaultTheme">
