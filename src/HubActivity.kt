@@ -9,6 +9,12 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -126,7 +132,123 @@ class HubActivity : BaseRecyclerActivity() {
                     Box(modifier = Modifier.weight(1f)) {
                         NavHost(
                             navController = navController,
-                            startDestination = MainRoutes.STATIONS
+                            startDestination = MainRoutes.STATIONS,
+                            enterTransition = {
+                                val fromRoute = initialState.destination.route
+                                val toRoute = targetState.destination.route
+                                when {
+                                    MainRoutes.isTopLevel(fromRoute) && MainRoutes.isTopLevel(toRoute) -> {
+                                        val direction = if (topLevelIndex(toRoute) >= topLevelIndex(fromRoute)) 1 else -1
+                                        fadeIn(
+                                            animationSpec = tween(durationMillis = 140, easing = FastOutSlowInEasing),
+                                            initialAlpha = 0.94f
+                                        ) + slideInHorizontally(
+                                            animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+                                            initialOffsetX = { width -> direction * width / 16 }
+                                        )
+                                    }
+                                    toRoute == MainRoutes.CHAT -> {
+                                        fadeIn(
+                                            animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+                                            initialAlpha = 0.92f
+                                        ) + slideInHorizontally(
+                                            animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+                                            initialOffsetX = { width -> width / 10 }
+                                        )
+                                    }
+                                    else -> fadeIn(
+                                        animationSpec = tween(durationMillis = 140, easing = FastOutSlowInEasing),
+                                        initialAlpha = 0.94f
+                                    )
+                                }
+                            },
+                            exitTransition = {
+                                val fromRoute = initialState.destination.route
+                                val toRoute = targetState.destination.route
+                                when {
+                                    MainRoutes.isTopLevel(fromRoute) && MainRoutes.isTopLevel(toRoute) -> {
+                                        val direction = if (topLevelIndex(toRoute) >= topLevelIndex(fromRoute)) 1 else -1
+                                        fadeOut(
+                                            animationSpec = tween(durationMillis = 90),
+                                            targetAlpha = 0.96f
+                                        ) + slideOutHorizontally(
+                                            animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
+                                            targetOffsetX = { width -> -direction * width / 32 }
+                                        )
+                                    }
+                                    toRoute == MainRoutes.CHAT -> {
+                                        fadeOut(
+                                            animationSpec = tween(durationMillis = 90),
+                                            targetAlpha = 0.96f
+                                        ) + slideOutHorizontally(
+                                            animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+                                            targetOffsetX = { width -> -width / 24 }
+                                        )
+                                    }
+                                    else -> fadeOut(
+                                        animationSpec = tween(durationMillis = 90),
+                                        targetAlpha = 0.96f
+                                    )
+                                }
+                            },
+                            popEnterTransition = {
+                                val fromRoute = initialState.destination.route
+                                val toRoute = targetState.destination.route
+                                when {
+                                    fromRoute == MainRoutes.CHAT -> {
+                                        fadeIn(
+                                            animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+                                            initialAlpha = 0.94f
+                                        ) + slideInHorizontally(
+                                            animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing),
+                                            initialOffsetX = { width -> -width / 24 }
+                                        )
+                                    }
+                                    MainRoutes.isTopLevel(fromRoute) && MainRoutes.isTopLevel(toRoute) -> {
+                                        val direction = if (topLevelIndex(toRoute) >= topLevelIndex(fromRoute)) 1 else -1
+                                        fadeIn(
+                                            animationSpec = tween(durationMillis = 140, easing = FastOutSlowInEasing),
+                                            initialAlpha = 0.94f
+                                        ) + slideInHorizontally(
+                                            animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+                                            initialOffsetX = { width -> direction * width / 16 }
+                                        )
+                                    }
+                                    else -> fadeIn(
+                                        animationSpec = tween(durationMillis = 140, easing = FastOutSlowInEasing),
+                                        initialAlpha = 0.94f
+                                    )
+                                }
+                            },
+                            popExitTransition = {
+                                val fromRoute = initialState.destination.route
+                                val toRoute = targetState.destination.route
+                                when {
+                                    fromRoute == MainRoutes.CHAT -> {
+                                        fadeOut(
+                                            animationSpec = tween(durationMillis = 100),
+                                            targetAlpha = 0.95f
+                                        ) + slideOutHorizontally(
+                                            animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing),
+                                            targetOffsetX = { width -> width / 10 }
+                                        )
+                                    }
+                                    MainRoutes.isTopLevel(fromRoute) && MainRoutes.isTopLevel(toRoute) -> {
+                                        val direction = if (topLevelIndex(toRoute) >= topLevelIndex(fromRoute)) 1 else -1
+                                        fadeOut(
+                                            animationSpec = tween(durationMillis = 90),
+                                            targetAlpha = 0.96f
+                                        ) + slideOutHorizontally(
+                                            animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
+                                            targetOffsetX = { width -> -direction * width / 32 }
+                                        )
+                                    }
+                                    else -> fadeOut(
+                                        animationSpec = tween(durationMillis = 90),
+                                        targetAlpha = 0.96f
+                                    )
+                                }
+                            }
                         ) {
                             composable(MainRoutes.STATIONS) {
                                 HubStationScreen(
@@ -341,6 +463,14 @@ class HubActivity : BaseRecyclerActivity() {
             ?.getStringExtra(EXTRA_CHAT_CALL)
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun topLevelIndex(route: String?): Int = when (route) {
+        MainRoutes.STATIONS -> 0
+        MainRoutes.MAP -> 1
+        MainRoutes.MESSAGES -> 2
+        MainRoutes.PACKETS -> 3
+        else -> 0
     }
 
     private fun toggleTracking() {
