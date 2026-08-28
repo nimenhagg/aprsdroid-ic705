@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build:
@@ -221,6 +222,81 @@ jobs:
           name: r8-mappings
           path: release-mappings/*.txt
           if-no-files-found: error
+
+      - name: Create and Dispatch Validated Release Tag
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          subject=$(git log -1 --pretty=%s)
+          case "$subject" in
+            release:*) ;;
+            *)
+              echo "Not a release commit; skipping tag creation."
+              exit 0
+              ;;
+          esac
+
+          version=$(python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path('build.gradle').read_text(encoding='utf-8')
+          match = re.search(r'mod_version = \(findProperty\("MOD_VERSION"\) \?: "([0-9]+\.[0-9]+\.[0-9]+)"\)', text)
+          if not match:
+              raise SystemExit('Could not read default MOD_VERSION from build.gradle')
+          print(match.group(1))
+          PY
+          )
+          tag="Mod-v${version}"
+
+          first_heading=$(grep -m1 '^## \[' CHANGELOG.md || true)
+          case "$first_heading" in
+            "## [${tag}] - "*) ;;
+            *)
+              echo "CHANGELOG top entry does not match ${tag}: ${first_heading}" >&2
+              exit 1
+              ;;
+          esac
+          grep -Fq "**最新稳定版 / Latest release: \`${tag}\`**" README.md || {
+            echo "README latest release does not match ${tag}." >&2
+            exit 1
+          }
+          grep -Fq "| 最新 GitHub Release | \`${tag}\` |" AI_CONTEXT.md || {
+            echo "AI_CONTEXT release baseline does not match ${tag}." >&2
+            exit 1
+          }
+
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" >/dev/null 2>&1; then
+            echo "Tag ${tag} already exists; not creating another tag."
+            exit 0
+          fi
+
+          tag_object_sha=$(gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/git/tags" \
+            -f tag="$tag" \
+            -f message="$tag" \
+            -f object="$GITHUB_SHA" \
+            -f type="commit" \
+            --jq '.sha')
+
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f ref="refs/tags/${tag}" \
+            -f sha="$tag_object_sha" >/dev/null
+
+          for attempt in 1 2 3; do
+            if gh workflow run release.yml --ref "$tag"; then
+              echo "Created ${tag} and dispatched the tagged release workflow."
+              exit 0
+            fi
+            echo "Dispatch attempt ${attempt} failed; retrying." >&2
+            sleep 2
+          done
+          echo "Created ${tag}, but could not dispatch the tagged release workflow." >&2
+          exit 1
 
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v3
