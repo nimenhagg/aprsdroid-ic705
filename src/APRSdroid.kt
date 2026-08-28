@@ -31,11 +31,9 @@ class APRSdroid : Activity() {
             startService(AprsService.intent(this, AprsService.SERVICE))
         }
 
-        val mapmode = MapModes.defaultMapMode(this, prefs)
         when (sp.getString("activity", "hub")) {
             "hub" -> openHub()
-            // Map remains on the legacy Activity until its lifecycle-heavy migration lands.
-            "map" -> replaceAct(Intent(this, mapmode.viewClass))
+            "map" -> openHub(MainRoutes.MAP)
             "log" -> openHub(MainRoutes.PACKETS)
             else -> openHub()
         }

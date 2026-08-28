@@ -24,6 +24,7 @@ object MainRoutes {
     const val PACKETS = "packets"
 
     fun normalizeStartDestination(route: String?): String = when (route) {
+        MAP -> MAP
         MESSAGES -> MESSAGES
         PACKETS -> PACKETS
         else -> STATIONS
@@ -67,7 +68,6 @@ fun MainNavigationBar(
 }
 
 fun NavHostController.navigateTopLevel(route: String) {
-    if (route == MainRoutes.MAP) return
     navigate(route) {
         popUpTo(graph.findStartDestination().id) {
             saveState = true
