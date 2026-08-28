@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v2.0.2` |
-| `build.gradle` 默认版本 | `2.0.2` |
-| Android versionCode | `2026082900` |
+| 最新 GitHub Release | `Mod-v2.0.3` |
+| `build.gradle` 默认版本 | `2.0.3` |
+| Android versionCode | `2026082901` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -23,10 +23,12 @@
 
 ### 当前 main 状态
 
-`Mod-v2.0.2` 是当前发布基线。2.0.0 将之前分散在多个一级 Activity 的主界面收敛为一个顶层导航宿主，2.0.1 修正主导航动效、设置首帧性能与信息密度，2.0.2 继续收敛通知设置动效与首帧/返回路径性能：
+`Mod-v2.0.3` 是当前发布基线。2.0.0 将之前分散在多个一级 Activity 的主界面收敛为一个顶层导航宿主；2.0.1 调整信息密度与主导航表现；2.0.2 修正通知设置动效和首帧/返回性能；2.0.3 将四个底栏目的地的导航语义彻底对称并统一聊天层级动效：
 
 - `HubActivity` 承载 Navigation Compose `NavHost`，四个一级目的地固定为 `stations` / `map` / `messages` / `packets`，手机界面使用 Material 3 Bottom Navigation。
-- 一级 destination 不使用 Navigation Compose 默认明显的整页 cross-fade；当前为短促、方向明确的 Material 风格过渡。`chat/{call}` 作为二级 route 保留前进/返回层级动画。
+- `navigateTopLevel()` 使用 `popUpTo(graph.id) { saveState = true }` + `launchSingleTop = true` + `restoreState = true`，四个一级目的地都走相同的 navigate/restore 路径。不要改回 `graph.findStartDestination().id`；后者会让作为 start destination 的 `stations` 再次变成特殊 pop-only 路径。
+- 一级 destination 切换不做整页 alpha 混合；当前仅使用低幅横向 translation：目标页约 140 ms、`width / 24` 进入，来源页约 120 ms、`width / 48` 退出，以减少台站 LazyColumn 和 APRS symbol Canvas 在转场期间的合成开销。
+- `chat/{call}` 是二级 route，前进/返回与项目既有 `m3_activity_*` motion 对齐：前景进入 280 ms、约 25% 位移；底层退出/返回 240 ms、约 12% 位移并使用 0.75 alpha；聊天返回仍依赖真实 back stack 回到实际来源一级页。
 - `chat/{call}` 进入时隐藏底部导航；从台站、消息或地图进入聊天后使用真实 back stack 返回来源页。
 - 消息通知直接进入 `HubActivity`，先建立“消息”一级目的地再进入 `chat/{call}`；冷启动和 `singleTop` 已有实例都通过同一 intent 消费逻辑处理，因此返回落到消息列表。
 - 顶层地图直接内嵌 MapLibre 或 Google `MapView`；高德/OSM/自定义使用 MapLibre，Google 普通/卫星使用 Google Maps，切换图源不再启动另一个顶层 Activity。
@@ -100,9 +102,10 @@ ARM64 Vulkan 与 x86/x86_64 变体保留用于源码构建和兼容性验证。�
 ## 4. UI、导航与地图事实
 
 - 主 UI 已迁移到 Jetpack Compose + Material 3；不要恢复历史 `res/layout` 页面，也不要在 AI_CONTEXT 中继续引用已经删除的 `mapview.xml`。
-- 四个一级页面由 `HubActivity` + Navigation Compose 管理：`stations`、`map`、`messages`、`packets`。一级切换使用 `saveState` / `restoreState` / `launchSingleTop`，不要再用四个 Activity 相互 `startActivity()` 模拟 Bottom Navigation。
-- 一级页面切换使用 2.0.1 起的短促定向 Material motion；不要删除显式 transition 后退回 Navigation Compose 默认整页 cross-fade。
+- 四个一级页面由 `HubActivity` + Navigation Compose 管理：`stations`、`map`、`messages`、`packets`。底栏切换必须使用 `navigateTopLevel()`；当前实现 pop 到 `graph.id` 保存当前一级页状态，再 navigate/restore 目标 route。不要使用 `findStartDestination()` 作为 `popUpTo` 目标，否则 `stations` 会重新成为特殊的根节点返回路径。
+- 一级页面转场故意不使用整页 fade/cross-fade；当前是 140/120 ms 的低幅横向 slide，减少重页面（尤其台站列表和 symbol Canvas）的 GPU alpha 合成成本。不要为了“更明显”重新叠加全屏透明度动画。
 - `chat/{call}` 是二级 route。台站 → 聊天 → Back 必须回台站；消息 → 聊天 → Back 必须回消息；地图台站 Bottom Sheet → 聊天 → Back 必须回地图。
+- 聊天层级 motion 与项目 Activity motion 保持一致：前进时聊天前景从右侧约 25% 进入、280 ms；底层向左约 12% 并降至约 0.75 alpha、240 ms；返回使用对应反向 240 ms transition。不要另写一套轻微 10%/4% 位移参数。
 - 消息通知使用 `HubActivity.EXTRA_CHAT_CALL` 请求宿主建立“消息 → 聊天”栈；不要改回通知直接启动 `MessageActivity`，否则冷启动返回语义会退化。
 - `PrefsAct` 内部负责主设置与通知设置子页；旧 `NotificationPrefs` Activity 已删除。通知子页是同 Activity 内的覆盖层，不使用单独嵌套 `NavHost`。打开单个 Android NotificationChannel 详情仍然通过系统 Settings Activity，这是系统边界。
 - 通知子页的 motion 与项目 `m3_activity_*` 参数保持一致：前进时子页从右侧约 25% 进入并淡入，底层向左约 12% 且 alpha 降到约 0.75；返回方向相反。避免为这一页再引入独立的一套 180ms 整页 slide。
@@ -261,6 +264,7 @@ USB attach 属于系统事件路径，修改时单独评估后台启动限制。
 - NotificationManager / NotificationChannel 的 Binder 调用不得绑在设置导航首帧，也不得让“打开通知设置/系统频道页”等待其完成；实际发送通知前可以保留必要的同步兜底。
 - UI 页面使用 Compose Material 3；不要为了小功能重新引入第二套 XML View 页面。
 - 四个一级页面必须继续通过主 `NavHost` 切换；不要用 `startActivity()`、`REORDER_TO_FRONT` 或多个 Activity 各自复制 Bottom Navigation 来模拟一级导航。
+- 一级 `navigateTopLevel()` 应保持 `popUpTo(graph.id) + saveState/restoreState + launchSingleTop` 的对等语义；不要为了套用示例代码退回 `findStartDestination()`，否则台站根页面会再次走不同的 pop transition 生命周期。
 - 二级页面若进入主导航栈，应依赖真实 back stack 返回来源，不要保存 `fromStation` / `fromMessages` 一类人工来源标记。
 - 使用 AndroidX API；不要重新引入 `android.preference.*` 或旧 Support Test 包。
 - HTTP 后端保持 `HttpURLConnection`，不要恢复 Apache `DefaultHttpClient` / `org.apache.http.legacy`。
@@ -350,8 +354,8 @@ CHANGELOG 是工程记录，不是营销文案。
 
 - Gradle 9.5 / AGP 9.3.2 / built-in Kotlin / API 37 / Java 17。
 - 生产 UI 已迁移到 Compose Material 3，历史 `res/layout` 页面已删除。
-- 四个一级页面已从多 Activity 导航收敛为 `HubActivity` + Navigation Compose；应用内聊天和通知入口已纳入主 back stack，兼容 Activity 仅保留特殊/外部用途。
-- 顶层 Navigation Compose 默认 cross-fade 已替换为短促定向 Material motion；不要通过删除 transition 配置把该回归重新带回。
+- 四个一级页面已从多 Activity 导航收敛为 `HubActivity` + Navigation Compose；四个 root 当前统一使用 `popUpTo(graph.id)` 的保存/恢复路径，`stations` 不再因是 start destination 走特殊 pop-only 语义。
+- 顶层 destination 的默认 cross-fade/整页 alpha 合成已移除，当前使用低幅纯横移；聊天层级动效与项目 `m3_activity_*` 参数统一。不要通过 `findStartDestination()` 或重新加全屏 fade 把这两个回归带回。
 - 通知设置已从独立 Activity 和嵌套 `NavHost` 收敛为 `PrefsAct` 内覆盖层；其动效与项目既有 Activity motion 参数一致。NotificationChannel 使用应用后台预热 + 真正发送前兜底，不得重新让设置导航等待频道创建。
 - 通知子页覆盖根设置时不执行根设置 `onResume` 刷新；可用地图模式在当前 Compose 生命周期内 memoize，避免系统频道页返回造成无意义重计算。
 - 台站/报文列表已有标准与紧凑两档几何密度，并保持系统 fontScale；不要用全局缩字号代替密度设计。

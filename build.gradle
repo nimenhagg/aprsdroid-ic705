@@ -54,8 +54,8 @@ def sourceRevisionProvider = providers.gradleProperty('SOURCE_REVISION')
 
 ext {
 	build_date = new Date().format('yyyy-MM-dd')
-	mod_version = (findProperty("MOD_VERSION") ?: "2.0.2").toString()
-	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082900").toString())
+	mod_version = (findProperty("MOD_VERSION") ?: "2.0.3").toString()
+	mod_version_code = Integer.parseInt((findProperty("VERSION_CODE") ?: "2026082901").toString())
 	maplibre_version = "13.5.1"
 	base_version = "APRSdroid v1.7.0"
 	source_revision = sourceRevisionProvider.get().toString()

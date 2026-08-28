@@ -1,3 +1,13 @@
+## [Mod-v2.0.3] - 2026-08-28
+
+### Fixed
+- 修复从地图、消息或报文等任意底栏页面返回“台站”时，由于 `stations` 同时是 NavGraph 起始目的地而走特殊 pop 路径，导致转场生命周期与其它一级页面不一致并出现卡顿；一级导航现在统一 pop 到 NavGraph entry，再按目标 route 恢复状态，四个底栏目的地使用同一 navigate/restore 路径。
+- 修复一级页面切换时对整页执行 alpha 混合增加合成开销的问题；底栏切换改为 140/120 ms 的小幅纯横向位移，避免台站 LazyColumn 与 APRS symbol Canvas 在动画期间承担额外整页透明度合成。
+- 修复聊天返回消息主页或其它来源一级页时动效与项目其它二级页面不一致的问题；聊天前进/返回统一使用现有 Material Activity motion 的 280/240 ms、25% 前景位移与 12% 背景位移语义。
+
+### Changed
+- 版本更新为 `Mod-v2.0.3`（`versionCode 2026082901`）。
+
 ## [Mod-v2.0.2] - 2026-08-28
 
 ### Fixed
@@ -95,7 +105,7 @@
 
 ### Added
 - 增加持久化结构化诊断日志：关键 App、Android Network、IC-705 session/recovery、PTT 与崩溃事件同时写入 Logcat 和轮转 JSONL，并可从设置页导出诊断 ZIP。
-- 设置页增加手动 GitHub Releases 更新检查；仅在用户点击时联网，不在启动或后台周期检查，也不自动下载或安装 APK。
+- 设置页增加手动 GitHub Releases 更新检查；仅在用户点击时联网，不在启动或后台周期检查，也不自动下载或安装。
 
 ### Fixed
 - 修复 IC-705 TX、session teardown 与 UDP send/close 的竞态；TX 在进入 draining/recovery 后停止音频发送，tracked packet 实际发送失败时不再留下伪重传记录。

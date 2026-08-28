@@ -4,11 +4,11 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.0.2`**
+**最新稳定版 / Latest release: `Mod-v2.0.3`**
 
-> `Mod-v2.0.2` 统一通知设置与项目其它设置页的 Material 动效，并移除频道初始化、隐藏页面刷新和重复地图可用性检查造成的可感知停顿；2.0.1 的紧凑列表与主导航体验保持不变。
+> `Mod-v2.0.3` 让四个底栏目的地使用完全对等的 navigate/restore 路径，去掉一级页面整页 alpha 合成，并把聊天前进/返回统一为项目既有 Material 层级动效，重点修复返回“台站”的卡顿和消息聊天退出动效不一致。
 >
-> `Mod-v2.0.2` aligns notification-settings motion with the rest of Settings and removes channel-initialization, hidden-refresh, and repeated map-availability stalls while retaining the 2.0.1 compact-list and navigation improvements.
+> `Mod-v2.0.3` makes all four bottom destinations use the same navigate/restore path, removes full-page alpha compositing from top-level switches, and aligns chat forward/back motion with the app's existing Material hierarchy transitions.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -31,8 +31,8 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 - 持久化结构化诊断日志：关键 App、网络、IC-705、PTT、重连和崩溃事件同时写入 Logcat 与轮转 JSONL 文件，进程重启后仍可导出。
 - 设置页可一键分享诊断 ZIP，包含文本报告与结构化事件日志。
 - 设置页提供**手动检查更新**；只有用户点击时才请求 GitHub Releases，不会开机检查、后台轮询、定时联网或自动下载安装。
-- Material 3 顶层导航统一为“台站 / 地图 / 消息 / 报文”；应用内聊天作为二级页面进入同一 `NavHost`，返回会回到实际来源页面。
-- 一级底栏切换使用短促、方向明确的 Material 风格过渡，不再使用 Navigation Compose 默认的明显整页 cross-fade；聊天保留二级前进/返回层级动画。
+- Material 3 顶层导航统一为“台站 / 地图 / 消息 / 报文”；四个一级目的地统一 pop 到 NavGraph entry 后按目标 route 恢复状态，不再让起始目的地“台站”走特殊 pop-only 路径。
+- 一级底栏切换使用 140/120 ms 的小幅纯横向位移，不对整页做 alpha 混合；聊天作为二级 route，前进/返回使用与项目既有 Activity motion 一致的 280/240 ms Material 层级动效并返回实际来源页面。
 - 台站页以状态卡展示完整呼号和 APRS 运行状态，跟踪启停位于状态卡，单次发送位置使用 Extended FAB。
 - 台站与报文列表默认密度比 2.0.0 更紧凑，并提供“紧凑列表”开关；该开关只调整 padding、间距和图标尺寸，不覆盖 Android 系统字体缩放。
 - 系统字体较大时优先压缩非核心留白并限制台站备注行数，正文仍按系统 fontScale 正常放大。
@@ -212,7 +212,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 - 修改 IC-705 发射/会话恢复代码时必须保留 PTT OFF、ACK 与 watchdog 安全语义并增加测试。
 - “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
 - 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AI_CONTEXT.md`。
-- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.0.2`。
+- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.0.3`。
 - Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt` 和 R8 mapping 后创建 GitHub Release。
 
 完整维护约束见 [AI_CONTEXT.md](AI_CONTEXT.md)。
@@ -223,7 +223,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 
 APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-**Latest stable release: `Mod-v2.0.2`.**
+**Latest stable release: `Mod-v2.0.3`.**
 
 ### Highlights
 
@@ -234,8 +234,8 @@ APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdr
 - Persistent rotating JSONL diagnostics plus logcat output, crash capture and exportable diagnostic ZIP bundles.
 - Android network lifecycle logging to distinguish an actual Wi-Fi `Network` loss from an IC-705 protocol/session failure.
 - Manual Settings-only GitHub Release check. It never runs at startup, periodically, or in the background, and it does not auto-download/install updates.
-- Material 3 bottom navigation for Stations / Map / Messages / Packets under one top-level Navigation Compose host; in-app chat is a secondary route with source-aware Back behavior.
-- Short directional Material-style transitions replace the default full-page Navigation Compose cross-fade for top-level destinations; chat retains secondary forward/back hierarchy motion.
+- Material 3 bottom navigation for Stations / Map / Messages / Packets under one Navigation Compose host. All four roots use the same graph-entry pop plus navigate/restore path, so Stations is no longer a special pop-only start destination.
+- Top-level switches use a short, low-amplitude translation without full-page alpha compositing; chat uses the app's existing 280/240 ms Material hierarchy motion and returns to its actual source route.
 - Station and packet lists use tighter default spacing and offer a persistent Compact lists option that changes geometry without overriding Android font scaling.
 - Notification settings stay inside the main Settings Activity, reuse the app's existing Material activity-motion geometry/timing, and do not wait for NotificationChannel creation when opening the child page or a system channel page.
 - MapLibre Native and Google Maps are embedded in the top-level map destination; legacy map Activities remain only for coordinate chooser and compatibility paths.
