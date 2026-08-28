@@ -93,27 +93,28 @@ class ServiceNotifier {
     }
 
     fun newMessageNotification(ctx: Service, call: String, message: String): Notification {
-        val i = Intent(ctx, HubActivity::class.java).apply {
+        val hubIntent = Intent(ctx, HubActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
                     Intent.FLAG_ACTIVITY_SINGLE_TOP
             )
             putExtra(HubActivity.EXTRA_START_DESTINATION, MainRoutes.MESSAGES)
-            putExtra(HubActivity.EXTRA_CHAT_CALL, call)
+        }
+        val messageIntent = Intent(ctx, MessageActivity::class.java).apply {
             data = call.toUri()
         }
+        val contentIntent = PendingIntent.getActivities(
+            ctx,
+            getCallNumber(call),
+            arrayOf(hubIntent, messageIntent),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         return newNotificationBuilder(ctx, "msg")
             .setContentTitle(call)
             .setContentText(message)
-            .setContentIntent(
-                PendingIntent.getActivity(
-                    ctx,
-                    getCallNumber(call),
-                    i,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-            )
+            .setContentIntent(contentIntent)
             .setSmallIcon(R.drawable.ic_stat_notify)
             .setTicker("$call: $message")
             .setWhen(System.currentTimeMillis())

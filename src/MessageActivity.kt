@@ -47,7 +47,7 @@ class MessageActivity : StationHelper() {
                     targetCall = target,
                     myCall = mycall,
                     messages = state.messages,
-                    onBack = { finish() },
+                    onBack = { onBackPressedDispatcher.onBackPressed() },
                     onCallsignClick = { showTargetStation(target) },
                     onSendMessage = { msg -> sendMessage(msg) },
                     onDeleteMessage = { id ->

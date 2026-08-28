@@ -75,11 +75,14 @@
 		/>
 	<activity android:name=".MessageActivity" android:label="@string/app_sta"
 		android:configChanges="orientation|keyboardHidden|screenSize"
-		android:parentActivityName=".ConversationsActivity"
+		android:parentActivityName=".HubActivity"
 		android:alwaysRetainTaskState="true"
 		/>
 	<activity android:name=".PrefsAct" android:label="@string/app_prefs"
 		android:parentActivityName=".HubActivity"
+		/>
+	<activity android:name=".NotificationSettingsActivity" android:label="@string/p__notification"
+		android:parentActivityName=".PrefsAct"
 		/>
 	<activity android:name=".BackendPrefs" android:label="@string/p__connection"
 		android:parentActivityName=".PrefsAct"

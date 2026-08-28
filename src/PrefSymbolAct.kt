@@ -25,7 +25,7 @@ class PrefSymbolAct : ComponentActivity() {
                         finish()
                     },
                     onCancel = {
-                        finish()
+                        onBackPressedDispatcher.onBackPressed()
                     }
                 )
             }

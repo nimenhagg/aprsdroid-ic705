@@ -58,7 +58,7 @@ class StationActivity : ComponentActivity() {
                     postList = currentPostList,
                     myLat = myLatState,
                     myLon = myLonState,
-                    onBack = { finish() },
+                    onBack = { onBackPressedDispatcher.onBackPressed() },
                     onSendMessage = { call ->
                         UIHelper.openMessageChat(this, call)
                     },

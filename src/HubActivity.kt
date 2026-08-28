@@ -47,7 +47,6 @@ class HubActivity : BaseRecyclerActivity() {
 
     companion object {
         const val EXTRA_START_DESTINATION = "start_destination"
-        const val EXTRA_CHAT_CALL = "chat_call"
     }
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
@@ -61,7 +60,6 @@ class HubActivity : BaseRecyclerActivity() {
     private val mapViewModel: MapViewModel by lazy { MapViewModel(mapRepository, prefs.getShowObjects()) }
     private val firstRunDialogVisible = mutableStateOf(false)
     private val pendingStartDestination = mutableStateOf<String?>(null)
-    private val pendingChatCall = mutableStateOf<String?>(null)
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -98,23 +96,12 @@ class HubActivity : BaseRecyclerActivity() {
                 val currentBackStackEntry by navController.currentBackStackEntryAsState()
                 val selectedRoute = currentBackStackEntry?.destination?.route
                 val requestedStartDestination = pendingStartDestination.value
-                val requestedChatCall = pendingChatCall.value
 
-                LaunchedEffect(requestedStartDestination, requestedChatCall) {
-                    when {
-                        !requestedChatCall.isNullOrBlank() -> {
-                            // Notifications always establish Messages as the underlying root
-                            // before opening the secondary chat Activity. Back therefore lands
-                            // on Messages while Android owns the predictive-back animation.
-                            navController.navigateTopLevel(MainRoutes.MESSAGES)
-                            openMessaging(requestedChatCall)
-                        }
-                        requestedStartDestination != null && requestedStartDestination != MainRoutes.STATIONS -> {
-                            navController.navigateTopLevel(requestedStartDestination)
-                        }
+                LaunchedEffect(requestedStartDestination) {
+                    if (requestedStartDestination != null && requestedStartDestination != MainRoutes.STATIONS) {
+                        navController.navigateTopLevel(requestedStartDestination)
                     }
                     pendingStartDestination.value = null
-                    pendingChatCall.value = null
                 }
 
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -296,10 +283,6 @@ class HubActivity : BaseRecyclerActivity() {
         pendingStartDestination.value = intent
             ?.getStringExtra(EXTRA_START_DESTINATION)
             ?.let(MainRoutes::normalizeStartDestination)
-        pendingChatCall.value = intent
-            ?.getStringExtra(EXTRA_CHAT_CALL)
-            ?.trim()
-            ?.takeIf { it.isNotEmpty() }
     }
 
     private fun toggleTracking() {
