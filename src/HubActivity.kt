@@ -11,7 +11,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.weight
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -114,22 +113,12 @@ class HubActivity : BaseRecyclerActivity() {
                                             logViewModel.updateServiceState()
                                         }
                                     },
-                                    onToggleTracking = {
-                                        toggleTracking()
-                                    },
+                                    onToggleTracking = { toggleTracking() },
                                     onStationClick = { item ->
-                                        if (prefs.getStationTapAction() == "details") {
-                                            openDetails(item.call)
-                                        } else {
-                                            openMessaging(item.call)
-                                        }
+                                        if (prefs.getStationTapAction() == "details") openDetails(item.call) else openMessaging(item.call)
                                     },
                                     onStationLongClick = { item ->
-                                        if (prefs.getStationTapAction() == "details") {
-                                            openMessaging(item.call)
-                                        } else {
-                                            openDetails(item.call)
-                                        }
+                                        if (prefs.getStationTapAction() == "details") openMessaging(item.call) else openDetails(item.call)
                                     },
                                     onOpenMap = { openMap() },
                                     onOpenLogs = { navController.navigateTopLevel(MainRoutes.PACKETS) },
@@ -151,19 +140,11 @@ class HubActivity : BaseRecyclerActivity() {
                                     onOpenConversation = { call -> openMessaging(call) },
                                     onDeleteConversation = { call ->
                                         conversationsViewModel.deleteConversation(call)
-                                        Toast.makeText(
-                                            this@HubActivity,
-                                            R.string.messages_cleared,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        Toast.makeText(this@HubActivity, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                                     },
                                     onClearAllConversations = {
                                         conversationsViewModel.clearAllConversations()
-                                        Toast.makeText(
-                                            this@HubActivity,
-                                            R.string.messages_cleared,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        Toast.makeText(this@HubActivity, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                                     },
                                     onStartNewConversation = { call -> openMessaging(call) }
                                 )
@@ -176,27 +157,18 @@ class HubActivity : BaseRecyclerActivity() {
                                     onBack = { navController.navigateTopLevel(MainRoutes.STATIONS) },
                                     onOpenHub = { navController.navigateTopLevel(MainRoutes.STATIONS) },
                                     onOpenMap = { openMap() },
-                                    onOpenSettings = {
-                                        startActivity(Intent(this@HubActivity, PrefsAct::class.java))
-                                    },
+                                    onOpenSettings = { startActivity(Intent(this@HubActivity, PrefsAct::class.java)) },
                                     onSendPosition = {
                                         if (startAprsServiceWithPermissions(AprsService.SERVICE_ONCE)) {
                                             viewModel.updateServiceState()
                                             logViewModel.updateServiceState()
                                         }
                                     },
-                                    onToggleTracking = {
-                                        toggleTracking()
-                                    },
+                                    onToggleTracking = { toggleTracking() },
                                     onItemClick = { item ->
-                                        if (
-                                            item.type == StorageDatabase.Companion.Post.TYPE_POST ||
-                                            item.type == StorageDatabase.Companion.Post.TYPE_INCMG
-                                        ) {
+                                        if (item.type == StorageDatabase.Companion.Post.TYPE_POST || item.type == StorageDatabase.Companion.Post.TYPE_INCMG) {
                                             val call = item.message.split(">")[0]
-                                            if (call.isNotBlank()) {
-                                                openDetails(call)
-                                            }
+                                            if (call.isNotBlank()) openDetails(call)
                                         }
                                     },
                                     onExportLogs = {
@@ -222,11 +194,7 @@ class HubActivity : BaseRecyclerActivity() {
                     MainNavigationBar(
                         selectedRoute = selectedRoute,
                         onDestinationSelected = { route ->
-                            if (route == MainRoutes.MAP) {
-                                openMap()
-                            } else {
-                                navController.navigateTopLevel(route)
-                            }
+                            if (route == MainRoutes.MAP) openMap() else navController.navigateTopLevel(route)
                         }
                     )
                 }
@@ -287,41 +255,14 @@ class HubActivity : BaseRecyclerActivity() {
         super.onResume()
         viewModel.updateServiceState()
         logViewModel.updateServiceState()
-        ContextCompat.registerReceiver(
-            this,
-            updateReceiver,
-            IntentFilter(AprsService.UPDATE),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
-        ContextCompat.registerReceiver(
-            this,
-            messageReceiver,
-            IntentFilter(AprsService.MESSAGE),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
-        ContextCompat.registerReceiver(
-            this,
-            serviceStateReceiver,
-            IntentFilter(AprsService.SERVICE_STOPPED),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
-        ContextCompat.registerReceiver(
-            this,
-            serviceStateReceiver,
-            IntentFilter(AprsService.LINK_OFF),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
-        ContextCompat.registerReceiver(
-            this,
-            serviceStateReceiver,
-            IntentFilter(AprsService.LINK_ON),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
+        ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.SERVICE_STOPPED), ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
         refreshTopLevelState()
 
-        if (prefs.getBoolean("firstrun", true) || prefs.getCallsign().isEmpty()) {
-            firstRunDialogVisible.value = true
-        }
+        if (prefs.getBoolean("firstrun", true) || prefs.getCallsign().isEmpty()) firstRunDialogVisible.value = true
     }
 
     override fun onPause() {
