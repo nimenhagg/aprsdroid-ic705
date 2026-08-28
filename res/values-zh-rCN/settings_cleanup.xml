@@ -10,6 +10,8 @@
     <string name="setting_notification_messages_channel_summary">设置收到消息时的声音、振动与显示方式</string>
     <string name="setting_notification_status_channel">服务与位置状态</string>
     <string name="setting_notification_status_channel_summary">设置前台服务和位置状态通知</string>
+    <string name="setting_compact_lists">紧凑列表</string>
+    <string name="setting_compact_lists_summary">减少台站和报文列表的留白与图标尺寸，不改变系统字体大小</string>
 
     <string name="identity_dialog_title">台站身份</string>
     <string name="identity_first_run_title">设置 APRS 台站身份</string>

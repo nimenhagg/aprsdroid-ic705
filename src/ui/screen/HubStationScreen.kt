@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PlayArrow
@@ -58,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -65,11 +67,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import java.util.Locale
 import org.aprsdroid.app.R
 import org.aprsdroid.app.model.StationItem
 import org.aprsdroid.app.ui.component.StationTagRow
 import org.aprsdroid.app.ui.components.SymbolBadge
-import java.util.Locale
+import org.aprsdroid.app.ui.prefs.rememberCompactListMode
+import org.aprsdroid.app.ui.prefs.setCompactListMode
 
 private val LETTERS = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 private fun getBearing(b: Double): String = LETTERS[(((b.toInt() + 22 + 720) % 360) / 45)]
@@ -93,6 +97,8 @@ fun HubStationScreen(
     onClearLogs: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val compactListMode by rememberCompactListMode()
+    val largeFont = LocalDensity.current.fontScale >= 1.15f
     var showTopMenu by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showClearConfirmDialog by remember { mutableStateOf(false) }
@@ -140,6 +146,19 @@ fun HubStationScreen(
                                 onClick = {
                                     showTopMenu = false
                                     onOpenSettings()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.setting_compact_lists)) },
+                                leadingIcon = { Icon(Icons.Default.List, contentDescription = null) },
+                                trailingIcon = {
+                                    if (compactListMode) {
+                                        Text("✓", fontWeight = FontWeight.Bold)
+                                    }
+                                },
+                                onClick = {
+                                    showTopMenu = false
+                                    setCompactListMode(context, !compactListMode)
                                 }
                             )
                             DropdownMenuItem(
@@ -200,6 +219,7 @@ fun HubStationScreen(
             TrackingStatusCard(
                 myCall = myCall,
                 isRunning = isRunning,
+                compact = compactListMode,
                 onToggleTracking = onToggleTracking
             )
 
@@ -218,17 +238,22 @@ fun HubStationScreen(
                     )
                 }
             } else {
+                val horizontalPadding = when {
+                    compactListMode -> 10.dp
+                    largeFont -> 10.dp
+                    else -> 12.dp
+                }
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                     contentPadding = PaddingValues(
-                        start = 14.dp,
+                        start = horizontalPadding,
                         top = 0.dp,
-                        end = 14.dp,
-                        bottom = 96.dp
+                        end = horizontalPadding,
+                        bottom = if (compactListMode) 80.dp else 88.dp
                     ),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(if (compactListMode) 4.dp else 6.dp)
                 ) {
                     items(stations, key = { it.call }) { item ->
                         val isMyOwn = item.call.equals(myCall, ignoreCase = true)
@@ -237,6 +262,8 @@ fun HubStationScreen(
                             isMyOwn = isMyOwn,
                             myLat = myLat,
                             myLon = myLon,
+                            compact = compactListMode,
+                            largeFont = largeFont,
                             onClick = { onStationClick(item) },
                             onLongClick = { onStationLongClick(item) }
                         )
@@ -288,13 +315,17 @@ fun HubStationScreen(
 private fun TrackingStatusCard(
     myCall: String,
     isRunning: Boolean,
+    compact: Boolean,
     onToggleTracking: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(18.dp),
+            .padding(
+                horizontal = if (compact) 10.dp else 12.dp,
+                vertical = if (compact) 4.dp else 6.dp
+            ),
+        shape = RoundedCornerShape(if (compact) 16.dp else 18.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
@@ -302,7 +333,10 @@ private fun TrackingStatusCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(
+                    horizontal = if (compact) 12.dp else 14.dp,
+                    vertical = if (compact) 9.dp else 12.dp
+                ),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -310,16 +344,16 @@ private fun TrackingStatusCard(
                     text = myCall.ifBlank { "—" },
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 20.sp,
+                    fontSize = if (compact) 18.sp else 19.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(if (compact) 3.dp else 4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(9.dp)
+                            .size(if (compact) 8.dp else 9.dp)
                             .background(
                                 color = if (isRunning) {
                                     MaterialTheme.colorScheme.primary
@@ -329,7 +363,7 @@ private fun TrackingStatusCard(
                                 shape = CircleShape
                             )
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(if (compact) 6.dp else 8.dp))
                     Text(
                         text = stringResource(R.string.aprsservice),
                         style = MaterialTheme.typography.bodySmall,
@@ -338,12 +372,12 @@ private fun TrackingStatusCard(
                 }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(if (compact) 8.dp else 10.dp))
 
             Button(
                 onClick = onToggleTracking,
-                modifier = Modifier.height(44.dp),
-                shape = RoundedCornerShape(22.dp),
+                modifier = Modifier.height(if (compact) 40.dp else 42.dp),
+                shape = RoundedCornerShape(21.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isRunning) {
                         MaterialTheme.colorScheme.error
@@ -375,11 +409,13 @@ fun StationCardItem(
     isMyOwn: Boolean,
     myLat: Int,
     myLon: Int,
+    compact: Boolean = false,
+    largeFont: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val cardShape = RoundedCornerShape(16.dp)
+    val cardShape = RoundedCornerShape(if (compact) 14.dp else 16.dp)
 
     val containerColor = if (isMyOwn) {
         MaterialTheme.colorScheme.primaryContainer
@@ -417,15 +453,15 @@ fun StationCardItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(if (compact) 8.dp else 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             SymbolBadge(
                 symbol = item.symbol,
-                size = 46.dp
+                size = if (compact) 38.dp else 42.dp
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(if (compact) 8.dp else 10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -437,9 +473,13 @@ fun StationCardItem(
                         text = item.call,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 17.sp,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         color = callColor
                     )
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Column(horizontalAlignment = Alignment.End) {
                         val hasMyPosition = myLat != 0 || myLon != 0
@@ -471,29 +511,31 @@ fun StationCardItem(
                             text = distStr,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
+                            maxLines = 1,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = age,
                             fontSize = 11.sp,
+                            maxLines = 1,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )
                     }
                 }
 
                 if (item.isFmo || !item.qrg.isNullOrEmpty()) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(if (compact) 1.dp else 2.dp))
                     StationTagRow(item)
                 }
 
                 val comment = item.comment
                 if (!comment.isNullOrEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(if (compact) 2.dp else 3.dp))
                     Text(
                         text = comment,
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
+                        maxLines = if (compact || largeFont) 1 else 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }

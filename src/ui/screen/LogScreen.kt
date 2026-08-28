@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MyLocation
@@ -71,11 +72,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -83,6 +86,8 @@ import org.aprsdroid.app.HubActivity
 import org.aprsdroid.app.R
 import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.model.LogPostItem
+import org.aprsdroid.app.ui.prefs.rememberCompactListMode
+import org.aprsdroid.app.ui.prefs.setCompactListMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +106,8 @@ fun LogScreen(
 ) {
     val context = LocalContext.current
     val embeddedTopLevel = context is HubActivity
+    val compactListMode by rememberCompactListMode()
+    val largeFont = LocalDensity.current.fontScale >= 1.15f
     var showMenu by remember { mutableStateOf(false) }
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -203,6 +210,19 @@ fun LogScreen(
                                 }
                             )
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.setting_compact_lists)) },
+                                leadingIcon = { Icon(Icons.Default.List, contentDescription = null) },
+                                trailingIcon = {
+                                    if (compactListMode) {
+                                        Text("✓", fontWeight = FontWeight.Bold)
+                                    }
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    setCompactListMode(context, !compactListMode)
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.share_diagnostic_logs)) },
                                 leadingIcon = { Icon(Icons.Default.BugReport, contentDescription = null) },
                                 onClick = {
@@ -301,7 +321,10 @@ fun LogScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                        .padding(
+                            horizontal = if (compactListMode) 10.dp else 12.dp,
+                            vertical = if (compactListMode) 4.dp else 5.dp
+                        )
                 ) {
                     OutlinedTextField(
                         value = searchQuery,
@@ -319,11 +342,11 @@ fun LogScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(5.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
                         FilterChip(
                             selected = selectedFilterType == -1,
@@ -363,17 +386,27 @@ fun LogScreen(
                     )
                 }
             } else {
+                val listHorizontalPadding = when {
+                    compactListMode -> 8.dp
+                    largeFont -> 8.dp
+                    else -> 10.dp
+                }
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .weight(1f),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    contentPadding = PaddingValues(
+                        horizontal = listHorizontalPadding,
+                        vertical = if (compactListMode) 3.dp else 4.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(if (compactListMode) 3.dp else 4.dp)
                 ) {
                     items(filteredItems, key = { it.id }) { item ->
                         LogPacketCard(
                             item = item,
+                            compact = compactListMode,
+                            largeFont = largeFont,
                             onClick = { onItemClick(item) },
                             onLongClick = {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -415,10 +448,17 @@ fun LogScreen(
 @Composable
 private fun LogPacketCard(
     item: LogPostItem,
+    compact: Boolean,
+    largeFont: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
-    val cardShape = RoundedCornerShape(12.dp)
+    val cardShape = RoundedCornerShape(if (compact) 10.dp else 12.dp)
+    val cardPadding = when {
+        compact -> 6.dp
+        largeFont -> 7.dp
+        else -> 8.dp
+    }
 
     val (badgeLabel, badgeContainer, badgeContent) = when (item.type) {
         StorageDatabase.Companion.Post.TYPE_TX -> Triple(
@@ -466,7 +506,7 @@ private fun LogPacketCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp)
+                .padding(cardPadding)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -475,7 +515,7 @@ private fun LogPacketCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 6.dp)
                 ) {
                     Surface(
                         color = badgeContainer,
@@ -486,13 +526,17 @@ private fun LogPacketCard(
                             color = badgeContent,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(
+                                horizontal = if (compact) 5.dp else 6.dp,
+                                vertical = if (compact) 1.dp else 2.dp
+                            )
                         )
                     }
 
                     Text(
                         text = item.tss,
                         fontSize = 12.sp,
+                        maxLines = 1,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -503,12 +547,14 @@ private fun LogPacketCard(
                         text = status,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.secondary
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(if (compact) 3.dp else 4.dp))
 
             val msg = item.message
             val isPacket = (item.type == StorageDatabase.Companion.Post.TYPE_POST ||
@@ -539,12 +585,12 @@ private fun LogPacketCard(
                     text = annotated,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 13.sp,
-                    lineHeight = 17.sp
+                    lineHeight = if (compact) 16.sp else 17.sp
                 )
             } else {
                 Text(
                     text = msg,
-                    fontFamily = if (isPacket) FontFamily.Monospace else FontFamily.Default,
+                    fontFamily = FontFamily.Default,
                     fontSize = 13.sp,
                     color = if (item.type == StorageDatabase.Companion.Post.TYPE_ERROR) {
                         MaterialTheme.colorScheme.error

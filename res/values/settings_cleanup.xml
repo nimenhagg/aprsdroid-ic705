@@ -10,6 +10,8 @@
     <string name="setting_notification_messages_channel_summary">Sound, vibration, and visibility for received-message alerts</string>
     <string name="setting_notification_status_channel">Service &amp; position status</string>
     <string name="setting_notification_status_channel_summary">Foreground service and position-status notifications</string>
+    <string name="setting_compact_lists">Compact lists</string>
+    <string name="setting_compact_lists_summary">Reduce spacing and icon size in station and packet lists without overriding the system font size</string>
 
     <string name="identity_dialog_title">Station identity</string>
     <string name="identity_first_run_title">Set up APRS identity</string>

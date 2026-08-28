@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Notifications
@@ -38,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,6 +53,8 @@ import org.aprsdroid.app.ui.component.PreferenceItem
 import org.aprsdroid.app.ui.component.PreferenceSelectDialog
 import org.aprsdroid.app.ui.component.PreferenceSwitchItem
 import org.aprsdroid.app.ui.component.PreferenceValueItem
+import org.aprsdroid.app.ui.prefs.rememberCompactListMode
+import org.aprsdroid.app.ui.prefs.setCompactListMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,6 +100,8 @@ fun SettingsScreen(
     onCheckForUpdates: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val compactListMode by rememberCompactListMode()
     var showSsidDialog by remember { mutableStateOf(false) }
     var showDigiPathDialog by remember { mutableStateOf(false) }
     var showFrequencyDialog by remember { mutableStateOf(false) }
@@ -308,6 +314,14 @@ fun SettingsScreen(
                     icon = Icons.Default.Layers,
                     checked = showObjects,
                     onCheckedChange = onToggleShowObjects,
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceSwitchItem(
+                    title = stringResource(R.string.setting_compact_lists),
+                    summary = stringResource(R.string.setting_compact_lists_summary),
+                    icon = Icons.Default.List,
+                    checked = compactListMode,
+                    onCheckedChange = { enabled -> setCompactListMode(context, enabled) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
