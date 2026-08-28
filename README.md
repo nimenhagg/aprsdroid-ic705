@@ -4,11 +4,11 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v1.9.6`**
+**最新稳定版 / Latest release: `Mod-v1.9.7`**
 
-> `Mod-v1.9.6` 修复位置来源当前值过长导致设置卡片异常挤压换行的问题，并修正 GitHub Release Notes 的版本识别与标题生成。
+> `Mod-v1.9.7` 完成 Compose/Material 3 与通知设置遗留收尾，整理 IC-705 session 的低风险内部策略，并减少通知频道设置入口的冗余主线程工作。
 >
-> `Mod-v1.9.6` fixes the location-source value layout regression and corrects GitHub Release Notes tag/version handling.
+> `Mod-v1.9.7` completes the Compose/Material 3 and notification-settings cleanup, isolates low-risk IC-705 session policies, and removes redundant work before opening notification-channel settings.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -190,7 +190,7 @@ Windows PowerShell 使用 `./gradlew.bat`。
 - Gradle 9.5.0
 - AGP 9 built-in Kotlin / Compose Compiler 2.3.21
 - Compose BOM 2026.08.00
-- AppCompat 1.8.0 / Material 1.14.0 / OkHttp 5.3.0
+- Material 1.14.0 / OkHttp 5.3.0 / Activity Compose 1.13.0 / Lifecycle runtime-compose 2.11.0
 - MapLibre Native 13.5.1（Release 原生库使用 MinSizeRel + IPO/LTO）
 - Java 17
 
@@ -203,7 +203,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 - 修改 IC-705 发射/会话恢复代码时必须保留 PTT OFF、ACK 与 watchdog 安全语义并增加测试。
 - “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
 - 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AI_CONTEXT.md`。
-- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v1.9.6`。
+- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v1.9.7`。
 - Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt` 和 R8 mapping 后创建 GitHub Release。
 
 完整维护约束见 [AI_CONTEXT.md](AI_CONTEXT.md)。
@@ -214,7 +214,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 
 APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-**Latest stable release: `Mod-v1.9.6`.**
+**Latest stable release: `Mod-v1.9.7`.**
 
 ### Highlights
 

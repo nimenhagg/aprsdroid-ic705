@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v1.9.6` |
-| `build.gradle` 默认版本 | `1.9.6` |
-| Android versionCode | `2026082796` |
+| 最新 GitHub Release | `Mod-v1.9.7` |
+| `build.gradle` 默认版本 | `1.9.7` |
+| Android versionCode | `2026082897` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -23,16 +23,15 @@
 
 ### 当前 main 状态
 
-最新稳定发布仍是 `Mod-v1.9.6`，但当前 `main` 已进入 **1.9.6 之后的未发布维护/重构线**，不能再把 `main` 与稳定 tag 描述为完全对齐。
-
-当前未发布维护工作以行为保持和去遗留为主：
+`Mod-v1.9.7` 是当前发布基线。该版本收录 1.9.6 之后的现代化收尾与行为保持型内部重构：
 
 - 地图 About、APRS-IS passcode 等旧 `ComponentDialog + ComposeView` 兼容壳已移除，现有 Compose 页面直接托管 Material 3 对话框状态。
 - AndroidX Preference 依赖、旧 Preference XML/主题以及已经失去入口的通知 LED/振动/铃声配置与资源已清理；Android 8.1+ 通知行为以 `NotificationChannel` 为唯一设置源。
-- IC-705 session 将音频乱序、sequence 规则、任务注册表、timing、connection-info 重试判定等低风险纯逻辑拆为独立 policy/组件并增加 JVM 单测；PTT、TX pacing、鉴权 wire 行为和 CI-V 安全语义没有为了结构调整而重写。
-- 清理不再使用的直接依赖和旧构建遗留；MapLibre/Google Maps 的 `AndroidView(MapView)` 互操作保持不变。
+- 通知设置的消息/状态频道入口不再在每次点击前重复创建 NotificationChannel；页面创建时确保频道存在，点击直接进入系统频道设置。
+- IC-705 session 将音频乱序、sequence 规则、任务注册表、timing、connection-info timer/retry 判定等低风险纯逻辑拆为独立 policy/组件并增加 JVM 单测；PTT、TX pacing、鉴权 wire 行为和 CI-V 安全语义没有为了结构调整而重写。
+- 清理不再使用的直接依赖、旧通知/Preference 资源和 Ant/API 19 时代构建遗留；MapLibre/Google Maps 的 `AndroidView(MapView)` 互操作保持不变。
 
-`Mod-v1.9.6` 仍是回滚与正式发布基线。README 必须继续区分 “Latest release” 与 “Current main”，未打 tag 的维护结果不得写成已发布功能。
+README 必须继续区分 “Latest release” 与后续可能出现的 “Current main”；新的未打 tag 功能不得写成已经发布。
 
 Java 17 是当前构建基线。没有明确需求与完整兼容性验证时，不要仅为了数字更新切换 Java 21。
 

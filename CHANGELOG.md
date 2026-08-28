@@ -1,3 +1,15 @@
+## [Mod-v1.9.7] - 2026-08-28
+
+### Fixed
+- 通知设置中的“消息通知”和“状态通知”入口不再在每次点击前重复创建系统通知频道；频道在页面创建时统一确保存在，点击后直接进入 Android 系统频道设置，减少不必要的主线程 Binder 调用。
+
+### Changed
+- 完成 Compose / Material 3 设置体系的遗留收尾：移除地图 About、APRS-IS passcode 等 `ComponentDialog + ComposeView` 兼容壳，以及 AndroidX Preference / AppCompat 的直接依赖、旧 Preference XML/主题和失去入口的旧通知配置。
+- Android 8.1+ 通知行为统一以 `NotificationChannel` 为设置源，删除旧的 per-notification LED、振动、铃声读取与调用参数。
+- IC-705 session 将音频乱序/sequence、scheduled task 注册、timing、connection-info timer/retry 等低风险纯逻辑拆为独立 policy/组件并补充 JVM 单测；PTT、TX pacing、鉴权 wire 行为和 CI-V 安全语义保持不变。
+- 清理未使用的 lifecycle ViewModel Compose 依赖、旧通知资源、Preference 主题和 Ant/API 19 时代的 `project.properties`。
+- 版本更新为 `Mod-v1.9.7`（`versionCode 2026082897`）。
+
 ## [Mod-v1.9.6] - 2026-08-27
 
 ### Fixed
