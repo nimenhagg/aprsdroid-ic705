@@ -27,6 +27,19 @@ class APRSdroidApplication : Application() {
             .build()
         HttpRequestUtil.setOkHttpClient(mapHttpClient)
         DynamicColors.applyToActivitiesIfAvailable(this)
-        ServiceNotifier.instance.setupChannels(this)
+
+        Thread(
+            {
+                try {
+                    ServiceNotifier.instance.setupChannels(applicationContext)
+                } catch (_: Exception) {
+                    // ServiceNotifier.start() will synchronously retry before a foreground notification is posted.
+                }
+            },
+            "notification-channels-init",
+        ).apply {
+            isDaemon = true
+            start()
+        }
     }
 }

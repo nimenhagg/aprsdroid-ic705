@@ -28,14 +28,23 @@ class ServiceNotifier {
     var callNotification: Int = SERVICE_NOTIFICATION + 1
     val callIdMap = mutableMapOf<String, Int>()
 
+    private val channelSetupLock = Any()
+    @Volatile
+    private var channelsReady = false
+
     fun setupChannels(ctx: Context) {
-        val nm = ctx.getSystemService(NotificationManager::class.java)
-        nm?.createNotificationChannel(
-            NotificationChannel("status", ctx.getString(R.string.aprsservice), NotificationManager.IMPORTANCE_LOW)
-        )
-        nm?.createNotificationChannel(
-            NotificationChannel("msg", ctx.getString(R.string.p_msg), NotificationManager.IMPORTANCE_DEFAULT)
-        )
+        if (channelsReady) return
+        synchronized(channelSetupLock) {
+            if (channelsReady) return
+            val nm = ctx.getSystemService(NotificationManager::class.java) ?: return
+            nm.createNotificationChannel(
+                NotificationChannel("status", ctx.getString(R.string.aprsservice), NotificationManager.IMPORTANCE_LOW)
+            )
+            nm.createNotificationChannel(
+                NotificationChannel("msg", ctx.getString(R.string.p_msg), NotificationManager.IMPORTANCE_DEFAULT)
+            )
+            channelsReady = true
+        }
     }
 
     fun newNotificationBuilder(ctx: Service, channel: String): Notification.Builder =
@@ -118,6 +127,7 @@ class ServiceNotifier {
 
     fun notifyMessage(ctx: Service, call: String, message: String) {
         try {
+            setupChannels(ctx)
             val n = newMessageNotification(ctx, call, message)
             getNotificationMgr(ctx).notify(getCallNumber(call), n)
         } catch (_: Exception) {}
@@ -131,6 +141,7 @@ class ServiceNotifier {
 
     fun notifyPosition(ctx: Service, status: String) {
         try {
+            setupChannels(ctx)
             val n = newNotification(ctx, status)
             getNotificationMgr(ctx).notify(SERVICE_NOTIFICATION, n)
         } catch (_: Exception) {}

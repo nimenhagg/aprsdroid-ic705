@@ -5,25 +5,33 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.Executors
 import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.diagnostic.LogReportManager
 import org.aprsdroid.app.ui.component.AboutDialogContent
@@ -35,12 +43,11 @@ import org.aprsdroid.app.update.GitHubUpdateChecker
 import org.aprsdroid.app.update.UpdateCheckResult
 import org.json.JSONObject
 
-private object SettingsRoutes {
-    const val ROOT = "settings"
-    const val NOTIFICATIONS = "settings/notifications"
-}
-
 class PrefsAct : ComponentActivity() {
+
+    private companion object {
+        const val STATE_NOTIFICATION_SETTINGS_VISIBLE = "notification_settings_visible"
+    }
 
     private val profileDocumentPicker = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -95,10 +102,8 @@ class PrefsAct : ComponentActivity() {
     private val identityDialogVisible = mutableStateOf(false)
     private val aboutDialogVisible = mutableStateOf(false)
     private val updateAvailableState = mutableStateOf<UpdateCheckResult.UpdateAvailable?>(null)
+    private val notificationSettingsVisibleState = mutableStateOf(false)
     private var updateCheckInFlight = false
-    private val notificationChannelExecutor = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "notification-channels").apply { isDaemon = true }
-    }
 
     fun exportPrefs() {
         val filename = String.format(
@@ -111,43 +116,39 @@ class PrefsAct : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapModes.initialize(this)
+        notificationSettingsVisibleState.value =
+            savedInstanceState?.getBoolean(STATE_NOTIFICATION_SETTINGS_VISIBLE, false) ?: false
 
         setContent {
             AprsTheme {
-                val availableMapModes = MapModes.all_mapmodes
-                    .filter { it.isAvailable(this) }
-                    .map { mode -> mode.tag to (mode.title ?: mode.tag) }
-                val navController = rememberNavController()
+                val availableMapModes = remember {
+                    MapModes.all_mapmodes
+                        .filter { it.isAvailable(this@PrefsAct) }
+                        .map { mode -> mode.tag to (mode.title ?: mode.tag) }
+                }
+                val rootTransitionProgress = animateFloatAsState(
+                    targetValue = if (notificationSettingsVisibleState.value) 1f else 0f,
+                    animationSpec = tween(
+                        durationMillis = 240,
+                        easing = FastOutSlowInEasing,
+                    ),
+                    label = "settings-root-motion",
+                )
 
-                NavHost(
-                    navController = navController,
-                    startDestination = SettingsRoutes.ROOT,
-                    enterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(180),
-                        )
-                    },
-                    exitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Left,
-                            animationSpec = tween(180),
-                        )
-                    },
-                    popEnterTransition = {
-                        slideIntoContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(180),
-                        )
-                    },
-                    popExitTransition = {
-                        slideOutOfContainer(
-                            AnimatedContentTransitionScope.SlideDirection.Right,
-                            animationSpec = tween(180),
-                        )
-                    },
-                ) {
-                    composable(SettingsRoutes.ROOT) {
+                BackHandler(enabled = notificationSettingsVisibleState.value) {
+                    notificationSettingsVisibleState.value = false
+                }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                val progress = rootTransitionProgress.value
+                                translationX = -size.width * 0.12f * progress
+                                alpha = 1f - (0.25f * progress)
+                            },
+                    ) {
                         SettingsScreen(
                             callsign = callsignState.value,
                             ssid = ssidState.value,
@@ -242,9 +243,7 @@ class PrefsAct : ComponentActivity() {
                                 stationTapActionState.value = action
                             },
                             onOpenNotificationPrefs = {
-                                navController.navigate(SettingsRoutes.NOTIFICATIONS) {
-                                    launchSingleTop = true
-                                }
+                                notificationSettingsVisibleState.value = true
                             },
                             onExportProfile = { exportPrefs() },
                             onImportProfile = { profileDocumentPicker.launch(arrayOf("*/*")) },
@@ -258,9 +257,36 @@ class PrefsAct : ComponentActivity() {
                         )
                     }
 
-                    composable(SettingsRoutes.NOTIFICATIONS) {
+                    AnimatedVisibility(
+                        visible = notificationSettingsVisibleState.value,
+                        modifier = Modifier.fillMaxSize(),
+                        enter = slideInHorizontally(
+                            initialOffsetX = { width -> width / 4 },
+                            animationSpec = tween(
+                                durationMillis = 280,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ) + fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 280,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ),
+                        exit = slideOutHorizontally(
+                            targetOffsetX = { width -> width / 4 },
+                            animationSpec = tween(
+                                durationMillis = 240,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ) + fadeOut(
+                            animationSpec = tween(
+                                durationMillis = 240,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        ),
+                    ) {
                         NotificationSettingsScreen(
-                            onBack = { navController.popBackStack() },
+                            onBack = { notificationSettingsVisibleState.value = false },
                             onOpenChannelSettings = ::openChannelSettings,
                         )
                     }
@@ -331,45 +357,30 @@ class PrefsAct : ComponentActivity() {
                 }
             }
         }
-
-        ensureNotificationChannelsAsync()
     }
 
     override fun onResume() {
         super.onResume()
-        refreshPrefsState()
-    }
-
-    override fun onDestroy() {
-        notificationChannelExecutor.shutdownNow()
-        super.onDestroy()
-    }
-
-    private fun ensureNotificationChannelsAsync(onReady: (() -> Unit)? = null) {
-        val appContext = applicationContext
-        notificationChannelExecutor.execute {
-            try {
-                ServiceNotifier.instance.setupChannels(appContext)
-            } catch (_: Exception) {
-                // The system settings page can still be opened even if an OEM service call fails.
-            }
-            if (onReady != null) {
-                runOnUiThread {
-                    if (!isFinishing && !isDestroyed) onReady()
-                }
-            }
+        if (!notificationSettingsVisibleState.value) {
+            refreshPrefsState()
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(
+            STATE_NOTIFICATION_SETTINGS_VISIBLE,
+            notificationSettingsVisibleState.value,
+        )
+        super.onSaveInstanceState(outState)
     }
 
     private fun openChannelSettings(channelId: String) {
-        ensureNotificationChannelsAsync {
-            startActivity(
-                Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
-                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-                    putExtra(Settings.EXTRA_CHANNEL_ID, channelId)
-                },
-            )
-        }
+        startActivity(
+            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                putExtra(Settings.EXTRA_CHANNEL_ID, channelId)
+            },
+        )
     }
 
     private fun checkForUpdatesManually() {
