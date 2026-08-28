@@ -23,19 +23,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import org.aprsdroid.app.data.repository.LogRepository
+import org.aprsdroid.app.data.repository.MapStationRepository
 import org.aprsdroid.app.data.repository.MessageRepository
 import org.aprsdroid.app.data.repository.StationRepository
 import org.aprsdroid.app.ui.component.PasscodeDialogCompose
+import org.aprsdroid.app.ui.component.StationBottomSheetHelper
 import org.aprsdroid.app.ui.navigation.MainNavigationBar
 import org.aprsdroid.app.ui.navigation.MainRoutes
 import org.aprsdroid.app.ui.navigation.navigateTopLevel
 import org.aprsdroid.app.ui.screen.ConversationsScreen
+import org.aprsdroid.app.ui.screen.EmbeddedMapScreen
 import org.aprsdroid.app.ui.screen.HubStationScreen
 import org.aprsdroid.app.ui.screen.LogScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.aprsdroid.app.ui.viewmodel.ConversationsViewModel
 import org.aprsdroid.app.ui.viewmodel.HubViewModel
 import org.aprsdroid.app.ui.viewmodel.LogViewModel
+import org.aprsdroid.app.ui.viewmodel.MapViewModel
 
 class HubActivity : BaseRecyclerActivity() {
 
@@ -47,15 +51,18 @@ class HubActivity : BaseRecyclerActivity() {
     private val stationRepository: StationRepository by lazy { StationRepository(storage) }
     private val messageRepository: MessageRepository by lazy { MessageRepository(storage) }
     private val logRepository: LogRepository by lazy { LogRepository(storage) }
+    private val mapRepository: MapStationRepository by lazy { MapStationRepository(storage, prefs) }
     private val viewModel: HubViewModel by lazy { HubViewModel(stationRepository, prefs) }
     private val conversationsViewModel: ConversationsViewModel by lazy { ConversationsViewModel(messageRepository) }
     private val logViewModel: LogViewModel by lazy { LogViewModel(logRepository) }
+    private val mapViewModel: MapViewModel by lazy { MapViewModel(mapRepository, prefs.getShowObjects()) }
     private val firstRunDialogVisible = mutableStateOf(false)
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             viewModel.refresh()
             logViewModel.refresh()
+            mapViewModel.refresh()
         }
     }
 
@@ -84,6 +91,7 @@ class HubActivity : BaseRecyclerActivity() {
                 val hubState = viewModel.uiState.collectAsStateWithLifecycle().value
                 val conversationsState = conversationsViewModel.uiState.collectAsStateWithLifecycle().value
                 val logState = logViewModel.uiState.collectAsStateWithLifecycle().value
+                val mapState = mapViewModel.uiState.collectAsStateWithLifecycle().value
                 val navController = rememberNavController()
                 val currentBackStackEntry by navController.currentBackStackEntryAsState()
                 val selectedRoute = currentBackStackEntry?.destination?.route
@@ -120,14 +128,40 @@ class HubActivity : BaseRecyclerActivity() {
                                     onStationLongClick = { item ->
                                         if (prefs.getStationTapAction() == "details") openMessaging(item.call) else openDetails(item.call)
                                     },
-                                    onOpenMap = { openMap() },
+                                    onOpenMap = { navController.navigateTopLevel(MainRoutes.MAP) },
                                     onOpenLogs = { navController.navigateTopLevel(MainRoutes.PACKETS) },
                                     onOpenMessages = { navController.navigateTopLevel(MainRoutes.MESSAGES) },
                                     onOpenSettings = { startActivity(Intent(this@HubActivity, PrefsAct::class.java)) },
                                     onClearLogs = {
                                         StorageCleaner(this@HubActivity, storage) {
-                                            viewModel.refresh()
-                                            logViewModel.refresh()
+                                            refreshTopLevelState()
+                                        }.execute()
+                                    }
+                                )
+                            }
+
+                            composable(MainRoutes.MAP) {
+                                EmbeddedMapScreen(
+                                    prefs = prefs,
+                                    stations = mapState.stations,
+                                    dataLoading = mapState.isLoading,
+                                    showObjects = mapState.showObjects,
+                                    myLat = hubState.myLat,
+                                    myLon = hubState.myLon,
+                                    onShowObjectsChanged = { showObjects ->
+                                        mapViewModel.refresh(showObjects)
+                                    },
+                                    onStationClick = { call -> showMapStation(call) },
+                                    onBack = { navController.navigateTopLevel(MainRoutes.STATIONS) },
+                                    onOpenPackets = { navController.navigateTopLevel(MainRoutes.PACKETS) },
+                                    onOpenSettings = {
+                                        startActivity(Intent(this@HubActivity, PrefsAct::class.java))
+                                    },
+                                    onClearLogs = {
+                                        onStartLoading()
+                                        StorageCleaner(this@HubActivity, storage) {
+                                            onStopLoading()
+                                            refreshTopLevelState()
                                         }.execute()
                                     }
                                 )
@@ -156,7 +190,7 @@ class HubActivity : BaseRecyclerActivity() {
                                     isRunning = logState.isRunning,
                                     onBack = { navController.navigateTopLevel(MainRoutes.STATIONS) },
                                     onOpenHub = { navController.navigateTopLevel(MainRoutes.STATIONS) },
-                                    onOpenMap = { openMap() },
+                                    onOpenMap = { navController.navigateTopLevel(MainRoutes.MAP) },
                                     onOpenSettings = { startActivity(Intent(this@HubActivity, PrefsAct::class.java)) },
                                     onSendPosition = {
                                         if (startAprsServiceWithPermissions(AprsService.SERVICE_ONCE)) {
@@ -182,8 +216,7 @@ class HubActivity : BaseRecyclerActivity() {
                                         onStartLoading()
                                         StorageCleaner(this@HubActivity, storage) {
                                             onStopLoading()
-                                            viewModel.refresh()
-                                            logViewModel.refresh()
+                                            refreshTopLevelState()
                                         }.execute()
                                     }
                                 )
@@ -193,9 +226,7 @@ class HubActivity : BaseRecyclerActivity() {
 
                     MainNavigationBar(
                         selectedRoute = selectedRoute,
-                        onDestinationSelected = { route ->
-                            if (route == MainRoutes.MAP) openMap() else navController.navigateTopLevel(route)
-                        }
+                        onDestinationSelected = { route -> navController.navigateTopLevel(route) }
                     )
                 }
 
@@ -215,7 +246,7 @@ class HubActivity : BaseRecyclerActivity() {
                                 putBoolean("firstrun", false)
                             }
                             firstRunDialogVisible.value = false
-                            viewModel.refresh()
+                            refreshTopLevelState()
                         },
                     )
                 }
@@ -223,11 +254,6 @@ class HubActivity : BaseRecyclerActivity() {
         }
 
         refreshTopLevelState()
-    }
-
-    private fun openMap() {
-        val mode = MapModes.defaultMapMode(this, prefs)
-        startActivity(Intent(this, mode.viewClass))
     }
 
     private fun toggleTracking() {
@@ -244,10 +270,28 @@ class HubActivity : BaseRecyclerActivity() {
         }
     }
 
+    private fun showMapStation(call: String) {
+        var myLat = 0
+        var myLon = 0
+        val position = storage.getStaPosition(prefs.getCallSsid())
+        try {
+            if (position.count > 0 && position.moveToFirst()) {
+                val latIndex = position.getColumnIndex(StorageDatabase.Companion.Station.LAT)
+                val lonIndex = position.getColumnIndex(StorageDatabase.Companion.Station.LON)
+                if (latIndex >= 0) myLat = position.getInt(latIndex)
+                if (lonIndex >= 0) myLon = position.getInt(lonIndex)
+            }
+        } finally {
+            position.close()
+        }
+        StationBottomSheetHelper.show(this, call, storage, myLat, myLon)
+    }
+
     private fun refreshTopLevelState() {
         viewModel.refresh()
         conversationsViewModel.refresh()
         logViewModel.refresh()
+        mapViewModel.refresh()
     }
 
     @SuppressLint("WrongConstant")
