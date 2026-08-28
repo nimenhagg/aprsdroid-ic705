@@ -23,9 +23,14 @@ import org.aprsdroid.app.ic705.session.Ic705RxSessionConfig
 import org.aprsdroid.app.ic705.session.Ic705RxSessionEngine
 import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
 
-/** Minimal Android-facing surface the controller needs from [AprsService]. */
+/** Minimal Android-facing surface the controller needs from [org.aprsdroid.app.AprsService]. */
 interface Ic705BackendService {
     fun postPosterStarted()
+
+    /** Transient radio-link state; the APRS service itself remains alive while reconnecting. */
+    fun postLinkOn(link: Int) {}
+    fun postLinkOff(link: Int) {}
+
     fun postAbort(message: String)
     fun postSubmit(text: String)
     fun getString(resId: Int): String
@@ -64,9 +69,14 @@ fun interface Ic705DecoderFactory {
  * complete, backs off, then calls [socketFactoryProvider] again before creating
  * a new decoder/session pair.
  *
- * TX path: [update] encodes an APRS packet via AFSK modulation, then delegates
- * to [Ic705RadioSession.transmit] which coordinates PTT ON → audio streaming →
- * PTT OFF through the [Ic705PttStateMachine].
+ * Only [Ic705RxSessionEngine.Phase.RECEIVING] is externally reported as a live
+ * IC-705 link. The APRS service remains running through recovery, but the link is
+ * reported down as soon as a previously healthy session leaves RECEIVING.
+ *
+ * [fixedPortReuseCooldownMillis] is applied after the old generation's close
+ * callback completes and before a recoverable generation may rebind the fixed
+ * IC-705 UDP ports. Production wiring sets this to two seconds; tests may inject
+ * zero when they only need to verify retry ordering.
  */
 class Ic705WifiBackendController(
     private val service: Ic705BackendService,
@@ -79,6 +89,7 @@ class Ic705WifiBackendController(
     },
     private val reconnectScheduler: Ic705ReconnectScheduler = Ic705ExecutorReconnectScheduler(),
     private val reconnectBackoff: Ic705ReconnectBackoff = Ic705ReconnectBackoff(),
+    private val fixedPortReuseCooldownMillis: Long = 0L,
 ) {
     private val stopped = AtomicBoolean(false)
     private val startRequested = AtomicBoolean(false)
@@ -103,8 +114,13 @@ class Ic705WifiBackendController(
     private var decoder: PcmSink? = null
 
     private var activeSawReconnectWait = false
+    private var linkReportedUp = false
     private var retryAttempt = 0
     private var pendingRetry: Ic705RetryHandle? = null
+
+    init {
+        require(fixedPortReuseCooldownMillis >= 0L)
+    }
 
     /** Startup completes asynchronously at RECEIVING; returns false like other async backends. */
     fun start(): Boolean {
@@ -274,7 +290,7 @@ class Ic705WifiBackendController(
 
             synchronized(lock) {
                 if (stopped.get()) {
-                    newSession.close { runCatching { newDecoder.close() } }
+                    newSession.close { runCatching { newDecoder?.close() } }
                     return
                 }
                 check(session == null && decoder == null) {
@@ -318,6 +334,38 @@ class Ic705WifiBackendController(
             ),
         )
 
+        val linkTransition = synchronized(lock) {
+            if (activeGeneration != generation) {
+                LinkTransition.NONE
+            } else if (state.phase == Ic705RxSessionEngine.Phase.RECEIVING) {
+                if (linkReportedUp) LinkTransition.NONE else {
+                    linkReportedUp = true
+                    LinkTransition.UP
+                }
+            } else {
+                if (!linkReportedUp) LinkTransition.NONE else {
+                    linkReportedUp = false
+                    LinkTransition.DOWN
+                }
+            }
+        }
+        when (linkTransition) {
+            LinkTransition.UP -> {
+                AppLog.i("IC705", "link_state", mapOf("generation" to generation, "state" to "UP"))
+                service.postLinkOn(R.string.p_conn_ic705)
+            }
+            LinkTransition.DOWN -> {
+                AppLog.w(
+                    "IC705",
+                    "link_state",
+                    mapOf("generation" to generation, "state" to "DOWN", "phase" to state.phase),
+                )
+                Ic705DiagnosticState.set("controller", "RECOVERING")
+                service.postLinkOff(R.string.p_conn_ic705)
+            }
+            LinkTransition.NONE -> Unit
+        }
+
         when (state.phase) {
             Ic705RxSessionEngine.Phase.RECEIVING -> {
                 synchronized(lock) {
@@ -330,8 +378,11 @@ class Ic705WifiBackendController(
                 }
             }
 
-            Ic705RxSessionEngine.Phase.RECONNECT_WAIT -> synchronized(lock) {
-                if (activeGeneration == generation) activeSawReconnectWait = true
+            Ic705RxSessionEngine.Phase.RECONNECT_WAIT -> {
+                Ic705DiagnosticState.set("controller", "RECOVERING")
+                synchronized(lock) {
+                    if (activeGeneration == generation) activeSawReconnectWait = true
+                }
             }
 
             Ic705RxSessionEngine.Phase.FAILED -> {
@@ -354,7 +405,7 @@ class Ic705WifiBackendController(
             detachActiveLocked()
         }
         closeGeneration(closing) {
-            if (!stopped.get()) scheduleReconnect()
+            if (!stopped.get()) scheduleReconnect(fixedPortReuseCooldownMillis)
         }
     }
 
@@ -371,17 +422,23 @@ class Ic705WifiBackendController(
         }
     }
 
-    private fun scheduleReconnect() {
+    private fun scheduleReconnect(minimumDelayMillis: Long = 0L) {
         if (stopped.get()) return
         val scheduled: Ic705RetryHandle
         synchronized(lock) {
             if (stopped.get() || pendingRetry != null) return
             val attempt = retryAttempt++
-            val delay = reconnectBackoff.delayMillis(attempt)
+            val backoffDelay = reconnectBackoff.delayMillis(attempt)
+            val delay = maxOf(backoffDelay, minimumDelayMillis.coerceAtLeast(0L))
             AppLog.i(
                 "IC705",
                 "reconnect_scheduled",
-                mapOf("attempt" to attempt, "delay_ms" to delay),
+                mapOf(
+                    "attempt" to attempt,
+                    "delay_ms" to delay,
+                    "backoff_delay_ms" to backoffDelay,
+                    "minimum_delay_ms" to minimumDelayMillis,
+                ),
             )
             Ic705DiagnosticState.set("reconnect_attempt", attempt)
             scheduled = reconnectScheduler.schedule(delay) {
@@ -406,6 +463,7 @@ class Ic705WifiBackendController(
         val closing = ClosingGeneration(session, decoder)
         activeGeneration = NO_GENERATION
         activeSawReconnectWait = false
+        linkReportedUp = false
         session = null
         decoder = null
         return closing
@@ -432,6 +490,12 @@ class Ic705WifiBackendController(
         return false
     }
 
+    private enum class LinkTransition {
+        NONE,
+        UP,
+        DOWN,
+    }
+
     private data class ClosingGeneration(
         val session: Ic705RadioSession?,
         val decoder: PcmSink?,
@@ -440,6 +504,7 @@ class Ic705WifiBackendController(
     companion object {
         private const val TAG = "APRSdroid.IC705"
         private const val NO_GENERATION = -1L
+        private const val FIXED_PORT_REUSE_COOLDOWN_MS = 2_000L
 
         @JvmStatic
         fun createDefault(
@@ -454,6 +519,7 @@ class Ic705WifiBackendController(
             sessionFactory = { config, audioSink, callbacks, socketFactory ->
                 Ic705RxSession(config, audioSink, callbacks, socketFactory)
             },
+            fixedPortReuseCooldownMillis = FIXED_PORT_REUSE_COOLDOWN_MS,
         )
     }
 }
