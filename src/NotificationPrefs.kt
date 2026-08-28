@@ -36,7 +36,6 @@ import org.aprsdroid.app.ui.theme.AprsTheme
 class NotificationPrefs : ComponentActivity() {
 
     private fun openChannelSettings(channelId: String) {
-        ServiceNotifier.instance.setupChannels(this)
         startActivity(
             Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
                 putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
