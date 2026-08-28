@@ -15,6 +15,7 @@ import android.os.Build
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import org.aprsdroid.app.ui.navigation.MainRoutes
 
 class ServiceNotifier {
     companion object {
@@ -83,14 +84,27 @@ class ServiceNotifier {
     }
 
     fun newMessageNotification(ctx: Service, call: String, message: String): Notification {
-        val i = Intent(ctx, MessageActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val i = Intent(ctx, HubActivity::class.java).apply {
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+            )
+            putExtra(HubActivity.EXTRA_START_DESTINATION, MainRoutes.MESSAGES)
+            putExtra(HubActivity.EXTRA_CHAT_CALL, call)
             data = call.toUri()
         }
         return newNotificationBuilder(ctx, "msg")
             .setContentTitle(call)
             .setContentText(message)
-            .setContentIntent(PendingIntent.getActivity(ctx, 0, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    ctx,
+                    getCallNumber(call),
+                    i,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            )
             .setSmallIcon(R.drawable.ic_stat_notify)
             .setTicker("$call: $message")
             .setWhen(System.currentTimeMillis())

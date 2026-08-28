@@ -51,6 +51,7 @@ class HubActivity : BaseRecyclerActivity() {
 
     companion object {
         const val EXTRA_START_DESTINATION = "start_destination"
+        const val EXTRA_CHAT_CALL = "chat_call"
     }
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
@@ -64,6 +65,8 @@ class HubActivity : BaseRecyclerActivity() {
     private val logViewModel: LogViewModel by lazy { LogViewModel(logRepository) }
     private val mapViewModel: MapViewModel by lazy { MapViewModel(mapRepository, prefs.getShowObjects()) }
     private val firstRunDialogVisible = mutableStateOf(false)
+    private val pendingStartDestination = mutableStateOf<String?>(null)
+    private val pendingChatCall = mutableStateOf<String?>(null)
     private var activeChatCall: String? = null
 
     private val updateReceiver = object : BroadcastReceiver() {
@@ -90,10 +93,7 @@ class HubActivity : BaseRecyclerActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val requestedStartDestination = MainRoutes.normalizeStartDestination(
-            intent.getStringExtra(EXTRA_START_DESTINATION)
-        )
+        consumeNavigationIntent(intent)
 
         setContent {
             AprsTheme {
@@ -105,11 +105,21 @@ class HubActivity : BaseRecyclerActivity() {
                 val navController = rememberNavController()
                 val currentBackStackEntry by navController.currentBackStackEntryAsState()
                 val selectedRoute = currentBackStackEntry?.destination?.route
+                val requestedStartDestination = pendingStartDestination.value
+                val requestedChatCall = pendingChatCall.value
 
-                LaunchedEffect(requestedStartDestination) {
-                    if (requestedStartDestination != MainRoutes.STATIONS) {
-                        navController.navigateTopLevel(requestedStartDestination)
+                LaunchedEffect(requestedStartDestination, requestedChatCall) {
+                    when {
+                        !requestedChatCall.isNullOrBlank() -> {
+                            navController.navigateTopLevel(MainRoutes.MESSAGES)
+                            navController.navigate(MainRoutes.chat(requestedChatCall))
+                        }
+                        requestedStartDestination != null && requestedStartDestination != MainRoutes.STATIONS -> {
+                            navController.navigateTopLevel(requestedStartDestination)
+                        }
                     }
+                    pendingStartDestination.value = null
+                    pendingChatCall.value = null
                 }
 
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -165,7 +175,11 @@ class HubActivity : BaseRecyclerActivity() {
                                     myLat = hubState.myLat,
                                     myLon = hubState.myLon,
                                     onShowObjectsChanged = { showObjects -> mapViewModel.refresh(showObjects) },
-                                    onStationClick = { call -> showMapStation(call) },
+                                    onStationClick = { call ->
+                                        showMapStation(call) { target ->
+                                            navController.navigate(MainRoutes.chat(target))
+                                        }
+                                    },
                                     onBack = { navController.navigateTopLevel(MainRoutes.STATIONS) },
                                     onOpenPackets = { navController.navigateTopLevel(MainRoutes.PACKETS) },
                                     onOpenSettings = {
@@ -313,6 +327,22 @@ class HubActivity : BaseRecyclerActivity() {
         refreshTopLevelState()
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        consumeNavigationIntent(intent)
+    }
+
+    private fun consumeNavigationIntent(intent: Intent?) {
+        pendingStartDestination.value = intent
+            ?.getStringExtra(EXTRA_START_DESTINATION)
+            ?.let(MainRoutes::normalizeStartDestination)
+        pendingChatCall.value = intent
+            ?.getStringExtra(EXTRA_CHAT_CALL)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+    }
+
     private fun toggleTracking() {
         val running = AprsService.running
         if (!running) {
@@ -348,7 +378,11 @@ class HubActivity : BaseRecyclerActivity() {
         }
     }
 
-    private fun showMapStation(call: String, showMessageAction: Boolean = true) {
+    private fun showMapStation(
+        call: String,
+        showMessageAction: Boolean = true,
+        onSendMessageRequested: ((String) -> Unit)? = null
+    ) {
         var myLat = 0
         var myLon = 0
         val position = storage.getStaPosition(prefs.getCallSsid())
@@ -368,7 +402,8 @@ class HubActivity : BaseRecyclerActivity() {
             db = storage,
             myLat = myLat,
             myLon = myLon,
-            showMessageAction = showMessageAction
+            showMessageAction = showMessageAction,
+            onSendMessageRequested = onSendMessageRequested
         )
     }
 

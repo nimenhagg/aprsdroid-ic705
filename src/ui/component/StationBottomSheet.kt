@@ -85,12 +85,10 @@ fun StationBottomSheetContent(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // Drag handle pill
             Box_DragHandle()
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Header: Symbol + Callsign + Distance/Age
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -121,7 +119,6 @@ fun StationBottomSheetContent(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Middle: Frequency Chip + Coordinates + Comment
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                 shape = RoundedCornerShape(16.dp),
@@ -137,7 +134,6 @@ fun StationBottomSheetContent(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    // Lat / Lon
                     val latStr = String.format(Locale.US, "%.5f°", station.lat / 1000000.0)
                     val lonStr = String.format(Locale.US, "%.5f°", station.lon / 1000000.0)
                     Text(
@@ -161,7 +157,6 @@ fun StationBottomSheetContent(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Action Buttons Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -271,10 +266,11 @@ object StationBottomSheetHelper {
         db: StorageDatabase,
         myLat: Int,
         myLon: Int,
-        showMessageAction: Boolean = true
+        showMessageAction: Boolean = true,
+        onSendMessageRequested: ((String) -> Unit)? = null
     ) {
         val cursor = db.getStations("CALL = ?", arrayOf(call), "1")
-        val items = StationItem.fromCursor(cursor) // fromCursor iterates and closes cursor
+        val items = StationItem.fromCursor(cursor)
         if (items.isEmpty()) {
             UIHelper.openCallsignDetails(context, call)
             return
@@ -293,9 +289,13 @@ object StationBottomSheetHelper {
                         onSendMessage = if (showMessageAction) {
                             {
                                 dialog.dismiss()
-                                context.startActivity(
-                                    Intent(context, MessageActivity::class.java).putExtra("call", station.call)
-                                )
+                                if (onSendMessageRequested != null) {
+                                    onSendMessageRequested(station.call)
+                                } else {
+                                    context.startActivity(
+                                        Intent(context, MessageActivity::class.java).putExtra("call", station.call)
+                                    )
+                                }
                             }
                         } else {
                             null
