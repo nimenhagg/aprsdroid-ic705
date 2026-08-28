@@ -3,6 +3,7 @@ package org.aprsdroid.app.ui.screen
 import android.location.Location
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -41,12 +43,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -66,8 +67,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import org.aprsdroid.app.R
 import org.aprsdroid.app.model.StationItem
 import org.aprsdroid.app.ui.component.StationTagRow
@@ -100,12 +101,6 @@ fun HubStationScreen(
     var showAboutDialog by remember { mutableStateOf(false) }
     var showClearConfirmDialog by remember { mutableStateOf(false) }
 
-    val appTitle = if (isRunning) {
-        "${stringResource(R.string.app_name)} ($myCall)"
-    } else {
-        stringResource(R.string.app_name)
-    }
-
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -114,7 +109,7 @@ fun HubStationScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = appTitle,
+                        text = stringResource(R.string.app_hub),
                         fontWeight = FontWeight.Bold,
                         fontSize = 19.sp,
                         maxLines = 1,
@@ -122,7 +117,11 @@ fun HubStationScreen(
                         modifier = Modifier.pointerInput(Unit) {
                             detectTapGestures(
                                 onLongPress = {
-                                    android.widget.Toast.makeText(context, R.string.share_diagnostic_logs_generating, android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        R.string.share_diagnostic_logs_generating,
+                                        android.widget.Toast.LENGTH_SHORT
+                                    ).show()
                                     org.aprsdroid.app.diagnostic.LogReportManager.shareDiagnosticReport(context)
                                 }
                             )
@@ -130,24 +129,6 @@ fun HubStationScreen(
                     )
                 },
                 actions = {
-                    IconButton(onClick = onOpenLogs) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = stringResource(R.string.show_log)
-                        )
-                    }
-                    IconButton(onClick = onOpenMap) {
-                        Icon(
-                            imageVector = Icons.Default.Map,
-                            contentDescription = stringResource(R.string.show_map)
-                        )
-                    }
-                    IconButton(onClick = onOpenMessages) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Chat,
-                            contentDescription = stringResource(R.string.app_messages)
-                        )
-                    }
                     Box {
                         IconButton(onClick = { showTopMenu = true }) {
                             Icon(
@@ -159,6 +140,31 @@ fun HubStationScreen(
                             expanded = showTopMenu,
                             onDismissRequest = { showTopMenu = false }
                         ) {
+                            // Temporary top-level navigation until the single-activity shell lands.
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.show_map)) },
+                                leadingIcon = { Icon(Icons.Default.Map, contentDescription = null) },
+                                onClick = {
+                                    showTopMenu = false
+                                    onOpenMap()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.app_messages)) },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null) },
+                                onClick = {
+                                    showTopMenu = false
+                                    onOpenMessages()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.show_log)) },
+                                leadingIcon = { Icon(Icons.Default.History, contentDescription = null) },
+                                onClick = {
+                                    showTopMenu = false
+                                    onOpenLogs()
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.preferences)) },
                                 leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
@@ -199,100 +205,80 @@ fun HubStationScreen(
                 )
             )
         },
-        bottomBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 3.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FilledTonalButton(
-                        onClick = onSendPosition,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MyLocation,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(R.string.singlelog),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    Button(
-                        onClick = onToggleTracking,
-                        modifier = Modifier
-                            .weight(1.2f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isRunning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(
-                            imageVector = if (isRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = stringResource(if (isRunning) R.string.stoplog else R.string.startlog),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onSendPosition,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.MyLocation,
+                        contentDescription = null
+                    )
+                },
+                text = {
+                    Text(
+                        text = stringResource(R.string.singlelog),
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-            }
+            )
         }
     ) { innerPadding ->
-        if (stations.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.empty_logview),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(stations, key = { it.call }) { item ->
-                    val isMyOwn = (item.call.equals(myCall, ignoreCase = true))
-                    StationCardItem(
-                        item = item,
-                        isMyOwn = isMyOwn,
-                        myLat = myLat,
-                        myLon = myLon,
-                        onClick = { onStationClick(item) },
-                        onLongClick = { onStationLongClick(item) }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            TrackingStatusCard(
+                myCall = myCall,
+                isRunning = isRunning,
+                onToggleTracking = onToggleTracking
+            )
+
+            if (stations.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.empty_logview).substringBefore('\n'),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
                     )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentPadding = PaddingValues(
+                        start = 14.dp,
+                        top = 0.dp,
+                        end = 14.dp,
+                        bottom = 96.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(stations, key = { it.call }) { item ->
+                        val isMyOwn = item.call.equals(myCall, ignoreCase = true)
+                        StationCardItem(
+                            item = item,
+                            isMyOwn = isMyOwn,
+                            myLat = myLat,
+                            myLon = myLon,
+                            onClick = { onStationClick(item) },
+                            onLongClick = { onStationLongClick(item) }
+                        )
+                    }
                 }
             }
         }
     }
 
     if (showAboutDialog) {
-        val context = androidx.compose.ui.platform.LocalContext.current
+        val dialogContext = LocalContext.current
         org.aprsdroid.app.ui.component.AboutDialogContent(
             onDismiss = { showAboutDialog = false },
             onOpenGithub = {
@@ -300,7 +286,7 @@ fun HubStationScreen(
                     android.content.Intent.ACTION_VIEW,
                     "https://github.com/nimenhagg/aprsdroid-ic705".toUri(),
                 )
-                context.startActivity(intent)
+                dialogContext.startActivity(intent)
             }
         )
     }
@@ -326,6 +312,90 @@ fun HubStationScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun TrackingStatusCard(
+    myCall: String,
+    isRunning: Boolean,
+    onToggleTracking: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = myCall.ifBlank { "—" },
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 20.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(5.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(9.dp)
+                            .background(
+                                color = if (isRunning) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outline
+                                },
+                                shape = CircleShape
+                            )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.aprsservice),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Button(
+                onClick = onToggleTracking,
+                modifier = Modifier.height(44.dp),
+                shape = RoundedCornerShape(22.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isRunning) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    }
+                )
+            ) {
+                Icon(
+                    imageVector = if (isRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = stringResource(if (isRunning) R.string.stoplog else R.string.startlog),
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+            }
+        }
     }
 }
 
@@ -410,10 +480,21 @@ fun StationCardItem(
                             val dist = remember(myLat, myLon, item.lat, item.lon) {
                                 val results = FloatArray(2)
                                 val mcd = 1000000.0
-                                Location.distanceBetween(myLat / mcd, myLon / mcd, item.lat / mcd, item.lon / mcd, results)
+                                Location.distanceBetween(
+                                    myLat / mcd,
+                                    myLon / mcd,
+                                    item.lat / mcd,
+                                    item.lon / mcd,
+                                    results
+                                )
                                 results
                             }
-                            String.format(Locale.US, "%1.1f km %s", dist[0] / 1000.0, getBearing(dist[1].toDouble()))
+                            String.format(
+                                Locale.US,
+                                "%1.1f km %s",
+                                dist[0] / 1000.0,
+                                getBearing(dist[1].toDouble())
+                            )
                         } else {
                             "—"
                         }
