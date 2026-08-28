@@ -4,11 +4,11 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v1.9.7`**
+**最新稳定版 / Latest release: `Mod-v2.0.0`**
 
-> `Mod-v1.9.7` 完成 Compose/Material 3 与通知设置遗留收尾，整理 IC-705 session 的低风险内部策略，并减少通知频道设置入口的冗余主线程工作。
+> `Mod-v2.0.0` 将台站、地图、消息、报文统一到 Material 3 底部导航和单一顶层 `NavHost`，内嵌 MapLibre/Google 地图，并统一应用内聊天与通知的返回栈语义。
 >
-> `Mod-v1.9.7` completes the Compose/Material 3 and notification-settings cleanup, isolates low-risk IC-705 session policies, and removes redundant work before opening notification-channel settings.
+> `Mod-v2.0.0` unifies stations, maps, messages, and packets under a Material 3 bottom-navigation shell, embeds both map backends, and gives in-app chats and notifications consistent back-stack behavior.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -31,6 +31,8 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 - 持久化结构化诊断日志：关键 App、网络、IC-705、PTT、重连和崩溃事件同时写入 Logcat 与轮转 JSONL 文件，进程重启后仍可导出。
 - 设置页可一键分享诊断 ZIP，包含文本报告与结构化事件日志。
 - 设置页提供**手动检查更新**；只有用户点击时才请求 GitHub Releases，不会开机检查、后台轮询、定时联网或自动下载安装。
+- Material 3 顶层导航统一为“台站 / 地图 / 消息 / 报文”；应用内聊天作为二级页面进入同一 `NavHost`，返回会回到实际来源页面。
+- 台站页以状态卡展示完整呼号和 APRS 运行状态，跟踪启停位于状态卡，单次发送位置使用 Extended FAB。
 - 台站详情中的历史 APRS 数据默认以结构化字段显示；原始 TNC2 报文通过“显示原始数据”按钮按需展开。
 - 首页台站单击/长按动作可在设置中互换；默认仍为单击发消息、长按查看详情。
 - APRS-IS 模式可选择在位置信标中附加 `BAT:xx%` 电量字段；其他射频/本地后端不发送该信息。
@@ -38,7 +40,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 - APRS-IS TCP / HTTP POST / UDP，以及 AFSK、KISS、TNC2、Kenwood、蓝牙 SPP、USB 串口和 LAN TCP TNC 等原 APRSdroid 路径。
 - 智能信标、周期/手动定位、台站、消息、日志和多地图源。
 - Material 3 / Material You + Jetpack Compose；生产页面不再使用 `res/layout` XML 布局。
-- MapLibre Native 在线栅格地图：高德、OpenStreetMap、自定义瓦片；Google 普通/卫星图仍使用 Google Maps SDK。
+- MapLibre Native 在线栅格地图：高德、OpenStreetMap、自定义瓦片；Google 普通/卫星图仍使用 Google Maps SDK。四个一级页面中的地图直接内嵌在主导航壳中，坐标选择器等特殊入口仍保留兼容 Activity。
 - 正式 ARM64/ARMv7 OpenGL APK 会将官方 MapLibre 13.5.1 AAR 内的原生库替换为同版本源码构建的 `MinSizeRel` + IPO/LTO `libmaplibre.so`；Java/Kotlin API、资源和 Maven 依赖仍来自官方 AAR。
 
 ### 兼容性
@@ -123,11 +125,13 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 
 ### 地图引擎
 
-- 高德、OpenStreetMap 和自定义在线瓦片使用 MapLibre Native 13.5.1。
+- 高德、OpenStreetMap 和自定义在线瓦片使用 MapLibre Native 13.5.1；Google 普通地图和卫星/混合地图使用 Google Maps SDK。
+- 主界面的地图是 `HubActivity` 中的 Compose destination；MapLibre 与 Google `MapView` 跟随宿主 Lifecycle，图源切换无需启动另一个顶层 Activity。
+- 旧 `MapAct` / `GoogleMapAct` 继续用于坐标选择器和兼容入口，不代表四个一级页面仍采用多 Activity 导航。
 - 正式 ARM64/ARMv7 Release 使用 OpenGL；源码还提供 ARM64 Vulkan 与 x86/x86_64 双后端 flavor。
 - Release CI 从 MapLibre Native `android-v13.5.1` 构建 `MinSizeRel` + IPO/LTO 原生库，替换 APK 内对应 ABI 的 `libmaplibre.so` 后重新执行 16 KiB 对齐、签名和 SHA-256 校验。
 - OpenStreetMap 请求包含可识别的 User-Agent，遵循服务端缓存规则，并在地图上显示可点击的 `© OpenStreetMap contributors`。
-- Google 普通地图和卫星/混合地图使用 Google Maps SDK。正式 Release 在构建时注入受包名和签名证书限制的 Key；自行构建未配置 Key 时隐藏 Google 图源。
+- 正式 Release 在构建时注入受包名和签名证书限制的 Google Maps Key；自行构建未配置 Key 时隐藏 Google 图源。
 - 不提供 MapLibre Offline 区域下载/管理功能，也不批量预取 OSM 瓦片。
 
 ### 权限说明
@@ -191,6 +195,7 @@ Windows PowerShell 使用 `./gradlew.bat`。
 - AGP 9 built-in Kotlin / Compose Compiler 2.3.21
 - Compose BOM 2026.08.00
 - Material 1.14.0 / OkHttp 5.3.0 / Activity Compose 1.13.0 / Lifecycle runtime-compose 2.11.0
+- Navigation Compose 2.10.0
 - MapLibre Native 13.5.1（Release 原生库使用 MinSizeRel + IPO/LTO）
 - Java 17
 
@@ -199,11 +204,11 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 ### 开发与发布
 
 - 生产源码位于历史布局 `src/`，单元测试位于 `test/java/`。
-- UI 已迁移为 Compose Material 3；不要重新引入生产 `res/layout` 页面。
+- UI 已迁移为 Compose Material 3；四个一级页面使用 `HubActivity` + Navigation Compose，特殊工具/外部兼容入口可以继续保留独立 Activity。
 - 修改 IC-705 发射/会话恢复代码时必须保留 PTT OFF、ACK 与 watchdog 安全语义并增加测试。
 - “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
 - 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AI_CONTEXT.md`。
-- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v1.9.7`。
+- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.0.0`。
 - Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt` 和 R8 mapping 后创建 GitHub Release。
 
 完整维护约束见 [AI_CONTEXT.md](AI_CONTEXT.md)。
@@ -214,7 +219,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 
 APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-**Latest stable release: `Mod-v1.9.7`.**
+**Latest stable release: `Mod-v2.0.0`.**
 
 ### Highlights
 
@@ -225,6 +230,8 @@ APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdr
 - Persistent rotating JSONL diagnostics plus logcat output, crash capture and exportable diagnostic ZIP bundles.
 - Android network lifecycle logging to distinguish an actual Wi-Fi `Network` loss from an IC-705 protocol/session failure.
 - Manual Settings-only GitHub Release check. It never runs at startup, periodically, or in the background, and it does not auto-download/install updates.
+- Material 3 bottom navigation for Stations / Map / Messages / Packets under one top-level Navigation Compose host; in-app chat is a secondary route with source-aware Back behavior.
+- MapLibre Native and Google Maps are embedded in the top-level map destination; legacy map Activities remain only for coordinate chooser and compatibility paths.
 - Jetpack Compose + Material 3 UI with no production `res/layout` screens.
 - MapLibre Native for AMap/OSM/custom raster tiles and Google Maps SDK for Google map/satellite modes. Official ARM64/ARMv7 OpenGL releases replace the AAR native library with a same-version `MinSizeRel` + IPO/LTO build while retaining the official AAR API/resources/dependencies.
 

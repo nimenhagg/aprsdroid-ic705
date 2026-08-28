@@ -8,28 +8,30 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v1.9.7` |
-| `build.gradle` 默认版本 | `1.9.7` |
-| Android versionCode | `2026082897` |
+| 最新 GitHub Release | `Mod-v2.0.0` |
+| `build.gradle` 默认版本 | `2.0.0` |
+| Android versionCode | `2026082898` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
 | Kotlin / Compose Compiler | AGP 9 built-in Kotlin `2.3.21` / Compose Compiler `2.3.21` |
 | Java | `17` |
-| 核心库 | Material `1.14.0`，OkHttp `5.3.0`，Core-KTX `1.19.0`，Activity Compose `1.13.0`，Lifecycle runtime-compose `2.11.0` |
+| 核心库 | Material `1.14.0`，OkHttp `5.3.0`，Core-KTX `1.19.0`，Activity Compose `1.13.0`，Lifecycle runtime-compose `2.11.0`，Navigation Compose `2.10.0` |
 | 地图 | MapLibre Native `13.5.1` + Google Maps SDK |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
 ### 当前 main 状态
 
-`Mod-v1.9.7` 是当前发布基线。该版本收录 1.9.6 之后的现代化收尾与行为保持型内部重构：
+`Mod-v2.0.0` 是当前发布基线。2.0.0 将之前分散在多个一级 Activity 的主界面收敛为一个顶层导航宿主：
 
-- 地图 About、APRS-IS passcode 等旧 `ComponentDialog + ComposeView` 兼容壳已移除，现有 Compose 页面直接托管 Material 3 对话框状态。
-- AndroidX Preference 依赖、旧 Preference XML/主题以及已经失去入口的通知 LED/振动/铃声配置与资源已清理；Android 8.1+ 通知行为以 `NotificationChannel` 为唯一设置源。
-- 通知设置的消息/状态频道入口不再在每次点击前重复创建 NotificationChannel；页面创建时确保频道存在，点击直接进入系统频道设置。
-- IC-705 session 将音频乱序、sequence 规则、任务注册表、timing、connection-info timer/retry 判定等低风险纯逻辑拆为独立 policy/组件并增加 JVM 单测；PTT、TX pacing、鉴权 wire 行为和 CI-V 安全语义没有为了结构调整而重写。
-- 清理不再使用的直接依赖、旧通知/Preference 资源和 Ant/API 19 时代构建遗留；MapLibre/Google Maps 的 `AndroidView(MapView)` 互操作保持不变。
+- `HubActivity` 承载 Navigation Compose `NavHost`，四个一级目的地固定为 `stations` / `map` / `messages` / `packets`，手机界面使用 Material 3 Bottom Navigation。
+- `chat/{call}` 是二级 route，进入聊天时隐藏底部导航；从台站、消息或地图进入聊天后使用真实 back stack 返回来源页。
+- 消息通知直接进入 `HubActivity`，先建立“消息”一级目的地再进入 `chat/{call}`；冷启动和 `singleTop` 已有实例都通过同一 intent 消费逻辑处理，因此返回落到消息列表。
+- 顶层地图直接内嵌 MapLibre 或 Google `MapView`；高德/OSM/自定义使用 MapLibre，Google 普通/卫星使用 Google Maps，切换图源不再启动另一个顶层 Activity。
+- `MapAct` / `GoogleMapAct` 仍保留用于坐标选择器和兼容入口；`MessageActivity` 等兼容 Activity 也未被强行删除。这里的“单 Activity”指四个一级页面和应用内聊天的统一导航壳，不代表整个 APK 只能声明一个 Activity。
+- 台站页顶栏只承担当前页面标题与页面级菜单；完整呼号和 APRS 状态位于状态卡，跟踪启停在状态卡内，单次发送位置使用 Extended FAB。
+- 顶层消息/地图/报文在宿主模式下不显示与 Bottom Navigation 重复的返回箭头或跨页快捷入口；旧独立 Activity 模式仍可保留兼容控件。
 
 README 必须继续区分 “Latest release” 与后续可能出现的 “Current main”；新的未打 tag 功能不得写成已经发布。
 
@@ -89,11 +91,15 @@ Gradle 保留五种目标规格：
 
 ARM64 Vulkan 与 x86/x86_64 变体保留用于源码构建和兼容性验证。不要未经设计讨论重新合并成 Universal APK。Tag Release 会分别构建/缓存 ARM64 与 ARMv7 的 MapLibre `MinSizeRel` 原生库；普通 `main` 构建只验证推荐 ARM64 路径以控制 CI 时间。
 
-## 4. UI 与地图事实
+## 4. UI、导航与地图事实
 
-- 主 UI 已迁移到 Jetpack Compose + Material 3。
-- 不要恢复历史 `res/layout` 页面，也不要在 AI_CONTEXT 中继续引用已经删除的 `mapview.xml`。
-- `MapAct` 使用 MapLibre Native 渲染高德、OpenStreetMap 和自定义在线瓦片；`GoogleMapAct` 负责 Google 普通/卫星类图源。
+- 主 UI 已迁移到 Jetpack Compose + Material 3；不要恢复历史 `res/layout` 页面，也不要在 AI_CONTEXT 中继续引用已经删除的 `mapview.xml`。
+- 四个一级页面由 `HubActivity` + Navigation Compose 管理：`stations`、`map`、`messages`、`packets`。一级切换使用 `saveState` / `restoreState` / `launchSingleTop`，不要再用四个 Activity 相互 `startActivity()` 模拟 Bottom Navigation。
+- `chat/{call}` 是二级 route。台站 → 聊天 → Back 必须回台站；消息 → 聊天 → Back 必须回消息；地图台站 Bottom Sheet → 聊天 → Back 必须回地图。
+- 消息通知使用 `HubActivity.EXTRA_CHAT_CALL` 请求宿主建立“消息 → 聊天”栈；不要改回通知直接启动 `MessageActivity`，否则冷启动返回语义会退化。
+- 顶层 `map` destination 内根据当前 `MapMode` 使用嵌入式 MapLibre 或 Google Maps renderer。MapLibre 负责高德、OpenStreetMap、自定义在线瓦片；Google Maps SDK 负责 Google 普通/卫星图源。
+- 嵌入式 `MapView` 生命周期由 Compose destination 观察宿主 Lifecycle；离开 destination 时执行 pause/stop/destroy 并保存相机位置。切换 MapLibre/Google renderer 时同样先保存位置。
+- `MapAct` / `GoogleMapAct` 是坐标选择器和兼容入口，不应重新成为四个一级页面的默认导航实现。
 - 正式 ARM64/ARMv7 OpenGL APK 仍依赖官方 MapLibre Android 13.5.1 AAR 提供 Java/Kotlin API、资源、manifest 与传递依赖；Release CI 仅从 `android-v13.5.1` 源码重建对应 ABI 的 `libmaplibre.so`，使用 `MinSizeRel` + IPO/LTO 后替换 APK 内原生库。不要把这描述成维护了一个独立 MapLibre fork。
 - APRS 台站、呼号标签等通过 MapLibre 图层渲染。
 - MapLibre Offline 区域下载/管理不是当前功能；不要把主 AAR 中存在 offline API 类误写成项目启用了离线地图。
@@ -240,6 +246,8 @@ USB attach 属于系统事件路径，修改时单独评估后台启动限制。
 - 新业务代码优先 Kotlin；尊重现有 Java/JNI 边界。
 - 后台 I/O 使用现有 executor/调度器，不在主线程做 Socket、数据库、DSP 或 GitHub API I/O。
 - UI 页面使用 Compose Material 3；不要为了小功能重新引入第二套 XML View 页面。
+- 四个一级页面必须继续通过主 `NavHost` 切换；不要用 `startActivity()`、`REORDER_TO_FRONT` 或多个 Activity 各自复制 Bottom Navigation 来模拟一级导航。
+- 二级页面若进入主导航栈，应依赖真实 back stack 返回来源，不要保存 `fromStation` / `fromMessages` 一类人工来源标记。
 - 使用 AndroidX API；不要重新引入 `android.preference.*` 或旧 Support Test 包。
 - HTTP 后端保持 `HttpURLConnection`，不要恢复 Apache `DefaultHttpClient` / `org.apache.http.legacy`。
 - Activity 结果与文档选择使用 Activity Result API。
@@ -328,7 +336,8 @@ CHANGELOG 是工程记录，不是营销文案。
 
 - Gradle 9.5 / AGP 9.3.2 / built-in Kotlin / API 37 / Java 17。
 - 生产 UI 已迁移到 Compose Material 3，历史 `res/layout` 页面已删除。
-- Mapsforge 与专用离线瓦片下载器已移除；当前地图为 MapLibre + Google Maps SDK 分工。
+- 四个一级页面已从多 Activity 导航收敛为 `HubActivity` + Navigation Compose；应用内聊天和通知入口已纳入主 back stack，兼容 Activity 仅保留特殊/外部用途。
+- Mapsforge 与专用离线瓦片下载器已移除；当前地图为 MapLibre + Google Maps SDK 分工，主地图已内嵌到顶层 `map` destination。
 - 外部存储读写权限已删除；文档导入/导出使用 SAF / `ContentResolver`。
 - HTTP POST 已从 Apache HTTP 客户端迁移到 `HttpURLConnection`。
 - Release 使用 R8 压缩/资源裁剪并保留 mapping。

@@ -1,3 +1,21 @@
+## [Mod-v2.0.0] - 2026-08-28
+
+### Added
+- 新增统一的 Material 3 顶层导航壳，底部固定为“台站 / 地图 / 消息 / 报文”四个一级目的地，并使用 Navigation Compose 保存和恢复各一级页面状态。
+- 地图加入主 `NavHost`：高德、OpenStreetMap、自定义瓦片继续由 MapLibre Native 渲染，Google 普通/卫星图继续由 Google Maps SDK 渲染，图源切换不再通过顶层 Activity 跳转。
+- 点对点聊天加入主导航栈；聊天页作为二级页面自动隐藏底部导航。
+
+### Fixed
+- 修复从台站、消息列表、地图台站卡进入聊天后的返回语义：返回会回到实际来源页面，而不是退出应用或跳到错误的一级页。
+- 消息通知改为通过 `HubActivity` 构造“消息列表 → 聊天”导航栈；冷启动或已有实例收到通知时，返回均落到消息列表。
+- 主导航中的台站、地图、消息和报文页面移除与底部导航重复的返回箭头、跨页按钮和临时菜单入口；报文页不再叠加第二层“发送位置 / 开始停止跟踪”底栏。
+
+### Changed
+- 台站页顶栏固定显示“台站”，完整呼号与 APRS 运行状态移入状态卡；跟踪启停放入状态卡，单次发送位置改为 Extended FAB。
+- `HubActivity` 作为四个一级页面和应用内聊天的统一宿主；旧 `MapAct` / `GoogleMapAct`、`MessageActivity` 等仍保留给坐标选择器、外部入口或兼容路径，不要求整个应用删除所有 Activity。
+- 嵌入式 MapLibre / Google `MapView` 生命周期由 Compose destination 跟随宿主 Lifecycle 管理，离开地图时保存相机位置并释放对应 View 生命周期。
+- 版本更新为 `Mod-v2.0.0`（`versionCode 2026082898`）。
+
 ## [Mod-v1.9.7] - 2026-08-28
 
 ### Fixed
@@ -223,7 +241,7 @@
 - 版本元数据更新为 1.6.2-ic705。
 
 ### Removed
-- 删除 Gradle `org.apache.http.legacy` 依赖。
+- 删除旧版 Okio 依赖。
 - 删除离线地图文件选择入口及其相关资源。
 
 ## [v1.6.1-ic705] - 2026-08-24
@@ -492,7 +510,6 @@
 - 设置图标统一为 40dp 胶囊底板。
 - 支持 Android 13+ 动态桌面图标。
 - 适配 Material 3 边距、卡片及圆角效果。
-- 接入全面屏手势沉浸式导航。
 - Target SDK 升级至 API 36/37，Min SDK 提升至 24。
 - 移除多余的兼容代码并新增全自动化 CI/CD Release 流水线。
 
