@@ -1,3 +1,17 @@
+## [Mod-v2.0.1] - 2026-08-28
+
+### Added
+- 新增“紧凑列表”显示模式，可在“设置 → 地图与显示”中切换，也可从台站/报文页菜单快速切换；该模式只收紧留白和图标尺寸，不覆盖 Android 系统字体缩放。
+
+### Fixed
+- 修复主界面迁移到 Navigation Compose 后默认 cross-fade 导致一级页面出现明显整页淡入淡出的问题；一级页改为短促、方向明确的 Material 风格切换，聊天继续保留二级前进/返回层级动画。
+- 修复进入“通知设置”仍会短暂卡顿的问题：通知设置并入 `PrefsAct` 内部 Compose 导航，删除独立 `NotificationPrefs` Activity，并将 NotificationChannel 确保过程移到后台线程，避免首帧前同步 Binder 调用。
+
+### Changed
+- 台站列表和报文列表默认密度收紧约 10–15%；缩小台站 symbol、卡片 padding 和卡间距，并降低报文卡片 padding/间距。
+- 系统字体放大时优先减少非核心留白；台站备注在较大 fontScale 下限制为一行，正文仍遵循系统字体比例。
+- 版本更新为 `Mod-v2.0.1`（`versionCode 2026082899`）。
+
 ## [Mod-v2.0.0] - 2026-08-28
 
 ### Added
