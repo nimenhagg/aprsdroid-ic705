@@ -96,9 +96,6 @@
 		android:parentActivityName=".PrefsAct"
 		android:launchMode="singleTop"
 		/>
-	<activity android:name=".NotificationPrefs" android:label="@string/p__notification"
-		android:parentActivityName=".PrefsAct"
-		/>
 	<activity android:name=".GoogleMapAct" android:label="@string/app_map"
 		android:launchMode="singleTop"
 		android:parentActivityName=".HubActivity"
@@ -161,7 +158,6 @@
 	    <intent-filter>
 		<action android:name="android.intent.action.VIEW" />
 		<category android:name="android.intent.category.DEFAULT" />
-		<category android:name="android.intent.category.BROWSABLE" />
 		<data android:scheme="content"
 			android:mimeType="application/x-pkcs12" />
 	    </intent-filter>

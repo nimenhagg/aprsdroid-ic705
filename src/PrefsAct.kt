@@ -2,10 +2,13 @@ package org.aprsdroid.app
 
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -13,19 +16,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.Executors
 import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.diagnostic.LogReportManager
 import org.aprsdroid.app.ui.component.AboutDialogContent
 import org.aprsdroid.app.ui.component.PasscodeDialogCompose
+import org.aprsdroid.app.ui.screen.NotificationSettingsScreen
 import org.aprsdroid.app.ui.screen.SettingsScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.aprsdroid.app.update.GitHubUpdateChecker
 import org.aprsdroid.app.update.UpdateCheckResult
 import org.json.JSONObject
+
+private object SettingsRoutes {
+    const val ROOT = "settings"
+    const val NOTIFICATIONS = "settings/notifications"
+}
 
 class PrefsAct : ComponentActivity() {
 
@@ -83,6 +96,9 @@ class PrefsAct : ComponentActivity() {
     private val aboutDialogVisible = mutableStateOf(false)
     private val updateAvailableState = mutableStateOf<UpdateCheckResult.UpdateAvailable?>(null)
     private var updateCheckInFlight = false
+    private val notificationChannelExecutor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "notification-channels").apply { isDaemon = true }
+    }
 
     fun exportPrefs() {
         val filename = String.format(
@@ -101,113 +117,154 @@ class PrefsAct : ComponentActivity() {
                 val availableMapModes = MapModes.all_mapmodes
                     .filter { it.isAvailable(this) }
                     .map { mode -> mode.tag to (mode.title ?: mode.tag) }
+                val navController = rememberNavController()
 
-                SettingsScreen(
-                    callsign = callsignState.value,
-                    ssid = ssidState.value,
-                    digiPath = digiPathState.value,
-                    userDigiPresets = userDigiPresetsState.value,
-                    symbol = symbolState.value,
-                    frequency = frequencyState.value,
-                    status = statusState.value,
-                    backendName = backendNameState.value,
-                    locationSourceName = locationSourceNameState.value,
-                    mapModeTag = mapModeTagState.value,
-                    mapModeTitle = mapModeTitleState.value,
-                    mapModeOptions = availableMapModes,
-                    mapCustomUrl = mapCustomUrlState.value,
-                    mapCustomSubdomains = mapCustomSubdomainsState.value,
-                    showObjects = showObjectsState.value,
-                    sendBatteryInfo = sendBatteryInfoState.value,
-                    stationTapAction = stationTapActionState.value,
-                    onBack = { finish() },
-                    onOpenCallsignDialog = {
-                        identityDialogVisible.value = true
+                NavHost(
+                    navController = navController,
+                    startDestination = SettingsRoutes.ROOT,
+                    enterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(180),
+                        )
                     },
-                    onSaveSsid = { newSsid ->
-                        prefs.set("ssid", newSsid)
-                        refreshPrefsState()
+                    exitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(180),
+                        )
                     },
-                    onSaveDigiPath = { newPath ->
-                        prefs.set("digi_path", newPath)
-                        refreshPrefsState()
+                    popEnterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(180),
+                        )
                     },
-                    onAddDigiPreset = { preset ->
-                        val current = HashSet(prefs.getDigiPathPresets())
-                        current.add(preset)
-                        prefs.saveDigiPathPresets(current)
-                        userDigiPresetsState.value = current
-                        Toast.makeText(
-                            this,
-                            getString(R.string.digi_path_preset_saved, preset),
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                    popExitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(180),
+                        )
                     },
-                    onDeleteDigiPreset = { preset ->
-                        val current = HashSet(prefs.getDigiPathPresets())
-                        current.remove(preset)
-                        prefs.saveDigiPathPresets(current)
-                        userDigiPresetsState.value = current
-                        Toast.makeText(
-                            this,
-                            getString(R.string.digi_path_preset_deleted, preset),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    },
-                    onOpenSymbolPicker = {
-                        startActivity(Intent(this, PrefSymbolAct::class.java))
-                    },
-                    onSaveFrequency = { value ->
-                        prefs.set("frequency", value.trim())
-                        refreshPrefsState()
-                    },
-                    onSaveStatus = { value ->
-                        prefs.set("status", value.take(42))
-                        refreshPrefsState()
-                    },
-                    onOpenConnectionSetup = {
-                        startActivity(Intent(this, BackendPrefs::class.java))
-                    },
-                    onOpenLocationSetup = {
-                        startActivity(Intent(this, LocationPrefs::class.java))
-                    },
-                    onSaveMapMode = { tag ->
-                        MapModes.setDefault(prefs, tag)
-                        refreshPrefsState()
-                    },
-                    onSaveMapCustomUrl = { value ->
-                        prefs.set("map_custom_url", value.trim())
-                        refreshPrefsState()
-                    },
-                    onSaveMapCustomSubdomains = { value ->
-                        prefs.set("map_custom_subdomains", value.trim())
-                        refreshPrefsState()
-                    },
-                    onToggleShowObjects = { enabled ->
-                        prefs.setBoolean("show_objects", enabled)
-                        showObjectsState.value = enabled
-                    },
-                    onToggleSendBatteryInfo = { enabled ->
-                        prefs.setBoolean("send_battery_aprsis", enabled)
-                        sendBatteryInfoState.value = enabled
-                    },
-                    onSaveStationTapAction = { action ->
-                        prefs.set("station_tap_action", action)
-                        stationTapActionState.value = action
-                    },
-                    onOpenNotificationPrefs = {
-                        startActivity(Intent(this, NotificationPrefs::class.java))
-                    },
-                    onExportProfile = { exportPrefs() },
-                    onImportProfile = { profileDocumentPicker.launch(arrayOf("*/*")) },
-                    onShareDiagnostics = {
-                        LogReportManager.shareDiagnosticReport(this)
-                    },
-                    onCheckForUpdates = { checkForUpdatesManually() },
-                    onOpenAbout = {
-                        aboutDialogVisible.value = true
-                    },
-                )
+                ) {
+                    composable(SettingsRoutes.ROOT) {
+                        SettingsScreen(
+                            callsign = callsignState.value,
+                            ssid = ssidState.value,
+                            digiPath = digiPathState.value,
+                            userDigiPresets = userDigiPresetsState.value,
+                            symbol = symbolState.value,
+                            frequency = frequencyState.value,
+                            status = statusState.value,
+                            backendName = backendNameState.value,
+                            locationSourceName = locationSourceNameState.value,
+                            mapModeTag = mapModeTagState.value,
+                            mapModeTitle = mapModeTitleState.value,
+                            mapModeOptions = availableMapModes,
+                            mapCustomUrl = mapCustomUrlState.value,
+                            mapCustomSubdomains = mapCustomSubdomainsState.value,
+                            showObjects = showObjectsState.value,
+                            sendBatteryInfo = sendBatteryInfoState.value,
+                            stationTapAction = stationTapActionState.value,
+                            onBack = { finish() },
+                            onOpenCallsignDialog = {
+                                identityDialogVisible.value = true
+                            },
+                            onSaveSsid = { newSsid ->
+                                prefs.set("ssid", newSsid)
+                                refreshPrefsState()
+                            },
+                            onSaveDigiPath = { newPath ->
+                                prefs.set("digi_path", newPath)
+                                refreshPrefsState()
+                            },
+                            onAddDigiPreset = { preset ->
+                                val current = HashSet(prefs.getDigiPathPresets())
+                                current.add(preset)
+                                prefs.saveDigiPathPresets(current)
+                                userDigiPresetsState.value = current
+                                Toast.makeText(
+                                    this@PrefsAct,
+                                    getString(R.string.digi_path_preset_saved, preset),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
+                            onDeleteDigiPreset = { preset ->
+                                val current = HashSet(prefs.getDigiPathPresets())
+                                current.remove(preset)
+                                prefs.saveDigiPathPresets(current)
+                                userDigiPresetsState.value = current
+                                Toast.makeText(
+                                    this@PrefsAct,
+                                    getString(R.string.digi_path_preset_deleted, preset),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
+                            onOpenSymbolPicker = {
+                                startActivity(Intent(this@PrefsAct, PrefSymbolAct::class.java))
+                            },
+                            onSaveFrequency = { value ->
+                                prefs.set("frequency", value.trim())
+                                refreshPrefsState()
+                            },
+                            onSaveStatus = { value ->
+                                prefs.set("status", value.take(42))
+                                refreshPrefsState()
+                            },
+                            onOpenConnectionSetup = {
+                                startActivity(Intent(this@PrefsAct, BackendPrefs::class.java))
+                            },
+                            onOpenLocationSetup = {
+                                startActivity(Intent(this@PrefsAct, LocationPrefs::class.java))
+                            },
+                            onSaveMapMode = { tag ->
+                                MapModes.setDefault(prefs, tag)
+                                refreshPrefsState()
+                            },
+                            onSaveMapCustomUrl = { value ->
+                                prefs.set("map_custom_url", value.trim())
+                                refreshPrefsState()
+                            },
+                            onSaveMapCustomSubdomains = { value ->
+                                prefs.set("map_custom_subdomains", value.trim())
+                                refreshPrefsState()
+                            },
+                            onToggleShowObjects = { enabled ->
+                                prefs.setBoolean("show_objects", enabled)
+                                showObjectsState.value = enabled
+                            },
+                            onToggleSendBatteryInfo = { enabled ->
+                                prefs.setBoolean("send_battery_aprsis", enabled)
+                                sendBatteryInfoState.value = enabled
+                            },
+                            onSaveStationTapAction = { action ->
+                                prefs.set("station_tap_action", action)
+                                stationTapActionState.value = action
+                            },
+                            onOpenNotificationPrefs = {
+                                navController.navigate(SettingsRoutes.NOTIFICATIONS) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onExportProfile = { exportPrefs() },
+                            onImportProfile = { profileDocumentPicker.launch(arrayOf("*/*")) },
+                            onShareDiagnostics = {
+                                LogReportManager.shareDiagnosticReport(this@PrefsAct)
+                            },
+                            onCheckForUpdates = { checkForUpdatesManually() },
+                            onOpenAbout = {
+                                aboutDialogVisible.value = true
+                            },
+                        )
+                    }
+
+                    composable(SettingsRoutes.NOTIFICATIONS) {
+                        NotificationSettingsScreen(
+                            onBack = { navController.popBackStack() },
+                            onOpenChannelSettings = ::openChannelSettings,
+                        )
+                    }
+                }
 
                 if (identityDialogVisible.value) {
                     PasscodeDialogCompose(
@@ -274,11 +331,45 @@ class PrefsAct : ComponentActivity() {
                 }
             }
         }
+
+        ensureNotificationChannelsAsync()
     }
 
     override fun onResume() {
         super.onResume()
         refreshPrefsState()
+    }
+
+    override fun onDestroy() {
+        notificationChannelExecutor.shutdownNow()
+        super.onDestroy()
+    }
+
+    private fun ensureNotificationChannelsAsync(onReady: (() -> Unit)? = null) {
+        val appContext = applicationContext
+        notificationChannelExecutor.execute {
+            try {
+                ServiceNotifier.instance.setupChannels(appContext)
+            } catch (_: Exception) {
+                // The system settings page can still be opened even if an OEM service call fails.
+            }
+            if (onReady != null) {
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) onReady()
+                }
+            }
+        }
+    }
+
+    private fun openChannelSettings(channelId: String) {
+        ensureNotificationChannelsAsync {
+            startActivity(
+                Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    putExtra(Settings.EXTRA_CHANNEL_ID, channelId)
+                },
+            )
+        }
     }
 
     private fun checkForUpdatesManually() {
