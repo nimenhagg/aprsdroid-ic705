@@ -64,12 +64,13 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             native/graywolf-jni/target
-          key: graywolf-rust-v3-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
+          key: graywolf-rust-v4-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
 
       - name: Run synthetic Graywolf production-rate loopbacks
         run: |
           bash .github/scripts/test_graywolf_loopback.sh
           test -s native/graywolf-jni/Cargo.lock
+          git diff --exit-code -- native/graywolf-jni/Cargo.lock
 
       - name: Verify Graywolf corresponding source archive
         run: |
@@ -143,12 +144,11 @@ jobs:
           (cd graywolf-ci-apks && sha256sum *.apk > SHA256SUMS.txt)
           ls -lh graywolf-ci-apks
 
-      - name: Upload APK and Cargo lock artifacts
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v7
         with:
           name: graywolf-afsk-rx-apk
           path: |
             graywolf-ci-apks/*.apk
             graywolf-ci-apks/SHA256SUMS.txt
-            native/graywolf-jni/Cargo.lock
           if-no-files-found: error

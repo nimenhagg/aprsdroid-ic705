@@ -32,6 +32,9 @@ command -v rustup >/dev/null || { echo "rustup is required" >&2; exit 2; }
 command -v protoc >/dev/null || { echo "protoc is required (protobuf-compiler on Ubuntu)" >&2; exit 2; }
 
 MANIFEST="$ROOT/native/graywolf-jni/Cargo.toml"
+LOCKFILE="$ROOT/native/graywolf-jni/Cargo.lock"
+test -s "$LOCKFILE" || { echo "Missing committed Graywolf Cargo.lock: $LOCKFILE" >&2; exit 2; }
+
 NDK="$ANDROID_HOME/ndk/$NDK_VERSION"
 if [ ! -d "$NDK" ]; then
   SDKMANAGER="$(command -v sdkmanager || true)"
@@ -71,6 +74,7 @@ export "CARGO_TARGET_${CARGO_TARGET_ENV}_RUSTFLAGS=-C link-arg=-Wl,-z,max-page-s
 
 cargo build \
   --manifest-path "$MANIFEST" \
+  --locked \
   --target "$TARGET" \
   --release
 
