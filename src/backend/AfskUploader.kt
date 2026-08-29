@@ -9,18 +9,16 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.util.Log
 import androidx.core.content.ContextCompat
-import com.jazzido.PacketDroid.PacketCallback
 import com.nogy.afu.soundmodem.APRSFrame
 import com.nogy.afu.soundmodem.Afsk
 import com.nogy.afu.soundmodem.Message
 import net.ab0oo.aprs.parser.APRSPacket
 import net.ab0oo.aprs.parser.Digipeater
-import sivantoledo.ax25.PacketHandler
 
 class AfskUploader(
     val service: AprsService,
-    prefs: PrefsWrapper
-) : AprsBackend(prefs), PacketHandler, PacketCallback {
+    prefs: PrefsWrapper,
+) : AprsBackend(prefs) {
 
     companion object {
         const val TAG = "APRSdroid.Afsk"
@@ -28,15 +26,15 @@ class AfskUploader(
 
     var frameLength: Int = prefs.getStringInt("afsk.prefix", 200) * 1200 / 8 / 1000
     var digis: String = prefs.getString("digi_path", "WIDE1-1")
-    val useHq: Boolean = prefs.getAfskHQ()
     val useBt: Boolean = prefs.getAfskBluetooth()
     val samplerate: Int = if (useBt) 16000 else 22050
     val outType: Int = prefs.getAfskOutput()
     val inType: Int = if (useBt) 1 else 1
     val output: Afsk = Afsk(outType, samplerate)
-    val aw: AfskInWrapper = AfskInWrapper(useHq, this, inType, samplerate / 2)
+    val aw: AfskInWrapper = AfskInWrapper(this, inType, samplerate / 2)
     private val ax25PacketConsumer = Ax25PacketConsumer(
-        Ax25SubmitSink { text -> service.postSubmit(text) }, TAG
+        Ax25SubmitSink { text -> service.postSubmit(text) },
+        TAG,
     )
 
     init {
@@ -53,7 +51,10 @@ class AfskUploader(
             if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
                 log(service.getString(R.string.afsk_info_sco_est))
                 aw.start()
-                try { service.unregisterReceiver(this) } catch (_: Exception) {}
+                try {
+                    service.unregisterReceiver(this)
+                } catch (_: Exception) {
+                }
                 service.postPosterStarted()
             }
         }
@@ -77,10 +78,11 @@ class AfskUploader(
             val am = service.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             am.startBluetoothSco()
             ContextCompat.registerReceiver(
-                service, btScoReceiver,
+                service,
+                btScoReceiver,
                 IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_CHANGED),
                 // Bluetooth SCO state is emitted by a privileged system component.
-                ContextCompat.RECEIVER_EXPORTED
+                ContextCompat.RECEIVER_EXPORTED,
             )
             false
         } else {
@@ -109,20 +111,16 @@ class AfskUploader(
             val am = service.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             @Suppress("DEPRECATION")
             am.stopBluetoothSco()
-            try { service.unregisterReceiver(btScoReceiver) } catch (_: RuntimeException) {}
+            try {
+                service.unregisterReceiver(btScoReceiver)
+            } catch (_: RuntimeException) {
+            }
         }
     }
 
-    override fun handlePacket(data: ByteArray) {
+    /** Receives a raw FCS-stripped AX.25 frame from Graywolf. */
+    fun handlePacket(data: ByteArray) {
         ax25PacketConsumer.accept(data)
-    }
-
-    override fun received(data: ByteArray) {
-        handlePacket(data)
-    }
-
-    override fun peak(peakValue: Short) {
-        notifyMicLevel(peakValue / 330)
     }
 
     fun notifyMicLevel(level: Int) {

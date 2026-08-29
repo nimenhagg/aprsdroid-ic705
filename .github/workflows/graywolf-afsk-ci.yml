@@ -8,6 +8,7 @@ on:
     paths:
       - 'native/graywolf-jni/**'
       - 'src/audio/**'
+      - 'src/backend/**'
       - 'src/ic705/backend/**'
       - '.github/scripts/build_graywolf_android.sh'
       - '.github/scripts/test_graywolf_loopback.sh'
@@ -29,6 +30,14 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Verify production AFSK RX is Graywolf-only
+        run: |
+          set -euo pipefail
+          if grep -R -n -E 'Afsk1200Demodulator|AudioBufferProcessor|PacketCallback|loadLibrary\("multimon"\)' src; then
+            echo "Legacy AFSK receive implementation is referenced by production source" >&2
+            exit 1
+          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6

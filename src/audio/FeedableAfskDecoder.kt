@@ -1,15 +1,15 @@
 package org.aprsdroid.app.audio
 
 /**
- * Feedable AFSK1200 decoder for the IC-705 receive path.
+ * Feedable production AFSK1200 decoder for local PCM receive paths.
  *
- * Graywolf is mandatory for this production path. If the native library cannot
- * be loaded or initialized, construction fails immediately instead of silently
- * falling back to the legacy Java demodulator.
+ * Graywolf is mandatory. If the native library cannot be loaded or initialized,
+ * construction fails immediately instead of silently falling back to a legacy
+ * Java demodulator.
  *
  * This class accepts mono PCM16 samples and forwards decoded raw AX.25 frames
- * to [onPacket]. It is synchronized so a transport can reset or close it safely
- * while its receive loop is active.
+ * to [onPacket]. It is synchronized so a transport or audio thread can reset or
+ * close it safely while samples are being delivered.
  */
 class FeedableAfskDecoder(
     override val format: PcmFormat,

@@ -1,10 +1,11 @@
 package org.aprsdroid.app.audio
 
 /**
- * Feedable Bell 202 / AX.25 decoder backed by Graywolf's modern Rust demodulator.
+ * Feedable Bell 202 / AX.25 decoder backed by Graywolf's Rust demodulator.
  *
- * The native library is optional at runtime so host JVM tests and developer builds
- * that have not built the Rust artifact can continue to use the legacy Java path.
+ * Graywolf is the mandatory production receive engine for local AFSK1200 PCM
+ * paths. Native load or initialization failures are surfaced to the caller;
+ * there is intentionally no legacy receive fallback.
  */
 internal class GraywolfAfskDecoder(
     override val format: PcmFormat,

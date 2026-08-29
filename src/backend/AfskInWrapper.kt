@@ -1,16 +1,18 @@
 package org.aprsdroid.app
 
-import com.jazzido.PacketDroid.AudioBufferProcessor
-
-class AfskInWrapper(private val hq: Boolean, au: AfskUploader, inType: Int, samplerate: Int) {
-    private var abp: AudioBufferProcessor? = if (!hq) AudioBufferProcessor(au.service, au) else null
-    private var ad: AfskDemodulator? = if (hq) AfskDemodulator(au, inType, samplerate) else null
+/** Owns the single Graywolf-backed microphone/routed-audio receive thread. */
+class AfskInWrapper(
+    au: AfskUploader,
+    inType: Int,
+    samplerate: Int,
+) {
+    private val demodulator = AfskDemodulator(au, inType, samplerate)
 
     fun start() {
-        if (!hq) abp?.start() else ad?.start()
+        demodulator.start()
     }
 
     fun close() {
-        if (!hq) abp?.stopRecording() else ad?.close()
+        demodulator.close()
     }
 }

@@ -12,10 +12,11 @@ import sivantoledo.ax25.Packet
 import sivantoledo.ax25.PacketHandler
 
 /**
- * Host-JVM sanity tests for the Java AFSK modulator / legacy microphone modem.
+ * Host-JVM sanity tests for the legacy Java transmit-side AFSK generator.
  *
- * These tests intentionally do not exercise the IC-705 production decoder:
- * Graywolf is mandatory there and is covered by test_graywolf_loopback.sh.
+ * The old Java demodulator appears here only as a test oracle and is not used by
+ * any production receive path. Production local AFSK RX is Graywolf-only and is
+ * covered by test_graywolf_loopback.sh plus Android build/package validation.
  */
 class Afsk1200LoopbackTest {
 
@@ -76,7 +77,7 @@ class Afsk1200LoopbackTest {
         }
 
         val receivedRaw = decodedFrame.get()
-        assertNotNull("Legacy sanity decoder must have produced a raw AX.25 frame", receivedRaw)
+        assertNotNull("Legacy test oracle must have produced a raw AX.25 frame", receivedRaw)
 
         val parsedReceived = Parser.parseAX25(receivedRaw)
         assertEquals(testSource, parsedReceived.sourceCall)
@@ -104,7 +105,7 @@ class Afsk1200LoopbackTest {
         demodulator.addSamples(floats, floats.size)
 
         val raw = received.get()
-        assertNotNull("Legacy sanity decoder must receive direct packet", raw)
+        assertNotNull("Legacy test oracle must receive direct packet", raw)
         val parsed = Parser.parseAX25(raw)
         assertEquals("N0CALL", parsed.sourceCall)
         assertEquals("APRS", parsed.destinationCall)
