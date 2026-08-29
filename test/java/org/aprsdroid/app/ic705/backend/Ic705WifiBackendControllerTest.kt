@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import net.ab0oo.aprs.parser.APRSPacket
 import net.ab0oo.aprs.parser.Parser
 import org.aprsdroid.app.R
-import org.aprsdroid.app.audio.FeedableAfskDecoder
 import org.aprsdroid.app.audio.PcmFormat
 import org.aprsdroid.app.audio.PcmSink
 import org.aprsdroid.app.ic705.session.Ic705RadioSession
@@ -22,7 +21,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
-import sivantoledo.ax25.Afsk1200Modulator
 import sivantoledo.ax25.Packet
 
 /**
@@ -30,7 +28,8 @@ import sivantoledo.ax25.Packet
  *
  * The controller is the only unit tested here: [Ic705WifiBackend] is a thin
  * adapter whose production wiring is trivial. All Android dependencies are
- * injected, so these tests run on the plain JVM.
+ * injected, so these tests run on the plain JVM. Graywolf DSP correctness is
+ * exercised separately by the deterministic Rust 12 kHz synthetic loopback.
  */
 class Ic705WifiBackendControllerTest {
 
@@ -226,7 +225,6 @@ class Ic705WifiBackendControllerTest {
         assertEquals(1, sessionFactory.sessions.size)
         assertEquals(1, decoderFactory.decoders.size)
         assertEquals(1, sessionFactory.sessions.single().startCalls.get())
-        // The backend never opens UDP sockets itself; the session owns them.
         assertEquals(0, socketFactory.createCalls.get())
     }
 
@@ -283,28 +281,6 @@ class Ic705WifiBackendControllerTest {
 
         assertEquals(listOf(expectedText(packet)), service.submitted.toList())
         assertEquals(0, session.closeCalls.get())
-    }
-
-    @Test
-    fun realAfskRoundTripReachesPostSubmitExactlyOnce() {
-        val service = FakeService()
-        val sessionFactory = FakeSessionFactory()
-        val ctl = controller(
-            service = service,
-            sessionFactory = sessionFactory,
-            decoderFactory = Ic705DecoderFactory { format, onPacket ->
-                FeedableAfskDecoder(format, onPacket)
-            },
-        )
-
-        ctl.start()
-        val decoder = sessionFactory.sessions.single().audioSink
-        sessionFactory.sessions.single().emitState(Ic705RxSessionEngine.Phase.RECEIVING)
-
-        val packet = testPacket()
-        decoder.write(modulate(packet))
-
-        assertEquals(listOf(expectedText(packet)), service.submitted.toList())
     }
 
     @Test
@@ -394,7 +370,6 @@ class Ic705WifiBackendControllerTest {
         assertEquals(1, session.closeCalls.get())
         assertEquals(1, decoder.closeCalls.get())
         assertTrue(decoder.closed)
-        // Post-stop state changes are suppressed.
         session.emitState(Ic705RxSessionEngine.Phase.RECEIVING)
         assertEquals(0, service.startedCalls.get())
     }
@@ -411,7 +386,6 @@ class Ic705WifiBackendControllerTest {
         val decoder = decoderFactory.decoders.single()
         val packet = testPacket()
 
-        // A frame delivered before close is submitted normally.
         decoder.emitPacket(packet.bytesWithoutCRC())
         assertEquals(listOf(expectedText(packet)), service.submitted.toList())
 
@@ -434,7 +408,6 @@ class Ic705WifiBackendControllerTest {
         assertTrue(decoder.closed)
         assertEquals(1, session.closeCalls.get())
 
-        // Feeding after close must not deliver anything.
         val submittedBefore = service.submitted.size
         try {
             decoder.emitPacket(packet.bytesWithoutCRC())
@@ -685,7 +658,7 @@ class Ic705WifiBackendControllerTest {
 
         assertTrue(pending.cancelled)
         assertEquals(1, scheduler.closeCalls)
-        pending.action() // Simulate a timer race after cancellation.
+        pending.action()
         assertEquals(1, sessionFactory.sessions.size)
     }
 
@@ -708,7 +681,6 @@ class Ic705WifiBackendControllerTest {
         oldSession.emitState(Ic705RxSessionEngine.Phase.RECONNECT_WAIT)
         oldSession.emitState(Ic705RxSessionEngine.Phase.FAILED)
 
-        // The generation is invalidated before close/retry, so late callbacks are ignored.
         oldSession.emitState(Ic705RxSessionEngine.Phase.RECEIVING)
         oldDecoder.emitPacketUnchecked(testPacket().bytesWithoutCRC())
         assertEquals(0, service.startedCalls.get())
@@ -743,24 +715,5 @@ class Ic705WifiBackendControllerTest {
         )
         assertEquals(800L, lowJitter.delayMillis(0))
         assertEquals(1_200L, highJitter.delayMillis(0))
-    }
-
-    // ------------------------------------------------------------- helpers
-
-    /** Modulates an AX.25 frame into 12 kHz mono PCM16 signed shorts. */
-    private fun modulate(packet: Packet, sampleRate: Int = 12_000): ShortArray {
-        val modulator = Afsk1200Modulator(sampleRate)
-        modulator.prepareToTransmit(packet)
-        val samples = mutableListOf<Float>()
-        while (true) {
-            val buffer = modulator.getTxSamplesBuffer()
-            val count = modulator.getSamples()
-            if (count == 0) break
-            for (index in 0 until count) samples.add(buffer[index])
-            check(samples.size <= sampleRate * 3) { "modulator produced too many samples" }
-        }
-        return ShortArray(samples.size) { index ->
-            (samples[index] * 32_767f).toInt().toShort()
-        }
     }
 }
