@@ -1,0 +1,111 @@
+name: Graywolf AFSK RX CI
+
+on:
+  push:
+    branches:
+      - feat/graywolf-afsk-rx
+  pull_request:
+    paths:
+      - 'native/graywolf-jni/**'
+      - 'src/audio/**'
+      - '.github/scripts/build_graywolf_android.sh'
+      - '.github/workflows/graywolf-afsk-ci.yml'
+      - 'build.gradle'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Build Graywolf, Test, Lint & ARM64 APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Install Graywolf build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          cargo --version
+          rustc --version
+          protoc --version
+
+      - name: Restore Cargo cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/graywolf-jni/target
+          key: graywolf-rust-v1-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml') }}
+
+      - name: Build ARM64 Graywolf JNI
+        run: |
+          bash .github/scripts/build_graywolf_android.sh \
+            arm64-v8a \
+            "$PWD/libs/arm64-v8a/libaprs_graywolf.so"
+          test -s libs/arm64-v8a/libaprs_graywolf.so
+
+      - name: Run Unit Tests, Lint, and Build APKs
+        env:
+          JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: |
+          chmod +x gradlew
+          ./gradlew \
+            verifyReleaseVersion \
+            testArm64OpenglDebugUnitTest \
+            lintArm64OpenglDebug \
+            assembleArm64OpenglDebug \
+            assembleArm64OpenglRelease \
+            --no-daemon --stacktrace
+
+      - name: Verify Graywolf is packaged
+        run: |
+          set -euo pipefail
+          expected=$(sha256sum libs/arm64-v8a/libaprs_graywolf.so | awk '{print $1}')
+          for variant in debug release; do
+            apk=$(find "build/outputs/apk/arm64Opengl/$variant" -name '*.apk' -print -quit)
+            test -n "$apk"
+            count=$(unzip -Z1 "$apk" | grep -c '^lib/arm64-v8a/libaprs_graywolf\.so$')
+            test "$count" -eq 1
+            actual=$(unzip -p "$apk" lib/arm64-v8a/libaprs_graywolf.so | sha256sum | awk '{print $1}')
+            if [ "$actual" != "$expected" ]; then
+              echo "Graywolf native hash mismatch in $apk" >&2
+              echo "expected=$expected" >&2
+              echo "actual=$actual" >&2
+              exit 1
+            fi
+            echo "Verified $variant Graywolf JNI: $actual"
+          done
+
+      - name: Prepare installable debug APK
+        run: |
+          set -euo pipefail
+          short_sha=$(git rev-parse --short HEAD)
+          mkdir -p graywolf-ci-apks
+          debug_apk=$(find build/outputs/apk/arm64Opengl/debug -name '*.apk' -print -quit)
+          cp "$debug_apk" "graywolf-ci-apks/APRSdroid-${short_sha}-graywolf-arm64-v8a-debug.apk"
+          (cd graywolf-ci-apks && sha256sum *.apk > SHA256SUMS.txt)
+          ls -lh graywolf-ci-apks
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: graywolf-afsk-rx-apk
+          path: |
+            graywolf-ci-apks/*.apk
+            graywolf-ci-apks/SHA256SUMS.txt
+          if-no-files-found: error
