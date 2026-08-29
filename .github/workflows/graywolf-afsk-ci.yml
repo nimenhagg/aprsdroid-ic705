@@ -10,6 +10,7 @@ on:
       - 'src/audio/**'
       - '.github/scripts/build_graywolf_android.sh'
       - '.github/workflows/graywolf-afsk-ci.yml'
+      - '.github/workflows/release.yml'
       - 'build.gradle'
   workflow_dispatch:
 
@@ -18,7 +19,7 @@ permissions:
 
 jobs:
   verify:
-    name: Build Graywolf, Test, Lint & ARM64 APK
+    name: Build Graywolf, Test, Lint & Release ABIs
     runs-on: ubuntu-latest
 
     steps:
@@ -51,12 +52,16 @@ jobs:
             native/graywolf-jni/target
           key: graywolf-rust-v1-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml') }}
 
-      - name: Build ARM64 Graywolf JNI
+      - name: Build release Graywolf JNI libraries
         run: |
           bash .github/scripts/build_graywolf_android.sh \
             arm64-v8a \
             "$PWD/libs/arm64-v8a/libaprs_graywolf.so"
+          bash .github/scripts/build_graywolf_android.sh \
+            armeabi-v7a \
+            "$PWD/libs/armeabi-v7a/libaprs_graywolf.so"
           test -s libs/arm64-v8a/libaprs_graywolf.so
+          test -s libs/armeabi-v7a/libaprs_graywolf.so
 
       - name: Run Unit Tests, Lint, and Build APKs
         env:
@@ -70,26 +75,36 @@ jobs:
             lintArm64OpenglDebug \
             assembleArm64OpenglDebug \
             assembleArm64OpenglRelease \
+            assembleArm32OpenglRelease \
             --no-daemon --stacktrace
 
       - name: Verify Graywolf is packaged
         run: |
           set -euo pipefail
-          expected=$(sha256sum libs/arm64-v8a/libaprs_graywolf.so | awk '{print $1}')
-          for variant in debug release; do
-            apk=$(find "build/outputs/apk/arm64Opengl/$variant" -name '*.apk' -print -quit)
+
+          verify_native() {
+            local flavor="$1"
+            local variant="$2"
+            local abi="$3"
+            local expected apk count actual
+            expected=$(sha256sum "libs/${abi}/libaprs_graywolf.so" | awk '{print $1}')
+            apk=$(find "build/outputs/apk/${flavor}/${variant}" -name '*.apk' -print -quit)
             test -n "$apk"
-            count=$(unzip -Z1 "$apk" | grep -c '^lib/arm64-v8a/libaprs_graywolf\.so$')
+            count=$(unzip -Z1 "$apk" | grep -c "^lib/${abi}/libaprs_graywolf\\.so$")
             test "$count" -eq 1
-            actual=$(unzip -p "$apk" lib/arm64-v8a/libaprs_graywolf.so | sha256sum | awk '{print $1}')
+            actual=$(unzip -p "$apk" "lib/${abi}/libaprs_graywolf.so" | sha256sum | awk '{print $1}')
             if [ "$actual" != "$expected" ]; then
               echo "Graywolf native hash mismatch in $apk" >&2
               echo "expected=$expected" >&2
               echo "actual=$actual" >&2
               exit 1
             fi
-            echo "Verified $variant Graywolf JNI: $actual"
-          done
+            echo "Verified ${flavor}/${variant} Graywolf JNI: ${actual}"
+          }
+
+          verify_native arm64Opengl debug arm64-v8a
+          verify_native arm64Opengl release arm64-v8a
+          verify_native arm32Opengl release armeabi-v7a
 
       - name: Prepare installable debug APK
         run: |

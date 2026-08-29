@@ -30,6 +30,23 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Install Graywolf build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          cargo --version
+          rustc --version
+          protoc --version
+
+      - name: Restore Cargo cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/graywolf-jni/target
+          key: graywolf-rust-v1-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml') }}
+
       - name: Restore ARM64 MinSizeRel MapLibre
         uses: actions/cache@v6
         with:
@@ -52,6 +69,17 @@ jobs:
             bash .github/scripts/build_maplibre_minsizerel.sh \
               13.5.1 armeabi-v7a \
               "$PWD/.cache/maplibre-minsizerel/13.5.1/armeabi-v7a/libmaplibre.so"
+          fi
+
+      - name: Build Graywolf Android Native
+        run: |
+          bash .github/scripts/build_graywolf_android.sh \
+            arm64-v8a \
+            "$PWD/libs/arm64-v8a/libaprs_graywolf.so"
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            bash .github/scripts/build_graywolf_android.sh \
+              armeabi-v7a \
+              "$PWD/libs/armeabi-v7a/libaprs_graywolf.so"
           fi
 
       - name: Grant Execute Permission to Gradlew
@@ -126,6 +154,11 @@ jobs:
               echo "Missing custom MinSizeRel MapLibre library for ${abi}" >&2
               exit 1
             fi
+            local graywolf_so="$PWD/libs/${abi}/libaprs_graywolf.so"
+            if [ ! -s "$graywolf_so" ]; then
+              echo "Missing Graywolf JNI library for ${abi}" >&2
+              exit 1
+            fi
 
             local patched="$RUNNER_TEMP/maplibre-patched/${flavor}-patched.apk"
             local aligned="$RUNNER_TEMP/maplibre-patched/${flavor}-aligned.apk"
@@ -163,6 +196,22 @@ jobs:
               exit 1
             fi
             echo "Verified MinSizeRel MapLibre ${abi}: ${actual_so}"
+
+            local expected_graywolf actual_graywolf graywolf_count
+            expected_graywolf=$(sha256sum "$graywolf_so" | awk '{print $1}')
+            graywolf_count=$(unzip -Z1 "$destination" | grep -c "^lib/${abi}/libaprs_graywolf\\.so$")
+            if [ "$graywolf_count" -ne 1 ]; then
+              echo "Unexpected Graywolf JNI count for ${abi}: ${graywolf_count}" >&2
+              exit 1
+            fi
+            actual_graywolf=$(unzip -p "$destination" "lib/${abi}/libaprs_graywolf.so" | sha256sum | awk '{print $1}')
+            if [ "$actual_graywolf" != "$expected_graywolf" ]; then
+              echo "Packaged Graywolf hash mismatch for ${abi}" >&2
+              echo "expected=${expected_graywolf}" >&2
+              echo "actual=${actual_graywolf}" >&2
+              exit 1
+            fi
+            echo "Verified Graywolf JNI ${abi}: ${actual_graywolf}"
 
             mapfile -t packaged_abis < <(
               unzip -Z1 "$destination" |

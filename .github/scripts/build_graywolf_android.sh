@@ -52,7 +52,8 @@ TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/$HOST_TAG"
 LINKER="$TOOLCHAIN/bin/${LINKER_PREFIX}${ANDROID_API}-clang"
 STRIP="$TOOLCHAIN/bin/llvm-strip"
 READELF="$TOOLCHAIN/bin/llvm-readelf"
-if [ ! -x "$LINKER" ] || [ ! -x "$STRIP" ]; then
+NM="$TOOLCHAIN/bin/llvm-nm"
+if [ ! -x "$LINKER" ] || [ ! -x "$STRIP" ] || [ ! -x "$NM" ]; then
   echo "Required NDK LLVM tools are missing under $TOOLCHAIN" >&2
   exit 2
 fi
@@ -82,6 +83,17 @@ fi
 cp "$SOURCE" "$OUTPUT"
 "$STRIP" --strip-unneeded "$OUTPUT"
 
+for symbol in \
+  Java_org_aprsdroid_app_audio_GraywolfNative_nativeCreate \
+  Java_org_aprsdroid_app_audio_GraywolfNative_nativeProcess \
+  Java_org_aprsdroid_app_audio_GraywolfNative_nativeDestroy; do
+  if ! "$NM" -D --defined-only "$OUTPUT" | awk '{print $3}' | grep -Fxq "$symbol"; then
+    echo "Missing JNI export in $OUTPUT: $symbol" >&2
+    exit 1
+  fi
+done
+
+echo "Verified Graywolf JNI exports for $ABI"
 if [ -x "$READELF" ]; then
   echo "ELF load alignment for $ABI:"
   "$READELF" -l "$OUTPUT" | grep -E 'LOAD|GNU_RELRO' || true
