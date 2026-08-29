@@ -78,8 +78,10 @@ jobs:
           bash .github/scripts/package_graywolf_source.sh "$out"
           archive=$(find "$out" -name 'Graywolf-source-*.tar.gz' -print -quit)
           test -s "$archive"
-          tar -tzf "$archive" | grep -q '/LICENSE$'
-          tar -tzf "$archive" | grep -q '/graywolf-modem/Cargo.toml$'
+          listing="$RUNNER_TEMP/graywolf-source-files.txt"
+          tar -tzf "$archive" > "$listing"
+          grep -q '/LICENSE$' "$listing"
+          grep -q '/graywolf-modem/Cargo.toml$' "$listing"
 
       - name: Build release Graywolf JNI libraries
         run: |
