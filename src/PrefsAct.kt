@@ -13,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
-import androidx.core.net.toUri
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -207,6 +206,9 @@ class PrefsAct : ComponentActivity() {
                         LogReportManager.shareDiagnosticReport(this@PrefsAct)
                     },
                     onCheckForUpdates = { checkForUpdatesManually() },
+                    onOpenCreditsAndLinks = {
+                        startActivity(Intent(this@PrefsAct, CreditsAndLinksActivity::class.java))
+                    },
                     onOpenAbout = {
                         aboutDialogVisible.value = true
                     },
@@ -237,11 +239,9 @@ class PrefsAct : ComponentActivity() {
                     AboutDialogContent(
                         onDismiss = { aboutDialogVisible.value = false },
                         onOpenGithub = {
-                            startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    "https://github.com/nimenhagg/aprsdroid-ic705".toUri(),
-                                ),
+                            UrlOpener.open(
+                                this@PrefsAct,
+                                "https://github.com/nimenhagg/aprsdroid-ic705",
                             )
                         },
                     )
@@ -260,9 +260,7 @@ class PrefsAct : ComponentActivity() {
                             TextButton(
                                 onClick = {
                                     updateAvailableState.value = null
-                                    startActivity(
-                                        Intent(Intent.ACTION_VIEW, update.releaseUrl.toUri()),
-                                    )
+                                    UrlOpener.open(this@PrefsAct, update.releaseUrl)
                                 },
                             ) {
                                 Text(stringResource(R.string.update_open_release))

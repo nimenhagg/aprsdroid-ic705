@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
@@ -98,6 +99,7 @@ fun SettingsScreen(
     onImportProfile: () -> Unit,
     onShareDiagnostics: () -> Unit,
     onCheckForUpdates: () -> Unit,
+    onOpenCreditsAndLinks: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -350,6 +352,13 @@ fun SettingsScreen(
                     icon = Icons.Default.SystemUpdateAlt,
                     onClick = onCheckForUpdates,
                     showChevron = false,
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceItem(
+                    title = stringResource(R.string.setting_credits_links),
+                    summary = stringResource(R.string.setting_credits_links_summary),
+                    icon = Icons.Default.Link,
+                    onClick = onOpenCreditsAndLinks,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(

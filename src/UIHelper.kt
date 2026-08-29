@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import androidx.core.net.toUri
 import android.os.Build
 import android.os.Environment
 import android.os.Handler
@@ -16,7 +15,9 @@ import android.view.View
 import android.widget.AdapterView.AdapterContextMenuInfo
 import android.widget.EditText
 import android.widget.Toast
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import org.aprsdroid.app.location.LocationSource
 import java.io.File
 import java.io.PrintWriter
@@ -125,12 +126,40 @@ object UIHelper {
 object UrlOpener {
     @JvmStatic
     fun open(ctx: Context, url: String) {
+        val uri = url.toUri()
+        val isWebUrl = uri.scheme.equals("http", ignoreCase = true) ||
+            uri.scheme.equals("https", ignoreCase = true)
+
         try {
-            ctx.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-        } catch (e: Exception) {
-            Toast.makeText(ctx, e.localizedMessage, Toast.LENGTH_SHORT).show()
+            if (isWebUrl) {
+                val customTab = CustomTabsIntent.Builder()
+                    .setShowTitle(true)
+                    .setShareState(CustomTabsIntent.SHARE_STATE_ON)
+                    .build()
+                if (ctx !is Activity) {
+                    customTab.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                customTab.launchUrl(ctx, uri)
+            } else {
+                ctx.startActivity(viewIntent(ctx, uri.toString()))
+            }
+        } catch (primary: Exception) {
+            try {
+                ctx.startActivity(viewIntent(ctx, uri.toString()))
+            } catch (fallback: Exception) {
+                Toast.makeText(
+                    ctx,
+                    fallback.localizedMessage ?: primary.localizedMessage ?: url,
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
         }
     }
+
+    private fun viewIntent(ctx: Context, url: String): Intent =
+        Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+            if (ctx !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
 }
 
 class UrlOpenerClickListener(private val ctx: Context, private val url: String) : DialogInterface.OnClickListener {
@@ -215,10 +244,11 @@ class LogExporter(
                 }
             }
 
+            val errorMessage = error
             handler.post {
                 onDone()
-                if (error != null) {
-                    Toast.makeText(activity, error, Toast.LENGTH_SHORT).show()
+                if (errorMessage != null) {
+                    Toast.makeText(activity, errorMessage, Toast.LENGTH_SHORT).show()
                 } else {
                     UIHelper.shareFile(activity, file, filename)
                 }

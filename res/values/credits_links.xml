@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_credits_links">Open-source credits &amp; app links</string>
+    <string name="setting_credits_links_summary">Related APRS apps and open-source software used by this project</string>
+    <string name="credits_links_title">Open-source credits &amp; app links</string>
+    <string name="credits_related_apps">Related apps</string>
+    <string name="credits_aprslocus_summary">APRS-IS-focused APRS client; complementary to this app\'s radio-focused workflow</string>
+    <string name="credits_open_source">Open-source projects &amp; acknowledgements</string>
+    <string name="credits_aprsdroid_summary">Upstream project and application foundation · GPL-2.0</string>
+    <string name="credits_graywolf_summary">Rust AFSK/AX.25 receive engine · GPL-2.0</string>
+    <string name="credits_direwolf_summary">AFSK/AX.25 DSP lineage used by Graywolf · GPL-2.0</string>
+    <string name="credits_maplibre_summary">Map rendering engine · BSD-2-Clause</string>
+    <string name="credits_okhttp_summary">HTTP networking · Apache-2.0</string>
+    <string name="credits_androidx_summary">Android UI and framework components · Apache-2.0</string>
+</resources>

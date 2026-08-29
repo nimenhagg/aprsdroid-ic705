@@ -84,6 +84,9 @@
 	<activity android:name=".NotificationSettingsActivity" android:label="@string/p__notification"
 		android:parentActivityName=".PrefsAct"
 		/>
+	<activity android:name=".CreditsAndLinksActivity" android:label="@string/credits_links_title"
+		android:parentActivityName=".PrefsAct"
+		/>
 	<activity android:name=".BackendPrefs" android:label="@string/p__connection"
 		android:parentActivityName=".PrefsAct"
 		/>

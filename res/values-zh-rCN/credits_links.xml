@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_credits_links">开源致谢与应用链接</string>
+    <string name="setting_credits_links_summary">相关 APRS 应用与本项目使用的开源软件</string>
+    <string name="credits_links_title">开源致谢与应用链接</string>
+    <string name="credits_related_apps">相关应用</string>
+    <string name="credits_aprslocus_summary">专注 APRS-IS 的 APRS 客户端，与本应用的无线电 APRS 功能互补</string>
+    <string name="credits_open_source">开源项目与致谢</string>
+    <string name="credits_aprsdroid_summary">本项目的上游基础 · GPL-2.0</string>
+    <string name="credits_graywolf_summary">Rust AFSK/AX.25 接收引擎 · GPL-2.0</string>
+    <string name="credits_direwolf_summary">Graywolf 使用的 AFSK/AX.25 DSP 技术来源 · GPL-2.0</string>
+    <string name="credits_maplibre_summary">地图渲染引擎 · BSD-2-Clause</string>
+    <string name="credits_okhttp_summary">HTTP 网络通信 · Apache-2.0</string>
+    <string name="credits_androidx_summary">Android UI 与基础组件 · Apache-2.0</string>
+</resources>
