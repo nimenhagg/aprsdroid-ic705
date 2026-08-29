@@ -15,20 +15,19 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import net.ab0oo.aprs.parser.APRSPacket
-import net.ab0oo.aprs.parser.APRSTypes
 import net.ab0oo.aprs.parser.CourseAndSpeedExtension
 import net.ab0oo.aprs.parser.Digipeater
 import net.ab0oo.aprs.parser.InformationField
-import net.ab0oo.aprs.parser.MessagePacket
-import net.ab0oo.aprs.parser.ObjectPacket
 import net.ab0oo.aprs.parser.Parser
 import net.ab0oo.aprs.parser.Position as AprsPosition
 import net.ab0oo.aprs.parser.PositionPacket
 import org.aprsdroid.app.data.preferences.AprsServiceSettings
+import org.aprsdroid.app.data.repository.StorageDatabasePacketPostRepository
 import org.aprsdroid.app.location.LocationSource
 import org.aprsdroid.app.service.AprsBackendServiceAdapter
 import org.aprsdroid.app.service.BackendLifecycleCoordinator
 import org.aprsdroid.app.service.ImmediateLocationCoordinator
+import org.aprsdroid.app.service.PacketPersistenceCoordinator
 import org.aprsdroid.app.service.PacketSendCoordinator
 import java.util.Locale
 
@@ -135,6 +134,48 @@ class AprsService : Service() {
     val msgService: MessageService by lazy { MessageService(this) }
     val locSource: LocationSource by lazy { LocationSource.instanciateLocation(this, prefs) }
     val msgNotifier by lazy { msgService.createMessageNotifier() }
+
+    private val packetPersistenceCoordinator: PacketPersistenceCoordinator by lazy {
+        PacketPersistenceCoordinator(
+            repository = StorageDatabasePacketPostRepository(db),
+            callSsid = { serviceSettings.callSsid },
+            onOwnDigipeat = { lastDigi, information ->
+                Log.i(TAG, "got digipeated own packet")
+                val msg = getString(R.string.got_digipeated, lastDigi, information)
+                ServiceNotifier.instance.notifyPosition(this, msg)
+            },
+            onMessage = { ts, packet, message ->
+                msgService.handleMessage(ts, packet, message)
+            },
+            onPositionPersisted = { ts, packet, position, courseAndSpeed, objectName ->
+                sendBroadcast(
+                    privateIntent(this, POSITION)
+                        .putExtra(SOURCE, packet.sourceCall)
+                        .putExtra(
+                            LOCATION,
+                            AprsPacket.position2location(ts, position, courseAndSpeed) as android.os.Parcelable
+                        )
+                        .putExtra(CALLSIGN, objectName ?: packet.sourceCall)
+                        .putExtra(PACKET, packet.toString())
+                )
+            },
+            onPostUpdated = { postType, message ->
+                sendBroadcast(
+                    privateIntent(this, UPDATE)
+                        .putExtra(TYPE, postType)
+                        .putExtra(STATUS, message)
+                )
+            },
+            onLogOnly = { status, message ->
+                Log.d(TAG, "addPost: $status - $message")
+            },
+            onDebug = { message -> Log.d(TAG, message) },
+            onParseFailure = { message, error ->
+                Log.d(TAG, "parsePacket() unsupported packet: $message")
+                error.printStackTrace()
+            },
+        )
+    }
 
     var singleShot = false
 
@@ -336,74 +377,19 @@ class AprsService : Service() {
     }
 
     fun parsePacket(ts: Long, message: String, source: Int) {
-        try {
-            var fap = Parser.parse(message)
-            if (fap.type == APRSTypes.T_THIRDPARTY) {
-                Log.d(TAG, "parsePacket: third-party packet from " + fap.sourceCall)
-                val inner = fap.aprsInformation.toString()
-                fap = Parser.parse(inner.substring(1))
-            }
-
-            val callssid = serviceSettings.callSsid
-            if (source == StorageDatabase.Companion.Post.TYPE_INCMG &&
-                fap.sourceCall.equals(callssid, ignoreCase = true) &&
-                fap.lastUsedDigi != null
-            ) {
-                Log.i(TAG, "got digipeated own packet")
-                val msg = getString(R.string.got_digipeated, fap.lastUsedDigi, fap.aprsInformation.toString())
-                ServiceNotifier.instance.notifyPosition(this, msg)
-                return
-            }
-
-            if (fap.aprsInformation == null) {
-                Log.d(TAG, "parsePacket() misses payload: $message")
-                return
-            }
-            if (fap.hasFault()) {
-                throw Exception("FAP fault")
-            }
-
-            when (val info = fap.aprsInformation) {
-                is PositionPacket -> addPosition(ts, fap, info, info.position, null)
-                is ObjectPacket -> addPosition(ts, fap, info, info.position, info.objectName)
-                is MessagePacket -> msgService.handleMessage(ts, fap, info)
-            }
-        } catch (e: Exception) {
-            Log.d(TAG, "parsePacket() unsupported packet: $message")
-            e.printStackTrace()
-        }
+        packetPersistenceCoordinator.parsePacket(ts, message, source)
     }
 
     fun getCSE(field: InformationField): CourseAndSpeedExtension? {
-        return field.extension as? CourseAndSpeedExtension
+        return packetPersistenceCoordinator.courseAndSpeed(field)
     }
 
     fun addPosition(ts: Long, ap: APRSPacket, field: InformationField, pos: AprsPosition, objectname: String?) {
-        val cse = getCSE(field)
-        db.addPosition(ts, ap, pos, cse, objectname)
-
-        sendBroadcast(
-            privateIntent(this, POSITION)
-                .putExtra(SOURCE, ap.sourceCall)
-                .putExtra(LOCATION, AprsPacket.position2location(ts, pos, cse) as android.os.Parcelable)
-                .putExtra(CALLSIGN, objectname ?: ap.sourceCall)
-                .putExtra(PACKET, ap.toString())
-        )
+        packetPersistenceCoordinator.addPosition(ts, ap, field, pos, objectname)
     }
 
     fun addPost(t: Int, status: String?, message: String) {
-        val ts = System.currentTimeMillis()
-        db.addPost(ts, t, status ?: "", message)
-        if (t == StorageDatabase.Companion.Post.TYPE_POST || t == StorageDatabase.Companion.Post.TYPE_INCMG || t == StorageDatabase.Companion.Post.TYPE_TX) {
-            parsePacket(ts, message, t)
-        } else {
-            Log.d(TAG, "addPost: $status - $message")
-        }
-        sendBroadcast(
-            privateIntent(this, UPDATE)
-                .putExtra(TYPE, t)
-                .putExtra(STATUS, message)
-        )
+        packetPersistenceCoordinator.addPost(t, status, message)
     }
 
     fun addPost(t: Int, statusId: Int, message: String) {
