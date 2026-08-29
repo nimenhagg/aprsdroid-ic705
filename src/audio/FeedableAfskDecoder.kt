@@ -6,6 +6,11 @@ import sivantoledo.ax25.PacketHandler
 /**
  * A feedable AFSK1200 decoder with no dependency on Android audio capture.
  *
+ * Android builds that package the Graywolf native library use its modern
+ * multi-profile / multi-slicer demodulator. Host JVM tests and builds without
+ * that optional library keep the established Sivan Toledo Java decoder as a
+ * compatibility fallback.
+ *
  * This class accepts mono PCM16 samples and forwards decoded raw AX.25 frames
  * to [onPacket]. It is synchronized so a transport can reset or close it safely
  * while its receive loop is active.
@@ -28,14 +33,25 @@ class FeedableAfskDecoder(
         }
     }
 
-    private var demodulator: Afsk1200Demodulator? = createDemodulator()
+    private val graywolf: GraywolfAfskDecoder? = if (GraywolfAfskDecoder.isNativeAvailable) {
+        GraywolfAfskDecoder(format, onPacket)
+    } else {
+        null
+    }
+    private var demodulator: Afsk1200Demodulator? = if (graywolf == null) createDemodulator() else null
     private var floatBuffer = FloatArray(0)
+    private var closed = false
 
     @Synchronized
     override fun write(buffer: ShortArray, offset: Int, length: Int) {
         ensureOpen()
         Pcm16LittleEndian.checkRange(buffer.size, offset, length)
         if (length == 0) return
+
+        graywolf?.let { nativeDecoder ->
+            nativeDecoder.write(buffer, offset, length)
+            return
+        }
 
         ensureFloatCapacity(length)
         val sampleCount = Pcm16LittleEndian.normalizeToFloats(
@@ -61,6 +77,11 @@ class FeedableAfskDecoder(
         }
         if (length == 0) return
 
+        graywolf?.let { nativeDecoder ->
+            nativeDecoder.writePcm16Le(buffer, offset, length)
+            return
+        }
+
         val sampleCount = length / PcmEncoding.PCM_16_LE.bytesPerSample
         ensureFloatCapacity(sampleCount)
         val decodedCount = Pcm16LittleEndian.decodeToFloats(
@@ -72,23 +93,24 @@ class FeedableAfskDecoder(
         demodulator!!.addSamples(floatBuffer, decodedCount)
     }
 
-    /**
-     * Clears all demodulator history by replacing the underlying decoder.
-     * Afsk1200Demodulator exposes no reset method, so rebuilding is intentional.
-     */
+    /** Clears all demodulator history while preserving the selected engine. */
     @Synchronized
     override fun reset() {
         ensureOpen()
+        graywolf?.let { nativeDecoder ->
+            nativeDecoder.reset()
+            return
+        }
+        // Afsk1200Demodulator exposes no reset method, so rebuilding is intentional.
         demodulator = createDemodulator()
     }
 
-    /**
-     * Permanently closes this wrapper. The underlying decoder owns no closeable
-     * resources; dropping it releases its buffered demodulation state.
-     */
+    /** Permanently closes this wrapper and releases native state if present. */
     @Synchronized
     override fun close() {
-        if (demodulator == null) return
+        if (closed) return
+        closed = true
+        graywolf?.close()
         demodulator = null
         floatBuffer = FloatArray(0)
     }
@@ -101,7 +123,7 @@ class FeedableAfskDecoder(
     )
 
     private fun ensureOpen() {
-        check(demodulator != null) { "decoder is closed" }
+        check(!closed) { "decoder is closed" }
     }
 
     private fun ensureFloatCapacity(sampleCount: Int) {
@@ -111,7 +133,7 @@ class FeedableAfskDecoder(
     }
 
     private companion object {
-        // Preserve the parameters used by the existing AfskDemodulator.
+        // Preserve the parameters used by the legacy AfskDemodulator fallback.
         const val CORRELATION_LENGTH = 1
         const val EMPHASIS = 6
     }

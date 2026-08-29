@@ -1,0 +1,20 @@
+[package]
+name = "aprs-graywolf-jni"
+version = "0.1.0"
+edition = "2021"
+description = "Minimal Android JNI bridge from APRSdroid PCM to Graywolf AFSK1200"
+publish = false
+
+[lib]
+name = "aprs_graywolf"
+crate-type = ["cdylib"]
+
+[target.'cfg(target_os = "android")'.dependencies]
+graywolfmodem = { package = "graywolf-demod", git = "https://github.com/chrissnell/graywolf.git", rev = "34cd0111b7a40e7d91607699b7b4dd188574970a" }
+jni = "0.21"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
