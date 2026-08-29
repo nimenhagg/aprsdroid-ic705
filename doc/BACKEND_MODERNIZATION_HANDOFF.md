@@ -17,7 +17,7 @@ Non-negotiable constraints:
 - Do not migrate to Hilt/Room/DataStore as a single large change. First introduce stable interfaces/facades around the legacy implementations.
 - Keep commits atomic and independently understandable.
 - Do not merge into `main` until the refactor has passed the planned final validation.
-- CI budget for this refactor: run the full GitHub CI once at the end. The current workflows do not run on pushes to this branch, so intermediate branch commits are allowed without consuming that CI run.
+- Avoid repeated intermediate CI. One explicitly requested interim debug CI was started after Round 3; the final full CI is still required at the end.
 
 ## Baseline
 
@@ -28,10 +28,11 @@ Non-negotiable constraints:
 
 ## Current architecture observations
 
-- `AprsService` still owns Android lifecycle, packet formatting, packet parsing/storage, message coordination, broadcasts, notifications, and its send executor.
-- Raw preference access used directly by `AprsService` is now behind `AprsServiceSettings`.
-- Backend instance ownership/start/stop/update is now behind `BackendLifecycleCoordinator`; Android notification/broadcast behavior remains in `AprsService`.
-- Immediate GPS/network/passive location acquisition is now behind `ImmediateLocationCoordinator`; `postLocation()` and packet generation remain in `AprsService`.
+- `AprsService` still owns Android lifecycle, packet formatting, packet parsing/storage, message coordination, broadcasts, and notifications.
+- Raw preference access used directly by `AprsService` is behind `AprsServiceSettings`.
+- Backend instance ownership/start/stop/update is behind `BackendLifecycleCoordinator`; Android notification/broadcast behavior remains in `AprsService`.
+- Immediate GPS/network/passive location acquisition is behind `ImmediateLocationCoordinator`; `postLocation()` and packet generation remain in `AprsService`.
+- Packet send worker ownership, backend-update execution and send result policy are behind `PacketSendCoordinator`; TX/error persistence callbacks still execute on the worker thread and final completion still returns through the main-thread handler.
 - `PrefsWrapper` is still the compatibility/storage surface used by legacy backends and location factories. Replacing it globally in one step would create unnecessary migration risk.
 - `src/data/repository/` exists, but the repository boundary is still thin compared with the amount of behavior living directly in legacy Android components.
 - The IC-705 code under `src/ic705/{protocol,transport,session,backend}` is already substantially better isolated and has dedicated tests. Treat it as a stable lower-level subsystem.
@@ -40,81 +41,89 @@ Non-negotiable constraints:
 
 ### Round 1 — typed service preference boundary
 
-Status: implemented on this branch; CI intentionally not run.
+Status: implemented.
 
 Changes:
 
 - Added `src/data/preferences/AprsServiceSettings.kt`.
 - The new class is a typed facade over the existing `PrefsWrapper`; it does **not** change storage technology, keys, defaults, or migration behavior.
-- `AprsService` now uses that facade for the settings it directly consumes: service-running state, frequency, callsign/SSID presentation, location/backend labels, digipeater path, APRS-IS battery flag, position privacy fields, symbol/status, and connection logging.
+- `AprsService` uses that facade for the settings it directly consumes: service-running state, frequency, callsign/SSID presentation, location/backend labels, digipeater path, APRS-IS battery flag, position privacy fields, symbol/status, and connection logging.
 - `AprsService.prefs` remains available unchanged for current backend/location factories, so this is an incremental boundary rather than a flag-day migration.
-
-Validation notes:
-
-- GitHub CI has not been run by design.
-- The execution environment used by this agent cannot resolve `github.com` from the local container, so a local Gradle checkout/build was not available in this session.
-- Source was read from the GitHub connector and the change is intentionally delegation-only; no preference key/default or control-flow semantics are meant to change.
-- Before the final CI, do a full debug/unit/lint pass in an environment with the Android SDK/Gradle dependencies available.
 
 ### Round 2 — backend lifecycle ownership
 
-Status: implemented on this branch; CI intentionally not run.
+Status: implemented.
 
 Changes:
 
 - Added `src/service/BackendLifecycleCoordinator.kt`.
 - Added a narrow `ServiceBackend` contract plus `AprsBackendServiceAdapter`; the legacy `AprsBackend` hierarchy and all concrete backend implementations remain unchanged.
-- `BackendLifecycleCoordinator` now owns the current backend instance and is responsible for replacement/start, teardown, and packet update delegation.
-- `AprsService.poster` was removed. `AprsService.startPoster()`, `onDestroy()`, and `sendPacket()` now delegate backend ownership to the coordinator while keeping notifications, broadcasts, parser/storage behavior and Android lifecycle decisions in the Service.
+- `BackendLifecycleCoordinator` owns the current backend instance and is responsible for replacement/start, teardown, and packet update delegation.
+- `AprsService.poster` was removed. `AprsService.startPoster()`, `onDestroy()`, and packet updates now delegate backend ownership to the coordinator while keeping notifications, broadcasts, parser/storage behavior and Android lifecycle decisions in the Service.
 - A backend whose `start()` returns false remains owned so teardown still calls `stop()`, preserving the old cleanup behavior.
-- Teardown clears coordinator ownership before calling `stop()`, making repeated teardown idempotent and preventing post-stop packet updates from reaching a stopped backend.
 - Added `test/java/org/aprsdroid/app/service/BackendLifecycleCoordinatorTest.kt` covering replacement order, failed-start cleanup ownership, and idempotent stop without constructing an Android `Service`.
-
-Validation notes:
-
-- GitHub CI has not been run by design; CI runs consumed remain 0.
-- No UI, Compose, navigation, animation, map, IC-705 session/PTT, Graywolf, preference key, or backend implementation files are intentionally changed in this round.
-- Local Gradle execution is still unavailable in the current agent environment, so the new JVM tests are source-reviewed but not executed here.
-- Final validation must execute the normal debug/unit/lint suite and release build once the planned refactor rounds are complete.
 
 ### Round 3 — immediate location acquisition ownership
 
-Status: implemented on this branch; CI intentionally not run.
+Status: implemented.
 
 Changes:
 
 - Added `src/service/ImmediateLocationCoordinator.kt`.
-- Moved the immediate-location Android orchestration out of `AprsService`: fixed-position dispatch, cached GPS/network/passive lookup, newest cached location selection, one-shot GPS/network listener registration, listener removal, and the existing 15-second cleanup timeout now live in the coordinator.
+- Moved immediate-location Android orchestration out of `AprsService`: fixed-position dispatch, cached GPS/network/passive lookup, newest cached location selection, one-shot GPS/network listener registration, listener removal, and the existing 15-second cleanup timeout now live in the coordinator.
 - `AprsService.triggerImmediateLocation()` is reduced to delegating the current `LocationSource`; `postLocation()`, APRS packet formatting, send behavior, notification behavior, and `LocationSource` implementations remain unchanged.
-- The manual `FixedPosition.start(true)` branch is intentionally preserved as-is, including its existing side effects, rather than mixing a behavior fix into this structural round.
+- The manual `FixedPosition.start(true)` branch is intentionally preserved as-is, including its existing side effects.
 - Provider order remains GPS → network → passive for cached reads; equal timestamps keep the first candidate, matching the previous `>` comparison semantics.
-- Added `src/service/LocationSelection.kt` with a pure Kotlin `newestByTimestamp()` helper.
-- Added `test/java/org/aprsdroid/app/service/LocationSelectionTest.kt` covering newest selection, equal-timestamp first-wins behavior, and empty input without Android framework objects.
+- Added `src/service/LocationSelection.kt` and `LocationSelectionTest.kt` for pure host-JVM verification of newest-location selection.
+
+### Interim debug CI after Round 3
+
+User explicitly requested one CI run while Round 4 continued in parallel.
+
+- Trigger commit: `a1e5701e3c8f604defe473ae925d7b55aa571efc`.
+- Workflow run: `33269561545` (`Backend Modernization CI`).
+- Scope: `testArm64OpenglDebugUnitTest`, `lintArm64OpenglDebug`, `assembleArm64OpenglDebug`.
+- The workflow is one-shot by path filtering: only `.github/ci-trigger/backend-modernization` triggers it, so later refactor commits do not automatically consume more CI runs.
+- At the Round 4 handoff snapshot, checkout/JDK/setup steps had passed and the Gradle validation step was in progress.
+- This run validates the branch state through Round 3 plus the CI-trigger commit; it does **not** validate Round 4 changes made afterward.
+- `.github/workflows/backend-modernization-ci.yml` and `.github/ci-trigger/backend-modernization` are temporary branch-only CI plumbing and must be removed before final merge to `main`.
+
+### Round 4 — packet send execution ownership
+
+Status: implemented on this branch; Round 4 itself has not yet been CI-validated.
+
+Changes:
+
+- Added `src/service/PacketSendCoordinator.kt`.
+- The coordinator owns the single-thread executor previously created directly by `AprsService`.
+- `AprsService.sendPacket()` now only delegates the packet and optional status postfix to the coordinator.
+- Backend `update(packet)` still runs on one serialized worker thread.
+- The legacy `"No poster"` fallback is preserved.
+- Successful TX persistence still runs on the worker thread via the existing `addPost(TYPE_TX, status, packetText)` path before the final completion callback.
+- Backend/update/packet-string/TX-persistence exceptions still enter the legacy error path: `addPost(TYPE_ERROR, "Error", exception.toString())`, stack trace reporting, and the exception text as the final status.
+- Only the final `sendPacketFinished(status)` callback is marshalled back through the existing main-thread `Handler`.
+- `AprsService.onDestroy()` now shuts down the coordinator-owned executor instead of an executor field on the Service.
+- Added `PacketSendCoordinatorTest.kt` covering postfix behavior, `No poster`, backend exceptions, and TX-persistence exceptions using the pure `executePacketSend()` policy seam.
 
 Validation notes:
 
-- GitHub CI has not been run by design; CI runs consumed remain 0.
-- No UI, Compose, navigation, animation, map, IC-705 session/PTT, Graywolf, preference keys, packet formatting, or concrete `LocationSource` files are intentionally changed in this round.
-- The coordinator preserves the previous exception handling boundaries: per-provider cached reads ignore `SecurityException`/`IllegalArgumentException`, one-shot registration/removal ignores the existing security/general exceptions, and the top-level trigger logs unexpected failures.
-- Local Gradle execution is still unavailable in the current agent environment, so the new JVM test is source-reviewed but not executed here.
-- Final validation must execute the normal debug/unit/lint suite and release build once the planned refactor rounds are complete.
+- No UI, Compose, navigation, animation, map, packet formatting, database schema, IC-705 session/PTT, Graywolf, preference keys, or backend implementations are intentionally changed in Round 4.
+- The current agent environment still cannot resolve `github.com`, so local Gradle execution is unavailable; the interim GitHub CI is running against the Round 3 snapshot instead.
+- Final full CI must still validate all rounds together before merge.
 
 ## Next recommended round
 
-Extract **packet send execution** from `AprsService` without changing packet formatting or backend implementations.
+Extract **packet persistence/parsing boundaries** from `AprsService` without changing database schema or APRS parser behavior.
 
 Suggested shape:
 
-1. Introduce a coordinator/executor responsible for:
-   - running backend `update(packet)` off the main thread;
-   - preserving the existing `"No poster"` fallback;
-   - converting thrown exceptions into the current error result;
-   - reporting the completed status back to the Service/main-thread boundary.
-2. Keep `newPacket()`, `formatLoc()`, `postLocation()`, `sendPacketFinished()`, database post semantics, and broadcasts in `AprsService` for that round.
-3. Avoid changing the backend lifecycle coordinator contract unless a narrow seam is needed to invoke `update()`.
-4. Make the execution/result policy host-JVM testable where possible; do not introduce coroutines/Hilt as part of this extraction.
+1. Introduce a service-facing packet/post repository/coordinator around the existing `StorageDatabase` rather than migrating storage technology.
+2. Move `addPost()` persistence/routing responsibilities and position persistence behind that boundary while keeping Android broadcasts/notifications at the Service edge where practical.
+3. Preserve the exact rule that POST/INCMG/TX entries are parsed while INFO/ERROR entries are only logged/broadcast.
+4. Preserve third-party packet unwrapping, own-digipeat detection, message dispatch, position/object handling, and current error swallowing semantics.
+5. Add pure parser/routing decision seams where possible; do not introduce Room, coroutines, Hilt, or a schema migration in the same round.
 
-After that, extract packet persistence/parsing boundaries and then consolidate service state/error ownership before the final regression/debug round.
+After that, consolidate service state/error ownership and perform the regression/debug cleanup rounds, remove the temporary CI plumbing, then run the final full CI once.
 
 ## Resume protocol
 
@@ -122,20 +131,15 @@ At the start of every future session/agent handoff:
 
 1. Read `AGENT.md`.
 2. Read this file.
-3. Inspect the current head of `refactor/backend-modernization` and compare it with the commit recorded below.
-4. If code and this document disagree, trust code/reproducible verification and update this document in the same change.
-5. Continue from the first unfinished item; do not redo completed rounds unless fixing a regression.
-6. Update this handoff after each logical round with:
-   - what changed;
-   - important design decisions;
-   - validation performed/not performed;
-   - known risks;
-   - exact next step.
+3. Inspect the current head of `refactor/backend-modernization` and compare it with the branch state described here.
+4. Check workflow run `33269561545` if its result was not yet recorded in a later update.
+5. If code and this document disagree, trust code/reproducible verification and update this document in the same change.
+6. Continue from the first unfinished item; do not redo completed rounds unless fixing a regression.
+7. Update this handoff after each logical round with what changed, validation performed/not performed, known risks, and exact next step.
 
 ## Last known branch state
 
-The exact commit SHA is intentionally updated after each round. If this line is stale because the document is part of the commit it describes, use the branch HEAD as the authoritative SHA and update this section in the next round.
-
-- Round completed: 3
-- CI runs consumed for this refactor: 0
+- Round completed: 4
+- Intermediate CI runs explicitly requested/consumed: 1
 - Final full CI: pending
+- Temporary CI plumbing cleanup: pending

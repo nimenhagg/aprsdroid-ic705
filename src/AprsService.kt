@@ -29,8 +29,8 @@ import org.aprsdroid.app.location.LocationSource
 import org.aprsdroid.app.service.AprsBackendServiceAdapter
 import org.aprsdroid.app.service.BackendLifecycleCoordinator
 import org.aprsdroid.app.service.ImmediateLocationCoordinator
+import org.aprsdroid.app.service.PacketSendCoordinator
 import java.util.Locale
-import java.util.concurrent.Executors
 
 class AprsService : Service() {
 
@@ -117,12 +117,24 @@ class AprsService : Service() {
         )
     }
 
+    private val packetSendCoordinator: PacketSendCoordinator by lazy {
+        PacketSendCoordinator(
+            updateBackend = { packet -> backendCoordinator.update(packet) },
+            onTxPost = { status, packetText ->
+                addPost(StorageDatabase.Companion.Post.TYPE_TX, status, packetText)
+            },
+            onErrorPost = { errorText ->
+                addPost(StorageDatabase.Companion.Post.TYPE_ERROR, "Error", errorText)
+            },
+            postToMain = { task -> handler.post { task() } },
+            onFinished = { status -> sendPacketFinished(status) },
+        )
+    }
+
     val db: StorageDatabase by lazy { StorageDatabase.open(this) }
     val msgService: MessageService by lazy { MessageService(this) }
     val locSource: LocationSource by lazy { LocationSource.instanciateLocation(this, prefs) }
     val msgNotifier by lazy { msgService.createMessageNotifier() }
-
-    private val executor = Executors.newSingleThreadExecutor()
 
     var singleShot = false
 
@@ -249,7 +261,7 @@ class AprsService : Service() {
         locSource.stop()
         try { unregisterReceiver(msgNotifier) } catch (_: Exception) {}
         ServiceNotifier.instance.stop(this)
-        executor.shutdownNow()
+        packetSendCoordinator.shutdownNow()
     }
 
     fun newPacket(payload: InformationField): APRSPacket {
@@ -299,19 +311,7 @@ class AprsService : Service() {
 
     @JvmOverloads
     fun sendPacket(packet: APRSPacket, statusPostfix: String = "") {
-        executor.submit {
-            val status = try {
-                val s = backendCoordinator.update(packet) ?: "No poster"
-                val fullStatus = s + statusPostfix
-                addPost(StorageDatabase.Companion.Post.TYPE_TX, fullStatus, packet.toString())
-                fullStatus
-            } catch (e: Exception) {
-                addPost(StorageDatabase.Companion.Post.TYPE_ERROR, "Error", e.toString())
-                e.printStackTrace()
-                e.toString()
-            }
-            handler.post { sendPacketFinished(status) }
-        }
+        packetSendCoordinator.send(packet, statusPostfix)
     }
 
     fun postLocation(location: Location) {
