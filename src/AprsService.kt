@@ -29,6 +29,8 @@ import org.aprsdroid.app.service.BackendLifecycleCoordinator
 import org.aprsdroid.app.service.ImmediateLocationCoordinator
 import org.aprsdroid.app.service.PacketPersistenceCoordinator
 import org.aprsdroid.app.service.PacketSendCoordinator
+import org.aprsdroid.app.service.ServicePostCoordinator
+import org.aprsdroid.app.service.ServiceRuntimeState
 import java.util.Locale
 
 class AprsService : Service() {
@@ -100,6 +102,14 @@ class AprsService : Service() {
         BackendLifecycleCoordinator {
             AprsBackendServiceAdapter(AprsBackend.instanciateUploader(this, prefs))
         }
+    }
+    private val serviceRuntimeState: ServiceRuntimeState by lazy {
+        ServiceRuntimeState(
+            readRunning = { running },
+            writeRunning = { value -> running = value },
+            readLinkError = { link_error },
+            writeLinkError = { value -> link_error = value },
+        )
     }
 
     @JvmField
@@ -177,6 +187,16 @@ class AprsService : Service() {
         )
     }
 
+    private val servicePostCoordinator: ServicePostCoordinator by lazy {
+        ServicePostCoordinator(
+            postToMain = { task -> handler.post { task() } },
+            connectionLoggingEnabled = { serviceSettings.connectionLoggingEnabled },
+            addPost = { postType, statusId, message -> addPost(postType, statusId, message) },
+            sendPendingMessages = { msgService.sendPendingMessages() },
+            stopService = { stopSelf() },
+        )
+    }
+
     var singleShot = false
 
     override fun onStartCommand(i: Intent?, flags: Int, startId: Int): Int {
@@ -190,11 +210,11 @@ class AprsService : Service() {
         when (i.action) {
             SERVICE_STOP -> {
                 serviceSettings.serviceRunning = false
-                if (running) stopSelf()
+                if (serviceRuntimeState.isRunning) stopSelf()
                 return
             }
             SERVICE_SEND_PACKET -> {
-                if (!running) {
+                if (!serviceRuntimeState.isRunning) {
                     Log.d(TAG, "SEND_PACKET ignored, service not running.")
                     return
                 }
@@ -215,14 +235,14 @@ class AprsService : Service() {
                 val freq = try { freqCleaned.toFloat(); freqCleaned } catch (_: Throwable) { "" }
                 if (serviceSettings.frequencyText != freq) {
                     serviceSettings.frequencyText = freq
-                    if (!running) return
+                    if (!serviceRuntimeState.isRunning) return
                 } else return
             }
         }
 
         val isOnce = (i.action == SERVICE_ONCE)
         val toastString = if (isOnce) {
-            if (!running) {
+            if (!serviceRuntimeState.isRunning) {
                 singleShot = true
             }
             getString(R.string.service_once)
@@ -235,8 +255,8 @@ class AprsService : Service() {
         val callssid = serviceSettings.callSsid
         ServiceNotifier.instance.start(this, callssid)
 
-        if (!running) {
-            running = true
+        if (!serviceRuntimeState.isRunning) {
+            serviceRuntimeState.markStarted()
             startPoster()
             ContextCompat.registerReceiver(
                 this, msgNotifier,
@@ -292,8 +312,7 @@ class AprsService : Service() {
     }
 
     override fun onDestroy() {
-        running = false
-        link_error = 0
+        serviceRuntimeState.markStopped()
         if (backendCoordinator.stop()) {
             showToast(getString(R.string.service_stop))
             sendBroadcast(privateIntent(this, SERVICE_STOPPED))
@@ -397,17 +416,7 @@ class AprsService : Service() {
     }
 
     fun postAddPost(t: Int, statusId: Int, message: String) {
-        if (t == StorageDatabase.Companion.Post.TYPE_INFO && !serviceSettings.connectionLoggingEnabled) {
-            return
-        }
-        handler.post {
-            addPost(t, statusId, message)
-            if (t == StorageDatabase.Companion.Post.TYPE_INCMG) {
-                msgService.sendPendingMessages()
-            } else if (t == StorageDatabase.Companion.Post.TYPE_ERROR) {
-                stopSelf()
-            }
-        }
+        servicePostCoordinator.post(t, statusId, message)
     }
 
     fun postSubmit(post: String) {
@@ -423,14 +432,14 @@ class AprsService : Service() {
     }
 
     fun postLinkOn(link: Int) {
-        link_error = 0
+        serviceRuntimeState.markLinkOn()
         sendBroadcast(privateIntent(this, LINK_ON).putExtra(LINK_INFO, link))
         val message = getString(R.string.status_linkon, getString(link))
         ServiceNotifier.instance.start(this, message)
     }
 
     fun postLinkOff(link: Int) {
-        link_error = link
+        serviceRuntimeState.markLinkOff(link)
         sendBroadcast(privateIntent(this, LINK_OFF).putExtra(LINK_INFO, link))
         val message = getString(R.string.status_linkoff, getString(link))
         ServiceNotifier.instance.start(this, message)

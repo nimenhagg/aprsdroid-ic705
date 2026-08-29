@@ -1,7 +1,7 @@
 # Backend Modernization Handoff
 
 > Branch-local work log for `refactor/backend-modernization`.
-> `AGENT.md` remains the authoritative engineering specification. This file only records the state of this refactor so another agent/session can resume without relying on chat context.
+> `AGENT.md` remains the authoritative engineering specification. This file records refactor state so another agent/session can resume without relying on chat context.
 
 ## Goal
 
@@ -11,13 +11,13 @@ Non-negotiable constraints:
 
 - Do not intentionally change UI, layout, animation, navigation, strings, or visual behavior in this phase.
 - Preserve existing APRS behavior, preference keys, defaults, imported profiles, and stored user configuration.
-- Keep `AprsService` as the Android lifecycle/foreground-service boundary when background APRS operation requires it; move orchestration and data access out incrementally rather than deleting the Service.
-- Do not rewrite the stable IC-705 protocol/session/PTT/Graywolf pipelines unless a later refactor requires a narrow adapter change.
+- Keep `AprsService` as the Android lifecycle/foreground-service boundary; move orchestration/data access out incrementally rather than deleting it.
+- Do not rewrite stable IC-705 protocol/session/PTT/Graywolf pipelines except for a narrow adapter when strictly required.
 - Preserve all IC-705 recovery/PTT invariants documented in `AGENT.md`.
-- Do not migrate to Hilt/Room/DataStore as a single large change. First introduce stable interfaces/facades around the legacy implementations.
-- Keep commits atomic and independently understandable.
-- Do not merge into `main` until the refactor has passed the planned final validation.
-- Avoid repeated intermediate CI. One explicitly requested interim debug CI was run after Round 3; the final full CI is still required at the end.
+- Do not migrate to Hilt/Room/DataStore as one large change. First introduce stable interfaces/facades around legacy implementations.
+- Keep implementation rounds atomic and reviewable.
+- Do not merge into `main` until planned final validation passes.
+- Two interim debug CI runs were explicitly requested by the user; the final full CI is still required before merge.
 
 ## Baseline
 
@@ -28,13 +28,15 @@ Non-negotiable constraints:
 
 ## Current architecture observations
 
-- `AprsService` still owns Android lifecycle, command dispatch, service state, message coordination, broadcasts, notifications, and APRS packet formatting.
-- Raw preference access used directly by `AprsService` is behind `AprsServiceSettings`.
-- Backend instance ownership/start/stop/update is behind `BackendLifecycleCoordinator`; Android notification/broadcast behavior remains in `AprsService`.
-- Immediate GPS/network/passive location acquisition is behind `ImmediateLocationCoordinator`; `postLocation()` and packet generation remain in `AprsService`.
-- Packet send worker ownership, backend-update execution and send result policy are behind `PacketSendCoordinator`; TX/error persistence callbacks still execute on the worker thread and final completion still returns through the main-thread handler.
-- Post/position persistence and APRS parser routing are behind `PacketPersistenceCoordinator` + `PacketPostRepository`; Android broadcasts/notifications remain callbacks at the Service edge.
-- `PrefsWrapper` is still the compatibility/storage surface used by legacy backends and location factories. Replacing it globally in one step would create unnecessary migration risk.
+- `AprsService` still owns Android lifecycle/command dispatch, broadcasts/notifications, APRS packet formatting, and compatibility entry points.
+- Direct service preference reads/writes are behind `AprsServiceSettings`.
+- Backend instance ownership/start/stop/update is behind `BackendLifecycleCoordinator`.
+- Immediate GPS/network/passive acquisition is behind `ImmediateLocationCoordinator`.
+- Packet send worker ownership/update execution/result policy is behind `PacketSendCoordinator`.
+- Post/position persistence and APRS parser routing are behind `PacketPersistenceCoordinator` + `PacketPostRepository`.
+- Main-thread post-event follow-up policy is behind `ServicePostCoordinator`.
+- Runtime `running` / `link_error` mutation is behind `ServiceRuntimeState`, but the legacy static fields remain the actual compatibility backing storage and are intentionally not removed yet.
+- `PrefsWrapper` remains the compatibility/storage surface for legacy backend/location factories.
 - The IC-705 code under `src/ic705/{protocol,transport,session,backend}` remains a stable lower-level subsystem and has not been rewritten by this refactor.
 
 ## Progress
@@ -44,16 +46,16 @@ Non-negotiable constraints:
 Status: implemented.
 
 - Added `src/data/preferences/AprsServiceSettings.kt`.
-- The facade preserves the existing `PrefsWrapper`, keys, defaults and migration behavior.
-- `AprsService` uses typed access for the settings it directly consumes.
+- Preserved `PrefsWrapper`, keys, defaults and migration behavior.
+- `AprsService` uses typed access for settings it directly consumes.
 
 ### Round 2 — backend lifecycle ownership
 
 Status: implemented.
 
-- Added `src/service/BackendLifecycleCoordinator.kt`.
-- Added a narrow `ServiceBackend` contract plus `AprsBackendServiceAdapter`; concrete backend implementations remain unchanged.
+- Added `src/service/BackendLifecycleCoordinator.kt` and a narrow `ServiceBackend` adapter contract.
 - Backend replacement/start/stop/update ownership moved out of `AprsService`.
+- Concrete backend implementations remain unchanged.
 - Added JVM coverage for replacement order, failed-start cleanup and idempotent stop.
 
 ### Round 3 — immediate location acquisition ownership
@@ -65,69 +67,87 @@ Status: implemented.
 - Manual `FixedPosition.start(true)` behavior and side effects are preserved.
 - Added pure host-JVM tests for cached-location selection.
 
-### Interim debug CI after Round 3
-
-User explicitly requested one CI run while Round 4 continued in parallel.
+### Interim debug CI #1 after Round 3
 
 - Trigger commit: `a1e5701e3c8f604defe473ae925d7b55aa571efc`.
 - Workflow run: `33269561545` (`Backend Modernization CI`).
 - Scope: `testArm64OpenglDebugUnitTest`, `lintArm64OpenglDebug`, `assembleArm64OpenglDebug`.
 - Result: **success**.
-- This run validates the branch through Round 3 plus the CI-trigger commit; it does not validate Round 4 or later changes.
-- The workflow is one-shot by path filtering, so subsequent refactor commits do not trigger more intermediate CI.
-- `.github/workflows/backend-modernization-ci.yml` and `.github/ci-trigger/backend-modernization` are temporary branch-only CI plumbing and must be removed before final merge to `main`.
+- This validated the branch through Round 3 only.
 
 ### Round 4 — packet send execution ownership
 
-Status: implemented; not included in the interim CI snapshot.
+Status: implemented.
 
 - Added `src/service/PacketSendCoordinator.kt`.
-- The coordinator owns the single-thread executor previously created by `AprsService`.
-- Backend `update(packet)` remains serialized off the main thread.
-- The legacy `"No poster"` fallback, TX/error persistence ordering, exception text result and main-thread completion callback are preserved.
-- Added JVM tests covering normal send, no backend, backend exceptions and TX-persistence exceptions.
+- Single-thread send executor moved out of `AprsService`.
+- Preserved serialized backend `update(packet)`, `"No poster"`, TX/error persistence ordering, exception-result behavior and main-thread completion callback.
+- Added JVM tests for normal send, no backend, backend exception and TX persistence exception.
 
 ### Round 5 — post persistence and APRS parsing boundary
 
-Status: implemented on this branch; final CI still pending.
+Status: implemented.
+
+- Added `src/data/repository/PacketPostRepository.kt` and `StorageDatabasePacketPostRepository`.
+- Added `src/service/PacketPersistenceCoordinator.kt`.
+- No database schema/storage migration was performed.
+- Moved post timestamp/status normalization, POST/INCMG/TX parse routing, third-party unwrapping, own-digipeat detection, Position/Object/Message dispatch, course/speed extraction and position persistence out of `AprsService`.
+- Android broadcasts/notifications/message handling remain Service-edge callbacks.
+- `parsePacket()`, `getCSE()`, `addPosition()` and `addPost()` remain compatibility wrappers.
+- Preserved persistence-before-parse and update-broadcast-after-parse/log ordering.
+- Added JVM routing/ordering tests.
+
+### Interim debug CI #2 after Round 5
+
+User explicitly requested another CI while Round 6 continued in parallel.
+
+- Trigger commit: `9194a3244191a0826b17d421ce5e4447746e1963` (`ci: validate backend modernization through round 5`).
+- Workflow run: `33270075359` (`Backend Modernization CI`).
+- Scope: `testArm64OpenglDebugUnitTest`, `lintArm64OpenglDebug`, `assembleArm64OpenglDebug`.
+- At the Round 6 handoff snapshot, checkout/JDK/setup had passed and `Run Debug Validation` was **in progress**.
+- This run validates Rounds 1–5 plus the CI marker commit; it does **not** validate Round 6.
+- `.github/workflows/backend-modernization-ci.yml` and `.github/ci-trigger/backend-modernization` remain temporary branch-only plumbing and must be removed before final merge.
+
+### Round 6 — service state and post-event orchestration
+
+Status: implemented in the Round 6 code prepared from CI trigger commit `9194a324...`; final branch commit should contain this document and the code changes atomically.
 
 Changes:
 
-- Added `src/data/repository/PacketPostRepository.kt` with a narrow `PacketPostRepository` interface and `StorageDatabasePacketPostRepository` adapter.
-- The adapter delegates to the existing `StorageDatabase.addPost()` / `addPosition()` methods unchanged; there is no database schema or storage migration.
-- Added `src/service/PacketPersistenceCoordinator.kt`.
-- Moved the following responsibilities out of `AprsService`:
-  - post persistence timestamping and status normalization;
-  - the exact POST/INCMG/TX parse-vs-log routing rule;
-  - APRS parsing and third-party packet unwrapping;
-  - own-digipeat detection;
-  - Position/Object/Message type dispatch;
-  - position persistence and course/speed extension extraction.
-- Android-specific effects remain at the `AprsService` boundary through callbacks: own-digipeat notification, position/update broadcasts, message delivery and logging.
-- Existing public/service-facing `parsePacket()`, `getCSE()`, `addPosition()` and `addPost()` methods remain as compatibility wrappers, reducing risk to legacy callers/backends.
-- Parsing exception behavior remains intentionally swallowed/reported through the same Service log + stack trace path.
-- Post persistence still occurs before parsing, and UPDATE broadcast still occurs after parsing/log-only handling, matching the legacy order.
-- Added `PacketPersistenceCoordinatorTest.kt` covering the exact legacy post routing types, log-only ordering, persistence-before-parse and update-after-parse-failure behavior.
+- Added `src/service/ServiceRuntimeState.kt`.
+- `AprsService.running` and `AprsService.link_error` are intentionally retained as public/static compatibility fields.
+- `ServiceRuntimeState` delegates both reads and writes directly to those fields rather than copying state, so legacy external observations/mutations remain visible during this incremental phase.
+- Internal `AprsService` running checks/start/stop and link-on/link-off mutations now go through the state facade.
+- `markStopped()` preserves the previous `running=false` then `link_error=0` teardown semantics before backend shutdown.
+- Added `src/service/ServicePostCoordinator.kt`.
+- Moved `postAddPost()` policy out of the Service while preserving:
+  - INFO suppression when connection logging is disabled, evaluated before posting to the main-thread queue;
+  - `addPost()` running first on the main-thread callback;
+  - INCMG triggering `msgService.sendPendingMessages()` only after `addPost()`;
+  - ERROR triggering `stopSelf()` only after `addPost()`;
+  - all other post types having no follow-up.
+- Android `Handler`, `MessageService`, and `stopSelf()` remain Service-edge callbacks.
+- Added `ServiceRuntimeStateTest.kt` and `ServicePostCoordinatorTest.kt` covering compatibility-backed live reads, start/stop/link transitions, INFO suppression and post/follow-up ordering.
 
 Validation notes:
 
-- No UI, Compose, navigation, animation, map, database schema, IC-705 session/PTT, Graywolf, preference keys or backend implementations are intentionally changed in Round 5.
-- The earlier interim CI passed, but it predates Rounds 4 and 5.
+- Detached diff review showed only the intended Service wiring/state/post-policy changes plus the new tests; no unrelated formatting/UI/backend/IC-705 changes.
+- Round 6 is not included in interim CI #2 because that CI is pinned to the Round 5 snapshot.
 - Final full CI must validate all rounds together before merge.
 
 ## Next recommended round
 
-Consolidate **service state / error / post-event orchestration** while preserving Android lifecycle behavior.
+Round 7 should be **integration/regression cleanup**, not another architecture expansion.
 
-Suggested shape:
+Suggested scope:
 
-1. Extract the `postAddPost()` policy around main-thread dispatch, INFO logging suppression, incoming-message retry kick and ERROR-triggered `stopSelf()` into a small service coordinator/policy seam.
-2. Reduce direct mutation of global `running` / `link_error` where possible behind a service-owned state holder without changing existing static compatibility fields yet.
-3. Keep `ServiceNotifier`, Android broadcasts and `stopSelf()` at the Android edge through callbacks.
-4. Do not migrate to coroutines, Hilt, Room or DataStore in this round.
-5. Add pure policy tests for event decisions and error transitions.
+1. Inspect the full `AprsService` after Rounds 1–6 for duplicate seams, lifecycle ordering regressions, unnecessary public exposure, and obvious Kotlin/Android lint hazards.
+2. Check the result of workflow run `33270075359`; if it failed, fix Round 4/5 issues before expanding work.
+3. Review tests and add only targeted regression coverage for seams introduced in these rounds.
+4. Keep UI, map, IC-705 protocol/session/PTT, Graywolf, database schema, preference storage and backend implementations unchanged.
+5. Do not remove temporary CI plumbing until the final cleanup round is ready.
 
-After that, perform integration/regression cleanup, remove temporary CI plumbing, inspect R8/build warnings if any, and run the final full CI once.
+Round 8 should clean temporary CI plumbing, perform final integration/debug cleanup, run the final full CI/release validation once, and only then prepare merge/PR to `main`.
 
 ## Resume protocol
 
@@ -135,15 +155,17 @@ At the start of every future session/agent handoff:
 
 1. Read `AGENT.md`.
 2. Read this file.
-3. Inspect the current head of `refactor/backend-modernization` and compare it with the branch state described here.
-4. If code and this document disagree, trust code/reproducible verification and update this document in the same change.
-5. Continue from the first unfinished item; do not redo completed rounds unless fixing a regression.
-6. Update this handoff after each logical round with what changed, validation performed/not performed, known risks, and exact next step.
+3. Inspect current HEAD of `refactor/backend-modernization` and compare it with this state.
+4. Check workflow run `33270075359` if its final result is not recorded in a later update.
+5. If code and this document disagree, trust code/reproducible verification and update this document in the same change.
+6. Continue from the first unfinished item; do not redo completed rounds unless fixing a regression.
+7. Update this handoff after each logical round with changes, validation, known risks and the exact next step.
 
 ## Last known branch state
 
-- Round completed: 5
-- Intermediate CI runs explicitly requested/consumed: 1
-- Interim CI result: success (through Round 3)
+- Round completed/prepared: 6
+- Intermediate CI runs explicitly requested/consumed: 2
+- Interim CI #1: success (through Round 3)
+- Interim CI #2: in progress at snapshot (through Round 5)
 - Final full CI: pending
 - Temporary CI plumbing cleanup: pending
