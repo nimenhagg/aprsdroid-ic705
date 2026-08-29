@@ -7,10 +7,12 @@ publish = false
 
 [lib]
 name = "aprs_graywolf"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+graywolfmodem = { package = "graywolf-demod", git = "https://github.com/chrissnell/graywolf.git", rev = "34cd0111b7a40e7d91607699b7b4dd188574970a" }
 
 [target.'cfg(target_os = "android")'.dependencies]
-graywolfmodem = { package = "graywolf-demod", git = "https://github.com/chrissnell/graywolf.git", rev = "34cd0111b7a40e7d91607699b7b4dd188574970a" }
 jni = "0.21"
 
 [profile.release]

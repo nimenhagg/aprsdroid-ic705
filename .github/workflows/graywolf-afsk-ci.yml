@@ -8,7 +8,9 @@ on:
     paths:
       - 'native/graywolf-jni/**'
       - 'src/audio/**'
+      - 'src/ic705/backend/**'
       - '.github/scripts/build_graywolf_android.sh'
+      - '.github/scripts/test_graywolf_loopback.sh'
       - '.github/workflows/graywolf-afsk-ci.yml'
       - '.github/workflows/release.yml'
       - 'build.gradle'
@@ -38,7 +40,7 @@ jobs:
       - name: Install Graywolf build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
+          sudo apt-get install -y protobuf-compiler pkg-config libasound2-dev
           cargo --version
           rustc --version
           protoc --version
@@ -50,7 +52,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             native/graywolf-jni/target
-          key: graywolf-rust-v1-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml') }}
+          key: graywolf-rust-v2-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', '.github/scripts/test_graywolf_loopback.sh') }}
+
+      - name: Run synthetic 12 kHz Graywolf loopback
+        run: bash .github/scripts/test_graywolf_loopback.sh
 
       - name: Build release Graywolf JNI libraries
         run: |
