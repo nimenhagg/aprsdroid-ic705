@@ -11,5 +11,5 @@ export CARGO_NET_GIT_FETCH_WITH_CLI=true
 cargo test \
   --manifest-path "$MANIFEST" \
   --lib \
-  synthetic_12khz_ax25_round_trip \
+  synthetic_ \
   -- --nocapture

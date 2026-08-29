@@ -19,7 +19,7 @@ impl DecoderState {
         );
 
         // Graywolf's default 110-sample dedup window is tuned for 44.1 kHz.
-        // Keep the same three-symbol semantic at IC-705's negotiated 12 kHz.
+        // Keep the same three-symbol semantic at every production input rate.
         demod.set_window_samples(dedup_window_samples(sample_rate_hz));
 
         Self { demod }
@@ -217,28 +217,51 @@ mod tests {
     use super::{dedup_window_samples, DecoderState};
     use std::f64::consts::TAU;
 
-    const SAMPLE_RATE_HZ: u32 = 12_000;
     const BAUD: u32 = 1_200;
     const MARK_HZ: f64 = 1_200.0;
     const SPACE_HZ: f64 = 2_200.0;
     const PCM_AMPLITUDE: f64 = 24_000.0;
     const IC705_SAMPLES_PER_PACKET: usize = 0xf0;
+    const AUDIO_RECORD_BUFFER_SAMPLES: usize = 8192;
 
     #[test]
     fn synthetic_12khz_ax25_round_trip() {
-        assert_eq!(30, dedup_window_samples(SAMPLE_RATE_HZ));
-
-        let expected = build_ax25_ui_frame(
-            "N0CALL",
-            "APRS",
+        assert_eq!(30, dedup_window_samples(12_000));
+        assert_round_trip(
+            12_000,
+            IC705_SAMPLES_PER_PACKET,
             b">GRAYWOLF 12K SYNTHETIC LOOPBACK",
         );
-        let pcm = synthesize_bell202(&expected);
+    }
+
+    #[test]
+    fn synthetic_11025hz_ax25_round_trip() {
+        assert_eq!(28, dedup_window_samples(11_025));
+        assert_round_trip(
+            11_025,
+            AUDIO_RECORD_BUFFER_SAMPLES,
+            b">GRAYWOLF 11025HZ MICROPHONE LOOPBACK",
+        );
+    }
+
+    #[test]
+    fn synthetic_8khz_ax25_round_trip() {
+        assert_eq!(20, dedup_window_samples(8_000));
+        assert_round_trip(
+            8_000,
+            AUDIO_RECORD_BUFFER_SAMPLES,
+            b">GRAYWOLF 8KHZ SCO LOOPBACK",
+        );
+    }
+
+    fn assert_round_trip(sample_rate_hz: u32, chunk_samples: usize, payload: &[u8]) {
+        let expected = build_ax25_ui_frame("N0CALL", "APRS", payload);
+        let pcm = synthesize_bell202(&expected, sample_rate_hz);
         assert!(!pcm.is_empty());
 
-        let mut decoder = DecoderState::new(SAMPLE_RATE_HZ);
+        let mut decoder = DecoderState::new(sample_rate_hz);
         let mut decoded = Vec::new();
-        for chunk in pcm.chunks(IC705_SAMPLES_PER_PACKET) {
+        for chunk in pcm.chunks(chunk_samples) {
             decoded.extend(decoder.process(chunk));
         }
 
@@ -267,7 +290,7 @@ mod tests {
         out
     }
 
-    fn synthesize_bell202(frame: &[u8]) -> Vec<i16> {
+    fn synthesize_bell202(frame: &[u8], sample_rate_hz: u32) -> Vec<i16> {
         let mut framed = frame.to_vec();
         let fcs = ax25_fcs(frame);
         framed.extend_from_slice(&fcs.to_le_bytes());
@@ -277,21 +300,27 @@ mod tests {
         append_stuffed_lsb_bits(&mut bits, &framed);
         append_flags(&mut bits, 6);
 
-        let samples_per_bit = SAMPLE_RATE_HZ / BAUD;
-        assert_eq!(10, samples_per_bit);
-
-        let silence_samples = (SAMPLE_RATE_HZ / 25) as usize; // 40 ms
+        let silence_samples = (sample_rate_hz / 25) as usize; // 40 ms
         let mut pcm = vec![0i16; silence_samples];
         let mut mark = true;
         let mut phase = 0.0f64;
+        let mut sample_remainder = 0u32;
 
         for bit in bits {
             if bit == 0 {
                 mark = !mark;
             }
             let frequency = if mark { MARK_HZ } else { SPACE_HZ };
-            let step = TAU * frequency / SAMPLE_RATE_HZ as f64;
-            for _ in 0..samples_per_bit {
+            let step = TAU * frequency / sample_rate_hz as f64;
+
+            // Preserve the exact 1200-baud average even when sample_rate/baud is
+            // fractional (8 kHz and 11.025 kHz microphone/SCO paths).
+            sample_remainder += sample_rate_hz;
+            let samples_this_bit = sample_remainder / BAUD;
+            sample_remainder %= BAUD;
+            assert!(samples_this_bit > 0);
+
+            for _ in 0..samples_this_bit {
                 pcm.push((phase.sin() * PCM_AMPLITUDE).round() as i16);
                 phase += step;
                 if phase >= TAU {
