@@ -28,9 +28,10 @@ Non-negotiable constraints:
 
 ## Current architecture observations
 
-- `AprsService` still owns Android lifecycle, location triggering, packet formatting, packet parsing/storage, message coordination, broadcasts, notifications, and its send executor.
+- `AprsService` still owns Android lifecycle, packet formatting, packet parsing/storage, message coordination, broadcasts, notifications, and its send executor.
 - Raw preference access used directly by `AprsService` is now behind `AprsServiceSettings`.
 - Backend instance ownership/start/stop/update is now behind `BackendLifecycleCoordinator`; Android notification/broadcast behavior remains in `AprsService`.
+- Immediate GPS/network/passive location acquisition is now behind `ImmediateLocationCoordinator`; `postLocation()` and packet generation remain in `AprsService`.
 - `PrefsWrapper` is still the compatibility/storage surface used by legacy backends and location factories. Replacing it globally in one step would create unnecessary migration risk.
 - `src/data/repository/` exists, but the repository boundary is still thin compared with the amount of behavior living directly in legacy Android components.
 - The IC-705 code under `src/ic705/{protocol,transport,session,backend}` is already substantially better isolated and has dedicated tests. Treat it as a stable lower-level subsystem.
@@ -76,22 +77,44 @@ Validation notes:
 - Local Gradle execution is still unavailable in the current agent environment, so the new JVM tests are source-reviewed but not executed here.
 - Final validation must execute the normal debug/unit/lint suite and release build once the planned refactor rounds are complete.
 
+### Round 3 — immediate location acquisition ownership
+
+Status: implemented on this branch; CI intentionally not run.
+
+Changes:
+
+- Added `src/service/ImmediateLocationCoordinator.kt`.
+- Moved the immediate-location Android orchestration out of `AprsService`: fixed-position dispatch, cached GPS/network/passive lookup, newest cached location selection, one-shot GPS/network listener registration, listener removal, and the existing 15-second cleanup timeout now live in the coordinator.
+- `AprsService.triggerImmediateLocation()` is reduced to delegating the current `LocationSource`; `postLocation()`, APRS packet formatting, send behavior, notification behavior, and `LocationSource` implementations remain unchanged.
+- The manual `FixedPosition.start(true)` branch is intentionally preserved as-is, including its existing side effects, rather than mixing a behavior fix into this structural round.
+- Provider order remains GPS → network → passive for cached reads; equal timestamps keep the first candidate, matching the previous `>` comparison semantics.
+- Added `src/service/LocationSelection.kt` with a pure Kotlin `newestByTimestamp()` helper.
+- Added `test/java/org/aprsdroid/app/service/LocationSelectionTest.kt` covering newest selection, equal-timestamp first-wins behavior, and empty input without Android framework objects.
+
+Validation notes:
+
+- GitHub CI has not been run by design; CI runs consumed remain 0.
+- No UI, Compose, navigation, animation, map, IC-705 session/PTT, Graywolf, preference keys, packet formatting, or concrete `LocationSource` files are intentionally changed in this round.
+- The coordinator preserves the previous exception handling boundaries: per-provider cached reads ignore `SecurityException`/`IllegalArgumentException`, one-shot registration/removal ignores the existing security/general exceptions, and the top-level trigger logs unexpected failures.
+- Local Gradle execution is still unavailable in the current agent environment, so the new JVM test is source-reviewed but not executed here.
+- Final validation must execute the normal debug/unit/lint suite and release build once the planned refactor rounds are complete.
+
 ## Next recommended round
 
-Extract **immediate location acquisition/orchestration** from `AprsService` while preserving `LocationSource` behavior.
+Extract **packet send execution** from `AprsService` without changing packet formatting or backend implementations.
 
 Suggested shape:
 
-1. Introduce a service-facing location coordinator responsible for:
-   - using fixed-position immediately when configured;
-   - selecting the newest cached GPS/network/passive location;
-   - requesting one-shot GPS/network updates when no cached location exists;
-   - cancelling the temporary listener after the existing 15-second timeout.
-2. Keep APRS packet formatting and `postLocation()` in `AprsService` for that round; the coordinator should report a `Location` back through a callback rather than format/transmit packets.
-3. Preserve the current permission/error swallowing behavior unless a dedicated behavior change is explicitly planned.
-4. Add pure decision tests where possible (for example newest cached location selection) without requiring Android framework objects.
+1. Introduce a coordinator/executor responsible for:
+   - running backend `update(packet)` off the main thread;
+   - preserving the existing `"No poster"` fallback;
+   - converting thrown exceptions into the current error result;
+   - reporting the completed status back to the Service/main-thread boundary.
+2. Keep `newPacket()`, `formatLoc()`, `postLocation()`, `sendPacketFinished()`, database post semantics, and broadcasts in `AprsService` for that round.
+3. Avoid changing the backend lifecycle coordinator contract unless a narrow seam is needed to invoke `update()`.
+4. Make the execution/result policy host-JVM testable where possible; do not introduce coroutines/Hilt as part of this extraction.
 
-After that, extract packet send execution, then packet persistence/parsing boundaries.
+After that, extract packet persistence/parsing boundaries and then consolidate service state/error ownership before the final regression/debug round.
 
 ## Resume protocol
 
@@ -113,6 +136,6 @@ At the start of every future session/agent handoff:
 
 The exact commit SHA is intentionally updated after each round. If this line is stale because the document is part of the commit it describes, use the branch HEAD as the authoritative SHA and update this section in the next round.
 
-- Round completed: 2
+- Round completed: 3
 - CI runs consumed for this refactor: 0
 - Final full CI: pending

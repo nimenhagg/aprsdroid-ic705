@@ -28,6 +28,7 @@ import org.aprsdroid.app.data.preferences.AprsServiceSettings
 import org.aprsdroid.app.location.LocationSource
 import org.aprsdroid.app.service.AprsBackendServiceAdapter
 import org.aprsdroid.app.service.BackendLifecycleCoordinator
+import org.aprsdroid.app.service.ImmediateLocationCoordinator
 import java.util.Locale
 import java.util.concurrent.Executors
 
@@ -104,6 +105,17 @@ class AprsService : Service() {
 
     @JvmField
     val handler = Handler(Looper.getMainLooper())
+
+    private val immediateLocationCoordinator: ImmediateLocationCoordinator by lazy {
+        ImmediateLocationCoordinator(
+            locationManagerProvider = {
+                getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+            },
+            handler = handler,
+            onLocation = { location -> postLocation(location) },
+            logTag = TAG,
+        )
+    }
 
     val db: StorageDatabase by lazy { StorageDatabase.open(this) }
     val msgService: MessageService by lazy { MessageService(this) }
@@ -193,67 +205,7 @@ class AprsService : Service() {
     }
 
     fun triggerImmediateLocation() {
-        try {
-            if (locSource is org.aprsdroid.app.location.FixedPosition) {
-                (locSource as org.aprsdroid.app.location.FixedPosition).start(true)
-                return
-            }
-
-            val locMan = getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-            var bestLoc: Location? = null
-            if (locMan != null) {
-                val providers = arrayOf(
-                    LocationManager.GPS_PROVIDER,
-                    LocationManager.NETWORK_PROVIDER,
-                    LocationManager.PASSIVE_PROVIDER
-                )
-                for (provider in providers) {
-                    try {
-                        val loc = locMan.getLastKnownLocation(provider)
-                        if (loc != null) {
-                            if (bestLoc == null || loc.time > bestLoc.time) {
-                                bestLoc = loc
-                            }
-                        }
-                    } catch (_: SecurityException) {
-                    } catch (_: IllegalArgumentException) {}
-                }
-            }
-
-            if (bestLoc != null) {
-                Log.i(TAG, "triggerImmediateLocation: posting best known location: $bestLoc")
-                postLocation(bestLoc)
-            } else {
-                Log.w(TAG, "triggerImmediateLocation: no cached location, requesting immediate update")
-                locMan?.let { lm ->
-                    val singleListener = object : android.location.LocationListener {
-                        override fun onLocationChanged(loc: Location) {
-                            Log.i(TAG, "triggerImmediateLocation singleListener got location: $loc")
-                            try { lm.removeUpdates(this) } catch (_: Exception) {}
-                            postLocation(loc)
-                        }
-                        @Deprecated("Deprecated in Java")
-                        override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
-                        override fun onProviderDisabled(provider: String) {}
-                        override fun onProviderEnabled(provider: String) {}
-                    }
-                    try {
-                        if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                            lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0L, 0f, singleListener, Looper.getMainLooper())
-                        }
-                        if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0L, 0f, singleListener, Looper.getMainLooper())
-                        }
-                        handler.postDelayed({
-                            try { lm.removeUpdates(singleListener) } catch (_: Exception) {}
-                        }, 15000L)
-                    } catch (_: SecurityException) {
-                    } catch (_: Exception) {}
-                }
-            }
-        } catch (e: Throwable) {
-            Log.e(TAG, "triggerImmediateLocation error: $e")
-        }
+        immediateLocationCoordinator.trigger(locSource)
     }
 
     fun onPosterStarted() {
