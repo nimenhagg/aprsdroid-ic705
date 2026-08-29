@@ -28,8 +28,10 @@ Non-negotiable constraints:
 
 ## Current architecture observations
 
-- `AprsService` still owns Android lifecycle, raw preference reads/writes, backend lifecycle, location triggering, packet formatting, packet parsing/storage, message coordination, broadcasts, notifications, and its send executor.
-- `PrefsWrapper` is the compatibility/storage surface used throughout legacy code. Replacing it globally in one step would create unnecessary migration risk.
+- `AprsService` still owns Android lifecycle, location triggering, packet formatting, packet parsing/storage, message coordination, broadcasts, notifications, and its send executor.
+- Raw preference access used directly by `AprsService` is now behind `AprsServiceSettings`.
+- Backend instance ownership/start/stop/update is now behind `BackendLifecycleCoordinator`; Android notification/broadcast behavior remains in `AprsService`.
+- `PrefsWrapper` is still the compatibility/storage surface used by legacy backends and location factories. Replacing it globally in one step would create unnecessary migration risk.
 - `src/data/repository/` exists, but the repository boundary is still thin compared with the amount of behavior living directly in legacy Android components.
 - The IC-705 code under `src/ic705/{protocol,transport,session,backend}` is already substantially better isolated and has dedicated tests. Treat it as a stable lower-level subsystem.
 
@@ -53,22 +55,43 @@ Validation notes:
 - Source was read from the GitHub connector and the change is intentionally delegation-only; no preference key/default or control-flow semantics are meant to change.
 - Before the final CI, do a full debug/unit/lint pass in an environment with the Android SDK/Gradle dependencies available.
 
+### Round 2 — backend lifecycle ownership
+
+Status: implemented on this branch; CI intentionally not run.
+
+Changes:
+
+- Added `src/service/BackendLifecycleCoordinator.kt`.
+- Added a narrow `ServiceBackend` contract plus `AprsBackendServiceAdapter`; the legacy `AprsBackend` hierarchy and all concrete backend implementations remain unchanged.
+- `BackendLifecycleCoordinator` now owns the current backend instance and is responsible for replacement/start, teardown, and packet update delegation.
+- `AprsService.poster` was removed. `AprsService.startPoster()`, `onDestroy()`, and `sendPacket()` now delegate backend ownership to the coordinator while keeping notifications, broadcasts, parser/storage behavior and Android lifecycle decisions in the Service.
+- A backend whose `start()` returns false remains owned so teardown still calls `stop()`, preserving the old cleanup behavior.
+- Teardown clears coordinator ownership before calling `stop()`, making repeated teardown idempotent and preventing post-stop packet updates from reaching a stopped backend.
+- Added `test/java/org/aprsdroid/app/service/BackendLifecycleCoordinatorTest.kt` covering replacement order, failed-start cleanup ownership, and idempotent stop without constructing an Android `Service`.
+
+Validation notes:
+
+- GitHub CI has not been run by design; CI runs consumed remain 0.
+- No UI, Compose, navigation, animation, map, IC-705 session/PTT, Graywolf, preference key, or backend implementation files are intentionally changed in this round.
+- Local Gradle execution is still unavailable in the current agent environment, so the new JVM tests are source-reviewed but not executed here.
+- Final validation must execute the normal debug/unit/lint suite and release build once the planned refactor rounds are complete.
+
 ## Next recommended round
 
-Extract **backend lifecycle orchestration** from `AprsService` without changing backend implementations.
+Extract **immediate location acquisition/orchestration** from `AprsService` while preserving `LocationSource` behavior.
 
 Suggested shape:
 
-1. Introduce a small service-owned coordinator/controller responsible for:
-   - stopping the old poster;
-   - creating the current backend through the existing `AprsBackend` factory;
-   - starting/stopping the poster;
-   - reporting start success back to `AprsService`.
-2. Keep `AprsBackend` and IC-705 session internals unchanged in that round.
-3. Do not move Android notifications/broadcasts at the same time; keep the commit narrowly about backend lifecycle ownership.
-4. Add a seam that can later be unit-tested without constructing the full Android `Service`.
+1. Introduce a service-facing location coordinator responsible for:
+   - using fixed-position immediately when configured;
+   - selecting the newest cached GPS/network/passive location;
+   - requesting one-shot GPS/network updates when no cached location exists;
+   - cancelling the temporary listener after the existing 15-second timeout.
+2. Keep APRS packet formatting and `postLocation()` in `AprsService` for that round; the coordinator should report a `Location` back through a callback rather than format/transmit packets.
+3. Preserve the current permission/error swallowing behavior unless a dedicated behavior change is explicitly planned.
+4. Add pure decision tests where possible (for example newest cached location selection) without requiring Android framework objects.
 
-After that, progressively extract location triggering, packet send execution, and packet persistence/parsing boundaries.
+After that, extract packet send execution, then packet persistence/parsing boundaries.
 
 ## Resume protocol
 
@@ -90,6 +113,6 @@ At the start of every future session/agent handoff:
 
 The exact commit SHA is intentionally updated after each round. If this line is stale because the document is part of the commit it describes, use the branch HEAD as the authoritative SHA and update this section in the next round.
 
-- Round completed: 1
+- Round completed: 2
 - CI runs consumed for this refactor: 0
 - Final full CI: pending

@@ -26,6 +26,8 @@ import net.ab0oo.aprs.parser.Position as AprsPosition
 import net.ab0oo.aprs.parser.PositionPacket
 import org.aprsdroid.app.data.preferences.AprsServiceSettings
 import org.aprsdroid.app.location.LocationSource
+import org.aprsdroid.app.service.AprsBackendServiceAdapter
+import org.aprsdroid.app.service.BackendLifecycleCoordinator
 import java.util.Locale
 import java.util.concurrent.Executors
 
@@ -94,6 +96,11 @@ class AprsService : Service() {
 
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
     private val serviceSettings: AprsServiceSettings by lazy { AprsServiceSettings(prefs) }
+    private val backendCoordinator: BackendLifecycleCoordinator by lazy {
+        BackendLifecycleCoordinator {
+            AprsBackendServiceAdapter(AprsBackend.instanciateUploader(this, prefs))
+        }
+    }
 
     @JvmField
     val handler = Handler(Looper.getMainLooper())
@@ -105,7 +112,6 @@ class AprsService : Service() {
 
     private val executor = Executors.newSingleThreadExecutor()
 
-    var poster: AprsBackend? = null
     var singleShot = false
 
     override fun onStartCommand(i: Intent?, flags: Int, startId: Int): Int {
@@ -181,10 +187,7 @@ class AprsService : Service() {
     }
 
     fun startPoster() {
-        poster?.stop()
-        val p = AprsBackend.instanciateUploader(this, prefs)
-        poster = p
-        if (p.start()) {
+        if (backendCoordinator.replaceAndStart()) {
             onPosterStarted()
         }
     }
@@ -286,8 +289,7 @@ class AprsService : Service() {
     override fun onDestroy() {
         running = false
         link_error = 0
-        poster?.let {
-            it.stop()
+        if (backendCoordinator.stop()) {
             showToast(getString(R.string.service_stop))
             sendBroadcast(privateIntent(this, SERVICE_STOPPED))
         }
@@ -347,7 +349,7 @@ class AprsService : Service() {
     fun sendPacket(packet: APRSPacket, statusPostfix: String = "") {
         executor.submit {
             val status = try {
-                val s = poster?.update(packet) ?: "No poster"
+                val s = backendCoordinator.update(packet) ?: "No poster"
                 val fullStatus = s + statusPostfix
                 addPost(StorageDatabase.Companion.Post.TYPE_TX, fullStatus, packet.toString())
                 fullStatus
