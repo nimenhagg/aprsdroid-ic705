@@ -11,10 +11,13 @@ on:
       - 'src/backend/**'
       - 'src/ic705/backend/**'
       - '.github/scripts/build_graywolf_android.sh'
+      - '.github/scripts/package_graywolf_source.sh'
       - '.github/scripts/test_graywolf_loopback.sh'
       - '.github/workflows/graywolf-afsk-ci.yml'
       - '.github/workflows/release.yml'
       - 'build.gradle'
+      - 'AGENT.md'
+      - 'AI_CONTEXT.md'
   workflow_dispatch:
 
 permissions:
@@ -61,21 +64,29 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             native/graywolf-jni/target
-          key: graywolf-rust-v2-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', '.github/scripts/test_graywolf_loopback.sh') }}
+          key: graywolf-rust-v3-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
 
-      - name: Run synthetic 12 kHz Graywolf loopback
-        run: bash .github/scripts/test_graywolf_loopback.sh
+      - name: Run synthetic Graywolf production-rate loopbacks
+        run: |
+          bash .github/scripts/test_graywolf_loopback.sh
+          test -s native/graywolf-jni/Cargo.lock
+
+      - name: Verify Graywolf corresponding source archive
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/graywolf-source"
+          bash .github/scripts/package_graywolf_source.sh "$out"
+          archive=$(find "$out" -name 'Graywolf-source-*.tar.gz' -print -quit)
+          test -s "$archive"
+          tar -tzf "$archive" | grep -q '/LICENSE$'
+          tar -tzf "$archive" | grep -q '/graywolf-modem/Cargo.toml$'
 
       - name: Build release Graywolf JNI libraries
         run: |
-          bash .github/scripts/build_graywolf_android.sh \
-            arm64-v8a \
-            "$PWD/libs/arm64-v8a/libaprs_graywolf.so"
-          bash .github/scripts/build_graywolf_android.sh \
-            armeabi-v7a \
-            "$PWD/libs/armeabi-v7a/libaprs_graywolf.so"
-          test -s libs/arm64-v8a/libaprs_graywolf.so
-          test -s libs/armeabi-v7a/libaprs_graywolf.so
+          bash .github/scripts/build_graywolf_android.sh arm64-v8a
+          bash .github/scripts/build_graywolf_android.sh armeabi-v7a
+          test -s build/generated/rustJniLibs/arm64-v8a/libaprs_graywolf.so
+          test -s build/generated/rustJniLibs/armeabi-v7a/libaprs_graywolf.so
 
       - name: Run Unit Tests, Lint, and Build APKs
         env:
@@ -101,7 +112,7 @@ jobs:
             local variant="$2"
             local abi="$3"
             local expected apk count actual
-            expected=$(sha256sum "libs/${abi}/libaprs_graywolf.so" | awk '{print $1}')
+            expected=$(sha256sum "build/generated/rustJniLibs/${abi}/libaprs_graywolf.so" | awk '{print $1}')
             apk=$(find "build/outputs/apk/${flavor}/${variant}" -name '*.apk' -print -quit)
             test -n "$apk"
             count=$(unzip -Z1 "$apk" | grep -c "^lib/${abi}/libaprs_graywolf\\.so$")
@@ -130,11 +141,12 @@ jobs:
           (cd graywolf-ci-apks && sha256sum *.apk > SHA256SUMS.txt)
           ls -lh graywolf-ci-apks
 
-      - name: Upload APK Artifact
+      - name: Upload APK and Cargo lock artifacts
         uses: actions/upload-artifact@v7
         with:
           name: graywolf-afsk-rx-apk
           path: |
             graywolf-ci-apks/*.apk
             graywolf-ci-apks/SHA256SUMS.txt
+            native/graywolf-jni/Cargo.lock
           if-no-files-found: error

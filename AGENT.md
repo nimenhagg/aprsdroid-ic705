@@ -2,7 +2,7 @@
 
 > 本文件是仓库中面向维护者与 AI/Agent 编程助手的**唯一当前维护规范正文**。若本文与代码、测试、Gradle 配置或 CI 行为冲突，以代码与可复现验证为准，并在同一次变更中修正文档。
 >
-> 历史 `AI_CONTEXT.md` 已迁移为兼容入口；后续只维护 `AGENT.md`，不得维护两份独立正文。
+> `AI_CONTEXT.md` 只保留兼容入口；后续只维护 `AGENT.md`，不得维护两份独立正文。
 
 ## 1. 版本基线与当前 main
 
@@ -16,12 +16,13 @@
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
 | Kotlin / Compose Compiler | AGP 9 built-in Kotlin `2.3.21` / Compose Compiler `2.3.21` |
 | Java | `17` |
-| 核心库 | Material `1.14.0`，OkHttp `5.3.0`，Core-KTX `1.19.0`，Activity Compose `1.13.0`，Lifecycle runtime-compose `2.11.0`，Navigation Compose `2.10.0` |
+| 核心库 | Material `1.14.0`，OkHttp `5.3.0`，Browser `1.10.0`，Core-KTX `1.19.0`，Activity Compose `1.13.0`，Lifecycle runtime-compose `2.11.0`，Navigation Compose `2.10.0` |
+| AFSK1200 RX | Graywolf `graywolf-demod 0.14.13`，固定 upstream commit `34cd0111b7a40e7d91607699b7b4dd188574970a` |
 | 地图 | MapLibre Native `13.5.1` + Google Maps SDK |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-`Mod-v2.0.4` 是当前稳定发布基线。当前 `main` 在此基础上还合入了 **IC-705 session recovery / link-state 修复**（merge `9f902353`），并新增对应的独立 CI。除非已经创建新 tag / GitHub Release，否则这些 main 变更不得写成“已发布”。
+`Mod-v2.0.4` 是当前稳定发布基线。当前 `main` 在此基础上还合入了 **IC-705 session recovery / link-state 修复**（merge `9f902353`），并新增对应的独立 CI。Graywolf AFSK RX、Custom Tabs 与开源致谢目前属于 `feat/graywolf-afsk-rx` 的未发布变更；除非已经合入 main、创建新 tag / GitHub Release，否则不得写成“已发布”。
 
 README 必须始终区分 **Latest release** 与 **Current main**。未打 tag 的功能、修复和行为变化不得提前写成稳定版能力。
 
@@ -40,7 +41,7 @@ README 必须始终区分 **Latest release** 与 **Current main**。未打 tag �
 明确边界：
 
 - IC-705 LAN 协议和部分 APRS 服务本身使用明文 UDP/TCP；`android:usesCleartextTraffic="true"` 是兼容性决定。没有完整协议迁移设计时不要擅自强制 TLS。
-- 模拟器、JVM 单测、Lint 与 Release 构建不能替代真机、真电台、低功率/假负载验证。
+- 模拟器、JVM 单测、Lint、synthetic AFSK loopback 与 Release 构建不能替代真机、真电台、真实空中弱信号及低功率/假负载验证。
 - 软件 PTT watchdog 不是硬件互锁；任何本地状态变化都不能作为“电台一定已经回到 RX”的唯一证据。
 - 更新检查保持**显式用户操作**：不得在启动、后台、WorkManager、Alarm 或 Service 中自动/周期检查，也不得自动下载安装。
 
@@ -52,7 +53,8 @@ README 必须始终区分 **Latest release** 与 **Current main**。未打 tag �
 | --- | --- |
 | `src/` | Kotlin / Java 生产源码 |
 | `src/ic705/` | IC-705 protocol / transport / session / backend / diagnostic |
-| `src/audio/` | AFSK1200 与 PCM |
+| `src/audio/` | AFSK1200 与 PCM Kotlin 边界 |
+| `native/graywolf-jni/` | Rust JNI adapter 与 Graywolf AFSK1200 receive core |
 | `src/diagnostic/` | 持久日志、网络事件、诊断快照与 ZIP 导出 |
 | `src/update/` | 手动 GitHub Release 检查 |
 | `res/` | values、drawable、mipmap、menu 等；生产页面无 `res/layout` |
@@ -68,6 +70,34 @@ AGP 9 使用 built-in Kotlin；不要重新应用 `org.jetbrains.kotlin.android`
 - `arm32Opengl`
 
 源码还保留 ARM64 Vulkan、x86、x86_64 flavor。不要未经产品/构建设计讨论重新合并 Universal APK。
+
+### 3.1 Graywolf AFSK1200 RX 合同
+
+所有**生产本地 PCM AFSK1200 接收**统一使用 Graywolf，不允许静默回退旧 Java demodulator：
+
+```text
+IC-705 WLAN AUDIO 12 kHz ──────┐
+普通 AudioRecord 11.025 kHz ───┼→ FeedableAfskDecoder
+Bluetooth SCO 8 kHz ───────────┘
+                                  → GraywolfAfskDecoder
+                                  → bulk ShortArray JNI
+                                  → Graywolf RECOMMENDED_3DEMOD
+                                  → FCS-stripped raw AX.25
+                                  → existing APRSdroid consumer/parser
+```
+
+约束：
+
+- Graywolf 依赖由 `native/graywolf-jni/Cargo.toml` 固定到 `graywolf-demod 0.14.13` 对应 upstream commit `34cd0111b7a40e7d91607699b7b4dd188574970a`；升级必须显式改 pin 并重新跑 synthetic/native/APK gate。
+- `FeedableAfskDecoder` 是生产本地 PCM RX 的统一入口。native library 缺失、ABI 不匹配、初始化失败或 processing exception 必须显式失败，不得偷偷创建 legacy decoder。
+- 生产 `src/` 不得重新引用 `Afsk1200Demodulator`、旧 multimon `AudioBufferProcessor` / `PacketCallback` 或 `loadLibrary("multimon")`；专项 CI 会硬性扫描。
+- 旧 `jsoundmodem` / `Afsk1200Modulator` 目前只允许用于 **TX AFSK PCM 生成**与 host-JVM 测试辅助；在 TX 稳定且没有独立迁移理由时不要为了“全 Rust”重写发送链。
+- JNI 输入必须按 `ShortArray` 批量送入，严禁 per-sample JNI。Rust 侧使用 handle registry 管理 decoder；`nativeCreate/nativeProcess/nativeDestroy` 不得让 panic 穿过 JNI 边界。
+- Kotlin `reset()` 采用“先成功创建 replacement，再销毁旧 handle”的语义；`close()` 必须幂等并释放 native state。
+- Graywolf 默认 110-sample dedup window 是 44.1 kHz 假设，本项目固定语义为 **3 symbols**，按 `ceil(3 * sampleRate / 1200)` 动态计算：8 kHz=`20`，11.025 kHz=`28`，12 kHz=`30` samples。
+- synthetic test 至少覆盖 8 kHz / 11.025 kHz / 12 kHz clean round-trip、非 packet 边界分块，以及确定性的轻度幅度失衡/噪声/削波回归；synthetic 绿只能证明可重复的 DSP 基线，不代表真实 RF 弱信号性能。
+- Android ARM64/ARMv7 `.so` 必须由 CI 从源码生成到 `build/generated/rustJniLibs/<abi>/libaprs_graywolf.so`，不得把生成 `.so` 提交回源码 `libs/`。
+- Release 必须校验 JNI exports、单 ABI、16 KiB ELF/page alignment 与 APK 内 `.so` SHA-256，并随 tagged Release 提供 pinned Graywolf 对应源码归档。
 
 ## 4. UI、导航与动效设计规范（必须遵守）
 
@@ -264,12 +294,12 @@ OSM 必须保留可识别 User-Agent 与可点击的 `© OpenStreetMap contribut
 1. `AprsService` 根据 `PrefsWrapper` 选择后端；
 2. `Ic705WifiBackend` 适配 Service/Prefs 到 controller；
 3. controller 创建 generation 化的 `Ic705RxSession`；
-4. RX：Wi-Fi UDP → AUDIO codec → PCM16LE → AFSK1200 → AX.25/APRS；
-5. TX：APRS/AX.25 → AFSK PCM → CI-V PTT ON → AUDIO UDP → CI-V PTT OFF。
+4. RX：Wi-Fi UDP → AUDIO codec → PCM16LE 12 kHz → `FeedableAfskDecoder` → Graywolf → AX.25/APRS；
+5. TX：APRS/AX.25 → 旧稳定 AFSK modulator 生成 PCM → CI-V PTT ON → AUDIO UDP → CI-V PTT OFF。
 
-默认 control 端口 UDP `50001`；CI-V / AUDIO 端口由会话协商。当前 DSP/codec 是 12 kHz。
+默认 control 端口 UDP `50001`；CI-V / AUDIO 端口由会话协商。IC-705 codec 是 12 kHz；Graywolf RX 细节与其它 AudioRecord 采样率见 3.1。
 
-不要退回“任意通道 N 秒没包就销毁整个 session”的统一超时模型。
+不要退回“任意通道 N 秒没包就销毁整个 session”的统一超时模型，也不要为了更换 DSP 修改 `Ic705RxSession` 的 recovery ownership；decoder 继续通过 controller 的 `Ic705DecoderFactory` / `PcmSink` seam 注入。
 
 当前默认 timing：
 
@@ -373,6 +403,8 @@ OSM 必须保留可识别 User-Agent 与可点击的 `© OpenStreetMap contribut
 - 发现新稳定版时只提示并打开 Release 页面；
 - 版本比较逻辑由 JVM 单测覆盖。
 
+HTTP/HTTPS 外链统一通过 `UrlOpener` 请求 AndroidX Browser Custom Tabs，并保留系统 `ACTION_VIEW` fallback；不要强制 Chrome，也不要为普通外链内嵌 WebView。
+
 ## 12. 代码与提交工作流
 
 ### 12.1 原子提交
@@ -408,10 +440,26 @@ OSM 必须保留可识别 User-Agent 与可点击的 `© OpenStreetMap contribut
   --no-daemon --stacktrace
 ```
 
+Graywolf / AFSK RX 变更还必须：
+
+```bash
+bash .github/scripts/test_graywolf_loopback.sh
+bash .github/scripts/build_graywolf_android.sh arm64-v8a
+bash .github/scripts/build_graywolf_android.sh armeabi-v7a
+```
+
+并满足：
+
+- production source Graywolf-only guard 通过；
+- synthetic 8 kHz / 11.025 kHz / 12 kHz 与 impairment/fragmentation cases 通过；
+- ARM64/ARMv7 JNI exports 与 16 KiB load alignment 通过；
+- APK 内 `libaprs_graywolf.so` 的 ABI 和 SHA-256 与当次源码构建产物一致；
+- tagged release 能生成并附带 pinned Graywolf 对应源码归档。
+
 涉及 IC-705 session/TX/recovery 时还必须验证：
 
 1. 诊断页可连接并持续接收 PCM；
-2. AFSK 解码正常；
+2. **真机真实 RF AFSK 解码正常**；synthetic loopback 不能替代这一项；
 3. 低功率/假负载下 PTT ON → audio → PTT OFF ACK 顺序正确；
 4. 多次 TX/RX 不出现假 `RX_IDLE`、僵尸 timer 或 teardown 后继续发 AUDIO；
 5. TX 中断网不因 socket/channel 竞态崩溃；
@@ -435,10 +483,12 @@ Release workflow 会：
 
 - 测试、Lint；
 - 构建 ARM64/ARMv7 OpenGL；
+- 从源码构建 Graywolf ARM64/ARMv7 JNI 到 `build/generated/rustJniLibs`；
 - 构建并注入 MapLibre `MinSizeRel` + IPO/LTO 原生库；
-- 16 KiB zipalign；
+- 16 KiB zipalign，并校验 Graywolf ELF/load alignment；
 - V2/V3/V4 签名；
-- 校验 ABI、MapLibre 数量与 SHA-256；
+- 校验 ABI、Graywolf/MapLibre 数量与 SHA-256；
+- tagged release 归档 pinned Graywolf 对应源码并与 APK 一起发布；
 - 生成 `SHA256SUMS.txt`；
 - 保存 R8 mapping；
 - 在 tag 构建发布 GitHub Release。
@@ -457,6 +507,7 @@ Release workflow 会：
 - 不使用全局 `windowAnimationStyle`；
 - 通知设置导航不等待 NotificationChannel Binder；
 - 通知点击一次构造 messages → chat Activity 栈，不用 Hub 二次 LaunchedEffect；
+- HTTP/HTTPS 外链统一走 Custom Tabs + `ACTION_VIEW` fallback；
 - 台站/报文列表支持标准与紧凑两档几何密度并尊重系统 fontScale；
 - Mapsforge 与专用离线瓦片下载器已移除；主地图为 MapLibre + Google Maps；
 - 外部存储读写权限已删除；文档导入/导出使用 SAF / ContentResolver；
@@ -465,9 +516,11 @@ Release workflow 会：
 - Android 17 本地网络权限已接入 IC-705 / LAN TCP TNC；
 - PTT OFF 使用 ACK 确认语义；
 - IC-705 watchdog 为 CONTROL/CI-V/AUDIO 角色化 liveness + stream-local recovery；
+- 生产本地 PCM AFSK RX 为 Graywolf-only；旧 Java/jsoundmodem demodulator 不得作为 fallback，旧 modulator 仅保留 TX；
+- Graywolf Android `.so` 是 build-generated artifact，不提交到源码 `libs/`；
 - 诊断为持久结构化事件 + Network 生命周期 + ZIP；
 - MapLibre Release 原生库使用同版本源码 `MinSizeRel` + IPO/LTO；
 - AndroidX Preference / AppCompat 直接依赖已移除；
-- `AI_CONTEXT.md` 不再是维护正文，`AGENT.md` 是唯一规范正文。
+- `AI_CONTEXT.md` 只保留兼容入口，`AGENT.md` 是唯一规范正文。
 
 历史细节属于 `CHANGELOG.md` 与 Git 历史；不要在 `AGENT.md` 持续堆积每个旧版本的完成清单，只保留会影响下一次修改决策的当前事实和设计约束。

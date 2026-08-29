@@ -254,10 +254,46 @@ mod tests {
         );
     }
 
+    #[test]
+    fn synthetic_12khz_fragmented_stream_round_trip() {
+        assert_round_trip(
+            12_000,
+            37,
+            b">GRAYWOLF 12K FRAGMENTED STREAM",
+        );
+    }
+
+    #[test]
+    fn synthetic_12khz_impaired_channel_round_trip() {
+        let expected = build_ax25_ui_frame(
+            "N0CALL",
+            "APRS",
+            b">GRAYWOLF 12K IMPAIRED CHANNEL",
+        );
+        let mut pcm = synthesize_bell202_with_levels(&expected, 12_000, 20_000.0, 11_000.0);
+        add_deterministic_channel_impairments(&mut pcm);
+        assert_pcm_round_trip(
+            expected,
+            12_000,
+            IC705_SAMPLES_PER_PACKET,
+            pcm,
+        );
+    }
+
     fn assert_round_trip(sample_rate_hz: u32, chunk_samples: usize, payload: &[u8]) {
         let expected = build_ax25_ui_frame("N0CALL", "APRS", payload);
         let pcm = synthesize_bell202(&expected, sample_rate_hz);
+        assert_pcm_round_trip(expected, sample_rate_hz, chunk_samples, pcm);
+    }
+
+    fn assert_pcm_round_trip(
+        expected: Vec<u8>,
+        sample_rate_hz: u32,
+        chunk_samples: usize,
+        pcm: Vec<i16>,
+    ) {
         assert!(!pcm.is_empty());
+        assert!(chunk_samples > 0);
 
         let mut decoder = DecoderState::new(sample_rate_hz);
         let mut decoded = Vec::new();
@@ -291,6 +327,20 @@ mod tests {
     }
 
     fn synthesize_bell202(frame: &[u8], sample_rate_hz: u32) -> Vec<i16> {
+        synthesize_bell202_with_levels(
+            frame,
+            sample_rate_hz,
+            PCM_AMPLITUDE,
+            PCM_AMPLITUDE,
+        )
+    }
+
+    fn synthesize_bell202_with_levels(
+        frame: &[u8],
+        sample_rate_hz: u32,
+        mark_amplitude: f64,
+        space_amplitude: f64,
+    ) -> Vec<i16> {
         let mut framed = frame.to_vec();
         let fcs = ax25_fcs(frame);
         framed.extend_from_slice(&fcs.to_le_bytes());
@@ -310,7 +360,11 @@ mod tests {
             if bit == 0 {
                 mark = !mark;
             }
-            let frequency = if mark { MARK_HZ } else { SPACE_HZ };
+            let (frequency, amplitude) = if mark {
+                (MARK_HZ, mark_amplitude)
+            } else {
+                (SPACE_HZ, space_amplitude)
+            };
             let step = TAU * frequency / sample_rate_hz as f64;
 
             // Preserve the exact 1200-baud average even when sample_rate/baud is
@@ -321,7 +375,7 @@ mod tests {
             assert!(samples_this_bit > 0);
 
             for _ in 0..samples_this_bit {
-                pcm.push((phase.sin() * PCM_AMPLITUDE).round() as i16);
+                pcm.push((phase.sin() * amplitude).round() as i16);
                 phase += step;
                 if phase >= TAU {
                     phase -= TAU;
@@ -331,6 +385,21 @@ mod tests {
 
         pcm.extend(std::iter::repeat_n(0i16, silence_samples));
         pcm
+    }
+
+    fn add_deterministic_channel_impairments(pcm: &mut [i16]) {
+        // Fixed pseudo-random noise makes the test deterministic while covering
+        // several common radio/audio-path degradations at once: DC offset,
+        // mark/space level imbalance from the synthesizer, clipping, and noise.
+        let mut state = 0x5a17_2d3cu32;
+        for sample in pcm {
+            state = state
+                .wrapping_mul(1_664_525)
+                .wrapping_add(1_013_904_223);
+            let noise = (((state >> 16) & 0x07ff) as i32) - 1024;
+            let value = *sample as i32 + 600 + noise;
+            *sample = value.clamp(-16_500, 16_500) as i16;
+        }
     }
 
     fn append_flags(bits: &mut Vec<u8>, count: usize) {

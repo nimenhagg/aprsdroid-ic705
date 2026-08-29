@@ -182,7 +182,10 @@ android {
 			resources.srcDirs = ['src']
 			res.srcDirs = ['res']
 			assets.srcDirs = ['assets']
-			jniLibs.srcDirs = ['libs']
+			jniLibs.srcDirs = [
+				'libs',
+				layout.buildDirectory.dir('generated/rustJniLibs').get().asFile,
+			]
 		}
 		androidTest {
 			java.srcDirs = ['androidTest/java']

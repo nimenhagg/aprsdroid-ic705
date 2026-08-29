@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ABI="${1:-arm64-v8a}"
-OUTPUT="${2:-$PWD/libs/$ABI/libaprs_graywolf.so}"
+OUTPUT="${2:-$ROOT/build/generated/rustJniLibs/$ABI/libaprs_graywolf.so}"
 NDK_VERSION="28.2.13676358"
 ANDROID_API=27
 GRAYWOLF_VERSION="0.14.13"
@@ -30,7 +31,6 @@ command -v cargo >/dev/null || { echo "cargo is required" >&2; exit 2; }
 command -v rustup >/dev/null || { echo "rustup is required" >&2; exit 2; }
 command -v protoc >/dev/null || { echo "protoc is required (protobuf-compiler on Ubuntu)" >&2; exit 2; }
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MANIFEST="$ROOT/native/graywolf-jni/Cargo.toml"
 NDK="$ANDROID_HOME/ndk/$NDK_VERSION"
 if [ ! -d "$NDK" ]; then

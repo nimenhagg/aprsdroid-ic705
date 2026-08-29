@@ -33,7 +33,7 @@ jobs:
       - name: Install Graywolf build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
+          sudo apt-get install -y protobuf-compiler pkg-config libasound2-dev
           cargo --version
           rustc --version
           protoc --version
@@ -45,7 +45,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             native/graywolf-jni/target
-          key: graywolf-rust-v1-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml') }}
+          key: graywolf-rust-v3-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
+
+      - name: Run Graywolf production-rate loopbacks
+        run: bash .github/scripts/test_graywolf_loopback.sh
 
       - name: Restore ARM64 MinSizeRel MapLibre
         uses: actions/cache@v6
@@ -73,13 +76,9 @@ jobs:
 
       - name: Build Graywolf Android Native
         run: |
-          bash .github/scripts/build_graywolf_android.sh \
-            arm64-v8a \
-            "$PWD/libs/arm64-v8a/libaprs_graywolf.so"
+          bash .github/scripts/build_graywolf_android.sh arm64-v8a
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            bash .github/scripts/build_graywolf_android.sh \
-              armeabi-v7a \
-              "$PWD/libs/armeabi-v7a/libaprs_graywolf.so"
+            bash .github/scripts/build_graywolf_android.sh armeabi-v7a
           fi
 
       - name: Grant Execute Permission to Gradlew
@@ -154,7 +153,7 @@ jobs:
               echo "Missing custom MinSizeRel MapLibre library for ${abi}" >&2
               exit 1
             fi
-            local graywolf_so="$PWD/libs/${abi}/libaprs_graywolf.so"
+            local graywolf_so="$PWD/build/generated/rustJniLibs/${abi}/libaprs_graywolf.so"
             if [ ! -s "$graywolf_so" ]; then
               echo "Missing Graywolf JNI library for ${abi}" >&2
               exit 1
@@ -253,6 +252,12 @@ jobs:
           ls -lh release-apks
           ls -lh release-mappings
 
+      - name: Package Graywolf corresponding source
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          bash .github/scripts/package_graywolf_source.sh "$PWD/release-apks"
+          (cd release-apks && sha256sum *.apk *.tar.gz > SHA256SUMS.txt)
+
       - name: Extract Release Notes from CHANGELOG
         if: startsWith(github.ref, 'refs/tags/')
         run: python3 .github/scripts/extract_release_notes.py
@@ -263,6 +268,7 @@ jobs:
           name: aprsdroid-apks
           path: |
             release-apks/*.apk
+            release-apks/*.tar.gz
             release-apks/SHA256SUMS.txt
 
       - name: Upload R8 Mapping Files
@@ -311,8 +317,8 @@ jobs:
             echo "README latest release does not match ${tag}." >&2
             exit 1
           }
-          grep -Fq "| 最新 GitHub Release | \`${tag}\` |" AI_CONTEXT.md || {
-            echo "AI_CONTEXT release baseline does not match ${tag}." >&2
+          grep -Fq "| 最新 GitHub Release | \`${tag}\` |" AGENT.md || {
+            echo "AGENT release baseline does not match ${tag}." >&2
             exit 1
           }
 
@@ -353,6 +359,7 @@ jobs:
         with:
           files: |
             release-apks/*.apk
+            release-apks/*.tar.gz
             release-apks/SHA256SUMS.txt
           body_path: RELEASE_NOTES.md
           draft: false
