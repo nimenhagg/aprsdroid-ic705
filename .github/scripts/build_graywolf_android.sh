@@ -30,11 +30,9 @@ esac
 command -v cargo >/dev/null || { echo "cargo is required" >&2; exit 2; }
 command -v rustup >/dev/null || { echo "rustup is required" >&2; exit 2; }
 command -v protoc >/dev/null || { echo "protoc is required (protobuf-compiler on Ubuntu)" >&2; exit 2; }
+command -v python3 >/dev/null || { echo "python3 is required for ELF alignment verification" >&2; exit 2; }
 
 MANIFEST="$ROOT/native/graywolf-jni/Cargo.toml"
-LOCKFILE="$ROOT/native/graywolf-jni/Cargo.lock"
-test -s "$LOCKFILE" || { echo "Missing committed Graywolf Cargo.lock: $LOCKFILE" >&2; exit 2; }
-
 NDK="$ANDROID_HOME/ndk/$NDK_VERSION"
 if [ ! -d "$NDK" ]; then
   SDKMANAGER="$(command -v sdkmanager || true)"
@@ -56,7 +54,7 @@ LINKER="$TOOLCHAIN/bin/${LINKER_PREFIX}${ANDROID_API}-clang"
 STRIP="$TOOLCHAIN/bin/llvm-strip"
 READELF="$TOOLCHAIN/bin/llvm-readelf"
 NM="$TOOLCHAIN/bin/llvm-nm"
-if [ ! -x "$LINKER" ] || [ ! -x "$STRIP" ] || [ ! -x "$NM" ]; then
+if [ ! -x "$LINKER" ] || [ ! -x "$STRIP" ] || [ ! -x "$READELF" ] || [ ! -x "$NM" ]; then
   echo "Required NDK LLVM tools are missing under $TOOLCHAIN" >&2
   exit 2
 fi
@@ -74,9 +72,9 @@ export "CARGO_TARGET_${CARGO_TARGET_ENV}_RUSTFLAGS=-C link-arg=-Wl,-z,max-page-s
 
 cargo build \
   --manifest-path "$MANIFEST" \
-  --locked \
   --target "$TARGET" \
-  --release
+  --release \
+  --locked
 
 SOURCE="$ROOT/native/graywolf-jni/target/$TARGET/release/libaprs_graywolf.so"
 if [ ! -s "$SOURCE" ]; then
@@ -98,9 +96,36 @@ for symbol in \
 done
 
 echo "Verified Graywolf JNI exports for $ABI"
-if [ -x "$READELF" ]; then
-  echo "ELF load alignment for $ABI:"
-  "$READELF" -l "$OUTPUT" | grep -E 'LOAD|GNU_RELRO' || true
-fi
+ELF_PROGRAM_HEADERS="$(mktemp)"
+trap 'rm -f "$ELF_PROGRAM_HEADERS"' EXIT
+"$READELF" -lW "$OUTPUT" > "$ELF_PROGRAM_HEADERS"
+python3 - "$ELF_PROGRAM_HEADERS" "$ABI" <<'PY'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+abi = sys.argv[2]
+loads = []
+for line in path.read_text(encoding="utf-8").splitlines():
+    fields = line.split()
+    if fields and fields[0] == "LOAD":
+        try:
+            loads.append(int(fields[-1], 16))
+        except ValueError as exc:
+            raise SystemExit(f"Could not parse LOAD alignment for {abi}: {line}") from exc
+if not loads:
+    raise SystemExit(f"No LOAD program headers found for {abi}")
+minimum = min(loads)
+if minimum < 0x4000:
+    formatted = ", ".join(hex(value) for value in loads)
+    raise SystemExit(
+        f"Graywolf {abi} is not 16 KiB ELF-aligned: LOAD alignments={formatted}"
+    )
+print(
+    f"Verified Graywolf {abi} ELF LOAD alignment >= 16 KiB: "
+    + ", ".join(hex(value) for value in loads)
+)
+PY
+"$READELF" -lW "$OUTPUT" | grep -E 'LOAD|GNU_RELRO' || true
 sha256sum "$OUTPUT"
 ls -lh "$OUTPUT"
