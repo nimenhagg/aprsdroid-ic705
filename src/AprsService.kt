@@ -24,6 +24,7 @@ import net.ab0oo.aprs.parser.ObjectPacket
 import net.ab0oo.aprs.parser.Parser
 import net.ab0oo.aprs.parser.Position as AprsPosition
 import net.ab0oo.aprs.parser.PositionPacket
+import org.aprsdroid.app.data.preferences.AprsServiceSettings
 import org.aprsdroid.app.location.LocationSource
 import java.util.Locale
 import java.util.concurrent.Executors
@@ -92,6 +93,7 @@ class AprsService : Service() {
     }
 
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
+    private val serviceSettings: AprsServiceSettings by lazy { AprsServiceSettings(prefs) }
 
     @JvmField
     val handler = Handler(Looper.getMainLooper())
@@ -116,7 +118,7 @@ class AprsService : Service() {
     fun handleStart(i: Intent) {
         when (i.action) {
             SERVICE_STOP -> {
-                prefs.setBoolean("service_running", false)
+                serviceSettings.serviceRunning = false
                 if (running) stopSelf()
                 return
             }
@@ -129,7 +131,7 @@ class AprsService : Service() {
                     Log.d(TAG, "SEND_PACKET ignored, data extra is empty.")
                     return
                 }
-                val p = Parser.parseBody(prefs.getCallSsid(), APP_VERSION, null, dataField)
+                val p = Parser.parseBody(serviceSettings.callSsid, APP_VERSION, null, dataField)
                 sendPacket(p)
                 return
             }
@@ -140,8 +142,8 @@ class AprsService : Service() {
                 }
                 val freqCleaned = dataField.replace("MHz", "").trim()
                 val freq = try { freqCleaned.toFloat(); freqCleaned } catch (_: Throwable) { "" }
-                if (prefs.getString("frequency", null) != freq) {
-                    prefs.set("frequency", freq)
+                if (serviceSettings.frequencyText != freq) {
+                    serviceSettings.frequencyText = freq
                     if (!running) return
                 } else return
             }
@@ -157,9 +159,9 @@ class AprsService : Service() {
             getString(R.string.service_start)
         }
 
-        showToast(String.format(toastString, prefs.getLocationSourceName(), prefs.getBackendName()))
+        showToast(String.format(toastString, serviceSettings.locationSourceName, serviceSettings.backendName))
 
-        val callssid = prefs.getCallSsid()
+        val callssid = serviceSettings.callSsid
         ServiceNotifier.instance.start(this, callssid)
 
         if (!running) {
@@ -254,7 +256,7 @@ class AprsService : Service() {
     fun onPosterStarted() {
         Log.d(TAG, "onPosterStarted")
         val locInfo = locSource.start(singleShot)
-        val callssid = prefs.getCallSsid()
+        val callssid = serviceSettings.callSsid
         val message = "$callssid: $locInfo"
         ServiceNotifier.instance.start(this, message)
 
@@ -267,7 +269,7 @@ class AprsService : Service() {
         )
 
         if (!singleShot) {
-            prefs.setBoolean("service_running", true)
+            serviceSettings.serviceRunning = true
         } else {
             triggerImmediateLocation()
         }
@@ -297,12 +299,12 @@ class AprsService : Service() {
     }
 
     fun newPacket(payload: InformationField): APRSPacket {
-        val digipath = prefs.getString("digi_path", "WIDE1-1")
-        return APRSPacket(prefs.getCallSsid(), APP_VERSION, Digipeater.parseList(digipath, true), payload)
+        val digipath = serviceSettings.digipeaterPath
+        return APRSPacket(serviceSettings.callSsid, APP_VERSION, Digipeater.parseList(digipath, true), payload)
     }
 
     private fun batteryCommentToken(): String? {
-        if (!prefs.getSendBatteryAprsIs() || prefs.getProto() != "aprsis") return null
+        if (!serviceSettings.includeBatteryOnAprsIs) return null
         val batteryManager = getSystemService(Context.BATTERY_SERVICE) as? BatteryManager ?: return null
         val percentage = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
         return if (percentage in 0..100) "BAT:${percentage}%" else null
@@ -332,11 +334,11 @@ class AprsService : Service() {
         val sym0 = if (symbol.isNotEmpty()) symbol[0] else '/'
         val sym1 = if (symbol.length > 1) symbol[1] else '>'
         val pos = AprsPosition(location.latitude, location.longitude, 0, sym0, sym1).apply {
-            positionAmbiguity = prefs.getStringInt("priv_ambiguity", 0)
+            positionAmbiguity = serviceSettings.positionAmbiguity
         }
-        val statusSpd = if (prefs.getBoolean("priv_spdbear", true)) AprsPacket.formatCourseSpeed(location) else ""
-        val statusFreq = AprsPacket.formatFreq(statusSpd, prefs.getStringFloat("frequency", 0.0f))
-        val statusAlt = if (prefs.getBoolean("priv_altitude", true)) AprsPacket.formatAltitude(location) else ""
+        val statusSpd = if (serviceSettings.includeSpeedAndBearing) AprsPacket.formatCourseSpeed(location) else ""
+        val statusFreq = AprsPacket.formatFreq(statusSpd, serviceSettings.frequencyMhz)
+        val statusAlt = if (serviceSettings.includeAltitude) AprsPacket.formatAltitude(location) else ""
         val comment = buildPositionComment(statusSpd + statusFreq + statusAlt, status)
         return newPacket(PositionPacket(pos, comment, true))
     }
@@ -359,11 +361,11 @@ class AprsService : Service() {
     }
 
     fun postLocation(location: Location) {
-        var symbol = prefs.getString("symbol", "")
+        var symbol = serviceSettings.symbol("")
         if (symbol.length != 2) {
             symbol = getString(R.string.default_symbol)
         }
-        val status = prefs.getString("status", getString(R.string.default_status))
+        val status = serviceSettings.status(getString(R.string.default_status))
         val packet = formatLoc(symbol, status, location)
         Log.d(TAG, "packet: $packet")
         sendPacket(packet, String.format(Locale.US, " (±%dm)", location.accuracy.toInt()))
@@ -374,7 +376,7 @@ class AprsService : Service() {
             singleShot = false
             stopSelf()
         } else {
-            val message = "${prefs.getCallSsid()}: $result"
+            val message = "${serviceSettings.callSsid}: $result"
             ServiceNotifier.instance.notifyPosition(this, message)
         }
     }
@@ -388,7 +390,7 @@ class AprsService : Service() {
                 fap = Parser.parse(inner.substring(1))
             }
 
-            val callssid = prefs.getCallSsid()
+            val callssid = serviceSettings.callSsid
             if (source == StorageDatabase.Companion.Post.TYPE_INCMG &&
                 fap.sourceCall.equals(callssid, ignoreCase = true) &&
                 fap.lastUsedDigi != null
@@ -455,7 +457,7 @@ class AprsService : Service() {
     }
 
     fun postAddPost(t: Int, statusId: Int, message: String) {
-        if (t == StorageDatabase.Companion.Post.TYPE_INFO && !prefs.getBoolean("conn_log", false)) {
+        if (t == StorageDatabase.Companion.Post.TYPE_INFO && !serviceSettings.connectionLoggingEnabled) {
             return
         }
         handler.post {
