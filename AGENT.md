@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v2.0.4` |
-| `build.gradle` 默认版本 | `2.0.4` |
-| Android versionCode | `2026082902` |
+| 最新 GitHub Release | `Mod-v2.1.0` |
+| `build.gradle` 默认版本 | `2.1.0` |
+| Android versionCode | `2026082903` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -22,7 +22,7 @@
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-`Mod-v2.0.4` 是当前稳定发布基线。当前 `main` 在此基础上还合入了 **IC-705 session recovery / link-state 修复**（merge `9f902353`），并新增对应的独立 CI。Graywolf AFSK RX、Custom Tabs 与开源致谢目前属于 `feat/graywolf-afsk-rx` 的未发布变更；除非已经合入 main、创建新 tag / GitHub Release，否则不得写成“已发布”。
+`Mod-v2.1.0` 是当前发布基线：包含 IC-705 session recovery / link-state 修复、Graywolf-only 本地 AFSK1200 RX、Custom Tabs、开源致谢、Graywolf synthetic/native 专项 CI 与对应源码归档。后续 main 若再次领先最新 tag / GitHub Release，仍必须明确区分已发布与未发布能力。
 
 README 必须始终区分 **Latest release** 与 **Current main**。未打 tag 的功能、修复和行为变化不得提前写成稳定版能力。
 
@@ -69,7 +69,7 @@ AGP 9 使用 built-in Kotlin；不要重新应用 `org.jetbrains.kotlin.android`
 - `arm64Opengl`，文件名前缀 `Recommended_`
 - `arm32Opengl`
 
-源码还保留 ARM64 Vulkan、x86、x86_64 flavor。不要未经产品/构建设计讨论重新合并 Universal APK。
+源码还保留 ARM64 Vulkan、x86、x86_64 flavor。当前 Graywolf Android native helper 与正式本地 AFSK RX 只覆盖 ARM64/ARMv7；x86/x86_64 不属于本地 AFSK RX 的正式支持 ABI。不要未经产品/构建设计讨论重新合并 Universal APK。
 
 ### 3.1 Graywolf AFSK1200 RX 合同
 
@@ -88,7 +88,7 @@ Bluetooth SCO 8 kHz ───────────┘
 
 约束：
 
-- Graywolf 依赖由 `native/graywolf-jni/Cargo.toml` 固定到 `graywolf-demod 0.14.13` 对应 upstream commit `34cd0111b7a40e7d91607699b7b4dd188574970a`；升级必须显式改 pin 并重新跑 synthetic/native/APK gate。
+- Graywolf 依赖由 `native/graywolf-jni/Cargo.toml` 固定到 `graywolf-demod 0.14.13` 对应 upstream commit `34cd0111b7a40e7d91607699b7b4dd188574970a`；`native/graywolf-jni/Cargo.lock` 必须提交，synthetic 与 Android native 构建必须使用 `--locked`。升级时必须显式改 pin、审查 lockfile diff，并重新跑 synthetic/native/APK gate。
 - `FeedableAfskDecoder` 是生产本地 PCM RX 的统一入口。native library 缺失、ABI 不匹配、初始化失败或 processing exception 必须显式失败，不得偷偷创建 legacy decoder。
 - 生产 `src/` 不得重新引用 `Afsk1200Demodulator`、旧 multimon `AudioBufferProcessor` / `PacketCallback` 或 `loadLibrary("multimon")`；专项 CI 会硬性扫描。
 - 旧 `jsoundmodem` / `Afsk1200Modulator` 目前只允许用于 **TX AFSK PCM 生成**与 host-JVM 测试辅助；在 TX 稳定且没有独立迁移理由时不要为了“全 Rust”重写发送链。
@@ -319,7 +319,7 @@ OSM 必须保留可识别 User-Agent 与可点击的 `© OpenStreetMap contribut
 - **CI-V**：RX/空闲超时先做 stream rediscovery，连续失败再升级完整 reconnect；PTT 期间按安全关键路径处理；
 - **AUDIO**：TX 期间 RX 静默不能触发 session teardown；长时间失活先局部恢复，失败后升级。
 
-当前 main 已合入 recovery/link-state 修复；涉及 link on/off、poster 状态、session recovery 行为时先阅读相应测试和专项 CI，不要只凭旧 Release 代码推断。
+`Mod-v2.1.0` 已包含 recovery/link-state 修复；涉及 link on/off、poster 状态、session recovery 行为时先阅读相应测试和专项 CI，不要只凭更早 Release 代码推断。
 
 ## 7. TX / PTT 安全不变量
 
@@ -451,6 +451,7 @@ bash .github/scripts/build_graywolf_android.sh armeabi-v7a
 并满足：
 
 - production source Graywolf-only guard 通过；
+- `Cargo.lock` 已跟踪且 `cargo --locked` 不产生 lockfile diff；
 - synthetic 8 kHz / 11.025 kHz / 12 kHz 与 impairment/fragmentation cases 通过；
 - ARM64/ARMv7 JNI exports 与 16 KiB load alignment 通过；
 - APK 内 `libaprs_graywolf.so` 的 ABI 和 SHA-256 与当次源码构建产物一致；

@@ -1,3 +1,22 @@
+## [Mod-v2.1.0] - 2026-08-29
+
+### Added
+- 本地 PCM AFSK1200 接收核心迁移到 Graywolf `graywolf-demod 0.14.13`：IC-705 WLAN 12 kHz、普通 AudioRecord 11.025 kHz 与 Bluetooth SCO 8 kHz 统一经过 Rust JNI 多解调器接收链路；Graywolf native 不可用时明确失败，不再静默回退旧 Java demodulator。
+- 新增 Graywolf 专项 CI 与可重复 synthetic AX.25/Bell 202 回环：覆盖 8 kHz、11.025 kHz、12 kHz、非 packet 边界碎片输入，以及固定噪声、DC offset、削波和 1200/2200 幅度失衡的轻度受损信道基线。
+- 设置页新增“开源致谢与应用链接”，列出 APRSdroid、Graywolf、Dire Wolf、MapLibre、OkHttp、AndroidX 与 APRSLocus 等项目/相关应用；普通 HTTP/HTTPS 外链统一优先使用 AndroidX Browser Custom Tabs，并保留系统浏览器 fallback。
+
+### Fixed
+- IC-705 session 恢复改为角色化 liveness：CONTROL 继续作为整套 session 的权威存活信号；CI-V/AUDIO 超时先做 stream-local rediscovery，连续失败再升级完整 reconnect；TX 期间 AUDIO RX 静默和 PTT OFF 后恢复宽限期不再误触发整 session teardown。
+- 补充 recovery/link-state 自动化测试与独立 CI，覆盖 CONTROL 超时、CI-V/AUDIO 局部恢复、TX/grace 行为和恢复升级条件。
+
+### Changed
+- 生产接收路径移除旧 `Afsk1200Demodulator` 与已不可达的 multimon Java/JNI RX 代码；旧 `jsoundmodem` / `Afsk1200Modulator` 仅保留用于稳定的 TX AFSK PCM 生成及 host-JVM 测试辅助。
+- Graywolf ARM64/ARMv7 JNI 改为从固定 upstream commit `34cd0111b7a40e7d91607699b7b4dd188574970a` 源码构建到 `build/generated/rustJniLibs`；提交 `Cargo.lock` 并对测试/Android native 构建使用 `--locked`，Release 同时校验 JNI exports、16 KiB 对齐、APK 内 native SHA-256，并附带 pinned Graywolf 对应源码归档。
+- `AGENT.md` 成为唯一当前工程维护规范正文，`AI_CONTEXT.md` 只保留兼容入口。
+- 版本更新为 `Mod-v2.1.0`（`versionCode 2026082903`）。
+
+> 注：synthetic 回环用于保证可重复 DSP/打包基线，不能替代真实 IC-705、真实射频弱信号与低功率/假负载 TX 验证。
+
 ## [Mod-v2.0.4] - 2026-08-28
 
 ### Fixed
