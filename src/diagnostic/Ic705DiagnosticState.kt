@@ -15,6 +15,7 @@ object Ic705DiagnosticState {
             "ptt_asserted_possible",
             "can_stream_audio",
             "reconnect_attempt",
+            "possible_stale_generation",
             "network",
             "network_status",
             "network_validated",
