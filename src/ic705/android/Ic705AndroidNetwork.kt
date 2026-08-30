@@ -11,6 +11,7 @@ import java.net.InetSocketAddress
 import java.net.SocketException
 import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.diagnostic.Ic705DiagnosticState
+import org.aprsdroid.app.diagnostic.NetworkEventLogger
 import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
 
 /**
@@ -26,13 +27,23 @@ object Ic705WifiNetworkSelector {
         if (active != null) {
             val caps = connectivity.getNetworkCapabilities(active)
             if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
-                AppLog.i("IC705.NET", "wifi_selected", mapOf("network" to active.toString(), "source" to "active"))
-                Ic705DiagnosticState.set("network", active.toString())
-                Ic705DiagnosticState.set("network_status", "AVAILABLE")
+                reportSelected(active, "active")
                 return active
             }
         }
 
+        val callbackNetwork = NetworkEventLogger.wifiNetworksSnapshot(context).firstOrNull { network ->
+            connectivity.getNetworkCapabilities(network)
+                ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        }
+        if (callbackNetwork != null) {
+            reportSelected(callbackNetwork, "callback")
+            return callbackNetwork
+        }
+
+        // Compatibility fallback for the narrow cold-start window before the first
+        // NetworkCallback delivery. Keep this until callback-only startup has had
+        // hardware coverage against the IC-705 no-Internet access point flow.
         return runCatching {
             @Suppress("DEPRECATION")
             connectivity.allNetworks.firstOrNull { network ->
@@ -41,14 +52,18 @@ object Ic705WifiNetworkSelector {
             }
         }.onSuccess { network ->
             if (network != null) {
-                AppLog.i("IC705.NET", "wifi_selected", mapOf("network" to network.toString(), "source" to "scan"))
-                Ic705DiagnosticState.set("network", network.toString())
-                Ic705DiagnosticState.set("network_status", "AVAILABLE")
+                reportSelected(network, "compat_scan")
             } else {
                 AppLog.w("IC705.NET", "wifi_not_found")
                 Ic705DiagnosticState.set("network_status", "NOT_FOUND")
             }
         }.getOrNull()
+    }
+
+    private fun reportSelected(network: Network, source: String) {
+        AppLog.i("IC705.NET", "wifi_selected", mapOf("network" to network.toString(), "source" to source))
+        Ic705DiagnosticState.set("network", network.toString())
+        Ic705DiagnosticState.set("network_status", "AVAILABLE")
     }
 }
 
