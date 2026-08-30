@@ -9,8 +9,8 @@
 | 项目 | 当前值 |
 | --- | --- |
 | 最新 GitHub Release | `Mod-v2.2.0` |
-| `build.gradle` 默认版本 | `2.2.0` |
-| Android versionCode | `2026082904` |
+| `build.gradle` 默认版本 | `2.2.1` |
+| Android versionCode | `2026082905` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -22,7 +22,9 @@
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-`Mod-v2.2.0` 是当前发布基线：在 2.1.0 的 IC-705 role-specific recovery、Graywolf-only 本地 AFSK1200 RX 与发布校验基础上，加入 `AprsService` 后端职责拆分，以及 Android 16+ 可选 Live Updates / promoted ongoing notification。后续 main 若再次领先最新 tag / GitHub Release，仍必须明确区分已发布与未发布能力。
+`Mod-v2.2.0` 是当前发布基线：在 2.1.0 的 IC-705 role-specific recovery、Graywolf-only 本地 AFSK1200 RX 与发布校验基础上，加入 `AprsService` 后端职责拆分，以及 Android 16+ 可选 Live Updates / promoted ongoing notification。
+
+当前代码默认版本已推进到未发布的 `Mod-v2.2.1` 候选，包含 Live Updates 模式/活动状态文本、透明单色 APRS 通知图标和多语言状态资源等增强；在对应 tag 与 GitHub Release 资产真正完成前，最新稳定版仍是 `Mod-v2.2.0`。
 
 README 必须始终区分 **Latest release** 与 **Current main**。未打 tag 的功能、修复和行为变化不得提前写成稳定版能力。
 

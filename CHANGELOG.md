@@ -1,3 +1,19 @@
+## [Mod-v2.2.1] - 2026-08-30
+
+### Added
+- Live Updates / promoted ongoing notification 增加按后端模式与当前动作变化的短状态：IC-705、APRS-IS、AFSK、KISS、Kenwood、TNC2 等可分别显示连接、待机/在线/监听、接收、发射、重连与错误；位置信标发送单独显示“发送信标”。
+- 新增透明背景、纯单色 APRS 通知小图标，适配 Android SystemUI 的状态栏与 Live Updates 胶囊着色规则。
+- Live Updates 状态文案新增英文、简体中文、繁体中文（台湾/香港）、日语、韩语、德语、法语、西班牙语、巴西葡萄牙语和俄语资源；其它语言回退默认英文。
+
+### Fixed
+- 瞬时接收/发射/信标状态使用 generation/token 防止延迟回落覆盖后续的重连或错误状态。
+- 单次定位的“等待定位”状态与现有 15 秒定位监听超时对齐，约 16 秒无结果时自动回到当前后端待机/在线状态，避免状态长期卡住。
+
+### Changed
+- 版本更新为 `Mod-v2.2.1`（`versionCode 2026082905`）。
+
+> 注：Android 是否实际提升 promoted ongoing notification、胶囊背景颜色与最终文字截断仍由 SystemUI 决定；本版本不把软件侧 TX 状态描述成 IC-705 硬件 PTT ACK 的精确实时反馈。
+
 ## [Mod-v2.2.0] - 2026-08-30
 
 ### Added
@@ -322,7 +338,6 @@
 
 ### Removed
 - 删除旧版 Okio 依赖。
-- 删除离线地图文件选择入口及其相关资源。
 
 ## [v1.6.1-ic705] - 2026-08-24
 
