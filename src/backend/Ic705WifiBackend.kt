@@ -1,9 +1,11 @@
 package org.aprsdroid.app.backend
 
+import java.util.concurrent.atomic.AtomicBoolean
 import net.ab0oo.aprs.parser.APRSPacket
 import org.aprsdroid.app.AprsBackend
 import org.aprsdroid.app.AprsService
 import org.aprsdroid.app.PrefsWrapper
+import org.aprsdroid.app.diagnostic.NetworkEventLogger
 import org.aprsdroid.app.ic705.backend.Ic705BackendPrefs
 import org.aprsdroid.app.ic705.backend.Ic705BackendService
 import org.aprsdroid.app.ic705.backend.Ic705WifiBackendController
@@ -20,11 +22,24 @@ class Ic705WifiBackend(
             service
         )
 
-    override fun start(): Boolean = controller.start()
+    private val networkListenerRegistered = AtomicBoolean(false)
+    private val selectedWifiLostListener = NetworkEventLogger.SelectedWifiLostListener {
+        controller.onSelectedWifiLost()
+    }
+
+    override fun start(): Boolean {
+        if (networkListenerRegistered.compareAndSet(false, true)) {
+            NetworkEventLogger.addSelectedWifiLostListener(selectedWifiLostListener)
+        }
+        return controller.start()
+    }
 
     override fun update(packet: APRSPacket): String = controller.update(packet)
 
     override fun stop() {
+        if (networkListenerRegistered.compareAndSet(true, false)) {
+            NetworkEventLogger.removeSelectedWifiLostListener(selectedWifiLostListener)
+        }
         controller.stop()
     }
 
