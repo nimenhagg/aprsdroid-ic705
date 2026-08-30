@@ -91,14 +91,28 @@ object NetworkEventLogger {
     }
 
     fun snapshot(context: Context): List<String> {
-        val connectivity = context.applicationContext
+        val appContext = context.applicationContext
+        val connectivity = appContext
             .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return emptyList()
         return runCatching {
-            @Suppress("DEPRECATION")
-            connectivity.allNetworks.map { network -> describe(connectivity, network) }
+            val networks = mergeSnapshotNetworks(
+                activeNetwork = connectivity.activeNetwork,
+                trackedWifiNetworks = wifiNetworksSnapshot(appContext),
+            )
+            networks.map { network -> describe(connectivity, network) }
         }.getOrElse {
             listOf("network snapshot failed: ${it.javaClass.simpleName}: ${it.message}")
         }
+    }
+
+    internal fun <T> mergeSnapshotNetworks(
+        activeNetwork: T?,
+        trackedWifiNetworks: List<T>,
+    ): List<T> {
+        val networks = LinkedHashSet<T>()
+        if (activeNetwork != null) networks.add(activeNetwork)
+        networks.addAll(trackedWifiNetworks)
+        return networks.toList()
     }
 
     private fun rememberWifi(network: Network) {
