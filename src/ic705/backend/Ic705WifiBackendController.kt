@@ -210,6 +210,37 @@ class Ic705WifiBackendController(
         }
     }
 
+    /**
+     * Called by the Android network observer when the Wi-Fi Network selected for the
+     * current IC-705 generation is lost. The callback never owns sockets or sessions:
+     * it only asks this controller to invalidate and recover the active generation.
+     */
+    fun onSelectedWifiLost() {
+        if (stopped.get() || !startRequested.get()) return
+
+        val recovery = synchronized(lock) {
+            if (stopped.get() || activeGeneration == NO_GENERATION || session == null) return
+            NetworkLossRecovery(
+                generation = activeGeneration,
+                reportLinkDown = linkReportedUp,
+                closing = detachActiveLocked(),
+            )
+        }
+
+        AppLog.w(
+            "IC705",
+            "selected_wifi_lost",
+            mapOf("generation" to recovery.generation),
+        )
+        Ic705DiagnosticState.set("controller", "RECOVERING")
+        if (recovery.reportLinkDown) {
+            service.postLinkOff(R.string.p_conn_ic705)
+        }
+        closeGeneration(recovery.closing) {
+            if (!stopped.get()) scheduleReconnect(fixedPortReuseCooldownMillis)
+        }
+    }
+
     private fun connectNewGeneration(
         sessionConfig: Ic705RxSessionConfig,
         initialAttempt: Boolean,
@@ -517,6 +548,12 @@ class Ic705WifiBackendController(
     private data class ClosingGeneration(
         val session: Ic705RadioSession?,
         val decoder: PcmSink?,
+    )
+
+    private data class NetworkLossRecovery(
+        val generation: Long,
+        val reportLinkDown: Boolean,
+        val closing: ClosingGeneration,
     )
 
     companion object {
