@@ -11,7 +11,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** Routes AFSK audio through Bluetooth without changing process-wide non-audio networking. */
+/** Routes AFSK audio through Bluetooth while preserving the legacy SCO fallback. */
 class AfskBluetoothAudioRouter(
     private val service: AprsService,
     private val onConnected: () -> Unit,
@@ -29,9 +29,12 @@ class AfskBluetoothAudioRouter(
         service.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
     private val connectedDelivered = AtomicBoolean(false)
+    @Volatile
+    private var active = false
     private var modernRouteRequested = false
     private var modernListener: AudioManager.OnCommunicationDeviceChangedListener? = null
     private var legacyReceiverRegistered = false
+    private var legacyScoRequested = false
 
     private val legacyScoReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -45,6 +48,7 @@ class AfskBluetoothAudioRouter(
     }
 
     fun start() {
+        active = true
         connectedDelivered.set(false)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && requestModernRoute()) {
             return
@@ -53,6 +57,7 @@ class AfskBluetoothAudioRouter(
     }
 
     fun stop() {
+        active = false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             modernListener?.let { listener ->
                 runCatching { audioManager.removeOnCommunicationDeviceChangedListener(listener) }
@@ -67,13 +72,16 @@ class AfskBluetoothAudioRouter(
         }
 
         unregisterLegacyReceiver()
-        @Suppress("DEPRECATION")
-        runCatching { audioManager.stopBluetoothSco() }
-            .onFailure { Log.w(TAG, "legacy SCO stop failed", it) }
+        if (legacyScoRequested) {
+            @Suppress("DEPRECATION")
+            runCatching { audioManager.stopBluetoothSco() }
+                .onFailure { Log.w(TAG, "legacy SCO stop failed", it) }
+            legacyScoRequested = false
+        }
     }
 
     private fun deliverConnected() {
-        if (connectedDelivered.compareAndSet(false, true)) {
+        if (active && connectedDelivered.compareAndSet(false, true)) {
             onConnected()
         }
     }
@@ -96,6 +104,7 @@ class AfskBluetoothAudioRouter(
             legacyReceiverRegistered = true
         }
         audioManager.startBluetoothSco()
+        legacyScoRequested = true
     }
 
     private fun requestModernRoute(): Boolean {
