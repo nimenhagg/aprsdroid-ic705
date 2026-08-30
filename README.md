@@ -4,11 +4,11 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.2.0`**
+**最新稳定版 / Latest release: `Mod-v2.2.1`**
 
-> `Mod-v2.2.0` 在 2.1.0 的 Graywolf 与 IC-705 恢复基线上完成 `AprsService` 后端职责拆分，并为 Android 16+ 增加可选的 Live Updates / 状态栏实时动态支持；用户只有在设置中显式开启且系统允许 promoted notifications 时才会看到 APRS 运行状态胶囊。
+> `Mod-v2.2.1` 在 2.2.0 的后端职责拆分与可选 Live Updates 基础上，为状态栏实时动态加入按后端/动作变化的状态文本、透明单色 APRS 通知图标，以及英文、简繁中文、日/韩/德/法/西/巴葡/俄语状态资源；接收、发射、信标、连接、重连、定位和错误状态会按当前模式动态展示。
 >
-> `Mod-v2.2.0` builds on the 2.1.0 Graywolf and IC-705 recovery baseline with a responsibility-focused `AprsService` backend refactor and optional Android 16+ Live Updates / status-chip support. APRS status is promoted only after the user explicitly enables it and Android permits promoted notifications.
+> `Mod-v2.2.1` builds on 2.2.0 with backend/action-aware Live Update status text, a transparent monochrome APRS notification icon, and localized live-status resources for English, Simplified/Traditional Chinese, Japanese, Korean, German, French, Spanish, Brazilian Portuguese, and Russian. Receive, transmit, beacon, connect, reconnect, location, and error states now update with the active mode.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -32,7 +32,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 - 持久化结构化诊断日志：关键 App、网络、IC-705、PTT、重连和崩溃事件同时写入 Logcat 与轮转 JSONL 文件，进程重启后仍可导出。
 - 设置页可一键分享诊断 ZIP，包含文本报告与结构化事件日志。
 - 设置页提供**手动检查更新**；只有用户点击时才请求 GitHub Releases，不会开机检查、后台轮询、定时联网或自动下载安装。
-- Android 16+ 可在“通知设置”启用**状态栏实时动态**；未获系统 promoted notification 许可时会先弹说明并跳转系统设置，返回后确认已允许才真正开启。关闭该功能只关闭 App 内请求，不会主动撤销系统权限。
+- Android 16+ 可在“通知设置”启用**状态栏实时动态**；未获系统 promoted notification 许可时会先弹说明并跳转系统设置，返回后确认已允许才真正开启。关闭该功能只关闭 App 内请求，不会主动撤销系统权限。2.2.1 起胶囊会按当前后端和动作动态显示待机/在线/监听、接收、发射、发送信标、连接、重连、等待定位和错误等状态，并使用透明单色 APRS 通知图标。
 - 设置页提供“开源致谢与应用链接”；HTTP/HTTPS 外链统一优先通过 AndroidX Browser Custom Tabs 打开，并保留系统浏览器 fallback。
 - Material 3 顶层导航统一为“台站 / 地图 / 消息 / 报文”；四个一级 destination 使用 Navigation Compose 保存/恢复状态，`stations` 作为起始 destination 保持常驻。
 - 四个底栏一级页面**不做整页 enter/exit/pop 动画**，只保留 Material 3 NavigationBar 自身的选中动效，避免拖动 MapView、LazyColumn 和 APRS symbol Canvas 参与整页合成。
@@ -228,7 +228,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 - 修改 IC-705 发射/会话恢复代码时必须保留 PTT OFF、ACK 与 watchdog 安全语义并增加测试。
 - “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
 - 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AGENT.md`；`AI_CONTEXT.md` 只保留兼容指针。
-- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.2.0`。
+- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.2.1`。
 - Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt` 和 R8 mapping 后创建 GitHub Release。
 
 完整维护约束见 [AGENT.md](AGENT.md)；[AI_CONTEXT.md](AI_CONTEXT.md) 仅为兼容入口。
@@ -239,7 +239,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 
 APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-**Latest stable release: `Mod-v2.2.0`.**
+**Latest stable release: `Mod-v2.2.1`.**
 
 ### Highlights
 
@@ -251,7 +251,7 @@ APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdr
 - Persistent rotating JSONL diagnostics plus logcat output, crash capture and exportable diagnostic ZIP bundles.
 - Android network lifecycle logging to distinguish an actual Wi-Fi `Network` loss from an IC-705 protocol/session failure.
 - Manual Settings-only GitHub Release check. It never runs at startup, periodically, or in the background, and it does not auto-download/install updates.
-- Android 16+ can optionally promote the ongoing APRS foreground-service notification into Live Updates / a status chip. If promoted notifications are not allowed, Settings explains the requirement and opens the Android permission page; the app enables the toggle only after permission is actually granted.
+- Android 16+ can optionally promote the ongoing APRS foreground-service notification into Live Updates / a status chip. If promoted notifications are not allowed, Settings explains the requirement and opens the Android permission page; the app enables the toggle only after permission is actually granted. Since 2.2.1, the chip reflects the active backend/action (idle/online/listening, receive, transmit, beacon, connect, reconnect, location wait, or error) and uses a transparent monochrome APRS notification icon.
 - Open-source credits/related-app links are available in Settings; normal HTTP/HTTPS links prefer AndroidX Browser Custom Tabs with an `ACTION_VIEW` fallback.
 - Material 3 bottom navigation for Stations / Map / Messages / Packets under one Navigation Compose host. Root destinations preserve state, but the host applies no full-screen enter/exit/pop transition; only the NavigationBar selection carries top-level motion.
 - Chat, station details, notification settings and other secondary settings use Activity boundaries with Android BackDispatcher/platform predictive-back motion rather than custom Compose/window animations.

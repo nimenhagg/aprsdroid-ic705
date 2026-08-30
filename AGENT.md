@@ -8,7 +8,7 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v2.2.0` |
+| 最新 GitHub Release | `Mod-v2.2.1` |
 | `build.gradle` 默认版本 | `2.2.1` |
 | Android versionCode | `2026082905` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
