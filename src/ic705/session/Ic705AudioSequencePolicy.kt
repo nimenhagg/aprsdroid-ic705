@@ -24,8 +24,11 @@ private const val IC705_AUDIO_SHORT_WRAP_WINDOW = IC705_AUDIO_MAX_REORDER_PACKET
 internal fun incrementIc705AudioSequence(sequence: Int): Int = (sequence + 1) and 0xffff
 
 /**
- * Computes forward distance while tolerating the short sequence rollover seen
- * in field diagnostics around the 0x4000 boundary.
+ * Computes forward distance while tolerating a plausible shorter sequence
+ * rollover suggested by the roughly 160-second discontinuity cadence observed
+ * in field diagnostics. At about 100 packets/second, a 0x4000 space rolls over
+ * in about 164 seconds; the diagnostic bundle did not yet record the raw
+ * sequence values, so this remains a narrowly-scoped compatibility safeguard.
  *
  * The normal arithmetic remains 16-bit. Compatibility is only applied in a
  * tiny window around 0x3fff -> 0x0000, so a normal 16-bit stream is unaffected.
