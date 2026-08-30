@@ -52,6 +52,7 @@ object ForegroundServiceTypeResolver {
 
         var serviceType = 0
         if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
             work.microphone &&
             ContextCompat.checkSelfPermission(service, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         ) {
