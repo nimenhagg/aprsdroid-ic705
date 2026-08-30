@@ -184,16 +184,22 @@ class ServiceNotifier {
         lastStatus = status
         if (liveStatus != null) lastLiveStatus = liveStatus
         setupChannels(ctx)
-        val serviceType = if (ctx is AprsService) {
-            ForegroundServiceTypeResolver.resolve(ctx)
+        val isAprsService = ctx is AprsService
+        val serviceType = if (isAprsService) {
+            ForegroundServiceTypeResolver.resolve(ctx as AprsService)
         } else {
             0
         }
         try {
             ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), serviceType)
         } catch (_: Exception) {
+            val fallbackType = if (isAprsService) {
+                ForegroundServiceTypeResolver.fallbackType()
+            } else {
+                0
+            }
             try {
-                ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), 0)
+                ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), fallbackType)
             } catch (_: Exception) {}
         }
     }
