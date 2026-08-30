@@ -39,6 +39,14 @@ object ForegroundServiceTypeResolver {
         )
     }
 
+    fun fallbackType(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        } else {
+            0
+        }
+    }
+
     fun resolve(service: AprsService): Int {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0
 
@@ -79,8 +87,8 @@ object ForegroundServiceTypeResolver {
 
         // Preserve a valid Android 14+ fallback if an expected runtime prerequisite
         // disappeared between the permission check and service startup.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && serviceType == 0) {
-            serviceType = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        if (serviceType == 0) {
+            serviceType = fallbackType()
         }
         return serviceType
     }
