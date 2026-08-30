@@ -1,0 +1,138 @@
+package org.aprsdroid.app
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
+import android.os.Build
+import android.util.Log
+import androidx.core.content.ContextCompat
+import java.util.concurrent.atomic.AtomicBoolean
+
+/** Routes AFSK audio through Bluetooth without changing process-wide non-audio networking. */
+class AfskBluetoothAudioRouter(
+    private val service: AprsService,
+    private val onConnected: () -> Unit,
+) {
+    companion object {
+        private const val TAG = "APRSdroid.AfskBtAudio"
+
+        internal fun isBluetoothCommunicationDeviceType(type: Int): Boolean {
+            return type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+                type == AudioDeviceInfo.TYPE_BLE_HEADSET
+        }
+    }
+
+    private val audioManager: AudioManager by lazy {
+        service.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
+    private val connectedDelivered = AtomicBoolean(false)
+    private var modernRouteRequested = false
+    private var modernListener: AudioManager.OnCommunicationDeviceChangedListener? = null
+    private var legacyReceiverRegistered = false
+
+    private val legacyScoReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val state = intent?.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1) ?: -1
+            Log.d(TAG, "legacy SCO state: $state")
+            if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
+                deliverConnected()
+                unregisterLegacyReceiver()
+            }
+        }
+    }
+
+    fun start() {
+        connectedDelivered.set(false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && requestModernRoute()) {
+            return
+        }
+        requestLegacySco()
+    }
+
+    fun stop() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            modernListener?.let { listener ->
+                runCatching { audioManager.removeOnCommunicationDeviceChangedListener(listener) }
+                    .onFailure { Log.w(TAG, "remove communication-device listener failed", it) }
+            }
+            modernListener = null
+            if (modernRouteRequested) {
+                runCatching { audioManager.clearCommunicationDevice() }
+                    .onFailure { Log.w(TAG, "clear communication device failed", it) }
+            }
+            modernRouteRequested = false
+        }
+
+        unregisterLegacyReceiver()
+        @Suppress("DEPRECATION")
+        runCatching { audioManager.stopBluetoothSco() }
+            .onFailure { Log.w(TAG, "legacy SCO stop failed", it) }
+    }
+
+    private fun deliverConnected() {
+        if (connectedDelivered.compareAndSet(false, true)) {
+            onConnected()
+        }
+    }
+
+    private fun unregisterLegacyReceiver() {
+        if (!legacyReceiverRegistered) return
+        runCatching { service.unregisterReceiver(legacyScoReceiver) }
+        legacyReceiverRegistered = false
+    }
+
+    @Suppress("DEPRECATION")
+    private fun requestLegacySco() {
+        if (!legacyReceiverRegistered) {
+            ContextCompat.registerReceiver(
+                service,
+                legacyScoReceiver,
+                IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED),
+                ContextCompat.RECEIVER_EXPORTED,
+            )
+            legacyReceiverRegistered = true
+        }
+        audioManager.startBluetoothSco()
+    }
+
+    private fun requestModernRoute(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false
+
+        val target = audioManager.availableCommunicationDevices.firstOrNull { device ->
+            isBluetoothCommunicationDeviceType(device.type)
+        } ?: run {
+            Log.w(TAG, "no Bluetooth communication device available; falling back to legacy SCO")
+            return false
+        }
+
+        val listener = AudioManager.OnCommunicationDeviceChangedListener { device ->
+            Log.d(
+                TAG,
+                "communication device changed: ${device?.id ?: -1}/${device?.type ?: -1}",
+            )
+            if (device != null && device.id == target.id) {
+                deliverConnected()
+            }
+        }
+        modernListener = listener
+        audioManager.addOnCommunicationDeviceChangedListener(service.mainExecutor, listener)
+
+        val accepted = runCatching { audioManager.setCommunicationDevice(target) }
+            .onFailure { Log.w(TAG, "setCommunicationDevice failed", it) }
+            .getOrDefault(false)
+        if (!accepted) {
+            runCatching { audioManager.removeOnCommunicationDeviceChangedListener(listener) }
+            modernListener = null
+            return false
+        }
+        modernRouteRequested = true
+
+        if (audioManager.communicationDevice?.id == target.id) {
+            deliverConnected()
+        }
+        return true
+    }
+}
