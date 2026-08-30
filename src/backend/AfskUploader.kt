@@ -1,14 +1,8 @@
 package org.aprsdroid.app
 
-import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.media.AudioManager
 import android.media.AudioTrack
 import android.util.Log
-import androidx.core.content.ContextCompat
 import com.nogy.afu.soundmodem.APRSFrame
 import com.nogy.afu.soundmodem.Afsk
 import com.nogy.afu.soundmodem.Message
@@ -36,28 +30,17 @@ class AfskUploader(
         Ax25SubmitSink { text -> service.postSubmit(text) },
         TAG,
     )
+    private val bluetoothAudioRouter: AfskBluetoothAudioRouter by lazy {
+        AfskBluetoothAudioRouter(service) {
+            log(service.getString(R.string.afsk_info_sco_est))
+            aw.start()
+            service.postPosterStarted()
+        }
+    }
 
     init {
         @Suppress("DEPRECATION")
         output.setVolume(AudioTrack.getMaxVolume())
-    }
-
-    // Bluetooth SCO remains the compatibility path for legacy radio audio routing.
-    @Suppress("DEPRECATION")
-    private val btScoReceiver = object : BroadcastReceiver() {
-        override fun onReceive(ctx: Context, i: Intent) {
-            val state = i.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1)
-            Log.d(TAG, "AudioManager SCO event: $state")
-            if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
-                log(service.getString(R.string.afsk_info_sco_est))
-                aw.start()
-                try {
-                    service.unregisterReceiver(this)
-                } catch (_: Exception) {
-                }
-                service.postPosterStarted()
-            }
-        }
     }
 
     fun isCallsignAX25Valid(): Boolean {
@@ -69,21 +52,11 @@ class AfskUploader(
         }
     }
 
-    @SuppressLint("WrongConstant")
-    @Suppress("DEPRECATION")
     override fun start(): Boolean {
         if (!isCallsignAX25Valid()) return false
         return if (useBt) {
             log(service.getString(R.string.afsk_info_sco_req))
-            val am = service.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            am.startBluetoothSco()
-            ContextCompat.registerReceiver(
-                service,
-                btScoReceiver,
-                IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_CHANGED),
-                // Bluetooth SCO state is emitted by a privileged system component.
-                ContextCompat.RECEIVER_EXPORTED,
-            )
+            bluetoothAudioRouter.start()
             false
         } else {
             aw.start()
@@ -108,13 +81,7 @@ class AfskUploader(
     override fun stop() {
         aw.close()
         if (useBt) {
-            val am = service.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            @Suppress("DEPRECATION")
-            am.stopBluetoothSco()
-            try {
-                service.unregisterReceiver(btScoReceiver)
-            } catch (_: RuntimeException) {
-            }
+            bluetoothAudioRouter.stop()
         }
     }
 
