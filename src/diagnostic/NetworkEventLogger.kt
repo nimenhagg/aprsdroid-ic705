@@ -29,7 +29,6 @@ object NetworkEventLogger {
                     override fun onAvailable(network: Network) {
                         rememberWifi(network)
                         AppLog.i("NET", "wifi_available", mapOf("network" to network.toString()))
-                        updateSnapshot(connectivity, network)
                     }
 
                     override fun onLost(network: Network) {
@@ -57,7 +56,7 @@ object NetworkEventLogger {
                                 "not_metered" to capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
                             ),
                         )
-                        updateSnapshot(connectivity, network)
+                        updateCapabilitiesSnapshot(network, capabilities)
                     }
 
                     override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
@@ -71,7 +70,7 @@ object NetworkEventLogger {
                                 "routes" to linkProperties.routes.joinToString(";") { it.toString() },
                             ),
                         )
-                        updateSnapshot(connectivity, network)
+                        updateLinkSnapshot(network, linkProperties)
                     }
                 })
                 registered = true
@@ -127,15 +126,25 @@ object NetworkEventLogger {
         }
     }
 
-    private fun updateSnapshot(connectivity: ConnectivityManager, network: Network) {
+    private fun updateCapabilitiesSnapshot(network: Network, capabilities: NetworkCapabilities) {
         val selected = AppLog.snapshotState()["ic705.network"]
         if (selected != network.toString()) return
-        val caps = connectivity.getNetworkCapabilities(network)
-        val links = connectivity.getLinkProperties(network)
         AppLog.setState("ic705.network_status", "AVAILABLE")
-        AppLog.setState("ic705.network_validated", caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
-        AppLog.setState("ic705.network_interface", links?.interfaceName)
-        AppLog.setState("ic705.network_addresses", links?.linkAddresses?.joinToString(",") { it.toString() })
+        AppLog.setState(
+            "ic705.network_validated",
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+        )
+    }
+
+    private fun updateLinkSnapshot(network: Network, linkProperties: LinkProperties) {
+        val selected = AppLog.snapshotState()["ic705.network"]
+        if (selected != network.toString()) return
+        AppLog.setState("ic705.network_status", "AVAILABLE")
+        AppLog.setState("ic705.network_interface", linkProperties.interfaceName)
+        AppLog.setState(
+            "ic705.network_addresses",
+            linkProperties.linkAddresses.joinToString(",") { it.toString() },
+        )
     }
 
     private fun describe(connectivity: ConnectivityManager, network: Network): String {
