@@ -100,13 +100,20 @@ class AfskBluetoothAudioRouter(
     @Suppress("DEPRECATION")
     private fun requestLegacySco() {
         if (!legacyReceiverRegistered) {
-            ContextCompat.registerReceiver(
+            val sticky = ContextCompat.registerReceiver(
                 service,
                 legacyScoReceiver,
                 IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED),
                 ContextCompat.RECEIVER_EXPORTED,
             )
             legacyReceiverRegistered = true
+            val state = sticky?.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1) ?: -1
+            if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED) {
+                Log.d(TAG, "legacy SCO already connected")
+                deliverConnected()
+                unregisterLegacyReceiver()
+                return
+            }
         }
         audioManager.startBluetoothSco()
         legacyScoRequested = true
@@ -126,7 +133,10 @@ class AfskBluetoothAudioRouter(
         private var routeRequested = false
 
         fun start(): Boolean {
-            val target = audioManager.availableCommunicationDevices.firstOrNull { device ->
+            val current = audioManager.communicationDevice
+            val target = current?.takeIf { device ->
+                isBluetoothCommunicationDeviceType(device.type)
+            } ?: audioManager.availableCommunicationDevices.firstOrNull { device ->
                 isBluetoothCommunicationDeviceType(device.type)
             } ?: run {
                 Log.w(TAG, "no Bluetooth communication device available; falling back to legacy SCO")
