@@ -6,14 +6,20 @@ import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import java.util.concurrent.CopyOnWriteArraySet
 
 /** Records Wi-Fi network lifecycle changes so IC-705 failures can be separated from Android Wi-Fi loss. */
 object NetworkEventLogger {
+    fun interface SelectedWifiLostListener {
+        fun onSelectedWifiLost()
+    }
+
     @Volatile
     private var registered = false
 
     private val wifiNetworksLock = Any()
     private val wifiNetworks = LinkedHashSet<Network>()
+    private val selectedWifiLostListeners = CopyOnWriteArraySet<SelectedWifiLostListener>()
 
     fun start(context: Context) {
         if (registered) return
@@ -37,6 +43,11 @@ object NetworkEventLogger {
                         val selected = AppLog.snapshotState()["ic705.network"]
                         if (selected == network.toString()) {
                             AppLog.setState("ic705.network_status", "LOST")
+                            selectedWifiLostListeners.forEach { listener ->
+                                runCatching { listener.onSelectedWifiLost() }.onFailure { error ->
+                                    AppLog.w("NET", "selected_wifi_lost_listener_failed", error = error)
+                                }
+                            }
                         }
                     }
 
@@ -78,6 +89,14 @@ object NetworkEventLogger {
                 AppLog.w("NET", "wifi_callback_registration_failed", error = it)
             }
         }
+    }
+
+    fun addSelectedWifiLostListener(listener: SelectedWifiLostListener) {
+        selectedWifiLostListeners.add(listener)
+    }
+
+    fun removeSelectedWifiLostListener(listener: SelectedWifiLostListener) {
+        selectedWifiLostListeners.remove(listener)
     }
 
     /**
