@@ -24,7 +24,7 @@ Non-negotiable constraints:
 - Base branch: `main`
 - Base commit: `27cb0a30c4a8647a7868f0e58cb4c31aeef9f105` (`release: prepare Mod-v2.1.0`)
 - Refactor branch: `refactor/backend-modernization`
-- Estimated plan: about 8 focused implementation/debug rounds, with a small buffer if hidden coupling appears.
+- Estimated plan: about 8 focused implementation/debug rounds.
 
 ## Current architecture observations
 
@@ -35,7 +35,7 @@ Non-negotiable constraints:
 - Packet send worker ownership/update execution/result policy is behind `PacketSendCoordinator`.
 - Post/position persistence and APRS parser routing are behind `PacketPersistenceCoordinator` + `PacketPostRepository`.
 - Main-thread post-event follow-up policy is behind `ServicePostCoordinator`.
-- Runtime `running` / `link_error` mutation is behind `ServiceRuntimeState`, but the legacy static fields remain the actual compatibility backing storage and are intentionally not removed yet.
+- Runtime `running` / `link_error` mutation is behind `ServiceRuntimeState`, while the legacy static fields remain the actual compatibility backing storage.
 - `PrefsWrapper` remains the compatibility/storage surface for legacy backend/location factories.
 - The IC-705 code under `src/ic705/{protocol,transport,session,backend}` remains a stable lower-level subsystem and has not been rewritten by this refactor.
 
@@ -99,55 +99,68 @@ Status: implemented.
 
 ### Interim debug CI #2 after Round 5
 
-User explicitly requested another CI while Round 6 continued in parallel.
-
 - Trigger commit: `9194a3244191a0826b17d421ce5e4447746e1963` (`ci: validate backend modernization through round 5`).
 - Workflow run: `33270075359` (`Backend Modernization CI`).
 - Scope: `testArm64OpenglDebugUnitTest`, `lintArm64OpenglDebug`, `assembleArm64OpenglDebug`.
-- At the Round 6 handoff snapshot, checkout/JDK/setup had passed and `Run Debug Validation` was **in progress**.
-- This run validates Rounds 1–5 plus the CI marker commit; it does **not** validate Round 6.
+- Result: **success**.
+- This validated Rounds 1–5 plus the marker commit; it does not validate Round 6 or Round 7.
+- Build log warnings were unrelated to this refactor: one existing IC-705 safe-call warning, one navigation annotation-target warning, and three deprecated Material icon warnings. No new Round 1–5 service/repository file emitted a compiler warning.
 - `.github/workflows/backend-modernization-ci.yml` and `.github/ci-trigger/backend-modernization` remain temporary branch-only plumbing and must be removed before final merge.
 
 ### Round 6 — service state and post-event orchestration
 
-Status: implemented in the Round 6 code prepared from CI trigger commit `9194a324...`; final branch commit should contain this document and the code changes atomically.
-
-Changes:
+Status: implemented.
 
 - Added `src/service/ServiceRuntimeState.kt`.
-- `AprsService.running` and `AprsService.link_error` are intentionally retained as public/static compatibility fields.
-- `ServiceRuntimeState` delegates both reads and writes directly to those fields rather than copying state, so legacy external observations/mutations remain visible during this incremental phase.
+- `AprsService.running` and `AprsService.link_error` remain public/static compatibility fields and are still the backing storage.
 - Internal `AprsService` running checks/start/stop and link-on/link-off mutations now go through the state facade.
-- `markStopped()` preserves the previous `running=false` then `link_error=0` teardown semantics before backend shutdown.
+- `markStopped()` preserves the previous `running=false` then `link_error=0` teardown sequence before backend shutdown.
 - Added `src/service/ServicePostCoordinator.kt`.
-- Moved `postAddPost()` policy out of the Service while preserving:
-  - INFO suppression when connection logging is disabled, evaluated before posting to the main-thread queue;
-  - `addPost()` running first on the main-thread callback;
-  - INCMG triggering `msgService.sendPendingMessages()` only after `addPost()`;
-  - ERROR triggering `stopSelf()` only after `addPost()`;
-  - all other post types having no follow-up.
+- Moved `postAddPost()` policy out of the Service while preserving INFO suppression before main-thread queueing, `addPost()` before follow-up, INCMG pending-message kick, and ERROR-triggered `stopSelf()`.
 - Android `Handler`, `MessageService`, and `stopSelf()` remain Service-edge callbacks.
-- Added `ServiceRuntimeStateTest.kt` and `ServicePostCoordinatorTest.kt` covering compatibility-backed live reads, start/stop/link transitions, INFO suppression and post/follow-up ordering.
+- Added JVM unit coverage for compatibility-backed state and post/follow-up ordering.
 
 Validation notes:
 
-- Detached diff review showed only the intended Service wiring/state/post-policy changes plus the new tests; no unrelated formatting/UI/backend/IC-705 changes.
-- Round 6 is not included in interim CI #2 because that CI is pinned to the Round 5 snapshot.
-- Final full CI must validate all rounds together before merge.
+- Round 6 itself has not yet been compiled by GitHub CI; interim CI #2 is pinned to the Round 5 snapshot.
+
+### Round 7 — integration/regression cleanup
+
+Status: implemented as targeted regression coverage; no production behavior change was made in this round.
+
+Audit findings:
+
+- Full branch comparison from the Mod-v2.1.0 baseline shows the refactor is limited to `AprsService`, new service/data boundaries, tests, handoff documentation, and temporary CI plumbing. UI/map/IC-705/Graywolf/database schema files are untouched by the refactor.
+- Repository code search found no external `AprsService.poster` usage, so removal of that field in Round 2 does not require a compatibility shim inside this repository.
+- Existing public/static `running` and `link_error` compatibility fields remain in place.
+- Interim CI #2 completed successfully, so Rounds 4–5 are now compile/unit/lint/debug-build validated as well as Rounds 1–3.
+- CI warnings are pre-existing/unrelated and are intentionally not folded into this backend refactor.
+
+Regression coverage added/refined:
+
+- Added `ServiceOrchestrationIntegrationTest.kt` to model the cross-seam ERROR and INCMG lifecycle contracts.
+- ERROR path is locked as: main-thread queue -> persist/addPost -> stop request; runtime compatibility state remains live until the later teardown phase, where `markStopped()` performs `running=false` then `link_error=0`.
+- INCMG path is locked as: main-thread queue -> persist/addPost -> pending-message kick, without changing runtime state.
+- `ServicePostCoordinatorTest` now verifies that INFO logging eligibility is sampled before main-thread execution, matching the legacy `postAddPost()` behavior.
+- `ServiceRuntimeStateTest` now explicitly locks teardown write order (`running=false` before `link_error=0`).
+
+Validation notes:
+
+- Round 7 intentionally does not trigger another intermediate CI. Final Round 8 validation must compile/run the Round 6–7 additions together.
+- Local Gradle execution remains unavailable in the agent container because `github.com` DNS resolution is unavailable there.
 
 ## Next recommended round
 
-Round 7 should be **integration/regression cleanup**, not another architecture expansion.
+Round 8 is the final cleanup/validation round.
 
-Suggested scope:
+Required scope:
 
-1. Inspect the full `AprsService` after Rounds 1–6 for duplicate seams, lifecycle ordering regressions, unnecessary public exposure, and obvious Kotlin/Android lint hazards.
-2. Check the result of workflow run `33270075359`; if it failed, fix Round 4/5 issues before expanding work.
-3. Review tests and add only targeted regression coverage for seams introduced in these rounds.
-4. Keep UI, map, IC-705 protocol/session/PTT, Graywolf, database schema, preference storage and backend implementations unchanged.
-5. Do not remove temporary CI plumbing until the final cleanup round is ready.
-
-Round 8 should clean temporary CI plumbing, perform final integration/debug cleanup, run the final full CI/release validation once, and only then prepare merge/PR to `main`.
+1. Re-read `AGENT.md` and this handoff, verify branch HEAD and compare against `main`.
+2. Remove temporary `.github/workflows/backend-modernization-ci.yml` and `.github/ci-trigger/backend-modernization` from the branch before merge.
+3. Perform a final static integration review of `AprsService` and all new coordinators; only fix concrete regressions/compile issues, not unrelated warnings or style debt.
+4. Run final GitHub validation against the complete Round 1–8 snapshot. At minimum cover ARM64 Debug unit tests + Lint + Debug build; for merge readiness also run the repository's relevant release/ABI validation required by `AGENT.md` without publishing a release/tag.
+5. If final validation fails, fix only the failing refactor issue and rerun the failed validation as needed; record exact results here.
+6. Do not merge to `main` automatically unless the user explicitly asks for merge/PR action.
 
 ## Resume protocol
 
@@ -156,16 +169,16 @@ At the start of every future session/agent handoff:
 1. Read `AGENT.md`.
 2. Read this file.
 3. Inspect current HEAD of `refactor/backend-modernization` and compare it with this state.
-4. Check workflow run `33270075359` if its final result is not recorded in a later update.
-5. If code and this document disagree, trust code/reproducible verification and update this document in the same change.
-6. Continue from the first unfinished item; do not redo completed rounds unless fixing a regression.
-7. Update this handoff after each logical round with changes, validation, known risks and the exact next step.
+4. If code and this document disagree, trust code/reproducible verification and update this document in the same change.
+5. Continue from the first unfinished item; do not redo completed rounds unless fixing a regression.
+6. Update this handoff after each logical round with changes, validation, known risks and the exact next step.
 
 ## Last known branch state
 
-- Round completed/prepared: 6
+- Round completed/prepared: 7
 - Intermediate CI runs explicitly requested/consumed: 2
 - Interim CI #1: success (through Round 3)
-- Interim CI #2: in progress at snapshot (through Round 5)
+- Interim CI #2: success (through Round 5)
+- Round 6–7 final compile/unit/lint validation: pending Round 8
 - Final full CI: pending
 - Temporary CI plumbing cleanup: pending

@@ -3,6 +3,7 @@ package org.aprsdroid.app.service
 import org.aprsdroid.app.StorageDatabase
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -31,6 +32,29 @@ class ServicePostCoordinatorTest {
                 connectionLoggingEnabled = true,
             )
         )
+    }
+
+    @Test
+    fun infoLoggingDecisionIsTakenBeforeMainThreadExecution() {
+        val events = mutableListOf<String>()
+        var loggingEnabled = true
+        var queuedTask: (() -> Unit)? = null
+        val coordinator = ServicePostCoordinator(
+            postToMain = { task -> queuedTask = task },
+            connectionLoggingEnabled = { loggingEnabled },
+            addPost = { type, statusId, message ->
+                events += "add:$type:$statusId:$message"
+            },
+            sendPendingMessages = { events += "pending" },
+            stopService = { events += "stop" },
+        )
+
+        coordinator.post(StorageDatabase.Companion.Post.TYPE_INFO, 10, "info")
+        loggingEnabled = false
+
+        assertNotNull(queuedTask)
+        queuedTask!!.invoke()
+        assertEquals(listOf("add:1:10:info"), events)
     }
 
     @Test

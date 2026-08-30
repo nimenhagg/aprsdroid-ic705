@@ -43,6 +43,29 @@ class ServiceRuntimeStateTest {
     }
 
     @Test
+    fun stoppedStateWritesRunningFalseBeforeClearingLinkError() {
+        val events = mutableListOf<String>()
+        var running = true
+        var linkError = 9
+        val state = state(
+            readRunning = { running },
+            writeRunning = { value ->
+                running = value
+                events += "running:$value"
+            },
+            readLinkError = { linkError },
+            writeLinkError = { value ->
+                linkError = value
+                events += "link:$value"
+            },
+        )
+
+        state.markStopped()
+
+        assertEquals(listOf("running:false", "link:0"), events)
+    }
+
+    @Test
     fun linkTransitionsDoNotChangeRunningState() {
         var running = true
         var linkError = 0
