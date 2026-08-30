@@ -34,10 +34,11 @@ object AprsPacket {
 
     @JvmStatic
     fun formatCallSsid(callsign: String, ssid: String?): String {
-        return if (!ssid.isNullOrEmpty()) {
-            "$callsign-$ssid"
-        } else {
+        val normalizedSsid = ssid?.trim().orEmpty()
+        return if (normalizedSsid.isEmpty() || normalizedSsid == "0") {
             callsign
+        } else {
+            "$callsign-$normalizedSsid"
         }
     }
 
