@@ -153,7 +153,7 @@ Temporary `.github/workflows/backend-modernization-ci.yml` and `.github/ci-trigg
 - ARMv7 Release/R8 assembly: **success**
 - `verifyReleaseVersion`: **success**
 - Temporary CI plumbing cleanup: **complete**
-- Merge to `main`: **not performed**
+- Merge to `main`: **complete** (2026-08-30; included in the `Mod-v2.2.0` release baseline)
 
 ## Resume / next action
 
@@ -161,16 +161,15 @@ The planned backend modernization is complete and validated. Do not start anothe
 
 For a future session:
 
-1. Read `AGENT.md` and this file.
-2. Inspect current `refactor/backend-modernization` HEAD and confirm `main` has not moved unexpectedly.
-3. If the user asks to merge, prefer reviewing the final `main...refactor/backend-modernization` diff and then create/merge a PR or fast-forward only as explicitly requested.
-4. If new functional work is requested, treat it as a new scope rather than silently extending this refactor.
-5. Real-device APRS/IC-705 smoke testing remains useful before a release even though this refactor did not modify the RF/session/PTT pipeline.
+1. Read `AGENT.md` first; it remains authoritative.
+2. Treat the backend modernization as completed and merged; do not recreate the deleted refactor branch or resume the eight-round plan.
+3. If new functional work is requested, treat it as a new scope rather than silently extending this refactor.
+4. Real-device APRS/IC-705 smoke testing remains useful for any future change touching RF/session/PTT behavior.
 
 ## Final state
 
 - Planned rounds completed: **8 / 8**
 - Final validation: **passed**
-- Branch: `refactor/backend-modernization`
-- `main`: unchanged from `27cb0a30c4a8647a7868f0e58cb4c31aeef9f105` at final review
-- Ready for explicit review/PR/merge action; not merged automatically.
+- Original branch: `refactor/backend-modernization` — merged into `main` and deleted.
+- `main`: contains the completed refactor.
+- Release baseline: `Mod-v2.2.0`.

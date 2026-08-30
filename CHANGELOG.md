@@ -1,3 +1,16 @@
+## [Mod-v2.2.0] - 2026-08-30
+
+### Added
+- Android 16+ 的通知设置新增“状态栏实时动态”开关。启用后，正在运行的 APRS 前台服务可请求 promoted ongoing notification，并以短文本 `APRS` 参与系统 Live Updates / status chip 展示；普通 APRS 消息通知仍保持普通通知，不会被提升。
+- 当系统尚未允许 promoted notifications 时，开启开关会先显示说明对话框并跳转 Android 对应系统设置；返回应用后只有在系统实际允许时才写入启用状态，不额外保留独立“权限状态”设置项。
+
+### Changed
+- 完成 `AprsService` 后端职责的增量拆分：偏好读取、backend 生命周期、即时定位、packet send、packet persistence/parsing、post follow-up 与 runtime state 分别收敛到窄接口/coordinator；保留原有 SharedPreferences、SQLite schema、Service 兼容入口、APRS 行为与 IC-705/Graywolf/PTT 关键路径。
+- Live Updates 仅在 Android 16+、App 内开关开启且系统允许 promoted notifications 时请求；系统权限被撤销后重新进入通知设置会同步关闭 App 内开关，运行中的前台通知会复用原 notification ID 即时刷新。
+- 版本更新为 `Mod-v2.2.0`（`versionCode 2026082904`）。
+
+> 注：Live Updates / status chip 是否被 SystemUI 实际提升仍由 Android 系统决定；CI 可验证 API、资源、Lint 与 APK 构建，但不能替代 Android 16/17 真机状态栏展示验收。
+
 ## [Mod-v2.1.0] - 2026-08-29
 
 ### Added

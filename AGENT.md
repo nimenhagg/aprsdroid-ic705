@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v2.1.0` |
-| `build.gradle` 默认版本 | `2.1.0` |
-| Android versionCode | `2026082903` |
+| 最新 GitHub Release | `Mod-v2.2.0` |
+| `build.gradle` 默认版本 | `2.2.0` |
+| Android versionCode | `2026082904` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -22,7 +22,7 @@
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-`Mod-v2.1.0` 是当前发布基线：包含 IC-705 session recovery / link-state 修复、Graywolf-only 本地 AFSK1200 RX、Custom Tabs、开源致谢、Graywolf synthetic/native 专项 CI 与对应源码归档。后续 main 若再次领先最新 tag / GitHub Release，仍必须明确区分已发布与未发布能力。
+`Mod-v2.2.0` 是当前发布基线：在 2.1.0 的 IC-705 role-specific recovery、Graywolf-only 本地 AFSK1200 RX 与发布校验基础上，加入 `AprsService` 后端职责拆分，以及 Android 16+ 可选 Live Updates / promoted ongoing notification。后续 main 若再次领先最新 tag / GitHub Release，仍必须明确区分已发布与未发布能力。
 
 README 必须始终区分 **Latest release** 与 **Current main**。未打 tag 的功能、修复和行为变化不得提前写成稳定版能力。
 
@@ -380,6 +380,7 @@ OSM 必须保留可识别 User-Agent 与可点击的 `© OpenStreetMap contribut
 - IC-705 Wi-Fi 与 LAN TCP TNC 在 Android 17+ 按需申请 `ACCESS_LOCAL_NETWORK`；
 - 公网 APRS-IS 不应因自身连接请求本地网络权限；
 - Android 13+ 前台服务遵守通知权限；
+- Android 16+ Live Updates 只允许由通知设置中的显式用户开关触发；只有系统允许 promoted notifications 时才能请求 promoted ongoing，普通消息通知不得提升，且不要增加独立的常驻权限状态项；
 - AFSK 后端按需请求麦克风；
 - 蓝牙路径按需请求对应权限；
 - 定位权限由位置来源决定。
