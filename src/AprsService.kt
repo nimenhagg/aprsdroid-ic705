@@ -24,6 +24,9 @@ import net.ab0oo.aprs.parser.PositionPacket
 import org.aprsdroid.app.data.preferences.AprsServiceSettings
 import org.aprsdroid.app.data.repository.StorageDatabasePacketPostRepository
 import org.aprsdroid.app.location.LocationSource
+import org.aprsdroid.app.notification.LiveActivity
+import org.aprsdroid.app.notification.LiveBackendMode
+import org.aprsdroid.app.notification.ServiceLiveStatus
 import org.aprsdroid.app.service.AprsBackendServiceAdapter
 import org.aprsdroid.app.service.BackendLifecycleCoordinator
 import org.aprsdroid.app.service.ImmediateLocationCoordinator
@@ -32,6 +35,7 @@ import org.aprsdroid.app.service.PacketSendCoordinator
 import org.aprsdroid.app.service.ServicePostCoordinator
 import org.aprsdroid.app.service.ServiceRuntimeState
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 
 class AprsService : Service() {
 
@@ -115,6 +119,34 @@ class AprsService : Service() {
     @JvmField
     val handler = Handler(Looper.getMainLooper())
 
+    private val liveStatusVersion = AtomicLong(0L)
+
+    private fun liveStatus(activity: LiveActivity): ServiceLiveStatus = ServiceLiveStatus(
+        mode = LiveBackendMode.fromProtocol(serviceSettings.backendProtocol),
+        backendName = serviceSettings.backendName,
+        activity = activity,
+    )
+
+    private fun updateLiveStatus(activity: LiveActivity) {
+        liveStatusVersion.incrementAndGet()
+        ServiceNotifier.instance.updateLiveStatus(this, liveStatus(activity))
+    }
+
+    private fun startNotifier(status: String, activity: LiveActivity) {
+        liveStatusVersion.incrementAndGet()
+        ServiceNotifier.instance.start(this, status, liveStatus(activity))
+    }
+
+    private fun markTransientLiveStatus(activity: LiveActivity, holdMillis: Long) {
+        val token = liveStatusVersion.incrementAndGet()
+        ServiceNotifier.instance.updateLiveStatus(this, liveStatus(activity))
+        handler.postDelayed({
+            if (serviceRuntimeState.isRunning && liveStatusVersion.get() == token) {
+                updateLiveStatus(LiveActivity.READY)
+            }
+        }, holdMillis)
+    }
+
     private val immediateLocationCoordinator: ImmediateLocationCoordinator by lazy {
         ImmediateLocationCoordinator(
             locationManagerProvider = {
@@ -134,6 +166,7 @@ class AprsService : Service() {
             },
             onErrorPost = { errorText ->
                 addPost(StorageDatabase.Companion.Post.TYPE_ERROR, "Error", errorText)
+                updateLiveStatus(LiveActivity.ERROR)
             },
             postToMain = { task -> handler.post { task() } },
             onFinished = { status -> sendPacketFinished(status) },
@@ -253,7 +286,7 @@ class AprsService : Service() {
         showToast(String.format(toastString, serviceSettings.locationSourceName, serviceSettings.backendName))
 
         val callssid = serviceSettings.callSsid
-        ServiceNotifier.instance.start(this, callssid)
+        startNotifier(callssid, LiveActivity.CONNECTING)
 
         if (!serviceRuntimeState.isRunning) {
             serviceRuntimeState.markStarted()
@@ -272,12 +305,16 @@ class AprsService : Service() {
     }
 
     fun startPoster() {
+        updateLiveStatus(LiveActivity.CONNECTING)
         if (backendCoordinator.replaceAndStart()) {
             onPosterStarted()
         }
     }
 
     fun triggerImmediateLocation() {
+        // ImmediateLocationCoordinator releases one-shot listeners after 15 seconds.
+        // Keep the UI state slightly longer, then fall back to the backend-ready state.
+        markTransientLiveStatus(LiveActivity.WAITING_LOCATION, 16_000L)
         immediateLocationCoordinator.trigger(locSource)
     }
 
@@ -286,7 +323,7 @@ class AprsService : Service() {
         val locInfo = locSource.start(singleShot)
         val callssid = serviceSettings.callSsid
         val message = "$callssid: $locInfo"
-        ServiceNotifier.instance.start(this, message)
+        startNotifier(message, LiveActivity.READY)
 
         msgService.sendPendingMessages()
 
@@ -369,9 +406,18 @@ class AprsService : Service() {
         return newPacket(PositionPacket(pos, comment, true))
     }
 
+    private fun enqueuePacket(
+        packet: APRSPacket,
+        statusPostfix: String,
+        activity: LiveActivity,
+    ) {
+        markTransientLiveStatus(activity, 2_500L)
+        packetSendCoordinator.send(packet, statusPostfix)
+    }
+
     @JvmOverloads
     fun sendPacket(packet: APRSPacket, statusPostfix: String = "") {
-        packetSendCoordinator.send(packet, statusPostfix)
+        enqueuePacket(packet, statusPostfix, LiveActivity.TRANSMITTING)
     }
 
     fun postLocation(location: Location) {
@@ -382,7 +428,11 @@ class AprsService : Service() {
         val status = serviceSettings.status(getString(R.string.default_status))
         val packet = formatLoc(symbol, status, location)
         Log.d(TAG, "packet: $packet")
-        sendPacket(packet, String.format(Locale.US, " (±%dm)", location.accuracy.toInt()))
+        enqueuePacket(
+            packet,
+            String.format(Locale.US, " (±%dm)", location.accuracy.toInt()),
+            LiveActivity.BEACONING,
+        )
     }
 
     fun sendPacketFinished(result: String) {
@@ -420,10 +470,12 @@ class AprsService : Service() {
     }
 
     fun postSubmit(post: String) {
+        markTransientLiveStatus(LiveActivity.RECEIVING, 2_500L)
         postAddPost(StorageDatabase.Companion.Post.TYPE_INCMG, R.string.post_incmg, post)
     }
 
     fun postAbort(post: String) {
+        updateLiveStatus(LiveActivity.ERROR)
         postAddPost(StorageDatabase.Companion.Post.TYPE_ERROR, R.string.post_error, post)
     }
 
@@ -435,13 +487,13 @@ class AprsService : Service() {
         serviceRuntimeState.markLinkOn()
         sendBroadcast(privateIntent(this, LINK_ON).putExtra(LINK_INFO, link))
         val message = getString(R.string.status_linkon, getString(link))
-        ServiceNotifier.instance.start(this, message)
+        startNotifier(message, LiveActivity.READY)
     }
 
     fun postLinkOff(link: Int) {
         serviceRuntimeState.markLinkOff(link)
         sendBroadcast(privateIntent(this, LINK_OFF).putExtra(LINK_INFO, link))
         val message = getString(R.string.status_linkoff, getString(link))
-        ServiceNotifier.instance.start(this, message)
+        startNotifier(message, LiveActivity.RECONNECTING)
     }
 }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_notification_live_updates_category">진행 중 상태</string>
+    <string name="setting_notification_live_updates">상태 표시줄 실시간 업데이트</string>
+    <string name="setting_notification_live_updates_summary">실행 중인 APRS 세션을 상태 표시줄에 실시간으로 표시합니다</string>
+    <string name="setting_notification_live_updates_permission_title">실시간 업데이트 허용</string>
+    <string name="setting_notification_live_updates_permission_message">APRS 서비스 알림을 상태 표시줄 실시간 업데이트로 표시하려면 Android에서 알림 승격을 허용해야 합니다.</string>
+    <string name="setting_notification_live_updates_permission_open">설정 열기</string>
+    <string name="setting_notification_live_updates_settings_unavailable">이 기기에서는 실시간 업데이트 설정을 사용할 수 없습니다</string>
+    <string name="live_status_chip_aprs">APRS</string>
+    <string name="live_status_chip_idle">%1$s 대기</string>
+    <string name="live_status_chip_online">%1$s 온라인</string>
+    <string name="live_status_chip_listening">%1$s 수신대기</string>
+    <string name="live_status_chip_receiving">%1$s 수신</string>
+    <string name="live_status_chip_transmitting">%1$s 송신</string>
+    <string name="live_status_chip_beaconing">비콘 송신</string>
+    <string name="live_status_chip_connecting">%1$s 연결</string>
+    <string name="live_status_chip_reconnecting">%1$s 재연결</string>
+    <string name="live_status_chip_waiting_location">GPS 대기</string>
+    <string name="live_status_chip_error">%1$s 오류</string>
+    <string name="live_status_state_connected">연결됨</string>
+    <string name="live_status_state_listening">APRS 수신 대기 중</string>
+    <string name="live_status_state_receiving">APRS 수신 중</string>
+    <string name="live_status_state_transmitting">APRS 송신 중</string>
+    <string name="live_status_state_beaconing">APRS 위치 비콘 송신 중</string>
+    <string name="live_status_state_connecting">연결 중</string>
+    <string name="live_status_state_reconnecting">다시 연결 중</string>
+    <string name="live_status_state_waiting_location">위치 정보를 기다리는 중</string>
+    <string name="live_status_state_error">연결 오류</string>
+    <string name="live_status_detail">%1$s · %2$s</string>
+</resources>

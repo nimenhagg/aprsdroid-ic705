@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_notification_live_updates_category">持續狀態</string>
+    <string name="setting_notification_live_updates">狀態列即時動態</string>
+    <string name="setting_notification_live_updates_summary">將目前 APRS 工作階段顯示為狀態列即時動態</string>
+    <string name="setting_notification_live_updates_permission_title">允許即時動態</string>
+    <string name="setting_notification_live_updates_permission_message">Android 必須先允許提升 APRS 服務通知，才能在狀態列顯示即時動態。</string>
+    <string name="setting_notification_live_updates_permission_open">開啟設定</string>
+    <string name="setting_notification_live_updates_settings_unavailable">此裝置無法使用即時動態設定</string>
+    <string name="live_status_chip_aprs">APRS</string>
+    <string name="live_status_chip_idle">%1$s 待機</string>
+    <string name="live_status_chip_online">%1$s 在線</string>
+    <string name="live_status_chip_listening">%1$s 監聽</string>
+    <string name="live_status_chip_receiving">%1$s 接收</string>
+    <string name="live_status_chip_transmitting">%1$s 發射</string>
+    <string name="live_status_chip_beaconing">發送信標</string>
+    <string name="live_status_chip_connecting">%1$s 連線</string>
+    <string name="live_status_chip_reconnecting">%1$s 重連</string>
+    <string name="live_status_chip_waiting_location">等待定位</string>
+    <string name="live_status_chip_error">%1$s 錯誤</string>
+    <string name="live_status_state_connected">已連線</string>
+    <string name="live_status_state_listening">正在監聽 APRS</string>
+    <string name="live_status_state_receiving">正在接收 APRS</string>
+    <string name="live_status_state_transmitting">正在發射 APRS</string>
+    <string name="live_status_state_beaconing">正在發送 APRS 位置信標</string>
+    <string name="live_status_state_connecting">正在連線</string>
+    <string name="live_status_state_reconnecting">正在重新連線</string>
+    <string name="live_status_state_waiting_location">正在等待位置資料</string>
+    <string name="live_status_state_error">連線錯誤</string>
+    <string name="live_status_detail">%1$s · %2$s</string>
+</resources>

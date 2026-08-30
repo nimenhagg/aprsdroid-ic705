@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="live_status_chip_aprs">APRS</string>
+    <string name="live_status_chip_idle">%1$s Idle</string>
+    <string name="live_status_chip_online">%1$s Online</string>
+    <string name="live_status_chip_listening">%1$s RX</string>
+    <string name="live_status_chip_receiving">%1$s RX</string>
+    <string name="live_status_chip_transmitting">%1$s TX</string>
+    <string name="live_status_chip_beaconing">Beacon TX</string>
+    <string name="live_status_chip_connecting">%1$s Link</string>
+    <string name="live_status_chip_reconnecting">%1$s Retry</string>
+    <string name="live_status_chip_waiting_location">GPS Wait</string>
+    <string name="live_status_chip_error">%1$s Error</string>
+    <string name="live_status_state_connected">Connected</string>
+    <string name="live_status_state_listening">Listening for APRS</string>
+    <string name="live_status_state_receiving">Receiving APRS</string>
+    <string name="live_status_state_transmitting">Transmitting APRS</string>
+    <string name="live_status_state_beaconing">Sending APRS position beacon</string>
+    <string name="live_status_state_connecting">Connecting</string>
+    <string name="live_status_state_reconnecting">Reconnecting</string>
+    <string name="live_status_state_waiting_location">Waiting for location</string>
+    <string name="live_status_state_error">Connection error</string>
+    <string name="live_status_detail">%1$s · %2$s</string>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_notification_live_updates_category">Текущий статус</string>
+    <string name="setting_notification_live_updates">Обновления в строке состояния</string>
+    <string name="setting_notification_live_updates_summary">Показывает активный сеанс APRS в строке состояния</string>
+    <string name="setting_notification_live_updates_permission_title">Разрешить обновления</string>
+    <string name="setting_notification_live_updates_permission_message">Android должен разрешить повышение приоритета уведомления службы APRS, прежде чем оно сможет отображаться как текущее состояние.</string>
+    <string name="setting_notification_live_updates_permission_open">Открыть настройки</string>
+    <string name="setting_notification_live_updates_settings_unavailable">Настройки текущего состояния недоступны на этом устройстве</string>
+    <string name="live_status_chip_aprs">APRS</string>
+    <string name="live_status_chip_idle">%1$s ожид.</string>
+    <string name="live_status_chip_online">%1$s онлайн</string>
+    <string name="live_status_chip_listening">%1$s RX</string>
+    <string name="live_status_chip_receiving">%1$s RX</string>
+    <string name="live_status_chip_transmitting">%1$s TX</string>
+    <string name="live_status_chip_beaconing">Маяк TX</string>
+    <string name="live_status_chip_connecting">%1$s связь</string>
+    <string name="live_status_chip_reconnecting">%1$s повтор</string>
+    <string name="live_status_chip_waiting_location">GPS ожид.</string>
+    <string name="live_status_chip_error">%1$s ошибка</string>
+    <string name="live_status_state_connected">Подключено</string>
+    <string name="live_status_state_listening">Ожидание APRS</string>
+    <string name="live_status_state_receiving">Приём APRS</string>
+    <string name="live_status_state_transmitting">Передача APRS</string>
+    <string name="live_status_state_beaconing">Передача позиционного маяка APRS</string>
+    <string name="live_status_state_connecting">Подключение</string>
+    <string name="live_status_state_reconnecting">Повторное подключение</string>
+    <string name="live_status_state_waiting_location">Ожидание местоположения</string>
+    <string name="live_status_state_error">Ошибка подключения</string>
+    <string name="live_status_detail">%1$s · %2$s</string>
+</resources>

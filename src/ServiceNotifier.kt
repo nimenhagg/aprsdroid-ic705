@@ -18,6 +18,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import org.aprsdroid.app.notification.LiveUpdates
+import org.aprsdroid.app.notification.ServiceLiveStatus
 import org.aprsdroid.app.ui.navigation.MainRoutes
 
 class ServiceNotifier {
@@ -36,6 +37,8 @@ class ServiceNotifier {
     private var channelsReady = false
     @Volatile
     private var lastStatus: String? = null
+    @Volatile
+    private var lastLiveStatus: ServiceLiveStatus? = null
 
     fun setupChannels(ctx: Context) {
         if (channelsReady) return
@@ -60,21 +63,25 @@ class ServiceNotifier {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         val appname = ctx.resources.getString(R.string.app_name)
+        val liveStatus = lastLiveStatus
+        val displayStatus = liveStatus?.detailText(ctx) ?: status
         val nb = newNotificationBuilder(ctx, "status")
             .setContentTitle(appname)
-            .setContentText(status)
+            .setContentText(displayStatus)
             .setContentIntent(PendingIntent.getActivity(ctx, 0, i, PendingIntent.FLAG_IMMUTABLE))
-            .setSmallIcon(R.drawable.ic_stat_notify)
-            .setWhen(System.currentTimeMillis())
+            .setSmallIcon(R.drawable.ic_stat_aprs)
             .setOngoing(true)
-
-        nb.setShowWhen(true)
+            .setShowWhen(false)
+            .setColorized(false)
 
         if (LiveUpdates.isSupported() && LiveUpdates.isEnabled(ctx)) {
             nb.addExtras(
                 Bundle().apply {
                     putBoolean(NotificationCompat.EXTRA_REQUEST_PROMOTED_ONGOING, true)
-                    putString(NotificationCompat.EXTRA_SHORT_CRITICAL_TEXT, LiveUpdates.SHORT_CRITICAL_TEXT)
+                    putString(
+                        NotificationCompat.EXTRA_SHORT_CRITICAL_TEXT,
+                        liveStatus?.shortText(ctx) ?: ctx.getString(R.string.live_status_chip_aprs),
+                    )
                 }
             )
         }
@@ -129,7 +136,7 @@ class ServiceNotifier {
             .setContentTitle(call)
             .setContentText(message)
             .setContentIntent(contentIntent)
-            .setSmallIcon(R.drawable.ic_stat_notify)
+            .setSmallIcon(R.drawable.ic_stat_aprs)
             .setTicker("$call: $message")
             .setWhen(System.currentTimeMillis())
             .setAutoCancel(true)
@@ -163,8 +170,23 @@ class ServiceNotifier {
         } catch (_: Exception) {}
     }
 
+    internal fun updateLiveStatus(ctx: Context, liveStatus: ServiceLiveStatus) {
+        lastLiveStatus = liveStatus
+        if (!AprsService.running) return
+        val status = lastStatus ?: ctx.getString(R.string.app_name)
+        try {
+            setupChannels(ctx)
+            getNotificationMgr(ctx).notify(SERVICE_NOTIFICATION, newNotification(ctx, status))
+        } catch (_: Exception) {}
+    }
+
     fun start(ctx: Service, status: String) {
+        start(ctx, status, null)
+    }
+
+    internal fun start(ctx: Service, status: String, liveStatus: ServiceLiveStatus?) {
         lastStatus = status
+        if (liveStatus != null) lastLiveStatus = liveStatus
         setupChannels(ctx)
         var serviceType = if (Build.VERSION.SDK_INT >= 34) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
@@ -211,5 +233,6 @@ class ServiceNotifier {
             ctx.stopForeground(true)
         } catch (_: Exception) {}
         lastStatus = null
+        lastLiveStatus = null
     }
 }

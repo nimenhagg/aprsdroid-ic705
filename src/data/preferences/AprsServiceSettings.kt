@@ -36,6 +36,9 @@ class AprsServiceSettings(
     val backendName: String
         get() = prefs.getBackendName()
 
+    val backendProtocol: String
+        get() = prefs.getProto()
+
     val digipeaterPath: String
         get() = prefs.getString(KEY_DIGI_PATH, DEFAULT_DIGI_PATH)
 

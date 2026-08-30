@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_notification_live_updates_category">Laufender Status</string>
+    <string name="setting_notification_live_updates">Live-Status in der Statusleiste</string>
+    <string name="setting_notification_live_updates_summary">Zeigt die aktive APRS-Sitzung als Live-Status an</string>
+    <string name="setting_notification_live_updates_permission_title">Live-Status erlauben</string>
+    <string name="setting_notification_live_updates_permission_message">Android muss die Hervorhebung der APRS-Dienstbenachrichtigung erlauben, bevor sie als Live-Status angezeigt werden kann.</string>
+    <string name="setting_notification_live_updates_permission_open">Einstellungen öffnen</string>
+    <string name="setting_notification_live_updates_settings_unavailable">Live-Status-Einstellungen sind auf diesem Gerät nicht verfügbar</string>
+    <string name="live_status_chip_aprs">APRS</string>
+    <string name="live_status_chip_idle">%1$s Bereit</string>
+    <string name="live_status_chip_online">%1$s Online</string>
+    <string name="live_status_chip_listening">%1$s RX</string>
+    <string name="live_status_chip_receiving">%1$s RX</string>
+    <string name="live_status_chip_transmitting">%1$s TX</string>
+    <string name="live_status_chip_beaconing">Beacon TX</string>
+    <string name="live_status_chip_connecting">%1$s Verb.</string>
+    <string name="live_status_chip_reconnecting">%1$s Neu</string>
+    <string name="live_status_chip_waiting_location">GPS wartet</string>
+    <string name="live_status_chip_error">%1$s Fehler</string>
+    <string name="live_status_state_connected">Verbunden</string>
+    <string name="live_status_state_listening">Wartet auf APRS</string>
+    <string name="live_status_state_receiving">APRS wird empfangen</string>
+    <string name="live_status_state_transmitting">APRS wird gesendet</string>
+    <string name="live_status_state_beaconing">APRS-Positionsbake wird gesendet</string>
+    <string name="live_status_state_connecting">Verbindung wird hergestellt</string>
+    <string name="live_status_state_reconnecting">Verbindung wird wiederhergestellt</string>
+    <string name="live_status_state_waiting_location">Wartet auf Standort</string>
+    <string name="live_status_state_error">Verbindungsfehler</string>
+    <string name="live_status_detail">%1$s · %2$s</string>
+</resources>

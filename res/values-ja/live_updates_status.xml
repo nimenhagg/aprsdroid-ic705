@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setting_notification_live_updates_category">継続中の状態</string>
+    <string name="setting_notification_live_updates">ステータスバーのライブ更新</string>
+    <string name="setting_notification_live_updates_summary">実行中の APRS セッションをステータスバーにライブ表示します</string>
+    <string name="setting_notification_live_updates_permission_title">ライブ更新を許可</string>
+    <string name="setting_notification_live_updates_permission_message">APRS サービス通知をステータスバーのライブ更新として表示するには、Android 側で通知の昇格を許可する必要があります。</string>
+    <string name="setting_notification_live_updates_permission_open">設定を開く</string>
+    <string name="setting_notification_live_updates_settings_unavailable">この端末ではライブ更新の設定を利用できません</string>
+    <string name="live_status_chip_aprs">APRS</string>
+    <string name="live_status_chip_idle">%1$s 待機</string>
+    <string name="live_status_chip_online">%1$s 接続</string>
+    <string name="live_status_chip_listening">%1$s 受信待機</string>
+    <string name="live_status_chip_receiving">%1$s 受信</string>
+    <string name="live_status_chip_transmitting">%1$s 送信</string>
+    <string name="live_status_chip_beaconing">ビーコン送信</string>
+    <string name="live_status_chip_connecting">%1$s 接続</string>
+    <string name="live_status_chip_reconnecting">%1$s 再接続</string>
+    <string name="live_status_chip_waiting_location">測位待ち</string>
+    <string name="live_status_chip_error">%1$s エラー</string>
+    <string name="live_status_state_connected">接続済み</string>
+    <string name="live_status_state_listening">APRSを待受中</string>
+    <string name="live_status_state_receiving">APRSを受信中</string>
+    <string name="live_status_state_transmitting">APRSを送信中</string>
+    <string name="live_status_state_beaconing">APRS位置ビーコンを送信中</string>
+    <string name="live_status_state_connecting">接続中</string>
+    <string name="live_status_state_reconnecting">再接続中</string>
+    <string name="live_status_state_waiting_location">位置情報を待機中</string>
+    <string name="live_status_state_error">接続エラー</string>
+    <string name="live_status_detail">%1$s · %2$s</string>
+</resources>

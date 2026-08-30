@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="live_status_chip_aprs">APRS</string>
+    <string name="live_status_chip_idle">%1$s 待机</string>
+    <string name="live_status_chip_online">%1$s 在线</string>
+    <string name="live_status_chip_listening">%1$s 监听</string>
+    <string name="live_status_chip_receiving">%1$s 接收</string>
+    <string name="live_status_chip_transmitting">%1$s 发射</string>
+    <string name="live_status_chip_beaconing">发送信标</string>
+    <string name="live_status_chip_connecting">%1$s 连接</string>
+    <string name="live_status_chip_reconnecting">%1$s 重连</string>
+    <string name="live_status_chip_waiting_location">等待定位</string>
+    <string name="live_status_chip_error">%1$s 错误</string>
+    <string name="live_status_state_connected">已连接</string>
+    <string name="live_status_state_listening">正在监听 APRS</string>
+    <string name="live_status_state_receiving">正在接收 APRS</string>
+    <string name="live_status_state_transmitting">正在发射 APRS</string>
+    <string name="live_status_state_beaconing">正在发送 APRS 位置信标</string>
+    <string name="live_status_state_connecting">正在连接</string>
+    <string name="live_status_state_reconnecting">正在恢复连接</string>
+    <string name="live_status_state_waiting_location">正在等待位置数据</string>
+    <string name="live_status_state_error">连接错误</string>
+    <string name="live_status_detail">%1$s · %2$s</string>
+</resources>
