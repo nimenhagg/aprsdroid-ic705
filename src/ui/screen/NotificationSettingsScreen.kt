@@ -28,10 +28,14 @@ import org.aprsdroid.app.R
 import org.aprsdroid.app.ui.component.PreferenceCategoryHeader
 import org.aprsdroid.app.ui.component.PreferenceGroupCard
 import org.aprsdroid.app.ui.component.PreferenceItem
+import org.aprsdroid.app.ui.component.PreferenceSwitchItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationSettingsScreen(
+    showLiveUpdates: Boolean,
+    liveUpdatesEnabled: Boolean,
+    onToggleLiveUpdates: (Boolean) -> Unit,
     onBack: () -> Unit,
     onOpenChannelSettings: (String) -> Unit,
 ) {
@@ -65,6 +69,23 @@ fun NotificationSettingsScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             Spacer(modifier = Modifier.height(8.dp))
+
+            if (showLiveUpdates) {
+                PreferenceCategoryHeader(
+                    title = stringResource(R.string.setting_notification_live_updates_category),
+                )
+                PreferenceGroupCard {
+                    PreferenceSwitchItem(
+                        title = stringResource(R.string.setting_notification_live_updates),
+                        summary = stringResource(R.string.setting_notification_live_updates_summary),
+                        icon = Icons.Default.NotificationsActive,
+                        checked = liveUpdatesEnabled,
+                        onCheckedChange = onToggleLiveUpdates,
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             PreferenceCategoryHeader(
                 title = stringResource(R.string.setting_notification_channels_category),
             )

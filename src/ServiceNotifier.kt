@@ -12,9 +12,12 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.graphics.drawable.Icon
 import android.os.Build
+import android.os.Bundle
+import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import org.aprsdroid.app.notification.LiveUpdates
 import org.aprsdroid.app.ui.navigation.MainRoutes
 
 class ServiceNotifier {
@@ -31,6 +34,8 @@ class ServiceNotifier {
     private val channelSetupLock = Any()
     @Volatile
     private var channelsReady = false
+    @Volatile
+    private var lastStatus: String? = null
 
     fun setupChannels(ctx: Context) {
         if (channelsReady) return
@@ -47,10 +52,10 @@ class ServiceNotifier {
         }
     }
 
-    fun newNotificationBuilder(ctx: Service, channel: String): Notification.Builder =
+    fun newNotificationBuilder(ctx: Context, channel: String): Notification.Builder =
         Notification.Builder(ctx, channel)
 
-    fun newNotification(ctx: Service, status: String): Notification {
+    fun newNotification(ctx: Context, status: String): Notification {
         val i = Intent(ctx, APRSdroid::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
@@ -64,6 +69,15 @@ class ServiceNotifier {
             .setOngoing(true)
 
         nb.setShowWhen(true)
+
+        if (LiveUpdates.isSupported() && LiveUpdates.isEnabled(ctx)) {
+            nb.addExtras(
+                Bundle().apply {
+                    putBoolean(NotificationCompat.EXTRA_REQUEST_PROMOTED_ONGOING, true)
+                    putString(NotificationCompat.EXTRA_SHORT_CRITICAL_TEXT, LiveUpdates.SHORT_CRITICAL_TEXT)
+                }
+            )
+        }
 
         val stopIntent = AprsService.intent(ctx, AprsService.SERVICE_STOP)
         val stopPendingIntent = PendingIntent.getService(
@@ -141,6 +155,7 @@ class ServiceNotifier {
     }
 
     fun notifyPosition(ctx: Service, status: String) {
+        lastStatus = status
         try {
             setupChannels(ctx)
             val n = newNotification(ctx, status)
@@ -149,6 +164,7 @@ class ServiceNotifier {
     }
 
     fun start(ctx: Service, status: String) {
+        lastStatus = status
         setupChannels(ctx)
         var serviceType = if (Build.VERSION.SDK_INT >= 34) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
@@ -180,10 +196,20 @@ class ServiceNotifier {
         }
     }
 
+    fun refresh(ctx: Context) {
+        if (!AprsService.running) return
+        val status = lastStatus ?: return
+        try {
+            setupChannels(ctx)
+            getNotificationMgr(ctx).notify(SERVICE_NOTIFICATION, newNotification(ctx, status))
+        } catch (_: Exception) {}
+    }
+
     fun stop(ctx: Service) {
         try {
             @Suppress("DEPRECATION")
             ctx.stopForeground(true)
         } catch (_: Exception) {}
+        lastStatus = null
     }
 }

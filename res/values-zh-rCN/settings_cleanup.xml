@@ -5,6 +5,13 @@
     <string name="setting_symbol_summary_mod">本站在 APRS 中使用的地图符号</string>
     <string name="setting_notifications">通知设置</string>
     <string name="setting_notifications_summary">管理 Android 系统通知频道</string>
+    <string name="setting_notification_live_updates_category">持续状态</string>
+    <string name="setting_notification_live_updates">状态栏实时动态</string>
+    <string name="setting_notification_live_updates_summary">APRS 运行时在状态栏显示实时状态胶囊</string>
+    <string name="setting_notification_live_updates_permission_title">允许实时动态</string>
+    <string name="setting_notification_live_updates_permission_message">Android 需要允许 APRSdroid 提升持续通知，才能在状态栏显示实时动态。</string>
+    <string name="setting_notification_live_updates_permission_open">去允许</string>
+    <string name="setting_notification_live_updates_settings_unavailable">此设备无法打开实时动态设置</string>
     <string name="setting_notification_channels_category">Android 通知频道</string>
     <string name="setting_notification_messages_channel">APRS 消息</string>
     <string name="setting_notification_messages_channel_summary">设置收到消息时的声音、振动与显示方式</string>

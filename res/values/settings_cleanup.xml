@@ -5,6 +5,13 @@
     <string name="setting_symbol_summary_mod">APRS symbol shown for this station</string>
     <string name="setting_notifications">Notifications</string>
     <string name="setting_notifications_summary">Manage Android notification channels</string>
+    <string name="setting_notification_live_updates_category">Ongoing status</string>
+    <string name="setting_notification_live_updates">Status bar live updates</string>
+    <string name="setting_notification_live_updates_summary">Show the active APRS session as a live status chip</string>
+    <string name="setting_notification_live_updates_permission_title">Allow live updates</string>
+    <string name="setting_notification_live_updates_permission_message">Android needs permission to promote the APRS service notification before it can appear as a status bar live update.</string>
+    <string name="setting_notification_live_updates_permission_open">Open settings</string>
+    <string name="setting_notification_live_updates_settings_unavailable">Live update settings are unavailable on this device</string>
     <string name="setting_notification_channels_category">Android notification channels</string>
     <string name="setting_notification_messages_channel">APRS messages</string>
     <string name="setting_notification_messages_channel_summary">Sound, vibration, and visibility for received-message alerts</string>
