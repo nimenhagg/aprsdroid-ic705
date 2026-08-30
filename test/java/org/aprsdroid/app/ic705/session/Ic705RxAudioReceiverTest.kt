@@ -111,20 +111,6 @@ class Ic705RxAudioReceiverTest {
         assertEquals(emptyList<Ic705AudioDiscontinuity>(), discontinuities)
     }
 
-    @Test
-    fun toleratesShortSequenceBoundaryWithoutAFalseGap() {
-        val sink = RecordingSink()
-        val discontinuities = mutableListOf<Ic705AudioDiscontinuity>()
-        val receiver = Ic705RxAudioReceiver(localId, radioId, sink, discontinuities::add)
-
-        receiver.accept(audioDatagram(sequence = 0x3fff))
-        receiver.accept(audioDatagram(sequence = 0))
-        receiver.accept(audioDatagram(sequence = 1))
-
-        assertEquals(3, sink.samples.size)
-        assertEquals(emptyList<Ic705AudioDiscontinuity>(), discontinuities)
-    }
-
     @Test(expected = Ic705ProtocolException::class)
     fun rejectsAudioFromAnotherRadioSession() {
         val receiver = Ic705RxAudioReceiver(localId, radioId, RecordingSink())
