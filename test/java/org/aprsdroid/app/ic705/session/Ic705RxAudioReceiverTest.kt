@@ -71,8 +71,9 @@ class Ic705RxAudioReceiverTest {
             Ic705AudioReceiveResult.OUT_OF_ORDER_DROPPED,
             receiver.accept(audioDatagram(sequence = 8, pcm = byteArrayOf(0x02, 0x00))),
         )
-        // Sequence 8 is the 682-sample half of the alternating IC-705 RX pair.
-        assertEquals(1 + 682 + 4, sink.samples.size)
+        // Sequence 8 is the larger half of the alternating 12 kHz IC-705 RX pair.
+        // No even packet has been observed yet, so concealment uses the 171-sample fallback.
+        assertEquals(1 + 171 + 4, sink.samples.size)
         assertEquals(0, discontinuities.size)
     }
 
@@ -107,6 +108,20 @@ class Ic705RxAudioReceiverTest {
         receiver.accept(audioDatagram(sequence = 0))
 
         assertEquals(2, sink.samples.size)
+        assertEquals(emptyList<Ic705AudioDiscontinuity>(), discontinuities)
+    }
+
+    @Test
+    fun toleratesShortSequenceBoundaryWithoutAFalseGap() {
+        val sink = RecordingSink()
+        val discontinuities = mutableListOf<Ic705AudioDiscontinuity>()
+        val receiver = Ic705RxAudioReceiver(localId, radioId, sink, discontinuities::add)
+
+        receiver.accept(audioDatagram(sequence = 0x3fff))
+        receiver.accept(audioDatagram(sequence = 0))
+        receiver.accept(audioDatagram(sequence = 1))
+
+        assertEquals(3, sink.samples.size)
         assertEquals(emptyList<Ic705AudioDiscontinuity>(), discontinuities)
     }
 
