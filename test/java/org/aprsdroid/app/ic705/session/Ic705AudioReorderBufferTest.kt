@@ -56,4 +56,31 @@ class Ic705AudioReorderBufferTest {
         )
         assertEquals(listOf(7, 20), writes)
     }
+
+    @Test
+    fun concealmentPrefersObservedPacketSizes() {
+        val writes = mutableListOf<ShortArray>()
+        val buffer = Ic705AudioReorderBuffer(
+            writeSamples = { samples -> writes += samples.copyOf() },
+        )
+
+        // Teach the buffer that even packets contain 3 samples and odd packets 2.
+        buffer.accept(0, shortArrayOf(10, 10, 10))
+        buffer.accept(1, shortArrayOf(11, 11))
+
+        // Leave sequence 2 missing. Once four pending packets accumulate, the
+        // nearest packet is released with one concealed even packet in front.
+        buffer.accept(3, shortArrayOf(13, 13))
+        buffer.accept(4, shortArrayOf(14, 14, 14))
+        buffer.accept(5, shortArrayOf(15, 15))
+        buffer.accept(6, shortArrayOf(16, 16, 16))
+
+        val concealed = writes[2]
+        assertEquals(5, concealed.size)
+        assertEquals(0, concealed[0].toInt())
+        assertEquals(0, concealed[1].toInt())
+        assertEquals(0, concealed[2].toInt())
+        assertEquals(13, concealed[3].toInt())
+        assertEquals(13, concealed[4].toInt())
+    }
 }

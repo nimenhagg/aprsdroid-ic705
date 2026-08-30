@@ -71,8 +71,9 @@ class Ic705RxAudioReceiverTest {
             Ic705AudioReceiveResult.OUT_OF_ORDER_DROPPED,
             receiver.accept(audioDatagram(sequence = 8, pcm = byteArrayOf(0x02, 0x00))),
         )
-        // Sequence 8 is the 682-sample half of the alternating IC-705 RX pair.
-        assertEquals(1 + 682 + 4, sink.samples.size)
+        // Sequence 8 is the larger half of the alternating 12 kHz IC-705 RX pair.
+        // No even packet has been observed yet, so concealment uses the 171-sample fallback.
+        assertEquals(1 + 171 + 4, sink.samples.size)
         assertEquals(0, discontinuities.size)
     }
 
