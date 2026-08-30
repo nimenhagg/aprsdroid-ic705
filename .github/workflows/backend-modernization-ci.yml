@@ -1,4 +1,4 @@
-name: Backend Modernization CI
+name: Backend Modernization Final Validation
 
 on:
   push:
@@ -12,8 +12,9 @@ permissions:
 
 jobs:
   verify:
-    name: Debug Unit, Lint & ARM64 Build
+    name: Unit, Lint, Debug & Release ABI Builds
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout Code
@@ -31,13 +32,16 @@ jobs:
       - name: Grant Execute Permission to Gradlew
         run: chmod +x gradlew
 
-      - name: Run Debug Validation
+      - name: Run Final Validation
         env:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
           ./gradlew \
+            verifyReleaseVersion \
             testArm64OpenglDebugUnitTest \
             lintArm64OpenglDebug \
             assembleArm64OpenglDebug \
+            assembleArm64OpenglRelease \
+            assembleArm32OpenglRelease \
             --no-daemon --stacktrace
