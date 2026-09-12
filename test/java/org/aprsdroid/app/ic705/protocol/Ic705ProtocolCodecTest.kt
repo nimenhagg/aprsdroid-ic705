@@ -153,6 +153,10 @@ class Ic705CivCodecTest {
             hex("fe fe a4 e0 1c 00 00 fd"),
             Ic705CivCommands.buildPttFrame(pttOn = false),
         )
+        assertArrayEquals(
+            hex("fe fe a4 e0 1c 00 fd"),
+            Ic705CivCommands.buildPttQueryFrame(),
+        )
     }
 
     @Test
