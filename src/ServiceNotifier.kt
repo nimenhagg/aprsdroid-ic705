@@ -1,6 +1,5 @@
 package org.aprsdroid.app
 
-import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,17 +7,14 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.content.pm.ServiceInfo
 import android.graphics.drawable.Icon
-import android.os.Build
 import android.os.Bundle
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import org.aprsdroid.app.notification.LiveUpdates
 import org.aprsdroid.app.notification.ServiceLiveStatus
+import org.aprsdroid.app.service.ForegroundServiceTypeResolver
 import org.aprsdroid.app.ui.navigation.MainRoutes
 
 class ServiceNotifier {
@@ -188,32 +184,22 @@ class ServiceNotifier {
         lastStatus = status
         if (liveStatus != null) lastLiveStatus = liveStatus
         setupChannels(ctx)
-        var serviceType = if (Build.VERSION.SDK_INT >= 34) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+        val isAprsService = ctx is AprsService
+        val serviceType = if (isAprsService) {
+            ForegroundServiceTypeResolver.resolve(ctx as AprsService)
         } else {
             0
-        }
-        if (Build.VERSION.SDK_INT >= 29) {
-            var types = 0
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-                ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-            ) {
-                types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-            }
-            if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-            ) {
-                types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
-            }
-            if (types != 0) {
-                serviceType = types
-            }
         }
         try {
             ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), serviceType)
         } catch (_: Exception) {
+            val fallbackType = if (isAprsService) {
+                ForegroundServiceTypeResolver.fallbackType()
+            } else {
+                0
+            }
             try {
-                ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), 0)
+                ServiceCompat.startForeground(ctx, SERVICE_NOTIFICATION, newNotification(ctx, status), fallbackType)
             } catch (_: Exception) {}
         }
     }
