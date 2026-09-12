@@ -62,7 +62,14 @@ jobs:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
         run: |
           chmod +x gradlew
-          ./gradlew             verifyReleaseVersion             testArm64OpenglDebugUnitTest             lintArm64OpenglDebug             lintArm64OpenglRelease             assembleArm64OpenglDebug             assembleArm64OpenglRelease             --no-daemon --stacktrace
+          ./gradlew \
+            verifyReleaseVersion \
+            testArm64OpenglDebugUnitTest \
+            lintArm64OpenglDebug \
+            lintArm64OpenglRelease \
+            assembleArm64OpenglDebug \
+            assembleArm64OpenglRelease \
+            --no-daemon --stacktrace
 
       - name: Verify Graywolf is packaged
         run: |
