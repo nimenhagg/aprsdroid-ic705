@@ -9,6 +9,9 @@ import sivantoledo.ax25.Packet
  * Encodes APRS packets into AX.25 [Packet] instances suitable for AFSK1200 modulation.
  * Note: in AX.25 wire format and [Packet] constructor, Destination comes first, then Source.
  */
+class Ax25PayloadEncodingException(charset: Charset) :
+    IllegalArgumentException("AX.25 payload cannot be encoded losslessly as ${charset.name()}")
+
 object Ax25PacketEncoder {
     private val DEFAULT_CHARSET: Charset = StandardCharsets.ISO_8859_1
 
@@ -20,6 +23,9 @@ object Ax25PacketEncoder {
         val destination = packet.destinationCall ?: "APRS"
         val digis = packet.digipeaters?.map { it.toString() }?.toTypedArray() ?: emptyArray()
         val info = packet.aprsInformation?.toString() ?: ""
+        if (!charset.newEncoder().canEncode(info)) {
+            throw Ax25PayloadEncodingException(charset)
+        }
         val payload = info.toByteArray(charset)
 
         val ax25 = Packet(
