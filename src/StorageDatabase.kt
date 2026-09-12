@@ -21,6 +21,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         const val TAG = "APRSdroid.Storage"
         const val DB_VERSION = 4
         const val DB_NAME = "storage.db"
+        const val MESSAGE_DUPLICATE_WINDOW_MS = 60L * 60L * 1000L
 
         const val TSS_COL = "DATETIME(TS/1000, 'unixepoch', 'localtime') as TSS"
         const val TABLE_INDEX = "CREATE INDEX idx_%s_%s ON %s (%s)"
@@ -254,12 +255,28 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         writableDatabase.replaceOrThrow(Station.TABLE, Station.CALL, cv)
     }
 
-    fun isMessageDuplicate(call: String, msgid: String, text: String): Boolean {
+    fun isMessageDuplicate(
+        call: String,
+        msgid: String,
+        text: String,
+        ts: Long = System.currentTimeMillis(),
+    ): Boolean {
+        // Unnumbered APRS messages have no retransmission identity. Treating their
+        // text as a permanent key silently hides legitimate repeated messages.
+        if (msgid.isEmpty()) return false
+
+        val (callSelection, callArgs) = messageCallSelection(call)
         val c = readableDatabase.query(
-            Message.TABLE, Message.COLUMNS,
-            "type = 1 AND call = ? AND msgid = ? AND text = ?",
-            arrayOf(call, msgid, text),
-            null, null, null, null
+            Message.TABLE,
+            Message.COLUMNS,
+            "type = ? AND $callSelection AND msgid = ? AND text = ? AND ts >= ?",
+            arrayOf(Message.TYPE_INCOMING.toString()) +
+                callArgs +
+                arrayOf(msgid, text, (ts - MESSAGE_DUPLICATE_WINDOW_MS).toString()),
+            null,
+            null,
+            null,
+            null,
         )
         val result = c.count > 0
         c.close()
@@ -267,14 +284,14 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     }
 
     fun addMessage(ts: Long, srccall: String, msg: MessagePacket): Boolean {
-        if (isMessageDuplicate(srccall, msg.messageNumber, msg.messageBody)) {
+        if (isMessageDuplicate(srccall, msg.messageNumber, msg.messageBody, ts)) {
             Log.i(TAG, String.format(Locale.US, "received duplicate message from %s: %s", srccall, msg))
             return false
         }
         val cv = ContentValues().apply {
             put(Message.TS, ts)
             put(Message.RETRYCNT, 0)
-            put(Message.CALL, srccall)
+            put(Message.CALL, AprsPacket.normalizeMessageCallsign(srccall))
             put(Message.MSGID, msg.messageNumber)
             put(Message.TYPE, Message.TYPE_INCOMING)
             put(Message.TEXT, msg.messageBody)
@@ -370,7 +387,8 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     }
 
     fun getMessages(call: String): Cursor {
-        return readableDatabase.query(Message.TABLE, Message.COLUMNS, "call = ?", arrayOf(call), null, null, null, null)
+        val (selection, args) = messageCallSelection(call)
+        return readableDatabase.query(Message.TABLE, Message.COLUMNS, selection, args, null, null, null, null)
     }
 
     fun getPendingMessages(retries: Int): Cursor {
@@ -392,11 +410,27 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
 
     fun updateMessageAcked(call: String, msgid: String, newType: Int): Int {
         val cv = ContentValues().apply { put(Message.TYPE, newType) }
-        return writableDatabase.update(Message.TABLE, cv, "type = 2 AND call = ? AND msgid = ?", arrayOf(call, msgid))
+        val (callSelection, callArgs) = messageCallSelection(call)
+        return writableDatabase.update(
+            Message.TABLE,
+            cv,
+            "type = ? AND $callSelection AND msgid = ?",
+            arrayOf(Message.TYPE_OUT_NEW.toString()) + callArgs + arrayOf(msgid),
+        )
     }
 
     fun createMsgId(call: String): Int {
-        val c = readableDatabase.query(Message.TABLE, arrayOf("MAX(CAST(msgid AS INTEGER))"), "call = ? AND type != ?", arrayOf(call, Message.TYPE_INCOMING.toString()), null, null, null, null)
+        val (callSelection, callArgs) = messageCallSelection(call)
+        val c = readableDatabase.query(
+            Message.TABLE,
+            arrayOf("MAX(CAST(msgid AS INTEGER))"),
+            "$callSelection AND type != ?",
+            callArgs + arrayOf(Message.TYPE_INCOMING.toString()),
+            null,
+            null,
+            null,
+            null,
+        )
         c.moveToFirst()
         val result = if (c.count == 0 || c.isNull(0)) 0 else c.getInt(0) + 1
         Log.d(TAG, String.format(Locale.US, "createMsgId(%s) = %d", call, result))
@@ -409,7 +443,8 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     }
 
     fun deleteMessages(call: String) {
-        writableDatabase.execSQL("DELETE FROM ${Message.TABLE} WHERE ${Message.CALL} = ?", arrayOf(call))
+        val (selection, args) = messageCallSelection(call)
+        writableDatabase.delete(Message.TABLE, selection, args)
     }
 
     fun deleteAllMessages() {
@@ -418,5 +453,17 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
 
     fun getConversations(): Cursor {
         return readableDatabase.query("messages", Message.COLUMNS, "_id IN (SELECT MAX(_id) FROM messages GROUP BY call)", null, "call", null, "_id DESC")
+    }
+
+    private fun messageCallSelection(call: String): Pair<String, Array<String>> {
+        val aliases = AprsPacket.messageCallsignAliases(call)
+        return if (aliases.size == 1) {
+            Pair("call = ? COLLATE NOCASE", arrayOf(aliases[0]))
+        } else {
+            Pair(
+                "(call = ? COLLATE NOCASE OR call = ? COLLATE NOCASE)",
+                arrayOf(aliases[0], aliases[1]),
+            )
+        }
     }
 }
