@@ -69,9 +69,13 @@ jobs:
 
       - name: Build MinSizeRel MapLibre Native
         run: |
-          bash .github/scripts/build_maplibre_minsizerel.sh             13.5.1 arm64-v8a             "$PWD/.cache/maplibre-minsizerel/13.5.1/arm64-v8a/libmaplibre.so"
+          bash .github/scripts/build_maplibre_minsizerel.sh \
+            13.5.1 arm64-v8a \
+            "$PWD/.cache/maplibre-minsizerel/13.5.1/arm64-v8a/libmaplibre.so"
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            bash .github/scripts/build_maplibre_minsizerel.sh               13.5.1 armeabi-v7a               "$PWD/.cache/maplibre-minsizerel/13.5.1/armeabi-v7a/libmaplibre.so"
+            bash .github/scripts/build_maplibre_minsizerel.sh \
+              13.5.1 armeabi-v7a \
+              "$PWD/.cache/maplibre-minsizerel/13.5.1/armeabi-v7a/libmaplibre.so"
           fi
 
       - name: Build Graywolf Android Native
@@ -161,13 +165,23 @@ jobs:
 
             local patched="$RUNNER_TEMP/maplibre-patched/${flavor}-patched.apk"
             local aligned="$RUNNER_TEMP/maplibre-patched/${flavor}-aligned.apk"
-            python3 .github/scripts/replace_apk_maplibre.py               "$source" "$abi" "$custom_so" "$patched"
+            python3 .github/scripts/replace_apk_maplibre.py \
+              "$source" "$abi" "$custom_so" "$patched"
             "$ZIPALIGN" -P 16 -f 4 "$patched" "$aligned"
             "$ZIPALIGN" -P 16 -c 4 "$aligned"
 
             local destination="release-apks/APRSdroid-${BUILD_LABEL}-${abi}-${renderer}.apk"
             if [ -n "${KEYSTORE_BASE64:-}" ]; then
-              "$APKSIGNER" sign                 --v1-signing-enabled false                 --v2-signing-enabled true                 --v3-signing-enabled true                 --v4-signing-enabled true                 --ks release.jks                 --ks-pass pass:"$KEYSTORE_PASSWORD"                 --ks-key-alias "$KEY_ALIAS"                 --key-pass pass:"$KEY_PASSWORD"                 --out "$destination" "$aligned"
+              "$APKSIGNER" sign \
+                --v1-signing-enabled false \
+                --v2-signing-enabled true \
+                --v3-signing-enabled true \
+                --v4-signing-enabled true \
+                --ks release.jks \
+                --ks-pass pass:"$KEYSTORE_PASSWORD" \
+                --ks-key-alias "$KEY_ALIAS" \
+                --key-pass pass:"$KEY_PASSWORD" \
+                --out "$destination" "$aligned"
               "$APKSIGNER" verify --verbose "$destination"
             else
               cp "$aligned" "$destination"
@@ -333,9 +347,20 @@ jobs:
             exit 0
           fi
 
-          tag_object_sha=$(gh api --method POST             -H "Accept: application/vnd.github+json"             "repos/${GITHUB_REPOSITORY}/git/tags"             -f tag="$tag"             -f message="$tag"             -f object="$GITHUB_SHA"             -f type="commit"             --jq '.sha')
+          tag_object_sha=$(gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/git/tags" \
+            -f tag="$tag" \
+            -f message="$tag" \
+            -f object="$GITHUB_SHA" \
+            -f type="commit" \
+            --jq '.sha')
 
-          gh api --method POST             -H "Accept: application/vnd.github+json"             "repos/${GITHUB_REPOSITORY}/git/refs"             -f ref="refs/tags/${tag}"             -f sha="$tag_object_sha" >/dev/null
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/git/refs" \
+            -f ref="refs/tags/${tag}" \
+            -f sha="$tag_object_sha" >/dev/null
 
           for attempt in 1 2 3; do
             if gh workflow run release.yml --ref "$tag"; then
