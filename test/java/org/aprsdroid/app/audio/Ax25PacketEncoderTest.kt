@@ -9,14 +9,12 @@ import org.junit.Test
 
 class Ax25PacketEncoderTest {
     private fun messagePacket(body: String): APRSPacket {
-        val packet = APRSPacket(
+        return APRSPacket(
             "N0CALL",
             "APRS",
             ArrayList<Digipeater>(),
-            byteArrayOf(':'.code.toByte()),
+            MessagePacket("TARGET", body, "1"),
         )
-        packet.setInfoField(MessagePacket("TARGET", body, "1"))
-        return packet
     }
 
     @Test
