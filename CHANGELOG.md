@@ -1,3 +1,18 @@
+## [Mod-v2.2.2] - 2026-09-12
+
+### Fixed
+- 修复 SSID 设为 0 时文本呼号错误显示为 `CALL-0` 的回归；APRS 文本/UI 现在按惯例将 SSID 0 显示为裸呼号，同时新增空值、0 与非 0 SSID 的回归测试。
+- 诊断日志导出的异常 message / stack trace 现在会继续脱敏 password、passcode、secret、token 与精确经纬度，避免这些值绕过原有按字段名脱敏逻辑。
+
+### Changed
+- 正式 Release 的 ARM64 APK 文件名移除 `Recommended_` 前缀，与 ARMv7 使用统一命名规则。
+- 新增全仓库 PR/main CI：执行 Graywolf synthetic 基线、ARM64 JNI、JVM 单测、阻断式 Debug/Release Lint、ARM64 Debug/Release 构建与 APK 内 Graywolf 校验。
+- Release pipeline 收紧权限与供应链边界：普通验证默认只读；签名/地图密钥只在 tagged release 构建注入；GitHub Actions 固定到不可变 commit；MapLibre 13.5.1 原生源码校验固定 upstream commit。
+- R8 mapping 作为 tagged GitHub Release 的永久资产发布；Gradle 依赖仓库收敛为 Google Maven 与 Maven Central。
+- 版本更新为 `Mod-v2.2.2`（`versionCode 2026091200`）。
+
+> 注：本版本未改变 APRS-IS 既有 LoTW/实验性 TLS 兼容模式。主流 Tier2 14580 入口仍为明文 TCP；在无法实时验证 `ssl.aprs2.net:24580` 的严格 CA/hostname 握手前，不贸然替换 legacy trust 行为。
+
 ## [Mod-v2.2.1] - 2026-08-30
 
 ### Added
