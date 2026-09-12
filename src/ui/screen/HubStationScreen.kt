@@ -83,6 +83,7 @@ private fun getBearing(b: Double): String = LETTERS[(((b.toInt() + 22 + 720) % 3
 fun HubStationScreen(
     myCall: String,
     isRunning: Boolean,
+    serviceStatus: String,
     stations: List<StationItem>,
     myLat: Int,
     myLon: Int,
@@ -219,6 +220,7 @@ fun HubStationScreen(
             TrackingStatusCard(
                 myCall = myCall,
                 isRunning = isRunning,
+                serviceStatus = serviceStatus,
                 compact = compactListMode,
                 onToggleTracking = onToggleTracking
             )
@@ -315,6 +317,7 @@ fun HubStationScreen(
 private fun TrackingStatusCard(
     myCall: String,
     isRunning: Boolean,
+    serviceStatus: String,
     compact: Boolean,
     onToggleTracking: () -> Unit
 ) {
@@ -365,9 +368,15 @@ private fun TrackingStatusCard(
                     )
                     Spacer(modifier = Modifier.width(if (compact) 6.dp else 8.dp))
                     Text(
-                        text = stringResource(R.string.aprsservice),
+                        text = if (isRunning && serviceStatus.isNotBlank()) {
+                            serviceStatus
+                        } else {
+                            stringResource(R.string.aprsservice)
+                        },
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
