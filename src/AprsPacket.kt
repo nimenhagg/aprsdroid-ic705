@@ -42,6 +42,23 @@ object AprsPacket {
         }
     }
 
+    /** CALL and CALL-0 are the same APRS message station identity. */
+    @JvmStatic
+    fun normalizeMessageCallsign(callssid: String): String {
+        val normalized = callssid.trim().uppercase(Locale.US)
+        return if (normalized.endsWith("-0")) normalized.dropLast(2) else normalized
+    }
+
+    @JvmStatic
+    fun sameMessageCallsign(left: String, right: String): Boolean =
+        normalizeMessageCallsign(left) == normalizeMessageCallsign(right)
+
+    @JvmStatic
+    fun messageCallsignAliases(callssid: String): List<String> {
+        val normalized = normalizeMessageCallsign(callssid)
+        return if ('-' in normalized) listOf(normalized) else listOf(normalized, "$normalized-0")
+    }
+
     @JvmStatic
     fun m2ft(meter: Double): Int = (meter * 3.2808399).toInt()
 
