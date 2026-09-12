@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Test, Lint & Build ARM64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Install Graywolf build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler pkg-config libasound2-dev
+          cargo --version
+          rustc --version
+          protoc --version
+
+      - name: Restore Cargo cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/graywolf-jni/target
+          key: ci-graywolf-rust-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
+
+      - name: Verify Graywolf and build ARM64 JNI
+        run: |
+          set -euo pipefail
+          bash .github/scripts/test_graywolf_loopback.sh
+          git diff --exit-code -- native/graywolf-jni/Cargo.lock
+          bash .github/scripts/build_graywolf_android.sh arm64-v8a
+          test -s build/generated/rustJniLibs/arm64-v8a/libaprs_graywolf.so
+
+      - name: Run unit tests, blocking lint, and ARM64 builds
+        env:
+          JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
+        run: |
+          chmod +x gradlew
+          ./gradlew             verifyReleaseVersion             testArm64OpenglDebugUnitTest             lintArm64OpenglDebug             lintArm64OpenglRelease             assembleArm64OpenglDebug             assembleArm64OpenglRelease             --no-daemon --stacktrace
+
+      - name: Verify Graywolf is packaged
+        run: |
+          set -euo pipefail
+          expected=$(sha256sum build/generated/rustJniLibs/arm64-v8a/libaprs_graywolf.so | awk '{print $1}')
+          for variant in debug release; do
+            apk=$(find "build/outputs/apk/arm64Opengl/${variant}" -name '*.apk' -print -quit)
+            test -n "$apk"
+            count=$(unzip -Z1 "$apk" | grep -c '^lib/arm64-v8a/libaprs_graywolf\.so$')
+            test "$count" -eq 1
+            actual=$(unzip -p "$apk" 'lib/arm64-v8a/libaprs_graywolf.so' | sha256sum | awk '{print $1}')
+            test "$actual" = "$expected"
+          done
+
+      - name: Upload debug APK and lint reports
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-arm64-${{ github.sha }}
+          path: |
+            build/outputs/apk/arm64Opengl/debug/*.apk
+            build/reports/lint-results-arm64OpenglDebug.*
+            build/reports/lint-results-arm64OpenglRelease.*
+          if-no-files-found: error
