@@ -121,6 +121,7 @@ class HubActivity : BaseRecyclerActivity() {
                                 HubStationScreen(
                                     myCall = hubState.myCall.ifEmpty { prefs.getCallSsid() },
                                     isRunning = hubState.isRunning,
+                                    serviceStatus = hubState.serviceStatus,
                                     stations = hubState.stations,
                                     myLat = hubState.myLat,
                                     myLon = hubState.myLon,
@@ -345,6 +346,7 @@ class HubActivity : BaseRecyclerActivity() {
         ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.SERVICE_STOPPED), ContextCompat.RECEIVER_NOT_EXPORTED)
         ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
         ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LIVE_STATUS), ContextCompat.RECEIVER_NOT_EXPORTED)
         refreshTopLevelState()
 
         if (prefs.getBoolean("firstrun", true) || prefs.getCallsign().isEmpty()) firstRunDialogVisible.value = true
