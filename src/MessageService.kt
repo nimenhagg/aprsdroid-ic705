@@ -38,9 +38,10 @@ class MessageService(val s: AprsService) {
         )
     }
 
-    fun handleMessage(ts: Long, ap: APRSPacket, msg: MessagePacket) {
+    fun handleMessage(ts: Long, ap: APRSPacket, parsedMsg: MessagePacket) {
+        val msg = AprsMessageParser.reparseIncoming(parsedMsg)
         val callssid = s.prefs.getCallSsid()
-        if (msg.targetCallsign.equals(callssid, ignoreCase = true)) {
+        if (AprsPacket.sameMessageCallsign(msg.targetCallsign, callssid)) {
             if (msg.isAck || msg.isRej) {
                 val newType = if (msg.isAck) {
                     StorageDatabase.Companion.Message.TYPE_OUT_ACKED
@@ -57,7 +58,7 @@ class MessageService(val s: AprsService) {
                 }
             }
         } else if (msg.targetCallsign.split("-")[0].equals(s.prefs.getCallsign(), ignoreCase = true) && !msg.isAck && !msg.isRej) {
-            if (ap.sourceCall.equals(callssid, ignoreCase = true)) return
+            if (AprsPacket.sameMessageCallsign(ap.sourceCall, callssid)) return
             Log.d(TAG, "incoming message for " + msg.targetCallsign)
             storeNotifyMessage(ts, ap.sourceCall, msg)
         }
@@ -102,7 +103,9 @@ class MessageService(val s: AprsService) {
                 s.db.updateMessage(c.getLong(0), cv)
                 s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                 nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
-            } else if (retrycnt < NUM_OF_RETRIES) {
+            } else if (tSend > 0) {
+                // Keep the final timeout scheduled too. Otherwise a queue rescan
+                // at retrycnt == NUM_OF_RETRIES can strand the message forever.
                 nextRun = min(nextRun, tSend)
             }
             c.moveToNext()
