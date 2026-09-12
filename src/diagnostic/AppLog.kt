@@ -109,7 +109,7 @@ object AppLog {
         if (error == null) {
             Log.println(priority, safeTag, message)
         } else {
-            val safeStack = LogSanitizer.sanitizeText(Log.getStackTraceString(error))
+            val safeStack = LogSanitizer.sanitizeText(Log.getStackTraceString(error).orEmpty())
             Log.println(priority, safeTag, "$message\n$safeStack")
         }
 
@@ -132,7 +132,7 @@ object AppLog {
         }
         val errorJson = error?.let {
             val safeMessage = LogSanitizer.sanitizeText(it.message ?: "")
-            val safeStack = LogSanitizer.sanitizeText(Log.getStackTraceString(it))
+            val safeStack = LogSanitizer.sanitizeText(Log.getStackTraceString(it).orEmpty())
             ",\"error_type\":\"${escape(it.javaClass.name)}\",\"error\":\"${escape(safeMessage)}\",\"stack\":\"${escape(safeStack)}\""
         }.orEmpty()
         return buildString {
