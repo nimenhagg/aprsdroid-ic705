@@ -452,7 +452,18 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     }
 
     fun getConversations(): Cursor {
-        return readableDatabase.query("messages", Message.COLUMNS, "_id IN (SELECT MAX(_id) FROM messages GROUP BY call)", null, "call", null, "_id DESC")
+        val identity =
+            "CASE WHEN UPPER(call) LIKE '%-0' " +
+                "THEN SUBSTR(UPPER(call), 1, LENGTH(call) - 2) ELSE UPPER(call) END"
+        return readableDatabase.query(
+            Message.TABLE,
+            Message.COLUMNS,
+            "_id IN (SELECT MAX(_id) FROM messages GROUP BY $identity)",
+            null,
+            null,
+            null,
+            "_id DESC",
+        )
     }
 
     private fun messageCallSelection(call: String): Pair<String, Array<String>> {
