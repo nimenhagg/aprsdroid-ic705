@@ -3,10 +3,6 @@ buildscript {
 	repositories {
 		google()
 		mavenCentral()
-		maven { url = uri("https://maven.aliyun.com/repository/public") }
-		maven { url = uri("https://maven.aliyun.com/repository/google") }
-		maven { url = uri("https://jitpack.io") }
-		mavenLocal()
 	}
 	dependencies {
 	}
@@ -23,10 +19,6 @@ allprojects {
 	repositories {
 		google()
 		mavenCentral()
-		maven { url = uri("https://maven.aliyun.com/repository/public") }
-		maven { url = uri("https://maven.aliyun.com/repository/google") }
-		maven { url = uri("https://jitpack.io") }
-		mavenLocal()
 	}
 }
 
@@ -135,8 +127,8 @@ android {
 		}
 	}
 	lint {
-		abortOnError = false
-		checkReleaseBuilds = false
+		abortOnError = true
+		checkReleaseBuilds = true
 		// These versions are intentionally pinned to the mutually compatible release toolchain.
 		disable += ['AndroidGradlePluginVersion', 'NewerVersionAvailable', 'LocalContextGetResourceValueCall']
 		// MapLibre brings Timber transitively; this app intentionally keeps its existing Android Log facade.
