@@ -73,7 +73,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 
 | 文件规格 | 适用设备 |
 | --- | --- |
-| `Recommended_...-arm64-v8a-opengl.apk` | 大多数现代 64 位 ARM 手机，推荐 |
+| `...-arm64-v8a-opengl.apk` | 大多数现代 64 位 ARM 手机，推荐 |
 | `...-armeabi-v7a-opengl.apk` | 仍支持 32 位 ARM 应用的设备 |
 
 正式 Release 当前只发布 ARM64 与 ARMv7 两个 OpenGL APK，并提供 `SHA256SUMS.txt` 与 pinned Graywolf 对应源码归档。源码仍保留 ARM64 Vulkan、x86 与 x86_64 变体；当前 Graywolf Android native 构建/正式本地 AFSK RX 只覆盖 ARM64/ARMv7。部分 64 位系统不能运行 32 位应用，因此 ARMv7 不是 ARM64 的通用回退包。
@@ -229,7 +229,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 - “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
 - 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AGENT.md`；`AI_CONTEXT.md` 只保留兼容指针。
 - 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.2.1`。
-- Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt` 和 R8 mapping 后创建 GitHub Release。
+- Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt`，并将 R8 mapping 作为永久 Release 资产一并发布。
 
 完整维护约束见 [AGENT.md](AGENT.md)；[AI_CONTEXT.md](AI_CONTEXT.md) 仅为兼容入口。
 
@@ -268,7 +268,7 @@ APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdr
 | --- | --- |
 | Android | 8.1+ / API 27 minimum |
 | Target | Android 17 / API 37 |
-| Official APKs | ARM64 OpenGL (`Recommended_...`) and ARMv7 OpenGL |
+| Official APKs | ARM64 OpenGL and ARMv7 OpenGL |
 | Radio | Icom IC-705 with WLAN and Network User enabled |
 | Control port | UDP `50001` by default |
 | Build | JDK 17, Gradle 9.5.0, AGP 9.3.2 |

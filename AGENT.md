@@ -66,7 +66,7 @@ AGP 9 使用 built-in Kotlin；不要重新应用 `org.jetbrains.kotlin.android`
 
 正式 GitHub Release 当前发布：
 
-- `arm64Opengl`，文件名前缀 `Recommended_`
+- `arm64Opengl`，文件名与 ARMv7 保持同一命名规则，不使用额外 `Recommended_` 前缀
 - `arm32Opengl`
 
 源码还保留 ARM64 Vulkan、x86、x86_64 flavor。当前 Graywolf Android native helper 与正式本地 AFSK RX 只覆盖 ARM64/ARMv7；x86/x86_64 不属于本地 AFSK RX 的正式支持 ABI。不要未经产品/构建设计讨论重新合并 Universal APK。
@@ -492,7 +492,7 @@ Release workflow 会：
 - 校验 ABI、Graywolf/MapLibre 数量与 SHA-256；
 - tagged release 归档 pinned Graywolf 对应源码并与 APK 一起发布；
 - 生成 `SHA256SUMS.txt`；
-- 保存 R8 mapping；
+- 保存 R8 mapping，并随 tagged GitHub Release 作为独立资产发布；
 - 在 tag 构建发布 GitHub Release。
 
 `main` 普通 push 通过 CI 不等于 Release 已发布。只有 tag workflow 与 GitHub Release 资产真正完成后才能说“已落地”。

@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -43,7 +43,7 @@ jobs:
           fi
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -58,7 +58,7 @@ jobs:
           protoc --version
 
       - name: Restore Cargo cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cargo/registry
@@ -94,7 +94,6 @@ jobs:
       - name: Run Unit Tests, Lint, and Build APKs
         env:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
-          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
           chmod +x gradlew
           ./gradlew \
@@ -145,7 +144,7 @@ jobs:
           ls -lh graywolf-ci-apks
 
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: graywolf-afsk-rx-apk
           path: |
