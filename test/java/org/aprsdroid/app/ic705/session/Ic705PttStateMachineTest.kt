@@ -50,6 +50,29 @@ class Ic705PttStateMachineTest {
     private fun nakFrame(radioAddress: Int = 0xa4, controllerAddress: Int = 0xe0): ByteArray =
         byteArrayOf(0xfe.toByte(), 0xfe.toByte(), controllerAddress.toByte(), radioAddress.toByte(), 0xfa.toByte(), 0xfd.toByte())
 
+    private fun pttStatusFrame(
+        transmitting: Boolean,
+        radioAddress: Int = 0xa4,
+        controllerAddress: Int = 0xe0,
+    ): ByteArray =
+        byteArrayOf(
+            0xfe.toByte(),
+            0xfe.toByte(),
+            controllerAddress.toByte(),
+            radioAddress.toByte(),
+            0x1c.toByte(),
+            0x00.toByte(),
+            if (transmitting) 0x01.toByte() else 0x00.toByte(),
+            0xfd.toByte(),
+        )
+
+    private fun acknowledgeRelease(sm: Ic705PttStateMachine) {
+        sm.onCivReceived(ackFrame())
+        if (sm.state != Ic705PttState.RX_IDLE) {
+            sm.onCivReceived(pttStatusFrame(transmitting = false))
+        }
+    }
+
     @Test
     fun successfulTransmissionLifecycle() {
         val actions = FakePttActions()
@@ -72,7 +95,7 @@ class Ic705PttStateMachineTest {
         sm.finishTransmission()
         assertEquals(Ic705PttState.DRAINING, sm.state)
         assertTrue(sm.isRadioPttOn)
-        sm.onCivReceived(ackFrame())
+        acknowledgeRelease(sm)
         assertEquals(Ic705PttState.RX_IDLE, sm.state)
         assertFalse(sm.isTransmitting)
         assertFalse(sm.canStreamAudio)
@@ -89,7 +112,7 @@ class Ic705PttStateMachineTest {
         sm.onCivReceived(nakFrame())
         assertEquals(Ic705PttState.DRAINING, sm.state)
         assertTrue(sm.isRadioPttOn)
-        sm.onCivReceived(ackFrame())
+        acknowledgeRelease(sm)
         assertEquals(Ic705PttState.RX_IDLE, sm.state)
         assertFalse(sm.isRadioPttOn)
     }
@@ -105,7 +128,7 @@ class Ic705PttStateMachineTest {
         assertTrue(sm.isRadioPttOn)
         assertEquals(2, actions.sentCivFrames.size)
         assertEquals(0x00.toByte(), actions.sentCivFrames[1][6])
-        sm.onCivReceived(ackFrame())
+        acknowledgeRelease(sm)
         assertEquals(Ic705PttState.RX_IDLE, sm.state)
         assertFalse(sm.isRadioPttOn)
     }
@@ -127,7 +150,7 @@ class Ic705PttStateMachineTest {
             sm.finishTransmission()
             assertEquals(2, actions.civSendAttempts.get())
             assertEquals(Ic705PttState.DRAINING, sm.state)
-            sm.onCivReceived(ackFrame())
+            acknowledgeRelease(sm)
             assertEquals(Ic705PttState.RX_IDLE, sm.state)
         } finally {
             watchdog.shutdownNow()
@@ -189,7 +212,7 @@ class Ic705PttStateMachineTest {
             assertEquals(Ic705PttState.DRAINING, sm.state)
             assertTrue(sm.isRadioPttOn)
             waitUntil { actions.civSendAttempts.get() >= 3 }
-            sm.onCivReceived(ackFrame())
+            acknowledgeRelease(sm)
             assertEquals(Ic705PttState.RX_IDLE, sm.state)
             assertFalse(sm.isRadioPttOn)
         } finally {
@@ -227,7 +250,7 @@ class Ic705PttStateMachineTest {
             waitUntil { actions.civSendAttempts.get() >= 5 }
             assertEquals(Ic705PttState.DRAINING, sm.state)
             assertTrue(sm.isRadioPttOn)
-            sm.onCivReceived(ackFrame())
+            acknowledgeRelease(sm)
             assertEquals(Ic705PttState.RX_IDLE, sm.state)
             assertFalse(sm.isRadioPttOn)
         } finally {
@@ -248,12 +271,47 @@ class Ic705PttStateMachineTest {
             assertEquals(Ic705PttState.DRAINING, sm.state)
             assertTrue(sm.isTransmitting)
             assertTrue(sm.isRadioPttOn)
-            sm.onCivReceived(ackFrame())
+            acknowledgeRelease(sm)
             assertEquals(Ic705PttState.RX_IDLE, sm.state)
             assertFalse(sm.isRadioPttOn)
         } finally {
             watchdog.shutdownNow()
         }
+    }
+
+    @Test
+    fun delayedOnAckCannotMasqueradeAsOffAck() {
+        val actions = FakePttActions()
+        val sm = Ic705PttStateMachine(actions)
+
+        assertTrue(sm.beginTransmission())
+        sm.finishTransmission()
+        assertEquals(Ic705PttState.DRAINING, sm.state)
+        assertEquals(2, actions.sentCivFrames.size)
+        assertEquals(0x00.toByte(), actions.sentCivFrames[1][6])
+
+        // The first ACK can still belong to the earlier PTT ON command.
+        sm.onCivReceived(ackFrame())
+        assertEquals(Ic705PttState.DRAINING, sm.state)
+        assertTrue(sm.isRadioPttOn)
+        assertEquals(3, actions.sentCivFrames.size)
+        assertEquals(0x1c.toByte(), actions.sentCivFrames[2][4])
+        assertEquals(0x00.toByte(), actions.sentCivFrames[2][5])
+        assertEquals(7, actions.sentCivFrames[2].size)
+
+        // If readback still says TX, retry PTT OFF instead of reporting false RX.
+        sm.onCivReceived(pttStatusFrame(transmitting = true))
+        assertEquals(Ic705PttState.DRAINING, sm.state)
+        assertTrue(sm.isRadioPttOn)
+        assertEquals(4, actions.sentCivFrames.size)
+        assertEquals(0x00.toByte(), actions.sentCivFrames[3][6])
+
+        sm.onCivReceived(ackFrame())
+        assertEquals(Ic705PttState.DRAINING, sm.state)
+        assertEquals(5, actions.sentCivFrames.size)
+        sm.onCivReceived(pttStatusFrame(transmitting = false))
+        assertEquals(Ic705PttState.RX_IDLE, sm.state)
+        assertFalse(sm.isRadioPttOn)
     }
 
     @Test
@@ -267,7 +325,7 @@ class Ic705PttStateMachineTest {
         sm.onCivReceived(nakFrame())
         assertEquals(3, actions.sentCivFrames.size)
         assertEquals(Ic705PttState.DRAINING, sm.state)
-        sm.onCivReceived(ackFrame())
+        acknowledgeRelease(sm)
         assertEquals(Ic705PttState.RX_IDLE, sm.state)
         assertFalse(sm.isRadioPttOn)
     }
