@@ -4,11 +4,11 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.2.1`**
+**最新稳定版 / Latest release: `Mod-v2.2.2`**
 
-> `Mod-v2.2.1` 在 2.2.0 的后端职责拆分与可选 Live Updates 基础上，为状态栏实时动态加入按后端/动作变化的状态文本、透明单色 APRS 通知图标，以及英文、简繁中文、日/韩/德/法/西/巴葡/俄语状态资源；接收、发射、信标、连接、重连、定位和错误状态会按当前模式动态展示。
+> `Mod-v2.2.2` 是维护性更新：修复 SSID 0 被显示为 `-0` 的回归，增强诊断异常文本脱敏，并收紧 PR/Release CI、签名密钥暴露范围与依赖供应链；ARM64 Release 文件名不再带 `Recommended_` 前缀，R8 mapping 会随正式 Release 永久附带。
 >
-> `Mod-v2.2.1` builds on 2.2.0 with backend/action-aware Live Update status text, a transparent monochrome APRS notification icon, and localized live-status resources for English, Simplified/Traditional Chinese, Japanese, Korean, German, French, Spanish, Brazilian Portuguese, and Russian. Receive, transmit, beacon, connect, reconnect, location, and error states now update with the active mode.
+> `Mod-v2.2.2` is a maintenance release fixing the SSID-0 display regression, hardening diagnostic redaction, and tightening PR/release CI, signing-secret exposure, and supply-chain pinning. ARM64 release filenames no longer carry a `Recommended_` prefix, and R8 mappings are attached to tagged releases.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -228,7 +228,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 - 修改 IC-705 发射/会话恢复代码时必须保留 PTT OFF、ACK 与 watchdog 安全语义并增加测试。
 - “最新稳定版”和“当前 main”是两个概念；未打 tag 的 main 功能不要写成已经发布。
 - 发版时同步更新 `build.gradle`、`CHANGELOG.md`、`README.md`、`AGENT.md`；`AI_CONTEXT.md` 只保留兼容指针。
-- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.2.1`。
+- 标签格式：`Mod-v<major.minor.patch>`，例如 `Mod-v2.2.2`。
 - Tag CI 会验证版本，测试、Lint、构建 ARM64/ARMv7 OpenGL APK，进行签名/ABI/渲染后端校验，生成 `SHA256SUMS.txt`，并将 R8 mapping 作为永久 Release 资产一并发布。
 
 完整维护约束见 [AGENT.md](AGENT.md)；[AI_CONTEXT.md](AI_CONTEXT.md) 仅为兼容入口。
@@ -239,7 +239,7 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 
 APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-**Latest stable release: `Mod-v2.2.1`.**
+**Latest stable release: `Mod-v2.2.2`.**
 
 ### Highlights
 
