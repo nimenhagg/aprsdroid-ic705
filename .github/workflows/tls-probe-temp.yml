@@ -1,0 +1,47 @@
+name: Temporary APRS TLS Probe
+
+on:
+  push:
+    branches:
+      - chore/release-quality-hardening
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe APRS-IS TLS endpoints
+        shell: bash
+        run: |
+          set -u
+          probe() {
+            local host="$1"
+            local port="$2"
+            echo "===== ${host}:${port} ====="
+            set +e
+            timeout 12 openssl s_client \
+              -connect "${host}:${port}" \
+              -servername "${host}" \
+              -verify_return_error \
+              -verify_hostname "${host}" \
+              -brief </dev/null 2>&1
+            local rc=$?
+            set -e
+            echo "exit_code=${rc}"
+            echo
+          }
+
+          set -e
+          probe ssl.aprs2.net 24580
+          probe china.aprs2.net 24580
+          probe asia.aprs2.net 24580
+          probe euro.aprs2.net 24580
+          probe noam.aprs2.net 24580
+          probe rotate.aprs2.net 24580
+          probe china.aprs2.net 14580
+          probe asia.aprs2.net 14580
+          probe euro.aprs2.net 14580
+          probe noam.aprs2.net 14580
+          probe rotate.aprs2.net 14580
