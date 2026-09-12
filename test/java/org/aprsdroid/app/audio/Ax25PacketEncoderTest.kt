@@ -2,6 +2,7 @@ package org.aprsdroid.app.audio
 
 import java.util.ArrayList
 import net.ab0oo.aprs.parser.APRSPacket
+import net.ab0oo.aprs.parser.Digipeater
 import net.ab0oo.aprs.parser.MessagePacket
 import org.junit.Assert.fail
 import org.junit.Test
@@ -11,7 +12,7 @@ class Ax25PacketEncoderTest {
         val packet = APRSPacket(
             "N0CALL",
             "APRS",
-            ArrayList(),
+            ArrayList<Digipeater>(),
             byteArrayOf(':'.code.toByte()),
         )
         packet.setInfoField(MessagePacket("TARGET", body, "1"))
