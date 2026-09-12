@@ -9,22 +9,23 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 jobs:
   build:
-    name: Build & Release APK
+    name: Build & Verify APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -39,39 +40,37 @@ jobs:
           protoc --version
 
       - name: Restore Cargo cache
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             native/graywolf-jni/target
-          key: graywolf-rust-v3-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
+          key: graywolf-rust-v4-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
 
       - name: Run Graywolf production-rate loopbacks
-        run: bash .github/scripts/test_graywolf_loopback.sh
+        run: |
+          bash .github/scripts/test_graywolf_loopback.sh
+          git diff --exit-code -- native/graywolf-jni/Cargo.lock
 
       - name: Restore ARM64 MinSizeRel MapLibre
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .cache/maplibre-minsizerel/13.5.1/arm64-v8a
-          key: maplibre-minsizerel-v1-13.5.1-arm64-v8a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
+          key: maplibre-minsizerel-v2-13.5.1-arm64-v8a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
 
       - name: Restore ARMv7 MinSizeRel MapLibre
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: .cache/maplibre-minsizerel/13.5.1/armeabi-v7a
-          key: maplibre-minsizerel-v1-13.5.1-armeabi-v7a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
+          key: maplibre-minsizerel-v2-13.5.1-armeabi-v7a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
 
       - name: Build MinSizeRel MapLibre Native
         run: |
-          bash .github/scripts/build_maplibre_minsizerel.sh \
-            13.5.1 arm64-v8a \
-            "$PWD/.cache/maplibre-minsizerel/13.5.1/arm64-v8a/libmaplibre.so"
+          bash .github/scripts/build_maplibre_minsizerel.sh             13.5.1 arm64-v8a             "$PWD/.cache/maplibre-minsizerel/13.5.1/arm64-v8a/libmaplibre.so"
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            bash .github/scripts/build_maplibre_minsizerel.sh \
-              13.5.1 armeabi-v7a \
-              "$PWD/.cache/maplibre-minsizerel/13.5.1/armeabi-v7a/libmaplibre.so"
+            bash .github/scripts/build_maplibre_minsizerel.sh               13.5.1 armeabi-v7a               "$PWD/.cache/maplibre-minsizerel/13.5.1/armeabi-v7a/libmaplibre.so"
           fi
 
       - name: Build Graywolf Android Native
@@ -84,7 +83,7 @@ jobs:
       - name: Grant Execute Permission to Gradlew
         run: chmod +x gradlew
 
-      - name: Run Tests, Lint, and Build Release APK
+      - name: Run Tests, Blocking Lint, and Build Release APK
         run: |
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -z "${MAPS_API_KEY:-}" ]; then
             echo "A tagged release requires the MAPS_API_KEY secret." >&2
@@ -95,6 +94,7 @@ jobs:
             verifyReleaseVersion
             testArm64OpenglDebugUnitTest
             lintArm64OpenglDebug
+            lintArm64OpenglRelease
             assembleArm64OpenglRelease
           )
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
@@ -103,15 +103,15 @@ jobs:
           ./gradlew "${tasks[@]}" --no-daemon --stacktrace
         env:
           JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
-          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          MAPS_API_KEY: ${{ startsWith(github.ref, 'refs/tags/') && secrets.MAPS_API_KEY || '' }}
 
       - name: Prepare, Verify, and Sign Release APKs
         id: sign_app
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_BASE64: ${{ startsWith(github.ref, 'refs/tags/') && secrets.KEYSTORE_BASE64 || '' }}
+          KEYSTORE_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/') && secrets.KEYSTORE_PASSWORD || '' }}
+          KEY_ALIAS: ${{ startsWith(github.ref, 'refs/tags/') && secrets.KEY_ALIAS || '' }}
+          KEY_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/') && secrets.KEY_PASSWORD || '' }}
         run: |
           set -euo pipefail
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
@@ -131,7 +131,7 @@ jobs:
 
           mkdir -p release-apks "$RUNNER_TEMP/maplibre-patched"
           if [ -n "${KEYSTORE_BASE64:-}" ]; then
-            echo "Signing with repository secret keystore..."
+            echo "Signing tagged release with repository keystore..."
             echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > release.jks
           fi
 
@@ -140,7 +140,6 @@ jobs:
             local abi="$2"
             local renderer="$3"
             local maplibre_count="$4"
-            local prefix="$5"
             local source
             source=$(find "build/outputs/apk/${flavor}/release" -name "*.apk" -print -quit)
             if [ -z "$source" ]; then
@@ -161,23 +160,13 @@ jobs:
 
             local patched="$RUNNER_TEMP/maplibre-patched/${flavor}-patched.apk"
             local aligned="$RUNNER_TEMP/maplibre-patched/${flavor}-aligned.apk"
-            python3 .github/scripts/replace_apk_maplibre.py \
-              "$source" "$abi" "$custom_so" "$patched"
+            python3 .github/scripts/replace_apk_maplibre.py               "$source" "$abi" "$custom_so" "$patched"
             "$ZIPALIGN" -P 16 -f 4 "$patched" "$aligned"
             "$ZIPALIGN" -P 16 -c 4 "$aligned"
 
-            local destination="release-apks/${prefix}APRSdroid-${BUILD_LABEL}-${abi}-${renderer}.apk"
+            local destination="release-apks/APRSdroid-${BUILD_LABEL}-${abi}-${renderer}.apk"
             if [ -n "${KEYSTORE_BASE64:-}" ]; then
-              "$APKSIGNER" sign \
-                --v1-signing-enabled false \
-                --v2-signing-enabled true \
-                --v3-signing-enabled true \
-                --v4-signing-enabled true \
-                --ks release.jks \
-                --ks-pass pass:"$KEYSTORE_PASSWORD" \
-                --ks-key-alias "$KEY_ALIAS" \
-                --key-pass pass:"$KEY_PASSWORD" \
-                --out "$destination" "$aligned"
+              "$APKSIGNER" sign                 --v1-signing-enabled false                 --v2-signing-enabled true                 --v3-signing-enabled true                 --v4-signing-enabled true                 --ks release.jks                 --ks-pass pass:"$KEYSTORE_PASSWORD"                 --ks-key-alias "$KEY_ALIAS"                 --key-pass pass:"$KEY_PASSWORD"                 --out "$destination" "$aligned"
               "$APKSIGNER" verify --verbose "$destination"
             else
               cp "$aligned" "$destination"
@@ -230,9 +219,9 @@ jobs:
             fi
           }
 
-          publish_apk arm64Opengl arm64-v8a opengl 1 "Recommended_"
+          publish_apk arm64Opengl arm64-v8a opengl 1
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            publish_apk arm32Opengl armeabi-v7a opengl 1 ""
+            publish_apk arm32Opengl armeabi-v7a opengl 1
           fi
 
           rm -f release.jks
@@ -243,10 +232,9 @@ jobs:
             flavors+=(arm32Opengl)
           fi
           for flavor in "${flavors[@]}"; do
-            if [ -f "build/outputs/mapping/${flavor}Release/mapping.txt" ]; then
-              cp "build/outputs/mapping/${flavor}Release/mapping.txt" \
-                "release-mappings/${flavor}-mapping.txt"
-            fi
+            mapping="build/outputs/mapping/${flavor}Release/mapping.txt"
+            test -s "$mapping"
+            cp "$mapping" "release-mappings/${flavor}-mapping.txt"
           done
           echo "build_label=${BUILD_LABEL}" >> "$GITHUB_OUTPUT"
           ls -lh release-apks
@@ -262,24 +250,41 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: python3 .github/scripts/extract_release_notes.py
 
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v7
+      - name: Upload release bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: aprsdroid-apks
+          name: aprsdroid-release-bundle
           path: |
             release-apks/*.apk
             release-apks/*.tar.gz
             release-apks/SHA256SUMS.txt
+            release-mappings/*.txt
+            RELEASE_NOTES.md
+          if-no-files-found: error
 
       - name: Upload R8 Mapping Files
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: r8-mappings
           path: release-mappings/*.txt
           if-no-files-found: error
 
+  create_tag:
+    name: Create validated release tag
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
       - name: Create and Dispatch Validated Release Tag
-        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -327,20 +332,9 @@ jobs:
             exit 0
           fi
 
-          tag_object_sha=$(gh api --method POST \
-            -H "Accept: application/vnd.github+json" \
-            "repos/${GITHUB_REPOSITORY}/git/tags" \
-            -f tag="$tag" \
-            -f message="$tag" \
-            -f object="$GITHUB_SHA" \
-            -f type="commit" \
-            --jq '.sha')
+          tag_object_sha=$(gh api --method POST             -H "Accept: application/vnd.github+json"             "repos/${GITHUB_REPOSITORY}/git/tags"             -f tag="$tag"             -f message="$tag"             -f object="$GITHUB_SHA"             -f type="commit"             --jq '.sha')
 
-          gh api --method POST \
-            -H "Accept: application/vnd.github+json" \
-            "repos/${GITHUB_REPOSITORY}/git/refs" \
-            -f ref="refs/tags/${tag}" \
-            -f sha="$tag_object_sha" >/dev/null
+          gh api --method POST             -H "Accept: application/vnd.github+json"             "repos/${GITHUB_REPOSITORY}/git/refs"             -f ref="refs/tags/${tag}"             -f sha="$tag_object_sha" >/dev/null
 
           for attempt in 1 2 3; do
             if gh workflow run release.yml --ref "$tag"; then
@@ -353,15 +347,30 @@ jobs:
           echo "Created ${tag}, but could not dispatch the tagged release workflow." >&2
           exit 1
 
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download verified release bundle
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: aprsdroid-release-bundle
+          path: release-bundle
+
       - name: Publish to GitHub Release
-        uses: softprops/action-gh-release@v3
-        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           files: |
-            release-apks/*.apk
-            release-apks/*.tar.gz
-            release-apks/SHA256SUMS.txt
-          body_path: RELEASE_NOTES.md
+            release-bundle/release-apks/*.apk
+            release-bundle/release-apks/*.tar.gz
+            release-bundle/release-apks/SHA256SUMS.txt
+            release-bundle/release-mappings/*.txt
+          body_path: release-bundle/RELEASE_NOTES.md
           draft: false
           prerelease: false
         env:
