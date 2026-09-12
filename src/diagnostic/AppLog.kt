@@ -109,7 +109,8 @@ object AppLog {
         if (error == null) {
             Log.println(priority, safeTag, message)
         } else {
-            Log.println(priority, safeTag, "$message\n${Log.getStackTraceString(error)}")
+            val safeStack = LogSanitizer.sanitizeText(Log.getStackTraceString(error))
+            Log.println(priority, safeTag, "$message\n$safeStack")
         }
 
         val context = appContext ?: return
@@ -130,7 +131,9 @@ object AppLog {
             "\"${escape(key)}\":\"${escape(sanitizeValue(key, value?.toString() ?: "null"))}\""
         }
         val errorJson = error?.let {
-            ",\"error_type\":\"${escape(it.javaClass.name)}\",\"error\":\"${escape(it.message ?: "")}\",\"stack\":\"${escape(Log.getStackTraceString(it))}\""
+            val safeMessage = LogSanitizer.sanitizeText(it.message ?: "")
+            val safeStack = LogSanitizer.sanitizeText(Log.getStackTraceString(it))
+            ",\"error_type\":\"${escape(it.javaClass.name)}\",\"error\":\"${escape(safeMessage)}\",\"stack\":\"${escape(safeStack)}\""
         }.orEmpty()
         return buildString {
             append('{')
@@ -190,14 +193,8 @@ object AppLog {
         }
     }
 
-    private fun sanitizeValue(key: String, raw: String): String {
-        val lower = key.lowercase(Locale.ROOT)
-        return when {
-            lower.contains("password") || lower.contains("passcode") || lower.contains("secret") || lower.contains("token") -> "[REDACTED]"
-            lower.contains("latitude") || lower.contains("longitude") || lower == "lat" || lower == "lon" -> "[REDACTED]"
-            else -> raw.take(2048)
-        }
-    }
+    private fun sanitizeValue(key: String, raw: String): String =
+        LogSanitizer.sanitizeValue(key, raw)
 
     private fun utcNow(): String = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
