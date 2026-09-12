@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.aprsdroid.app.AprsService
 import org.aprsdroid.app.PrefsWrapper
+import org.aprsdroid.app.ServiceNotifier
 import org.aprsdroid.app.data.repository.StationRepository
 import org.aprsdroid.app.model.StationItem
 
@@ -17,7 +18,8 @@ data class HubUiState(
     val myLat: Int = 0,
     val myLon: Int = 0,
     val isRunning: Boolean = false,
-    val myCall: String = ""
+    val myCall: String = "",
+    val serviceStatus: String = ""
 )
 
 class HubViewModel(
@@ -28,10 +30,16 @@ class HubViewModel(
     private val _uiState = MutableStateFlow(HubUiState())
     val uiState: StateFlow<HubUiState> = _uiState.asStateFlow()
 
+    private fun currentServiceStatus(running: Boolean): String {
+        if (!running) return ""
+        return ServiceNotifier.instance.currentLiveStatus()?.detailText(prefs.context).orEmpty()
+    }
+
     fun refresh() {
         viewModelScope.launch {
             val myCall = prefs.getCallSsid()
             val running = AprsService.running
+            val serviceStatus = currentServiceStatus(running)
             val data = repository.getHubData(myCall, prefs.getShowAge())
             _uiState.update {
                 it.copy(
@@ -39,13 +47,20 @@ class HubViewModel(
                     myLat = data.myLat,
                     myLon = data.myLon,
                     isRunning = running,
-                    myCall = myCall
+                    myCall = myCall,
+                    serviceStatus = serviceStatus
                 )
             }
         }
     }
 
     fun updateServiceState() {
-        _uiState.update { it.copy(isRunning = AprsService.running) }
+        val running = AprsService.running
+        _uiState.update {
+            it.copy(
+                isRunning = running,
+                serviceStatus = currentServiceStatus(running)
+            )
+        }
     }
 }
