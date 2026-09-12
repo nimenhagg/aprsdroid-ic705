@@ -10,6 +10,19 @@ import net.ab0oo.aprs.parser.MessagePacket
 import java.util.Locale
 import kotlin.math.min
 
+internal enum class PendingMessageAction {
+    SEND,
+    WAIT,
+    ABORT,
+}
+
+internal fun pendingMessageAction(retryCount: Int, maxRetries: Int, delayMillis: Long): PendingMessageAction =
+    when {
+        delayMillis > 0 -> PendingMessageAction.WAIT
+        retryCount >= maxRetries -> PendingMessageAction.ABORT
+        else -> PendingMessageAction.SEND
+    }
+
 class MessageService(val s: AprsService) {
     companion object {
         const val TAG = "APRSdroid.MsgService"
@@ -90,23 +103,27 @@ class MessageService(val s: AprsService) {
             val tSend = ts + getRetryDelayMS(retrycnt) - System.currentTimeMillis()
 
             Log.d(TAG, String.format(Locale.US, "pending message: %d/%d (%ds) ->%s '%s'", retrycnt, NUM_OF_RETRIES, tSend / 1000, call, text))
-            if (retrycnt == NUM_OF_RETRIES && tSend <= 0) {
-                s.db.updateMessageType(c.getLong(0), StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
-                s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
-            } else if (retrycnt < NUM_OF_RETRIES && tSend <= 0) {
-                val msg = s.newPacket(MessagePacket(call, text, msgid))
-                s.sendPacket(msg)
-                val cv = ContentValues().apply {
-                    put(StorageDatabase.Companion.Message.RETRYCNT, retrycnt + 1)
-                    put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+            when (pendingMessageAction(retrycnt, NUM_OF_RETRIES, tSend)) {
+                PendingMessageAction.ABORT -> {
+                    s.db.updateMessageType(c.getLong(0), StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
+                    s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                 }
-                s.db.updateMessage(c.getLong(0), cv)
-                s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
-                nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
-            } else if (tSend > 0) {
-                // Keep the final timeout scheduled too. Otherwise a queue rescan
-                // at retrycnt == NUM_OF_RETRIES can strand the message forever.
-                nextRun = min(nextRun, tSend)
+                PendingMessageAction.SEND -> {
+                    val msg = s.newPacket(MessagePacket(call, text, msgid))
+                    s.sendPacket(msg)
+                    val cv = ContentValues().apply {
+                        put(StorageDatabase.Companion.Message.RETRYCNT, retrycnt + 1)
+                        put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+                    }
+                    s.db.updateMessage(c.getLong(0), cv)
+                    s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
+                    nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
+                }
+                PendingMessageAction.WAIT -> {
+                    // Includes the final post-send timeout. Queue rescans must not
+                    // strand retrycnt == NUM_OF_RETRIES without a wake-up.
+                    nextRun = min(nextRun, tSend)
+                }
             }
             c.moveToNext()
         }
