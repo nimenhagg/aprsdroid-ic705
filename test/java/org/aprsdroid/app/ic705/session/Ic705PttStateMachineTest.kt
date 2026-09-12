@@ -88,6 +88,7 @@ class Ic705PttStateMachineTest {
         assertTrue(sm.isRadioPttOn)
         assertEquals(1, actions.sentCivFrames.size)
         assertEquals(0x01.toByte(), actions.sentCivFrames[0][6])
+        sm.onCivReceived(ackFrame())
         assertTrue(sm.onAudioStreamingFinished())
         assertEquals(Ic705PttState.DRAINING, sm.state)
         assertTrue(sm.isTransmitting)
