@@ -5,6 +5,7 @@ VERSION="${1:-13.5.1}"
 ABI="${2:-arm64-v8a}"
 OUTPUT="${3:-$PWD/libmaplibre.so}"
 NDK_VERSION="28.2.13676358"
+MAPLIBRE_REV="f0bd259b53f5dda65cd092cc5f6ff15d4d9d2d83"
 
 case "$ABI" in
   arm64-v8a|armeabi-v7a) ;;
@@ -40,6 +41,12 @@ trap 'rm -rf "$WORK"' EXIT
 git clone --quiet --depth 1 --branch "android-v$VERSION" --recurse-submodules --shallow-submodules \
   https://github.com/maplibre/maplibre-native.git "$WORK/maplibre-native"
 cd "$WORK/maplibre-native"
+ACTUAL_REV="$(git rev-parse HEAD)"
+if [ "$ACTUAL_REV" != "$MAPLIBRE_REV" ]; then
+  echo "MapLibre android-v$VERSION moved: expected $MAPLIBRE_REV, got $ACTUAL_REV" >&2
+  exit 1
+fi
+echo "Verified MapLibre android-v$VERSION commit: $ACTUAL_REV"
 
 # AGP's Android Release variant normally maps native code to RelWithDebInfo.
 # Build MinSizeRel directly so the upstream
