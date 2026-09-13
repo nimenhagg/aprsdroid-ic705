@@ -18,6 +18,11 @@ internal class ReplyAckState {
 
     @Synchronized
     fun decorateOutgoing(call: String, messageNumber: String): String {
+        // Pre-upgrade databases can contain legacy 3-5 character message IDs.
+        // Do not make those longer than APRS' 5-byte identifier limit; only
+        // newly allocated two-digit IDs participate in Reply-ACK.
+        if (messageNumber.length > 2) return messageNumber
+
         val ack = latestAckOwed[AprsPacket.normalizeMessageCallsign(call)].orEmpty()
         return "$messageNumber}$ack"
     }
