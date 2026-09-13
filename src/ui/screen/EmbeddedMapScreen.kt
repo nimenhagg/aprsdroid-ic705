@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -31,6 +32,8 @@ import com.google.android.gms.maps.CameraUpdateFactory as GoogleCameraUpdateFact
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView as GoogleMapView
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.LatLng as GoogleLatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -40,7 +43,10 @@ import org.aprsdroid.app.MapModes
 import org.aprsdroid.app.MapTileType
 import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.R
-import org.aprsdroid.app.Station
+import org.aprsdroid.app.map.MapStation
+import org.aprsdroid.app.map.StationFeature
+import org.aprsdroid.app.map.StationImage
+import org.aprsdroid.app.map.stationImages
 import org.aprsdroid.app.UrlOpener
 import org.aprsdroid.app.map.OnlineTileSources
 import org.aprsdroid.app.map.TileUrlTemplate
@@ -67,11 +73,18 @@ import org.maplibre.geojson.Point
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
+import kotlin.coroutines.coroutineContext
 
 @Composable
 fun EmbeddedMapScreen(
     prefs: PrefsWrapper,
-    stations: List<Station>,
+    stations: List<MapStation>,
     dataLoading: Boolean,
     showObjects: Boolean,
     myLat: Int,
@@ -87,6 +100,7 @@ fun EmbeddedMapScreen(
     MapModes.initialize(context)
 
     var currentMode by remember { mutableStateOf(MapModes.defaultMapMode(context, prefs)) }
+    val availableMapModes = remember(context) { MapModes.all_mapmodes.filter { it.isAvailable(context) } }
     var rendererLoading by remember(currentMode.tag) { mutableStateOf(true) }
     var showAboutDialog by remember { mutableStateOf(false) }
     val actions = remember { EmbeddedMapActions() }
@@ -98,7 +112,7 @@ fun EmbeddedMapScreen(
         onOsmAttributionClick = {
             UrlOpener.open(context, context.getString(R.string.map_osm_copyright_url))
         },
-        availableMapModes = MapModes.all_mapmodes.filter { it.isAvailable(context) },
+        availableMapModes = availableMapModes,
         currentMapMode = currentMode,
         showObjects = showObjects,
         onToggleShowObjects = {
@@ -177,7 +191,7 @@ private class EmbeddedMapActions {
 private fun MapLibreEmbeddedRenderer(
     mode: MapMode,
     prefs: PrefsWrapper,
-    stations: List<Station>,
+    stations: List<MapStation>,
     myLat: Int,
     myLon: Int,
     actions: EmbeddedMapActions,
@@ -200,7 +214,8 @@ private fun MapLibreEmbeddedRenderer(
 
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var cameraInitialized by remember { mutableStateOf(false) }
-    val activeImageIds = remember { linkedSetOf<String>() }
+    var readyStyle by remember { mutableStateOf<Style?>(null) }
+    val stationCache = remember(readyStyle) { MapLibreStationCache() }
 
     LaunchedEffect(mapView) {
         mapView.addOnDidFailLoadingMapListener { error ->
@@ -238,24 +253,31 @@ private fun MapLibreEmbeddedRenderer(
         }
     }
 
-    LaunchedEffect(map, mode.tag) {
-        val mapLibreMap = map ?: return@LaunchedEffect
-        onLoadingChanged(true)
-        applyMapLibreRasterStyle(
-            context = context,
-            map = mapLibreMap,
-            mode = mode,
-            prefs = prefs,
-            activeImageIds = activeImageIds
-        ) { style ->
-            updateMapLibreStations(context, style, latestStations.value, activeImageIds)
-            onLoadingChanged(false)
+    DisposableEffect(map, mode.tag) {
+        var active = true
+        readyStyle = null
+        map?.let { mapLibreMap ->
+            onLoadingChanged(true)
+            applyMapLibreRasterStyle(context, mapLibreMap, mode, prefs) { style ->
+                if (active) {
+                    readyStyle = style
+                    onLoadingChanged(false)
+                }
+            }
         }
+        onDispose { active = false }
     }
 
-    LaunchedEffect(map, stations) {
-        map?.style?.let { style ->
-            updateMapLibreStations(context, style, stations, activeImageIds)
+    LaunchedEffect(readyStyle) {
+        val style = readyStyle ?: return@LaunchedEffect
+        snapshotFlow { latestStations.value }.conflate().collect { snapshot ->
+            try {
+                updateMapLibreStations(context, style, snapshot, stationCache)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Log.e("APRSdroid.EmbeddedMap", "Station layer update failed", error)
+            }
         }
     }
 
@@ -292,7 +314,7 @@ private fun MapLibreEmbeddedRenderer(
 private fun GoogleEmbeddedRenderer(
     mode: MapMode,
     prefs: PrefsWrapper,
-    stations: List<Station>,
+    stations: List<MapStation>,
     myLat: Int,
     myLon: Int,
     actions: EmbeddedMapActions,
@@ -313,6 +335,9 @@ private fun GoogleEmbeddedRenderer(
     )
 
     var map by remember { mutableStateOf<GoogleMap?>(null) }
+    val markers = remember(map) { mutableMapOf<String, Marker>() }
+    val renderedStations = remember(map) { mutableMapOf<String, MapStation>() }
+    val symbolIcons = remember(map) { mutableMapOf<String, BitmapDescriptor>() }
     var cameraInitialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(mapView) {
@@ -371,19 +396,47 @@ private fun GoogleEmbeddedRenderer(
 
     LaunchedEffect(map, stations) {
         val googleMap = map ?: return@LaunchedEffect
-        googleMap.clear()
-        stations.forEach { station ->
-            val symbol = station.symbol ?: "/$"
-            val descriptor = BitmapDescriptorFactory.fromBitmap(MapModes.symbol2bitmap(symbol, 48))
-            googleMap.addMarker(
-                MarkerOptions()
-                    .position(GoogleLatLng(station.lat, station.lon))
-                    .title(station.call)
-                    .snippet(station.comment ?: "")
-                    .icon(descriptor)
-                    .anchor(0.5f, 0.5f)
-            )?.tag = station.call
+        val calls = stations.mapTo(hashSetOf()) { it.call }
+        (markers.keys - calls).forEach { call ->
+            markers.remove(call)?.remove()
+            renderedStations.remove(call)
         }
+        stations.forEachIndexed { index, station ->
+            val previous = renderedStations[station.call]
+            if (station != previous) {
+                val marker = markers[station.call]
+                if (marker == null) {
+                    val icon = symbolIcons.getOrPut(station.symbol) {
+                        BitmapDescriptorFactory.fromBitmap(MapModes.symbol2bitmap(station.symbol, 48))
+                    }
+                    googleMap.addMarker(
+                        MarkerOptions()
+                            .position(GoogleLatLng(station.lat, station.lon))
+                            .title(station.call)
+                            .snippet(station.comment)
+                            .icon(icon)
+                            .anchor(0.5f, 0.5f)
+                    )?.let { added ->
+                        added.tag = station.call
+                        markers[station.call] = added
+                        renderedStations[station.call] = station
+                    }
+                } else {
+                    if (previous?.lat != station.lat || previous?.lon != station.lon) {
+                        marker.position = GoogleLatLng(station.lat, station.lon)
+                    }
+                    if (previous?.symbol != station.symbol) {
+                        marker.setIcon(symbolIcons.getOrPut(station.symbol) {
+                            BitmapDescriptorFactory.fromBitmap(MapModes.symbol2bitmap(station.symbol, 48))
+                        })
+                    }
+                    if (previous?.comment != station.comment) marker.snippet = station.comment
+                    renderedStations[station.call] = station
+                }
+            }
+            if (index % 32 == 31) yield()
+        }
+        symbolIcons.keys.retainAll(stations.mapTo(hashSetOf()) { it.symbol })
     }
 
     actions.zoomIn = { map?.animateCamera(GoogleCameraUpdateFactory.zoomBy(1f)) }
@@ -478,7 +531,6 @@ private fun applyMapLibreRasterStyle(
     map: MapLibreMap,
     mode: MapMode,
     prefs: PrefsWrapper,
-    activeImageIds: MutableSet<String>,
     onStyleReady: (Style) -> Unit
 ) {
     val config = when (mode.tileType) {
@@ -525,7 +577,6 @@ private fun applyMapLibreRasterStyle(
         iconIgnorePlacement(true)
     ).apply { setMinZoom(CALLSIGN_ZOOM) }
 
-    activeImageIds.clear()
     map.setStyle(
         Style.Builder()
             .withLayer(BackgroundLayer(BACKGROUND_LAYER_ID).withProperties(backgroundColor(Color.WHITE)))
@@ -539,47 +590,67 @@ private fun applyMapLibreRasterStyle(
     }
 }
 
-private fun updateMapLibreStations(
+private class MapLibreStationCache {
+    val images = linkedSetOf<StationImage>()
+    var features: List<StationFeature>? = null
+    var previousImages: Set<StationImage> = emptySet()
+}
+
+private fun StationImage.imageId(): String =
+    if (call == null) "aprs-symbol-${encodeImageId(symbol)}"
+    else "aprs-station-${encodeImageId(call)}-${encodeImageId(symbol)}"
+
+private suspend fun updateMapLibreStations(
     context: Context,
     style: Style,
-    stations: List<Station>,
-    activeImageIds: MutableSet<String>
+    stations: List<MapStation>,
+    cache: MapLibreStationCache
 ) {
-    try {
-        activeImageIds.forEach { imageId ->
-            if (style.getImage(imageId) != null) style.removeImage(imageId)
-        }
-        activeImageIds.clear()
-
-        val iconSize = (24f * context.resources.displayMetrics.density).roundToInt().coerceAtLeast(24)
-        val symbolImages = mutableMapOf<String, String>()
-        val features = stations.mapIndexed { index, station ->
-            val symbol = station.symbol ?: "/$"
-            val iconId = symbolImages.getOrPut(symbol) {
-                val id = "aprs-symbol-${encodeImageId(symbol)}"
-                val icon = MapModes.symbol2bitmap(symbol, iconSize).apply {
+    val snapshot = stations.map { it.feature }
+    // Comment-only changes do not affect MapLibre's symbol layer.
+    if (snapshot == cache.features) return
+    val wantedImages = stationImages(snapshot)
+    val missingImages = wantedImages - cache.images
+    val iconSize = (24f * context.resources.displayMetrics.density).roundToInt().coerceAtLeast(24)
+    // Canvas/text rasterization and GeoJSON serialization never occupy the UI thread.
+    val (images, geoJson) = withContext(Dispatchers.Default) {
+        val images = missingImages.associateWith { key ->
+            ensureActive()
+            if (key.call == null) {
+                MapModes.symbol2bitmap(key.symbol, iconSize).apply {
                     density = context.resources.displayMetrics.densityDpi
                 }
-                style.addImage(id, icon)
-                activeImageIds.add(id)
-                id
+            } else {
+                createLabeledStationBitmap(context, key.call, key.symbol, iconSize)
             }
-            val labeledIconId = "aprs-station-$index-${encodeImageId(station.call)}"
-            style.addImage(labeledIconId, createLabeledStationBitmap(context, station.call, symbol, iconSize))
-            activeImageIds.add(labeledIconId)
-
+        }
+        val features = snapshot.map { station ->
+            ensureActive()
             val properties = JsonObject().apply {
                 addProperty(PROPERTY_CALL, station.call)
-                addProperty(PROPERTY_ICON, iconId)
-                addProperty(PROPERTY_LABELED_ICON, labeledIconId)
+                addProperty(PROPERTY_ICON, StationImage(null, station.symbol).imageId())
+                addProperty(PROPERTY_LABELED_ICON, StationImage(station.call, station.symbol).imageId())
             }
             Feature.fromGeometry(Point.fromLngLat(station.lon, station.lat), properties)
         }
-        style.getSourceAs<GeoJsonSource>(STATION_SOURCE_ID)
-            ?.setGeoJson(FeatureCollection.fromFeatures(features.toTypedArray()))
-    } catch (e: Exception) {
-        Log.e("APRSdroid.EmbeddedMap", "Station layer update failed", e)
+        images to FeatureCollection.fromFeatures(features).toJson()
     }
+    images.entries.forEachIndexed { index, (key, bitmap) ->
+        coroutineContext.ensureActive()
+        style.addImage(key.imageId(), bitmap)
+        cache.images.add(key)
+        // Initial loads can contain many images; leave input/render callbacks time to run.
+        if (index % 8 == 7) yield()
+    }
+    style.getSourceAs<GeoJsonSource>(STATION_SOURCE_ID)?.setGeoJson(geoJson)
+    // Retain one previous generation while the native source update is processed asynchronously.
+    // Stable keys also mean an insertion cannot invalidate every later callsign image.
+    val retiredImages = cache.images - wantedImages -
+        (if (snapshot.isEmpty()) emptySet() else cache.previousImages)
+    retiredImages.forEach { style.removeImage(it.imageId()) }
+    cache.images.removeAll(retiredImages)
+    cache.previousImages = wantedImages
+    cache.features = snapshot
 }
 
 private fun handleMapLibreTap(
@@ -668,7 +739,7 @@ private fun createLabeledStationBitmap(
 
 private data class InitialPosition(val lat: Double, val lon: Double, val zoom: Float)
 
-private fun initialPosition(prefs: PrefsWrapper, stations: List<Station>): InitialPosition {
+private fun initialPosition(prefs: PrefsWrapper, stations: List<MapStation>): InitialPosition {
     val savedLat = prefs.prefs.getFloat("map_lat", 0f)
     val savedLon = prefs.prefs.getFloat("map_lon", 0f)
     val zoom = prefs.prefs.getFloat("map_zoom", 12f)
