@@ -51,6 +51,7 @@ class Ic705PttStateMachine(
     private var watchdogFuture: ScheduledFuture<*>? = null
     private var releaseFuture: ScheduledFuture<*>? = null
     private var pendingCommand: PendingPttCommand? = null
+    private var releaseRequiresReadback = false
     private var releaseAttempts = 0
     private var shutdown = false
 
@@ -88,6 +89,14 @@ class Ic705PttStateMachine(
             when (civFrame[4].toInt() and 0xff) {
                 CIV_ACK -> handleAck()
                 CIV_NAK -> handleNak()
+                CIV_TRANSCEIVER_STATUS -> {
+                    if (
+                        civFrame.size >= 8 &&
+                        (civFrame[5].toInt() and 0xff) == CIV_PTT_SUBCOMMAND
+                    ) {
+                        handlePttStatus(civFrame[6].toInt() and 0xff)
+                    }
+                }
             }
         }
     }
@@ -97,6 +106,7 @@ class Ic705PttStateMachine(
         if (shutdown || state != Ic705PttState.RX_IDLE) return false
         AppLog.i("IC705.PTT", "ptt_on_requested")
         cancelReleaseTimer()
+        releaseRequiresReadback = false
         pendingCommand = PendingPttCommand.ON
         try {
             sendPttCommand(true)
@@ -126,7 +136,10 @@ class Ic705PttStateMachine(
     fun finishTransmission() {
         if (shutdown || state == Ic705PttState.RX_IDLE) return
         if (state == Ic705PttState.TX_STREAMING) transitionTo(Ic705PttState.DRAINING)
-        if (pendingCommand == PendingPttCommand.OFF) return
+        if (
+            pendingCommand == PendingPttCommand.OFF ||
+            pendingCommand == PendingPttCommand.VERIFY_OFF
+        ) return
         startRelease("Transmission finished")
     }
 
@@ -141,7 +154,10 @@ class Ic705PttStateMachine(
                 mapOf("reason" to reason, "state" to state, "ptt_asserted" to isPttAsserted.get()),
             )
             if (state == Ic705PttState.TX_STREAMING) transitionTo(Ic705PttState.DRAINING)
-            if (pendingCommand != PendingPttCommand.OFF) startRelease(reason)
+            if (
+                pendingCommand != PendingPttCommand.OFF &&
+                pendingCommand != PendingPttCommand.VERIFY_OFF
+            ) startRelease(reason)
         }
     }
 
@@ -172,8 +188,18 @@ class Ic705PttStateMachine(
                 AppLog.d("IC705.PTT", "ptt_on_ack", mapOf("state" to state))
             }
             PendingPttCommand.OFF -> {
-                AppLog.d("IC705.PTT", "ptt_off_ack", mapOf("attempts" to releaseAttempts))
-                completeRelease()
+                AppLog.d(
+                    "IC705.PTT",
+                    "ptt_off_ack",
+                    mapOf(
+                        "attempts" to releaseAttempts,
+                        "requires_readback" to releaseRequiresReadback,
+                    ),
+                )
+                if (releaseRequiresReadback) verifyRelease() else completeRelease()
+            }
+            PendingPttCommand.VERIFY_OFF -> {
+                AppLog.d("IC705.PTT", "ack_while_verifying_ptt_off", mapOf("state" to state))
             }
             null -> AppLog.d("IC705.PTT", "unexpected_ack", mapOf("state" to state))
         }
@@ -197,6 +223,16 @@ class Ic705PttStateMachine(
                 }
             }
             PendingPttCommand.ON -> forceRelease("Radio rejected PTT ON command (NAK)")
+            PendingPttCommand.VERIFY_OFF -> {
+                AppLog.e("IC705.PTT", "ptt_off_verify_nak", mapOf("attempt" to releaseAttempts))
+                cancelReleaseTimer()
+                pendingCommand = null
+                if (releaseAttempts < maxReleaseAttempts) {
+                    attemptRelease("Radio rejected PTT state readback (NAK)")
+                } else {
+                    scheduleWatchdog()
+                }
+            }
             null -> {
                 if (isTransmitting) forceRelease("Radio returned an unexpected NAK while transmitting")
                 else AppLog.w("IC705.PTT", "unexpected_nak")
@@ -207,6 +243,7 @@ class Ic705PttStateMachine(
     private fun startRelease(reason: String) {
         if (shutdown) return
         cancelReleaseTimer()
+        releaseRequiresReadback = pendingCommand == PendingPttCommand.ON
         releaseAttempts = 0
         attemptRelease(reason)
     }
@@ -248,6 +285,76 @@ class Ic705PttStateMachine(
         }
     }
 
+    private fun verifyRelease() {
+        if (shutdown) return
+        cancelReleaseTimer()
+        pendingCommand = PendingPttCommand.VERIFY_OFF
+        AppLog.i(
+            "IC705.PTT",
+            "ptt_off_verify_requested",
+            mapOf("attempts" to releaseAttempts),
+        )
+        try {
+            actions.sendCivFrame(
+                Ic705CivCommands.buildPttQueryFrame(
+                    radioAddress = radioAddress,
+                    controllerAddress = controllerAddress,
+                ),
+            )
+            scheduleReleaseTimer("PTT OFF state verification timed out")
+        } catch (error: Exception) {
+            pendingCommand = null
+            AppLog.e(
+                "IC705.PTT",
+                "ptt_off_verify_send_failed",
+                mapOf("attempts" to releaseAttempts),
+                error,
+            )
+            if (releaseAttempts < maxReleaseAttempts) {
+                attemptRelease("PTT OFF state verification send failed")
+            } else {
+                scheduleWatchdog()
+            }
+        }
+    }
+
+    private fun handlePttStatus(status: Int) {
+        if (pendingCommand != PendingPttCommand.VERIFY_OFF) {
+            AppLog.d(
+                "IC705.PTT",
+                "unexpected_ptt_status",
+                mapOf("status" to status, "state" to state),
+            )
+            return
+        }
+
+        when (status) {
+            PTT_STATUS_RX -> {
+                AppLog.i("IC705.PTT", "ptt_off_verified", mapOf("attempts" to releaseAttempts))
+                completeRelease()
+            }
+            PTT_STATUS_TX -> {
+                cancelReleaseTimer()
+                pendingCommand = null
+                AppLog.w(
+                    "IC705.PTT",
+                    "ptt_still_on_after_off",
+                    mapOf("attempts" to releaseAttempts),
+                )
+                if (releaseAttempts < maxReleaseAttempts) {
+                    attemptRelease("PTT state readback still reports TX")
+                } else {
+                    scheduleWatchdog()
+                }
+            }
+            else -> AppLog.w(
+                "IC705.PTT",
+                "unexpected_ptt_status_value",
+                mapOf("status" to status, "state" to state),
+            )
+        }
+    }
+
     private fun scheduleReleaseTimer(reason: String) {
         if (shutdown) return
         cancelReleaseTimer()
@@ -285,6 +392,7 @@ class Ic705PttStateMachine(
         cancelReleaseTimer()
         cancelWatchdog()
         pendingCommand = null
+        releaseRequiresReadback = false
         releaseAttempts = 0
         isPttAsserted.set(false)
         transitionTo(Ic705PttState.RX_IDLE)
@@ -350,11 +458,15 @@ class Ic705PttStateMachine(
     companion object {
         const val CIV_ACK = 0xfb
         const val CIV_NAK = 0xfa
+        private const val CIV_TRANSCEIVER_STATUS = 0x1c
+        private const val CIV_PTT_SUBCOMMAND = 0x00
+        private const val PTT_STATUS_RX = 0x00
+        private const val PTT_STATUS_TX = 0x01
         const val DEFAULT_ACK_TIMEOUT_MS = 500L
         const val DEFAULT_WATCHDOG_MS = 5_000L
         const val DEFAULT_RELEASE_ATTEMPTS = 3
 
-        private enum class PendingPttCommand { ON, OFF }
+        private enum class PendingPttCommand { ON, OFF, VERIFY_OFF }
 
         private val defaultWatchdogExecutor: ScheduledExecutorService by lazy {
             Executors.newSingleThreadScheduledExecutor { r ->

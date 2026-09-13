@@ -370,6 +370,8 @@
 <string name="profile_import_activity">Profile import</string>
 <string name="profile_import_done">Imported profile: %s</string>
 <string name="profile_import_error">Error importing profile: %s!</string>
+<string name="profile_import_confirm_title">Import profile?</string>
+<string name="profile_import_confirm_message">This profile will change %1$d settings.\n\nSource: %2$s</string>
 
 <!-- (USB) Serial TNC settings -->
 <string name="p_serial_baudrate">Baud Rate</string>
@@ -398,6 +400,7 @@
 <string name="ic705_backend_failed">The IC-705 Wi-Fi session failed. Check the network and restart the service.</string>
 <string name="ic705_backend_tx_ok">IC-705 OK</string>
 <string name="ic705_backend_tx_busy">IC-705 busy</string>
+<string name="ic705_backend_tx_text_unsupported">IC-705 RF cannot transmit this text losslessly. Use APRS-IS or remove unsupported characters.</string>
 <string name="ic705_backend_not_connected">IC-705 not connected</string>
 <string name="ic705_rx_log_empty">No diagnostic events yet.</string>
 <string name="ic705_rx_connection_parameters">Radio connection</string>

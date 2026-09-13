@@ -9,6 +9,7 @@ import net.ab0oo.aprs.parser.APRSPacket
 import org.aprsdroid.app.Ax25PacketConsumer
 import org.aprsdroid.app.Ax25SubmitSink
 import org.aprsdroid.app.R
+import org.aprsdroid.app.audio.Ax25PayloadEncodingException
 import org.aprsdroid.app.audio.FeedableAfskDecoder
 import org.aprsdroid.app.audio.PcmFormat
 import org.aprsdroid.app.audio.PcmSink
@@ -180,7 +181,12 @@ class Ic705WifiBackendController(
             AppLog.w("IC705", "tx_rejected", mapOf("reason" to "already_transmitting"))
             return service.getString(R.string.ic705_backend_tx_busy)
         }
-        val ok = activeSession.transmit(packet)
+        val ok = try {
+            activeSession.transmit(packet)
+        } catch (error: Ax25PayloadEncodingException) {
+            AppLog.w("IC705", "tx_rejected", mapOf("reason" to "rf_text_encoding"))
+            return service.getString(R.string.ic705_backend_tx_text_unsupported)
+        }
         AppLog.i("IC705", "tx_submit_result", mapOf("accepted" to ok))
         Ic705DiagnosticState.set("ptt_asserted_possible", activeSession.isTransmitting)
         return if (ok) {

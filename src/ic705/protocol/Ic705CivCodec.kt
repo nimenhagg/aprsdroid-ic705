@@ -97,4 +97,22 @@ object Ic705CivCommands {
             TERMINATOR.toByte(),
         )
     }
+
+    /** Reads the transceiver's current RX/TX state (1C 00 with no data byte). */
+    fun buildPttQueryFrame(
+        radioAddress: Int = DEFAULT_RADIO_ADDRESS,
+        controllerAddress: Int = DEFAULT_CONTROLLER_ADDRESS,
+    ): ByteArray {
+        requireUInt8("radioAddress", radioAddress)
+        requireUInt8("controllerAddress", controllerAddress)
+        return byteArrayOf(
+            PREAMBLE.toByte(),
+            PREAMBLE.toByte(),
+            radioAddress.toByte(),
+            controllerAddress.toByte(),
+            COMMAND_TRANSCEIVER_STATUS.toByte(),
+            SUBCOMMAND_PTT.toByte(),
+            TERMINATOR.toByte(),
+        )
+    }
 }

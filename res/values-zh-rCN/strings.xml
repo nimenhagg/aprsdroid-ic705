@@ -393,6 +393,7 @@
     <string name="ic705_backend_failed">IC-705 Wi-Fi 会话失败，请检查网络并重新启动服务。</string>
     <string name="ic705_backend_tx_ok">IC-705 OK</string>
     <string name="ic705_backend_tx_busy">IC-705 忙</string>
+    <string name="ic705_backend_tx_text_unsupported">IC-705 射频无法无损发送这些字符，请改用 APRS-IS 或删除不支持的字符。</string>
     <string name="ic705_backend_not_connected">IC-705 未连接</string>
     <string name="ic705_rx_log_empty">暂时没有诊断事件。</string>
     <string name="ic705_rx_connection_parameters">电台连接参数</string>

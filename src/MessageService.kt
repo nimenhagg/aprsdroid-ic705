@@ -10,7 +10,22 @@ import net.ab0oo.aprs.parser.MessagePacket
 import java.util.Locale
 import kotlin.math.min
 
+internal enum class PendingMessageAction {
+    SEND,
+    WAIT,
+    ABORT,
+}
+
+internal fun pendingMessageAction(retryCount: Int, maxRetries: Int, delayMillis: Long): PendingMessageAction =
+    when {
+        delayMillis > 0 -> PendingMessageAction.WAIT
+        retryCount >= maxRetries -> PendingMessageAction.ABORT
+        else -> PendingMessageAction.SEND
+    }
+
 class MessageService(val s: AprsService) {
+    private val replyAckState = ReplyAckState()
+
     companion object {
         const val TAG = "APRSdroid.MsgService"
         const val NUM_OF_RETRIES = 7
@@ -38,9 +53,11 @@ class MessageService(val s: AprsService) {
         )
     }
 
-    fun handleMessage(ts: Long, ap: APRSPacket, msg: MessagePacket) {
+    fun handleMessage(ts: Long, ap: APRSPacket, parsedMsg: MessagePacket) {
+        val parsed = AprsMessageParser.reparseIncoming(parsedMsg)
+        val msg = parsed.packet
         val callssid = s.prefs.getCallSsid()
-        if (msg.targetCallsign.equals(callssid, ignoreCase = true)) {
+        if (AprsPacket.sameMessageCallsign(msg.targetCallsign, callssid)) {
             if (msg.isAck || msg.isRej) {
                 val newType = if (msg.isAck) {
                     StorageDatabase.Companion.Message.TYPE_OUT_ACKED
@@ -50,14 +67,31 @@ class MessageService(val s: AprsService) {
                 s.db.updateMessageAcked(ap.sourceCall, msg.messageNumber, newType)
                 s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
             } else {
+                parsed.replyAck?.let { replyAck ->
+                    if (replyAck.isNotEmpty()) {
+                        s.db.updateMessageAcked(
+                            ap.sourceCall,
+                            replyAck,
+                            StorageDatabase.Companion.Message.TYPE_OUT_ACKED,
+                        )
+                        s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
+                    }
+                }
+
+                if (parsed.replyAckCapable && msg.messageNumber.isNotEmpty()) {
+                    replyAckState.rememberIncoming(ap.sourceCall, msg.messageNumber)
+                }
+
                 storeNotifyMessage(ts, ap.sourceCall, msg)
                 if (msg.messageNumber.isNotEmpty()) {
-                    val ack = s.newPacket(MessagePacket(ap.sourceCall, "ack", msg.messageNumber))
+                    val ack = s.newPacket(
+                        MessagePacket(ap.sourceCall, "ack", parsed.wireMessageNumber),
+                    )
                     s.sendPacket(ack)
                 }
             }
         } else if (msg.targetCallsign.split("-")[0].equals(s.prefs.getCallsign(), ignoreCase = true) && !msg.isAck && !msg.isRej) {
-            if (ap.sourceCall.equals(callssid, ignoreCase = true)) return
+            if (AprsPacket.sameMessageCallsign(ap.sourceCall, callssid)) return
             Log.d(TAG, "incoming message for " + msg.targetCallsign)
             storeNotifyMessage(ts, ap.sourceCall, msg)
         }
@@ -89,21 +123,28 @@ class MessageService(val s: AprsService) {
             val tSend = ts + getRetryDelayMS(retrycnt) - System.currentTimeMillis()
 
             Log.d(TAG, String.format(Locale.US, "pending message: %d/%d (%ds) ->%s '%s'", retrycnt, NUM_OF_RETRIES, tSend / 1000, call, text))
-            if (retrycnt == NUM_OF_RETRIES && tSend <= 0) {
-                s.db.updateMessageType(c.getLong(0), StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
-                s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
-            } else if (retrycnt < NUM_OF_RETRIES && tSend <= 0) {
-                val msg = s.newPacket(MessagePacket(call, text, msgid))
-                s.sendPacket(msg)
-                val cv = ContentValues().apply {
-                    put(StorageDatabase.Companion.Message.RETRYCNT, retrycnt + 1)
-                    put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+            when (pendingMessageAction(retrycnt, NUM_OF_RETRIES, tSend)) {
+                PendingMessageAction.ABORT -> {
+                    s.db.updateMessageType(c.getLong(0), StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
+                    s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                 }
-                s.db.updateMessage(c.getLong(0), cv)
-                s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
-                nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
-            } else if (retrycnt < NUM_OF_RETRIES) {
-                nextRun = min(nextRun, tSend)
+                PendingMessageAction.SEND -> {
+                    val wireMsgId = replyAckState.decorateOutgoing(call, msgid)
+                    val msg = s.newPacket(MessagePacket(call, text, wireMsgId))
+                    s.sendPacket(msg)
+                    val cv = ContentValues().apply {
+                        put(StorageDatabase.Companion.Message.RETRYCNT, retrycnt + 1)
+                        put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+                    }
+                    s.db.updateMessage(c.getLong(0), cv)
+                    s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
+                    nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
+                }
+                PendingMessageAction.WAIT -> {
+                    // Includes the final post-send timeout. Queue rescans must not
+                    // strand retrycnt == NUM_OF_RETRIES without a wake-up.
+                    nextRun = min(nextRun, tSend)
+                }
             }
             c.moveToNext()
         }
