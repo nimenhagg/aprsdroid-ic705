@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v2.2.2` |
-| `build.gradle` 默认版本 | `2.2.2` |
-| Android versionCode | `2026091200` |
+| 最新 GitHub Release | `Mod-v2.2.3` |
+| `build.gradle` 默认版本 | `2.2.3` |
+| Android versionCode | `2026091300` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -22,7 +22,7 @@
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-`Mod-v2.2.2` 是当前发布基线：保留 2.2.1 的 Live Updates 状态能力，同时修复 SSID 0 文本格式回归，增强诊断异常文本脱敏，并建立全仓库 PR/main CI、阻断式 Debug/Release Lint、Release secrets 最小暴露、GitHub Actions/MapLibre 源码 pin 与永久 R8 mapping 资产。ARM64/ARMv7 正式 APK 使用统一文件名规则。后续 main 若再次领先最新 tag / GitHub Release，仍必须明确区分已发布与未发布能力。
+`Mod-v2.2.3` 是当前发布基线：在 2.2.2 的 CI/供应链与诊断基线上，新增 APRS 1.1 Reply-ACK，并修复消息 ACK/REJ 解析、重复抑制、`CALL`/`CALL-0` 身份、最终重试超时、TNC2 EOF、IC-705 PTT 延迟 ACK 竞态、配置导入安全/回导兼容以及 IC-705 RF 文本无损编码边界。APRS-IS 文本路径未被限制，legacy LoTW/实验性 TLS trust 行为仍保持兼容，直到真实 24580 握手能证明严格 CA/hostname 验证可用。后续 main 若再次领先最新 tag / GitHub Release，仍必须明确区分已发布与未发布能力。
 
 README 必须始终区分 **Latest release** 与 **Current main**。未打 tag 的功能、修复和行为变化不得提前写成稳定版能力。
 

@@ -4,11 +4,11 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.2.2`**
+**最新稳定版 / Latest release: `Mod-v2.2.3`**
 
-> `Mod-v2.2.2` 是维护性更新：修复 SSID 0 被显示为 `-0` 的回归，增强诊断异常文本脱敏，并收紧 PR/Release CI、签名密钥暴露范围与依赖供应链；ARM64 Release 文件名不再带 `Recommended_` 前缀，R8 mapping 会随正式 Release 永久附带。
+> `Mod-v2.2.3` 是消息与安全性维护更新：新增 APRS 1.1 Reply-ACK，修复 IC-705 PTT 延迟 ACK 竞态、TNC2 EOF 空转、消息 ACK/REJ 误判、重复抑制与 `CALL-0` 兼容问题，并强化配置导入与 IC-705 射频文本编码边界。
 >
-> `Mod-v2.2.2` is a maintenance release fixing the SSID-0 display regression, hardening diagnostic redaction, and tightening PR/release CI, signing-secret exposure, and supply-chain pinning. ARM64 release filenames no longer carry a `Recommended_` prefix, and R8 mappings are attached to tagged releases.
+> `Mod-v2.2.3` is a messaging and safety maintenance release adding APRS 1.1 Reply-ACK, fixing the IC-705 delayed-ACK PTT race, TNC2 EOF reconnect behavior, message ACK/REJ parsing, duplicate suppression and `CALL-0` compatibility, while hardening profile import and IC-705 RF text encoding.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
