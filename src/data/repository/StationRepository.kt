@@ -13,7 +13,7 @@ data class HubData(
 
 class StationRepository(private val db: StorageDatabase) {
 
-    suspend fun getHubData(myCall: String, maxAgeMs: Long, limit: String = "300", includeStations: Boolean = true): HubData = withContext(Dispatchers.IO) {
+    suspend fun getHubData(myCall: String, maxAgeMs: Long, limit: String = "300", includeStations: Boolean = true, searchQuery: String = ""): HubData = withContext(Dispatchers.IO) {
         var myLat = 0
         var myLon = 0
         val posCursor = db.getStaPosition(myCall)
@@ -26,7 +26,7 @@ class StationRepository(private val db: StorageDatabase) {
         posCursor.close()
 
         val items = if (includeStations) {
-            val cursor = db.getNeighbors(myCall, myLat, myLon, System.currentTimeMillis() - maxAgeMs, limit)
+            val cursor = db.getNeighbors(myCall, myLat, myLon, System.currentTimeMillis() - maxAgeMs, limit, searchQuery)
             StationItem.fromCursor(cursor)
         } else emptyList()
         HubData(myLat, myLon, items)

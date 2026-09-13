@@ -485,4 +485,7 @@
     <string name="ic705_rx_invalid_ipv4">无效的 IPv4 地址: %1$s</string>
     <string name="ic705_rx_config_error">配置错误: %1$s</string>
     <string name="ic705_rx_connection_failed">连接失败</string>
+    <string name="station_search_placeholder">搜索呼号或备注…</string>
+    <string name="station_search_empty">没有匹配的台站</string>
+    <string name="station_search_close">关闭搜索</string>
 </resources>

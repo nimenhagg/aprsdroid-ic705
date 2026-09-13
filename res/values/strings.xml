@@ -494,4 +494,7 @@
     <string name="ic705_rx_invalid_ipv4">Invalid IPv4 address: %1$s</string>
     <string name="ic705_rx_config_error">Configuration error: %1$s</string>
     <string name="ic705_rx_connection_failed">Connection failed</string>
+    <string name="station_search_placeholder">Search callsign or comment…</string>
+    <string name="station_search_empty">No matching stations</string>
+    <string name="station_search_close">Close search</string>
 </resources>

@@ -141,6 +141,9 @@ class HubActivity : BaseRecyclerActivity() {
                                     myCall = hubState.myCall.ifEmpty { prefs.getCallSsid() },
                                     isRunning = hubState.isRunning,
                                     stations = hubState.stations,
+                                    searchQuery = hubState.searchQuery,
+                                    isSearching = hubState.isSearching,
+                                    onSearchQueryChanged = viewModel::setSearchQuery,
                                     myLat = hubState.myLat,
                                     myLon = hubState.myLon,
                                     onSendPosition = {

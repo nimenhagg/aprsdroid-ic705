@@ -1,5 +1,19 @@
 package org.aprsdroid.app.ui.screen
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import android.location.Location
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -84,6 +98,9 @@ fun HubStationScreen(
     myCall: String,
     isRunning: Boolean,
     stations: List<StationItem>,
+    searchQuery: String,
+    isSearching: Boolean,
+    onSearchQueryChanged: (String) -> Unit,
     myLat: Int,
     myLon: Int,
     onSendPosition: () -> Unit,
@@ -103,12 +120,42 @@ fun HubStationScreen(
     var showAboutDialog by remember { mutableStateOf(false) }
     var showClearConfirmDialog by remember { mutableStateOf(false) }
 
+    var showSearch by rememberSaveable { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val listState = rememberLazyListState()
+    val closeSearch = {
+        onSearchQueryChanged("")
+        showSearch = false
+        focusManager.clearFocus()
+    }
+    BackHandler(enabled = showSearch, onBack = closeSearch)
+    LaunchedEffect(showSearch) { if (showSearch) focusRequester.requestFocus() }
+    LaunchedEffect(searchQuery) { listState.scrollToItem(0) }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
+                    if (showSearch) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = onSearchQueryChanged,
+                            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                            placeholder = { Text(stringResource(R.string.station_search_placeholder)) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { onSearchQueryChanged("") }) {
+                                        Icon(Icons.Default.Close, stringResource(R.string.action_clear))
+                                    }
+                                }
+                            }
+                        )
+                    } else Text(
                         text = stringResource(R.string.app_hub),
                         fontWeight = FontWeight.Bold,
                         fontSize = 19.sp,
@@ -129,6 +176,12 @@ fun HubStationScreen(
                     )
                 },
                 actions = {
+                    IconButton(onClick = { if (showSearch) closeSearch() else showSearch = true }) {
+                        Icon(
+                            if (showSearch) Icons.Default.Close else Icons.Default.Search,
+                            stringResource(if (showSearch) R.string.station_search_close else R.string.action_search)
+                        )
+                    }
                     Box {
                         IconButton(onClick = { showTopMenu = true }) {
                             Icon(
@@ -223,7 +276,8 @@ fun HubStationScreen(
                 onToggleTracking = onToggleTracking
             )
 
-            if (stations.isEmpty()) {
+            if (isSearching) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            if (stations.isEmpty() && !isSearching) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -232,7 +286,8 @@ fun HubStationScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.empty_logview).substringBefore('\n'),
+                        text = if (searchQuery.isNotBlank()) stringResource(R.string.station_search_empty)
+                            else stringResource(R.string.empty_logview).substringBefore('\n'),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -244,6 +299,7 @@ fun HubStationScreen(
                     else -> 12.dp
                 }
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),

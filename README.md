@@ -6,7 +6,7 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 **最新稳定版 / Latest release: `Mod-v2.2.3`**
 
-当前 main（未发布）：优化密集收包时的地图和主界面刷新，复用站点图标、后台生成位图与 GeoJSON、合并查询请求，并停止刷新隐藏列表。详见 `CHANGELOG.md` 的 Unreleased 部分。
+当前 main（未发布）：主页台站列表支持呼号/备注搜索；优化密集收包时的地图和主界面刷新，复用站点图标、后台生成位图与 GeoJSON、合并查询请求，并停止刷新隐藏列表。详见 `CHANGELOG.md` 的 Unreleased 部分。
 
 > `Mod-v2.2.3` 是消息与安全性维护更新：新增 APRS 1.1 Reply-ACK，修复 IC-705 PTT 延迟 ACK 竞态、TNC2 EOF 空转、消息 ACK/REJ 误判、重复抑制与 `CALL-0` 兼容问题，并强化配置导入与 IC-705 射频文本编码边界。
 >
