@@ -28,6 +28,14 @@ class ReplyAckStateTest {
     }
 
     @Test
+    fun legacyLongMessageIdIsSentUnchanged() {
+        val state = ReplyAckState()
+        state.rememberIncoming("N0CALL", "34")
+
+        assertEquals("123", state.decorateOutgoing("N0CALL", "123"))
+    }
+
+    @Test
     fun newestIncomingNumberReplacesOlderOneForRetries() {
         val state = ReplyAckState()
         state.rememberIncoming("N0CALL", "34")
