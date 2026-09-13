@@ -1,0 +1,30 @@
+name: APRS TLS Probe
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Verify ssl.aprs2.net server identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 20 openssl s_client             -connect ssl.aprs2.net:24580             -servername ssl.aprs2.net             -verify_hostname ssl.aprs2.net             -verify_return_error             -showcerts             </dev/null 2>&1 | tee /tmp/aprs-tls.txt
+
+          grep -F "Verify return code: 0 (ok)" /tmp/aprs-tls.txt
+
+          awk '
+            /-----BEGIN CERTIFICATE-----/ { capture=1 }
+            capture { print }
+            /-----END CERTIFICATE-----/ { exit }
+          ' /tmp/aprs-tls.txt > /tmp/server.pem
+
+          openssl x509 -in /tmp/server.pem             -noout             -subject             -issuer             -dates             -ext subjectAltName
