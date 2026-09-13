@@ -24,6 +24,8 @@ internal fun pendingMessageAction(retryCount: Int, maxRetries: Int, delayMillis:
     }
 
 class MessageService(val s: AprsService) {
+    private val replyAckState = ReplyAckState()
+
     companion object {
         const val TAG = "APRSdroid.MsgService"
         const val NUM_OF_RETRIES = 7
@@ -52,7 +54,8 @@ class MessageService(val s: AprsService) {
     }
 
     fun handleMessage(ts: Long, ap: APRSPacket, parsedMsg: MessagePacket) {
-        val msg = AprsMessageParser.reparseIncoming(parsedMsg)
+        val parsed = AprsMessageParser.reparseIncoming(parsedMsg)
+        val msg = parsed.packet
         val callssid = s.prefs.getCallSsid()
         if (AprsPacket.sameMessageCallsign(msg.targetCallsign, callssid)) {
             if (msg.isAck || msg.isRej) {
@@ -64,9 +67,26 @@ class MessageService(val s: AprsService) {
                 s.db.updateMessageAcked(ap.sourceCall, msg.messageNumber, newType)
                 s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
             } else {
+                parsed.replyAck?.let { replyAck ->
+                    if (replyAck.isNotEmpty()) {
+                        s.db.updateMessageAcked(
+                            ap.sourceCall,
+                            replyAck,
+                            StorageDatabase.Companion.Message.TYPE_OUT_ACKED,
+                        )
+                        s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
+                    }
+                }
+
+                if (parsed.replyAckCapable && msg.messageNumber.isNotEmpty()) {
+                    replyAckState.rememberIncoming(ap.sourceCall, msg.messageNumber)
+                }
+
                 storeNotifyMessage(ts, ap.sourceCall, msg)
                 if (msg.messageNumber.isNotEmpty()) {
-                    val ack = s.newPacket(MessagePacket(ap.sourceCall, "ack", msg.messageNumber))
+                    val ack = s.newPacket(
+                        MessagePacket(ap.sourceCall, "ack", parsed.wireMessageNumber),
+                    )
                     s.sendPacket(ack)
                 }
             }
@@ -109,7 +129,8 @@ class MessageService(val s: AprsService) {
                     s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                 }
                 PendingMessageAction.SEND -> {
-                    val msg = s.newPacket(MessagePacket(call, text, msgid))
+                    val wireMsgId = replyAckState.decorateOutgoing(call, msgid)
+                    val msg = s.newPacket(MessagePacket(call, text, wireMsgId))
                     s.sendPacket(msg)
                     val cv = ContentValues().apply {
                         put(StorageDatabase.Companion.Message.RETRYCNT, retrycnt + 1)
