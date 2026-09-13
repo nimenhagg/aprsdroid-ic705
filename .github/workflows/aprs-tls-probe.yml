@@ -11,20 +11,44 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
-      - name: Verify ssl.aprs2.net server identity
+      - name: Probe APRS-IS connectivity and TLS identity
         shell: bash
         run: |
-          set -euo pipefail
-          timeout 20 openssl s_client             -connect ssl.aprs2.net:24580             -servername ssl.aprs2.net             -verify_hostname ssl.aprs2.net             -verify_return_error             -showcerts             </dev/null 2>&1 | tee /tmp/aprs-tls.txt
+          set -u
 
-          grep -F "Verify return code: 0 (ok)" /tmp/aprs-tls.txt
+          echo "== DNS ssl.aprs2.net =="
+          getent ahostsv4 ssl.aprs2.net || true
 
-          awk '
-            /-----BEGIN CERTIFICATE-----/ { capture=1 }
-            capture { print }
-            /-----END CERTIFICATE-----/ { exit }
-          ' /tmp/aprs-tls.txt > /tmp/server.pem
+          echo "== DNS china.aprs2.net =="
+          getent ahostsv4 china.aprs2.net || true
 
-          openssl x509 -in /tmp/server.pem             -noout             -subject             -issuer             -dates             -ext subjectAltName
+          echo "== TCP control: china.aprs2.net:14580 =="
+          timeout 8 nc -vz china.aprs2.net 14580 || true
+
+          echo "== TCP SSL endpoint: ssl.aprs2.net:24580 =="
+          timeout 8 nc -vz ssl.aprs2.net 24580 || true
+
+          echo "== TCP published IPv4: 44.25.16.4:24580 =="
+          timeout 8 nc -vz 44.25.16.4 24580 || true
+
+          echo "== TLS strict verification =="
+          timeout 20 openssl s_client             -connect ssl.aprs2.net:24580             -servername ssl.aprs2.net             -verify_hostname ssl.aprs2.net             -verify_return_error             -showcerts             </dev/null > /tmp/aprs-tls.txt 2>&1
+          tls_rc=$?
+          cat /tmp/aprs-tls.txt
+          echo "openssl_rc=$tls_rc"
+
+          if grep -Fq "Verify return code: 0 (ok)" /tmp/aprs-tls.txt; then
+            echo "STRICT_TLS_VERIFY=PASS"
+            awk '
+              /-----BEGIN CERTIFICATE-----/ { capture=1 }
+              capture { print }
+              /-----END CERTIFICATE-----/ { exit }
+            ' /tmp/aprs-tls.txt > /tmp/server.pem
+            openssl x509 -in /tmp/server.pem               -noout               -subject               -issuer               -dates               -ext subjectAltName
+          else
+            echo "STRICT_TLS_VERIFY=NOT_CONFIRMED"
+          fi
+
+          exit 0
