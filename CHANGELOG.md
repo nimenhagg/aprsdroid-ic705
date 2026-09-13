@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Changed
+- 开始 Hamlib 分阶段集成的 PR1 构建基础：最低系统从 Android 8.1（API 27）提升到 Android 9（API 28）；固定 Hamlib 4.7.2 / commit `40f63488fe0bd751b147f48d62fd217bf53713a0`，由 CI 从源码交叉编译 ARM64/ARMv7 native library，校验 16 KiB ELF 对齐、SONAME、APK 内 SHA-256，并在 tagged release 附带对应源码归档。
+- 本阶段不改变 IC-705 WLAN、PTT、APRS/AFSK 或现有连接运行时行为；通用 Hamlib JNI 与 dummy/mock 生命周期验证属于后续 PR2。
+
 ## [Mod-v2.2.4] - 2026-09-13
 
 ### Added
