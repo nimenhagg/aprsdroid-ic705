@@ -25,6 +25,7 @@ import org.aprsdroid.app.ui.screen.SettingsScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.aprsdroid.app.update.GitHubUpdateChecker
 import org.aprsdroid.app.update.UpdateCheckResult
+import org.json.JSONArray
 import org.json.JSONObject
 
 class PrefsAct : ComponentActivity() {
@@ -50,7 +51,19 @@ class PrefsAct : ComponentActivity() {
                     ?: throw IOException(getString(R.string.config_export_open_error))
                 output.bufferedWriter(Charsets.UTF_8).use { writer ->
                     val sp = PrefsWrapper.defaultSharedPreferences(this)
-                    val json = JSONObject(sp.all)
+                    val json = JSONObject()
+                    for ((key, value) in sp.all) {
+                        if (!ProfileImportSchema.isImportableKey(key)) continue
+                        when (value) {
+                            is Set<*> -> {
+                                val strings = value.filterIsInstance<String>()
+                                if (strings.size == value.size) {
+                                    json.put(key, JSONArray(strings))
+                                }
+                            }
+                            else -> json.put(key, value)
+                        }
+                    }
                     writer.write(json.toString(2))
                     writer.newLine()
                 }
