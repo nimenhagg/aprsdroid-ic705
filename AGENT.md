@@ -8,9 +8,9 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v2.2.3` |
-| `build.gradle` 默认版本 | `2.2.3` |
-| Android versionCode | `2026091300` |
+| 最新 GitHub Release | `Mod-v2.2.4` |
+| `build.gradle` 默认版本 | `2.2.4` |
+| Android versionCode | `2026091301` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
 | Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
@@ -22,7 +22,7 @@
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-`Mod-v2.2.3` 是当前发布基线：在 2.2.2 的 CI/供应链与诊断基线上，新增 APRS 1.1 Reply-ACK，并修复消息 ACK/REJ 解析、重复抑制、`CALL`/`CALL-0` 身份、最终重试超时、TNC2 EOF、IC-705 PTT 延迟 ACK 竞态、配置导入安全/回导兼容以及 IC-705 RF 文本无损编码边界。APRS-IS 文本路径未被限制，legacy LoTW/实验性 TLS trust 行为仍保持兼容，直到真实 24580 握手能证明严格 CA/hostname 验证可用。后续 main 若再次领先最新 tag / GitHub Release，仍必须明确区分已发布与未发布能力。
+`Mod-v2.2.4` 是当前发布基线，main 与该版本一致：在 2.2.3 的消息/ACK/PTT 修复基础上，优化接收触发的地图与列表刷新，并新增台站呼号/备注搜索。性能修复使用不可变地图快照、稳定图标缓存、后台位图/GeoJSON、可见页面查询与合并队列；搜索在 SQL LIMIT 之前筛选，不扩大默认结果数量。APRS-IS 文本、ACK/PTT 和 Graywolf 路径保持原有语义。legacy LoTW/实验性 TLS trust 行为仍保持兼容，直到真实 24580 握手能证明严格 CA/hostname 验证可用。后续 main 若领先最新 tag / GitHub Release，仍必须区分已发布与未发布能力。
 
 README 必须始终区分 **Latest release** 与 **Current main**。未打 tag 的功能、修复和行为变化不得提前写成稳定版能力。
 
@@ -276,7 +276,7 @@ APRSdroid 能做到的是：立即发 Intent、不额外等 Binder、不先做�
 
 ## 5. 地图架构
 
-当前 main 在 `Mod-v2.2.3` 之后增加地图/列表刷新性能修复（未发布）：地图使用独立的不可变 `MapStation` 快照，图标按呼号/符号复用；Canvas 位图生成和 GeoJSON 序列化在后台执行，MapLibre Style 与 Google Marker 操作仍在主线程。不得恢复每条 UPDATE 广播删除全部图片或 `GoogleMap.clear()` 后重建的路径。
+`Mod-v2.2.4` 包含地图/列表刷新性能修复：地图使用独立的不可变 `MapStation` 快照，图标按呼号/符号复用；Canvas 位图生成和 GeoJSON 序列化在后台执行，MapLibre Style 与 Google Marker 操作仍在主线程。不得恢复每条 UPDATE 广播删除全部图片或 `GoogleMap.clear()` 后重建的路径。
 
 台站、地图、报文使用 `LatestQuery` 合并请求并保证同一页面最多一个查询进行中。对应 ViewModel 必须由 Activity 的 ViewModelStore 管理，避免常驻刷新协程脱离生命周期；过滤条件切换必须抑制旧结果。Hub 只更新当前页面所需数据，地图页额外读取本台位置，不查询隐藏报文列表或完整邻站列表。
 

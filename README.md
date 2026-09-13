@@ -4,13 +4,22 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.2.3`**
+**最新稳定版 / Latest release: `Mod-v2.2.4`**
 
-当前 main（未发布）：主页台站列表支持呼号/备注搜索；优化密集收包时的地图和主界面刷新，复用站点图标、后台生成位图与 GeoJSON、合并查询请求，并停止刷新隐藏列表。详见 `CHANGELOG.md` 的 Unreleased 部分。
+**当前 main / Current main:** 与 `Mod-v2.2.4` 发布基线一致，无额外未发布变更。 / Matches the `Mod-v2.2.4` release baseline, with no additional unreleased changes.
 
-> `Mod-v2.2.3` 是消息与安全性维护更新：新增 APRS 1.1 Reply-ACK，修复 IC-705 PTT 延迟 ACK 竞态、TNC2 EOF 空转、消息 ACK/REJ 误判、重复抑制与 `CALL-0` 兼容问题，并强化配置导入与 IC-705 射频文本编码边界。
+> `Mod-v2.2.4` 优化 APRS-IS 密集收包时地图与主界面卡顿：复用图标、后台生成位图与 GeoJSON、合并查询，并只刷新可见页面。主页台站列表右上角新增放大镜入口，按呼号或备注搜索，保留距离排序和显示期限。
 >
-> `Mod-v2.2.3` is a messaging and safety maintenance release adding APRS 1.1 Reply-ACK, fixing the IC-705 delayed-ACK PTT race, TNC2 EOF reconnect behavior, message ACK/REJ parsing, duplicate suppression and `CALL-0` compatibility, while hardening profile import and IC-705 RF text encoding.
+> `Mod-v2.2.4` reduces map and UI stalls during busy APRS-IS reception by reusing station images, preparing bitmaps and GeoJSON off the UI thread, coalescing queries, and refreshing visible pages only. The station list adds a discreet search icon for callsign or comment matching while preserving distance order and the configured age filter.
+
+搜索说明 / Station search:
+
+- 点击台站页右上角放大镜展开搜索，关闭后恢复完整列表；支持清空和无结果提示。
+- 按呼号（ASCII 大小写不敏感）或备注的字面子串匹配，在结果上限之前筛选，最多显示 300 个匹配台站；切换一级页面后保留条件。
+- Tap the magnifier at the top right of the station list to search; closing it restores the list. Clear and no-match states are supported.
+- Search matches callsigns (ASCII case-insensitive) or literal comment substrings before applying the 300-result limit. The query survives switches between main tabs.
+
+性能验证 / Performance validation: Pixel 8 / Android 17 上，相同 1,000 个合成站点、10 包/秒、本地 APRS-IS 回放与拖动的 debug A/B 对比中，主线程平均 CPU 占用约从 74% 降至 23%，NativeAlloc concurrent GC 从 18 次降至 0 次。该测量不是正式版本地图 FPS 指标，也不替代 IC-705 RF 验证。 / In a controlled debug A/B test on Pixel 8 / Android 17 with 1,000 synthetic stations and 10 packets/s, average main-thread CPU utilization fell from approximately 74% to 23%, and NativeAlloc concurrent GC count fell from 18 to 0. This is not a release-build map FPS measurement or an IC-705 RF validation.
 
 > 本项目是社区维护的非官方修改版，与 Icom、APRSdroid 原作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 >
@@ -241,9 +250,12 @@ Google Maps Key 可从 `MAPS_API_KEY` 环境变量、Gradle property 或未纳�
 
 APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdroid. Radio UDP sockets are bound to the selected Android Wi-Fi `Network`, allowing IC-705 traffic to stay on Wi-Fi while APRS-IS can continue through the phone's default internet path.
 
-**Latest stable release: `Mod-v2.2.2`.**
+**Latest stable release: `Mod-v2.2.4`.**
 
 ### Highlights
+
+- Discreet station-list toolbar search for callsign/comment matches, including stations beyond the default 300-row list.
+- Coalesced visible-page refreshes and reusable map images reduce UI stalls during busy APRS-IS reception.
 
 - Half-duplex IC-705 Wi-Fi APRS using AX.25, AFSK1200, 12 kHz mono PCM and CI-V PTT.
 - Graywolf Rust is the mandatory local AFSK1200 RX engine for IC-705 12 kHz, phone AudioRecord 11.025 kHz and Bluetooth SCO 8 kHz. Native failures are surfaced instead of silently falling back; the legacy Java modem remains only for stable TX PCM generation.
