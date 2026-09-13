@@ -1,0 +1,35 @@
+name: Hamlib Android CI
+on:
+  pull_request:
+    paths: ['third_party/hamlib/**', '.github/scripts/build_hamlib_android.sh', '.github/scripts/package_hamlib_source.sh', '.github/workflows/hamlib-ci.yml', '.github/workflows/ci.yml', '.github/workflows/release.yml', 'build.gradle', 'AGENT.md']
+  push:
+    branches: [feat/hamlib-build-foundation]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { fetch-depth: 0 }
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool pkg-config patchelf
+      - run: |
+          bash .github/scripts/build_hamlib_android.sh arm64-v8a
+          bash .github/scripts/build_hamlib_android.sh armeabi-v7a
+          test -s build/generated/hamlibJniLibs/arm64-v8a/libhamlib.so
+          test -s build/generated/hamlibJniLibs/armeabi-v7a/libhamlib.so
+      - run: |
+          out="$RUNNER_TEMP/hamlib-source"
+          bash .github/scripts/package_hamlib_source.sh "$out"
+          archive=$(find "$out" -name 'Hamlib-source-*.tar.gz' -print -quit)
+          test -s "$archive"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: hamlib-android-${{ github.sha }}
+          path: |
+            build/generated/hamlibJniLibs/arm64-v8a/libhamlib.so
+            build/generated/hamlibJniLibs/armeabi-v7a/libhamlib.so
+          if-no-files-found: error

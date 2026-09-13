@@ -35,7 +35,7 @@ jobs:
       - name: Install Graywolf build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y protobuf-compiler pkg-config libasound2-dev
+          sudo apt-get install -y protobuf-compiler pkg-config libasound2-dev autoconf automake libtool patchelf
           cargo --version
           rustc --version
           protoc --version
@@ -56,6 +56,12 @@ jobs:
           git diff --exit-code -- native/graywolf-jni/Cargo.lock
           bash .github/scripts/build_graywolf_android.sh arm64-v8a
           test -s build/generated/rustJniLibs/arm64-v8a/libaprs_graywolf.so
+
+      - name: Build pinned Hamlib ARM64 native library
+        run: |
+          set -euo pipefail
+          bash .github/scripts/build_hamlib_android.sh arm64-v8a
+          test -s build/generated/hamlibJniLibs/arm64-v8a/libhamlib.so
 
       - name: Run unit tests, blocking lint, and ARM64 builds
         env:
@@ -81,6 +87,19 @@ jobs:
             count=$(unzip -Z1 "$apk" | grep -c '^lib/arm64-v8a/libaprs_graywolf\.so$')
             test "$count" -eq 1
             actual=$(unzip -p "$apk" 'lib/arm64-v8a/libaprs_graywolf.so' | sha256sum | awk '{print $1}')
+            test "$actual" = "$expected"
+          done
+
+      - name: Verify Hamlib is packaged
+        run: |
+          set -euo pipefail
+          expected=$(sha256sum build/generated/hamlibJniLibs/arm64-v8a/libhamlib.so | awk '{print $1}')
+          for variant in debug release; do
+            apk=$(find "build/outputs/apk/arm64Opengl/${variant}" -name '*.apk' -print -quit)
+            test -n "$apk"
+            count=$(unzip -Z1 "$apk" | grep -c '^lib/arm64-v8a/libhamlib\\.so$')
+            test "$count" -eq 1
+            actual=$(unzip -p "$apk" 'lib/arm64-v8a/libhamlib.so' | sha256sum | awk '{print $1}')
             test "$actual" = "$expected"
           done
 
