@@ -18,7 +18,9 @@ data class HubUiState(
     val myLat: Int = 0,
     val myLon: Int = 0,
     val isRunning: Boolean = false,
-    val myCall: String = ""
+    val myCall: String = "",
+    val searchQuery: String = "",
+    val isSearching: Boolean = false
 )
 
 class HubViewModel(
@@ -29,18 +31,21 @@ class HubViewModel(
     private val _uiState = MutableStateFlow(HubUiState())
     val uiState: StateFlow<HubUiState> = _uiState.asStateFlow()
 
+    private data class Request(val includeStations: Boolean, val searchQuery: String)
+
     private val refreshQueue = LatestQuery(
         scope = viewModelScope,
-        initialRequest = true,
-        query = { includeStations ->
+        initialRequest = Request(true, ""),
+        query = { request ->
             val myCall = prefs.getCallSsid()
-            val data = repository.getHubData(myCall, prefs.getShowAge(), includeStations = includeStations)
+            val data = repository.getHubData(myCall, prefs.getShowAge(), includeStations = request.includeStations, searchQuery = request.searchQuery)
             myCall to data
         },
-        onResult = { (myCall, data), includeStations ->
+        onResult = { (myCall, data), request ->
             _uiState.update {
                 it.copy(
-                    stations = if (includeStations) data.stations else it.stations,
+                    stations = if (request.includeStations) data.stations else it.stations,
+                    isSearching = if (request.includeStations) false else it.isSearching,
                     myLat = data.myLat,
                     myLon = data.myLon,
                     isRunning = AprsService.running,
@@ -48,11 +53,24 @@ class HubViewModel(
                 )
             }
         },
-        onFailure = { Log.e("APRSdroid.HubViewModel", "Station query failed", it) }
+        onFailure = { error ->
+            Log.e("APRSdroid.HubViewModel", "Station query failed", error)
+            _uiState.update { it.copy(isSearching = false) }
+        }
     )
 
     fun refresh(includeStations: Boolean = true) {
-        refreshQueue.refresh(includeStations)
+        refreshQueue.refresh(Request(includeStations, _uiState.value.searchQuery.trim()))
+    }
+
+    fun setSearchQuery(query: String) {
+        if (query == _uiState.value.searchQuery) return
+        val changed = query.trim() != _uiState.value.searchQuery.trim()
+        _uiState.update {
+            it.copy(searchQuery = query, stations = if (changed) emptyList() else it.stations,
+                isSearching = changed || it.isSearching)
+        }
+        if (changed) refresh()
     }
 
     fun updateServiceState() {

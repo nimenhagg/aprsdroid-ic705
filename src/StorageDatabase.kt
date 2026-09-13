@@ -329,11 +329,18 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         )
     }
 
-    fun getNeighbors(mycall: String, lat: Int, lon: Int, ts: Long, limit: String?): Cursor {
+    fun getNeighbors(mycall: String, lat: Int, lon: Int, ts: Long, limit: String?, searchQuery: String = ""): Cursor {
         val corr = (cos(PI * lat / 180000000.0) * cos(PI * lat / 180000000.0) * 100).toInt()
         val distCol = String.format(Locale.US, Station.COL_DIST, lat, lat, lon, lon, corr)
         val newcols = Station.COLUMNS + distCol
-        return readableDatabase.query(Station.TABLE, newcols, "ts > ? or call = ?", arrayOf(ts.toString(), mycall), null, null, "dist", limit)
+        val query = searchQuery.trim()
+        val selection = if (query.isEmpty()) "ts > ? or call = ?" else
+            "(ts > ? or call = ?) AND (instr(lower(call), lower(?)) > 0 OR instr(lower(comment), lower(?)) > 0)"
+        val args = if (query.isEmpty()) arrayOf(ts.toString(), mycall)
+            else arrayOf(ts.toString(), mycall, query, query)
+        // Filter before LIMIT, so distant matches outside the default 300 rows remain searchable.
+        // Bound instr arguments treat %, _ and quotes literally rather than as SQL patterns.
+        return readableDatabase.query(Station.TABLE, newcols, selection, args, null, null, "dist", limit)
     }
 
     fun getNeighborsLike(call: String, lat: Int, lon: Int, ts: Long, limit: String?): Cursor {
