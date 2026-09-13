@@ -421,20 +421,33 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
 
     fun createMsgId(call: String): Int {
         val (callSelection, callArgs) = messageCallSelection(call)
-        val c = readableDatabase.query(
+        val cursor = readableDatabase.query(
             Message.TABLE,
-            arrayOf("MAX(CAST(msgid AS INTEGER))"),
+            arrayOf(Message.MSGID, Message.TYPE),
             "$callSelection AND type != ?",
             callArgs + arrayOf(Message.TYPE_INCOMING.toString()),
             null,
             null,
-            null,
+            "${Message._ID} DESC",
             null,
         )
-        c.moveToFirst()
-        val result = if (c.count == 0 || c.isNull(0)) 0 else c.getInt(0) + 1
+
+        var lastUsed: Int? = null
+        val pending = mutableSetOf<Int>()
+        cursor.use {
+            while (it.moveToNext()) {
+                val parsed = it.getString(0)?.substringBefore('}')?.toIntOrNull()
+                if (parsed != null) {
+                    if (lastUsed == null) lastUsed = parsed
+                    if (it.getInt(1) == Message.TYPE_OUT_NEW && parsed in 1..99) {
+                        pending += parsed
+                    }
+                }
+            }
+        }
+
+        val result = nextReplyAckMessageId(lastUsed, pending)
         Log.d(TAG, String.format(Locale.US, "createMsgId(%s) = %d", call, result))
-        c.close()
         return result
     }
 
