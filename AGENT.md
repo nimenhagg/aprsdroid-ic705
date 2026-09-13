@@ -274,6 +274,10 @@ APRSdroid 能做到的是：立即发 Intent、不额外等 Binder、不先做�
 
 ## 5. 地图架构
 
+当前 main 在 `Mod-v2.2.3` 之后增加地图/列表刷新性能修复（未发布）：地图使用独立的不可变 `MapStation` 快照，图标按呼号/符号复用；Canvas 位图生成和 GeoJSON 序列化在后台执行，MapLibre Style 与 Google Marker 操作仍在主线程。不得恢复每条 UPDATE 广播删除全部图片或 `GoogleMap.clear()` 后重建的路径。
+
+台站、地图、报文使用 `LatestQuery` 合并请求并保证同一页面最多一个查询进行中。对应 ViewModel 必须由 Activity 的 ViewModelStore 管理，避免常驻刷新协程脱离生命周期；过滤条件切换必须抑制旧结果。Hub 只更新当前页面所需数据，地图页额外读取本台位置，不查询隐藏报文列表或完整邻站列表。
+
 主 `map` destination 直接内嵌地图：
 
 - 高德 / OSM / 自定义栅格：MapLibre；

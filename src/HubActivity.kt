@@ -20,6 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -53,19 +56,30 @@ class HubActivity : BaseRecyclerActivity() {
     private val stationRepository: StationRepository by lazy { StationRepository(storage) }
     private val messageRepository: MessageRepository by lazy { MessageRepository(storage) }
     private val logRepository: LogRepository by lazy { LogRepository(storage) }
-    private val mapRepository: MapStationRepository by lazy { MapStationRepository(storage, prefs) }
-    private val viewModel: HubViewModel by lazy { HubViewModel(stationRepository, prefs) }
+    private val mapRepository: MapStationRepository by lazy { MapStationRepository(storage, PrefsWrapper(applicationContext)) }
+    private val viewModel: HubViewModel by lazy {
+        ViewModelProvider(this, viewModelFactory {
+            initializer { HubViewModel(stationRepository, PrefsWrapper(applicationContext)) }
+        })[HubViewModel::class.java]
+    }
     private val conversationsViewModel: ConversationsViewModel by lazy { ConversationsViewModel(messageRepository) }
-    private val logViewModel: LogViewModel by lazy { LogViewModel(logRepository) }
-    private val mapViewModel: MapViewModel by lazy { MapViewModel(mapRepository, prefs.getShowObjects()) }
+    private val logViewModel: LogViewModel by lazy {
+        ViewModelProvider(this, viewModelFactory {
+            initializer { LogViewModel(logRepository) }
+        })[LogViewModel::class.java]
+    }
+    private val mapViewModel: MapViewModel by lazy {
+        ViewModelProvider(this, viewModelFactory {
+            initializer { MapViewModel(mapRepository, prefs.getShowObjects()) }
+        })[MapViewModel::class.java]
+    }
     private val firstRunDialogVisible = mutableStateOf(false)
     private val pendingStartDestination = mutableStateOf<String?>(null)
+    private var activeRoute: String = MainRoutes.STATIONS
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            viewModel.refresh()
-            logViewModel.refresh()
-            mapViewModel.refresh()
+            refreshVisibleState()
         }
     }
 
@@ -96,6 +110,11 @@ class HubActivity : BaseRecyclerActivity() {
                 val currentBackStackEntry by navController.currentBackStackEntryAsState()
                 val selectedRoute = currentBackStackEntry?.destination?.route
                 val requestedStartDestination = pendingStartDestination.value
+
+                LaunchedEffect(selectedRoute) {
+                    activeRoute = selectedRoute ?: MainRoutes.STATIONS
+                    refreshVisibleState()
+                }
 
                 LaunchedEffect(requestedStartDestination) {
                     if (requestedStartDestination != null && requestedStartDestination != MainRoutes.STATIONS) {
@@ -329,10 +348,20 @@ class HubActivity : BaseRecyclerActivity() {
     }
 
     private fun refreshTopLevelState() {
-        viewModel.refresh()
         conversationsViewModel.refresh()
-        logViewModel.refresh()
-        mapViewModel.refresh()
+        refreshVisibleState()
+    }
+
+    private fun refreshVisibleState() {
+        when (activeRoute) {
+            MainRoutes.STATIONS -> viewModel.refresh()
+            MainRoutes.MAP -> {
+                // The map also uses the hub's own-position state for its locate button.
+                viewModel.refresh(includeStations = false)
+                mapViewModel.refresh()
+            }
+            MainRoutes.PACKETS -> logViewModel.refresh()
+        }
     }
 
     @SuppressLint("WrongConstant")

@@ -1,5 +1,9 @@
 package org.aprsdroid.app
 
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -21,7 +25,11 @@ class LogActivity : BaseRecyclerActivity() {
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     private val repository: LogRepository by lazy { LogRepository(storage) }
-    private val viewModel: LogViewModel by lazy { LogViewModel(repository) }
+    private val viewModel: LogViewModel by lazy {
+        ViewModelProvider(this, viewModelFactory {
+            initializer { LogViewModel(repository) }
+        })[LogViewModel::class.java]
+    }
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
