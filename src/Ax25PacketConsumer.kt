@@ -1,7 +1,7 @@
 package org.aprsdroid.app
 
-import android.util.Log
 import net.ab0oo.aprs.parser.Parser
+import org.aprsdroid.app.diagnostic.AppLog
 
 /**
  * Submission sink decoupled from [AprsService] so the Scala [AfskUploader] and
@@ -22,12 +22,58 @@ class Ax25PacketConsumer(
     private val tag: String,
 ) {
     fun accept(data: ByteArray) {
+        val head = boundedAx25Hex(data, maxBytes = 24)
+        AppLog.d(
+            "AFSK",
+            "afsk_frame_decoded",
+            mapOf(
+                "backend_tag" to tag,
+                "length" to data.size,
+                "head_hex" to head,
+            ),
+        )
+
+        val parsed = try {
+            Parser.parseAX25(data)
+        } catch (error: Exception) {
+            // Persist this boundary failure: a diagnostic bundle must be able to
+            // distinguish "demodulator emitted nothing" from "AX.25 parser rejected it".
+            AppLog.w(
+                "AFSK",
+                "ax25_parse_failed",
+                mapOf(
+                    "backend_tag" to tag,
+                    "length" to data.size,
+                    "head_hex" to head,
+                ),
+                error,
+            )
+            return
+        }
+
+        val text = parsed.toString().trim()
+        AppLog.d(
+            "AFSK",
+            "ax25_parse_ok",
+            mapOf(
+                "backend_tag" to tag,
+                "length" to data.size,
+                "text_length" to text.length,
+            ),
+        )
+
         try {
-            submit.postSubmit(Parser.parseAX25(data).toString().trim())
-        } catch (e: Exception) {
-            // Do not dump an arbitrary full RF frame (or a stack trace) into logs.
-            // The backend contract calls for a bounded diagnostic summary only.
-            Log.e(tag, "bad AX.25 frame (${e.javaClass.simpleName}): ${boundedAx25Hex(data)}")
+            submit.postSubmit(text)
+        } catch (error: Exception) {
+            AppLog.e(
+                "AFSK",
+                "ax25_submit_failed",
+                mapOf(
+                    "backend_tag" to tag,
+                    "length" to data.size,
+                ),
+                error,
+            )
         }
     }
 }

@@ -12,10 +12,11 @@ class Ic705AudioSequencePolicyTest {
     }
 
     @Test
-    fun receivePacketSampleCountsPreserveCapturedAlternation() {
-        assertEquals(682, ic705SamplesPerReceivePacket(0))
-        assertEquals(278, ic705SamplesPerReceivePacket(1))
-        assertEquals(682, ic705SamplesPerReceivePacket(2))
-        assertEquals(278, ic705SamplesPerReceivePacket(0xffff))
+    fun receivePacketFallbackSampleCountsMatchNegotiatedTwelveKhzRate() {
+        assertEquals(171, ic705SamplesPerReceivePacket(0))
+        assertEquals(69, ic705SamplesPerReceivePacket(1))
+        assertEquals(171, ic705SamplesPerReceivePacket(2))
+        assertEquals(69, ic705SamplesPerReceivePacket(3))
+        assertEquals(240, ic705SamplesPerReceivePacket(0) + ic705SamplesPerReceivePacket(1))
     }
 }

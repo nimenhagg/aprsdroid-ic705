@@ -12,6 +12,7 @@ internal class Ic705AudioReorderBuffer(
     private var nextAudioSequence: Int? = null
     private var lastDeliveredSequence: Int? = null
     private val pendingAudio = mutableMapOf<Int, ShortArray>()
+    private val observedSampleCountsByParity = IntArray(2)
 
     fun accept(sequence: Int, samples: ShortArray): Ic705AudioReceiveResult {
         if (lastDeliveredSequence == sequence || pendingAudio.containsKey(sequence)) {
@@ -58,10 +59,18 @@ internal class Ic705AudioReorderBuffer(
         nextAudioSequence = null
         lastDeliveredSequence = null
         pendingAudio.clear()
+        observedSampleCountsByParity.fill(0)
     }
 
-    private fun deliver(sequence: Int, samples: ShortArray) {
+    private fun deliver(
+        sequence: Int,
+        samples: ShortArray,
+        observedSampleCount: Int = samples.size,
+    ) {
         writeSamples(samples)
+        if (observedSampleCount > 0) {
+            observedSampleCountsByParity[sequence and 1] = observedSampleCount
+        }
         lastDeliveredSequence = sequence
         nextAudioSequence = incrementIc705AudioSequence(sequence)
     }
@@ -89,11 +98,14 @@ internal class Ic705AudioReorderBuffer(
         val missingPacketCount = ic705AudioSequenceDistance(expectedSequence, actualSequence)
         if (missingPacketCount <= IC705_AUDIO_MAX_CONCEALED_PACKETS) {
             val concealedSampleCount = (0 until missingPacketCount).sumOf { offset ->
-                ic705SamplesPerReceivePacket((expectedSequence + offset) and 0xffff)
+                samplesForConcealment((expectedSequence + offset) and 0xffff)
             }
             val concealed = ShortArray(concealedSampleCount + samples.size)
             samples.copyInto(concealed, destinationOffset = concealedSampleCount)
-            deliver(actualSequence, concealed)
+            // Preserve the real packet size as the learned observation. Otherwise
+            // a concealed packet would teach the buffer an inflated size and make
+            // later loss concealment progressively worse.
+            deliver(actualSequence, concealed, observedSampleCount = samples.size)
             return
         }
         onDiscontinuity(
@@ -105,5 +117,10 @@ internal class Ic705AudioReorderBuffer(
             ),
         )
         deliver(actualSequence, samples)
+    }
+
+    private fun samplesForConcealment(sequence: Int): Int {
+        val observed = observedSampleCountsByParity[sequence and 1]
+        return if (observed > 0) observed else ic705SamplesPerReceivePacket(sequence)
     }
 }
