@@ -163,7 +163,8 @@ static rmode_t hjni_caps_modes(const struct rig_caps *caps)
     lists[1] = caps->rx_range_list2;
     for (list = 0; list < 2; list++) {
         for (i = 0; i < HAMLIB_FRQRANGESIZ; i++) {
-            if (lists[list][i].start == 0 && lists[list][i].end == 0) {
+            /* A zero start/end pair terminates the advertised range list. */
+            if (lists[list][i].startf == 0 && lists[list][i].endf == 0) {
                 break;
             }
             mask |= lists[list][i].modes;
