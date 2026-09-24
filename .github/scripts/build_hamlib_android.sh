@@ -32,23 +32,29 @@ rm -rf "$BLD" "$INST"; mkdir -p "$BLD" "$INST" "$(dirname "$OUTPUT")"
 # unversioned name (libhamlib.so) instead of libhamlib.so.<major>.<minor>.<patch>.
 SOURCE_SO="$(find "$INST/hamlib" -type f \( -name 'libhamlib.so' -o -name 'libhamlib.so.*' \) -print | sort -V | tail -n 1)"
 [ -s "$SOURCE_SO" ] || { echo "Hamlib shared library missing" >&2; exit 1; }
-# The JNI boundary links against these symbols, so the exports are read from the
-# dynamic symbol table (not from nm output, whose formatting varies) and are
-# verified both before and after stripping: an export that disappears while
-# stripping would silently make the packaged library unusable.
+# The JNI boundary links against these symbols, so they are read from the
+# dynamic symbol table and verified before and after stripping: an export that
+# disappears while stripping would silently make the packaged library unusable.
+#
+# Every check below writes readelf output to a file first. Piping readelf or
+# printf straight into `grep -q` looks equivalent but is not: grep exits on the
+# first match, the writer fails with EPIPE, and `set -o pipefail` then reports a
+# mismatch even when the symbol was found.
 HAMLIB_REQUIRED_EXPORTS="hamlib_version hamlib_version2 rig_load_all_backends rig_list_foreach rig_init rig_open rig_close rig_cleanup rig_get_freq rig_set_freq rig_get_mode rig_set_mode rig_get_ptt rig_set_ptt rigerror"
+
+tmp="$(mktemp)"; trap 'rm -f "$tmp"' EXIT
 
 verify_exports() {
   stage="$1"
-  dyn_syms="$("$READELF" -W --dyn-syms "$OUTPUT")"
-  missing=""
+  "$READELF" -W --dyn-syms "$OUTPUT" | awk '{print $NF}' > "$tmp"
+  export_missing=""
   for symbol in $HAMLIB_REQUIRED_EXPORTS; do
-    printf '%s\n' "$dyn_syms" | awk '{print $NF}' | grep -Fxq "$symbol" || missing="$missing $symbol"
+    grep -Fxq "$symbol" "$tmp" || export_missing="$export_missing $symbol"
   done
-  if [ -n "$missing" ]; then
-    echo "Missing exports ${stage}:$missing" >&2
-    echo "--- libhamlib.so dynamic symbols (first 60, ${stage}) ---" >&2
-    printf '%s\n' "$dyn_syms" | awk 'NR > 3 {print}' | head -n 60 >&2
+  if [ -n "$export_missing" ]; then
+    echo "Missing exports ${stage}:$export_missing" >&2
+    echo "--- libhamlib.so dynamic symbols (last 60, ${stage}) ---" >&2
+    tail -n 60 "$tmp" >&2
     return 1
   fi
   return 0
@@ -59,9 +65,10 @@ patchelf --set-soname libhamlib.so "$OUTPUT"
 verify_exports "before strip" || exit 1
 "$STRIP" --strip-unneeded "$OUTPUT"
 verify_exports "after strip" || exit 1
-"$READELF" -d "$OUTPUT" | grep -Eq '\(SONAME\).*\[libhamlib\.so\]' || exit 1
-! "$READELF" -d "$OUTPUT" | grep -qi libusb || { echo "Unexpected libusb dependency" >&2; exit 1; }
-tmp="$(mktemp)"; trap 'rm -f "$tmp"' EXIT; "$READELF" -lW "$OUTPUT" > "$tmp"
+"$READELF" -d "$OUTPUT" > "$tmp"
+grep -Eq '\(SONAME\).*\[libhamlib\.so\]' "$tmp" || { echo "Unexpected SONAME for $ABI" >&2; exit 1; }
+if grep -qi libusb "$tmp"; then echo "Unexpected libusb dependency" >&2; exit 1; fi
+"$READELF" -lW "$OUTPUT" > "$tmp"
 python3 - "$tmp" "$ABI" <<'PY'
 import pathlib,sys
 loads=[int(x.split()[-1],16) for x in pathlib.Path(sys.argv[1]).read_text().splitlines() if x.split() and x.split()[0]=="LOAD"]
