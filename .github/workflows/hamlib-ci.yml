@@ -89,3 +89,28 @@ jobs:
                           message = (node.get('message') or node.text or '').strip().replace('\n', ' ')
                           print(f"{case.get('classname')}.{case.get('name')} [{kind}]: {message[:400]}")
           PY
+      # Always last, so the summary is what a log reader sees at the end.
+      - name: Summarise Hamlib native tests
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+
+          for path in sorted(glob.glob('build/test-results/testArm64OpenglDebugUnitTest/*.xml')):
+              suite = ET.parse(path).getroot()
+              if 'hamlib' not in (suite.get('name') or ''):
+                  continue
+              print(f"{suite.get('name')}: tests={suite.get('tests')} failures={suite.get('failures')} "
+                    f"errors={suite.get('errors')} skipped={suite.get('skipped')}")
+              for case in suite.iter('testcase'):
+                  status = 'passed'
+                  for kind in ('failure', 'error', 'skipped'):
+                      if case.find(kind) is not None:
+                          status = kind
+                  print(f"  {case.get('name')}: {status}")
+              for node in suite.iter('system-out'):
+                  for line in (node.text or '').splitlines():
+                      if 'Hamlib registered' in line:
+                          print(f"  {line.strip()}")
+          PY

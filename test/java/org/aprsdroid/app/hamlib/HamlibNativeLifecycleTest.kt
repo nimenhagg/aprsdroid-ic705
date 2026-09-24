@@ -56,14 +56,15 @@ class HamlibNativeLifecycleTest {
 
     @Test
     fun enumeratesBackendsIncludingTheDummyRig() {
+        val raw = HamlibNative.listRigs()
         val rigs = HamlibRigCatalog.list()
-        assertTrue("expected several Hamlib backends, got ${rigs.size}", rigs.size > 100)
-        // The catalog is allowed to drop entries it cannot decode, so the raw
-        // native count is an upper bound rather than an exact match.
-        assertTrue(
-            "catalog (${rigs.size}) exceeds the native rig count (${HamlibRigCatalog.count()})",
-            HamlibRigCatalog.count() >= rigs.size,
-        )
+        println("Hamlib registered ${raw.size} rig entries, ${rigs.size} decoded")
+
+        assertTrue("Hamlib registered no rig entries", raw.isNotEmpty())
+        // Every enumerated line must decode: this is the JNI/Kotlin encoding
+        // contract, independent of how many backends a build registers.
+        assertEquals("the catalog dropped entries it should decode", raw.size, rigs.size)
+        assertEquals(raw.size, HamlibRigCatalog.count())
 
         val dummy = HamlibRigCatalog.findByModelId(HamlibRigCatalog.DUMMY_MODEL_ID)
         assertTrue("dummy backend missing from the catalog", dummy != null)
