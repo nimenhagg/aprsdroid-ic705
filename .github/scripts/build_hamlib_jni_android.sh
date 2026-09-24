@@ -30,9 +30,10 @@ fi
 
 TOOLCHAIN="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64"
 CC="$TOOLCHAIN/bin/${CLANG_TRIPLE}${ANDROID_API}-clang"
+STRIP="$TOOLCHAIN/bin/llvm-strip"
 READELF="$TOOLCHAIN/bin/llvm-readelf"
 NM="$TOOLCHAIN/bin/llvm-nm"
-for tool in "$CC" "$READELF" "$NM"; do
+for tool in "$CC" "$STRIP" "$READELF" "$NM"; do
   [ -x "$tool" ] || { echo "Missing NDK tool: $tool" >&2; exit 2; }
 done
 
@@ -45,6 +46,11 @@ done
   "$ROOT/native/hamlib-jni/hamlib_jni.c" \
   -L"$OUT_DIR" -lhamlib -pthread \
   -Wl,-z,max-page-size=16384
+
+# Strip here as well as in the Hamlib script: AGP strips packaged native
+# libraries, so the artifact that lands in the APK has to be the one this
+# script verified.
+"$STRIP" --strip-unneeded "$OUTPUT"
 
 for symbol in \
   Java_org_aprsdroid_app_hamlib_HamlibNative_nativeVersion \
