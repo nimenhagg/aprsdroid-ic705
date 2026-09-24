@@ -91,6 +91,11 @@ jobs:
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
             bash .github/scripts/build_hamlib_android.sh armeabi-v7a
           fi
+          for abi in arm64-v8a armeabi-v7a; do
+            if [ -s "build/generated/hamlibJniLibs/${abi}/libhamlib.so" ]; then
+              bash .github/scripts/build_hamlib_jni_android.sh "$abi"
+            fi
+          done
 
       - name: Grant Execute Permission to Gradlew
         run: chmod +x gradlew
@@ -174,6 +179,11 @@ jobs:
               echo "Missing Hamlib native library for ${abi}" >&2
               exit 1
             fi
+            local hamlib_jni_so="$PWD/build/generated/hamlibJniLibs/${abi}/libaprs_hamlib.so"
+            if [ ! -s "$hamlib_jni_so" ]; then
+              echo "Missing Hamlib JNI library for ${abi}" >&2
+              exit 1
+            fi
 
             local patched="$RUNNER_TEMP/maplibre-patched/${flavor}-patched.apk"
             local aligned="$RUNNER_TEMP/maplibre-patched/${flavor}-aligned.apk"
@@ -235,6 +245,14 @@ jobs:
             actual_hamlib=$(unzip -p "$destination" "lib/${abi}/libhamlib.so" | sha256sum | awk '{print $1}')
             test "$actual_hamlib" = "$expected_hamlib"
             echo "Verified Hamlib native ${abi}: ${actual_hamlib}"
+
+            local expected_hamlib_jni actual_hamlib_jni hamlib_jni_count
+            expected_hamlib_jni=$(sha256sum "$hamlib_jni_so" | awk '{print $1}')
+            hamlib_jni_count=$(unzip -Z1 "$destination" | grep -c "^lib/${abi}/libaprs_hamlib\\.so$")
+            test "$hamlib_jni_count" -eq 1
+            actual_hamlib_jni=$(unzip -p "$destination" "lib/${abi}/libaprs_hamlib.so" | sha256sum | awk '{print $1}')
+            test "$actual_hamlib_jni" = "$expected_hamlib_jni"
+            echo "Verified Hamlib JNI ${abi}: ${actual_hamlib_jni}"
 
             mapfile -t packaged_abis < <(
               unzip -Z1 "$destination" |
