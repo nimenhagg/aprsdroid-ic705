@@ -32,10 +32,35 @@ rm -rf "$BLD" "$INST"; mkdir -p "$BLD" "$INST" "$(dirname "$OUTPUT")"
 # unversioned name (libhamlib.so) instead of libhamlib.so.<major>.<minor>.<patch>.
 SOURCE_SO="$(find "$INST/hamlib" -type f \( -name 'libhamlib.so' -o -name 'libhamlib.so.*' \) -print | sort -V | tail -n 1)"
 [ -s "$SOURCE_SO" ] || { echo "Hamlib shared library missing" >&2; exit 1; }
-cp "$SOURCE_SO" "$OUTPUT"; patchelf --set-soname libhamlib.so "$OUTPUT"; "$STRIP" --strip-unneeded "$OUTPUT"
+# The JNI boundary links against these symbols, so the exports are read from the
+# dynamic symbol table (not from nm output, whose formatting varies) and are
+# verified both before and after stripping: an export that disappears while
+# stripping would silently make the packaged library unusable.
+HAMLIB_REQUIRED_EXPORTS="hamlib_version hamlib_version2 rig_load_all_backends rig_list_foreach rig_init rig_open rig_close rig_cleanup rig_get_freq rig_set_freq rig_get_mode rig_set_mode rig_get_ptt rig_set_ptt rigerror"
+
+verify_exports() {
+  stage="$1"
+  dyn_syms="$("$READELF" -W --dyn-syms "$OUTPUT")"
+  missing=""
+  for symbol in $HAMLIB_REQUIRED_EXPORTS; do
+    printf '%s\n' "$dyn_syms" | awk '{print $NF}' | grep -Fxq "$symbol" || missing="$missing $symbol"
+  done
+  if [ -n "$missing" ]; then
+    echo "Missing exports ${stage}:$missing" >&2
+    echo "--- libhamlib.so dynamic symbols (first 60, ${stage}) ---" >&2
+    printf '%s\n' "$dyn_syms" | awk 'NR > 3 {print}' | head -n 60 >&2
+    return 1
+  fi
+  return 0
+}
+
+cp "$SOURCE_SO" "$OUTPUT"
+patchelf --set-soname libhamlib.so "$OUTPUT"
+verify_exports "before strip" || exit 1
+"$STRIP" --strip-unneeded "$OUTPUT"
+verify_exports "after strip" || exit 1
 "$READELF" -d "$OUTPUT" | grep -Eq '\(SONAME\).*\[libhamlib\.so\]' || exit 1
 ! "$READELF" -d "$OUTPUT" | grep -qi libusb || { echo "Unexpected libusb dependency" >&2; exit 1; }
-for symbol in hamlib_version rig_load_all_backends rig_list_foreach rig_init rig_open rig_close rig_cleanup rig_get_freq rig_set_freq rig_get_mode rig_set_mode rig_get_ptt rig_set_ptt rigerror; do "$NM" -D --defined-only "$OUTPUT" | awk '{print $3}' | grep -Fxq "$symbol" || { echo "Missing export: $symbol" >&2; exit 1; }; done
 tmp="$(mktemp)"; trap 'rm -f "$tmp"' EXIT; "$READELF" -lW "$OUTPUT" > "$tmp"
 python3 - "$tmp" "$ABI" <<'PY'
 import pathlib,sys
