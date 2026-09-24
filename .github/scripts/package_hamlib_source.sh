@@ -8,5 +8,13 @@ git init -q "$src"; git -C "$src" remote add origin "$REPO"; git -C "$src" fetch
 [ "$(git -C "$src" rev-parse HEAD)" = "$REV" ] || exit 1
 mkdir -p "$OUT_DIR"; short="${REV:0:12}"; archive="$OUT_DIR/Hamlib-source-${VER}-${short}.tar.gz"; prefix="Hamlib-${VER}-${short}/"
 git -C "$src" archive --format=tar --prefix="$prefix" "$REV" | gzip -n -9 > "$archive"
-tar -tzf "$archive" | grep -q "^${prefix}COPYING.LIB$"; tar -tzf "$archive" | grep -q "^${prefix}README.android$"; tar -tzf "$archive" | grep -q "^${prefix}configure.ac$"
+# List the archive once into a file and grep that file. Piping `tar -t` straight
+# into `grep -q` makes tar fail with EPIPE as soon as grep exits on its first
+# match, and `set -o pipefail` then turns a successful listing into a failed
+# step. Hamlib's listing easily exceeds the pipe buffer.
+listing="$tmp/archive-listing.txt"
+tar -tzf "$archive" > "$listing"
+for entry in COPYING.LIB README.android configure.ac; do
+  grep -Fxq "${prefix}${entry}" "$listing" || { echo "Hamlib source archive is missing ${entry}" >&2; exit 1; }
+done
 sha256sum "$archive"
