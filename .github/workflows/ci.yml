@@ -97,7 +97,7 @@ jobs:
           for variant in debug release; do
             apk=$(find "build/outputs/apk/arm64Opengl/${variant}" -name '*.apk' -print -quit)
             test -n "$apk"
-            count=$(unzip -Z1 "$apk" | grep -c '^lib/arm64-v8a/libhamlib\\.so$')
+            count=$(unzip -Z1 "$apk" | grep -c '^lib/arm64-v8a/libhamlib\.so$')
             test "$count" -eq 1
             actual=$(unzip -p "$apk" 'lib/arm64-v8a/libhamlib.so' | sha256sum | awk '{print $1}')
             test "$actual" = "$expected"
