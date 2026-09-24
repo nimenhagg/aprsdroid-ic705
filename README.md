@@ -280,7 +280,7 @@ APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdr
 
 | Item | Status |
 | --- | --- |
-| Android | 8.1+ / API 27 minimum |
+| Android | 9.0+ / API 28 minimum |
 | Target | Android 17 / API 37 |
 | Official APKs | ARM64 OpenGL and ARMv7 OpenGL |
 | Radio | Icom IC-705 with WLAN and Network User enabled |
