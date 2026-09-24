@@ -75,3 +75,17 @@ jobs:
             testArm64OpenglDebugUnitTest \
             --tests 'org.aprsdroid.app.hamlib.*' \
             --no-daemon --stacktrace
+      - name: Report failing Hamlib tests
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+
+          for path in sorted(glob.glob('build/test-results/testArm64OpenglDebugUnitTest/*.xml')):
+              for case in ET.parse(path).iter('testcase'):
+                  for kind in ('failure', 'error'):
+                      for node in case.findall(kind):
+                          message = (node.get('message') or node.text or '').strip().replace('\n', ' ')
+                          print(f"{case.get('classname')}.{case.get('name')} [{kind}]: {message[:400]}")
+          PY
