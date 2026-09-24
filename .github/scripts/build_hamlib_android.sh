@@ -28,7 +28,9 @@ git -C "$SRC" reset -q --hard "$HAMLIB_REV"; git -C "$SRC" clean -q -fdx
 (cd "$SRC" && ./bootstrap)
 rm -rf "$BLD" "$INST"; mkdir -p "$BLD" "$INST" "$(dirname "$OUTPUT")"
 (cd "$BLD" && AR="$AR" AS="$AS" CC="$CC" CXX="$CXX" LD="$LD" RANLIB="$RANLIB" STRIP="$STRIP" CFLAGS="-O2 -fPIC" CXXFLAGS="-O2 -fPIC" LDFLAGS="-Wl,-z,max-page-size=16384" "$SRC/configure" --host="$HOST" --prefix=/hamlib --without-libusb --disable-static --enable-shared && make -j"$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)" V=0 --no-print-directory && make install DESTDIR="$INST" --no-print-directory)
-SOURCE_SO="$(find "$INST/hamlib" -type f -name 'libhamlib.so.*' -print | sort -V | tail -n 1)"
+# Android libtool uses version_type=none, so the installed shared library keeps the
+# unversioned name (libhamlib.so) instead of libhamlib.so.<major>.<minor>.<patch>.
+SOURCE_SO="$(find "$INST/hamlib" -type f \( -name 'libhamlib.so' -o -name 'libhamlib.so.*' \) -print | sort -V | tail -n 1)"
 [ -s "$SOURCE_SO" ] || { echo "Hamlib shared library missing" >&2; exit 1; }
 cp "$SOURCE_SO" "$OUTPUT"; patchelf --set-soname libhamlib.so "$OUTPUT"; "$STRIP" --strip-unneeded "$OUTPUT"
 "$READELF" -d "$OUTPUT" | grep -Eq '\(SONAME\).*\[libhamlib\.so\]' || exit 1
