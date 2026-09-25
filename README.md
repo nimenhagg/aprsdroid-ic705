@@ -23,7 +23,7 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 Wi-Fi 直连 APRS 收
 - 本地 AFSK1200 RX 统一使用 Graywolf，支持 IC-705 12 kHz、AudioRecord 11.025 kHz、Bluetooth SCO 8 kHz；旧 Java modulator 仅用于 TX 音频生成。
 - PTT OFF ACK、安全 watchdog 和分通道连接恢复，降低 Android 网络切换、Wi-Fi 驱动和线程调度差异造成的故障。
 - 持久结构化诊断日志与可分享 ZIP，记录网络、IC-705 session、PTT、恢复和崩溃现场；敏感字段自动脱敏。
-- 设置中提供手动检查更新；不会启动时、后台或定时联网，也不会自动下载/安装 APK。
+- 应用启动时自动静默检查更新；只有发现新版本才弹窗提示，无更新或检查失败均不提示。设置页仍可手动检查；不会后台/定时联网，也不会自动下载/安装 APK。
 - Android 16+ 可选 Live Updates / 状态胶囊，显示连接、接收、发射、信标和错误等状态。
 - Material 3 + Jetpack Compose；台站、地图、消息、报文四个一级页面统一导航，并支持紧凑列表。
 - 台站搜索支持按呼号或备注匹配，同时保留距离排序和显示期限；地图/列表刷新针对密集 APRS-IS 收包进行了优化。
