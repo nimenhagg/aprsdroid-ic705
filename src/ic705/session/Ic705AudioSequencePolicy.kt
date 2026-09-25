@@ -7,11 +7,12 @@ internal const val IC705_AUDIO_HALF_SEQUENCE_SPACE = 0x8000
 // packet is genuinely lost.
 internal const val IC705_AUDIO_MAX_REORDER_PACKETS = 4
 
-// The connection negotiation currently requests 12 kHz LPCM. The previous
-// concealment defaults were copied from a 48 kHz RS-BA1 capture
+// The connection negotiation currently requests 12 kHz LPCM. The original
+// concealment defaults were copied from a successful 48 kHz RS-BA1 capture
 // (682/278 samples per alternating packet) and therefore inserted roughly 4x
-// too much silence at 12 kHz. 171/69 preserves the 240-sample, 20 ms pair at
-// the negotiated rate.
+// too much silence at 12 kHz. 171/69 keeps the same 20 ms pair duration at
+// the negotiated rate. Ic705AudioReorderBuffer also learns real packet sizes
+// from the live stream and prefers those once observed.
 internal const val IC705_AUDIO_LARGE_RX_PACKET_SAMPLES = 171
 internal const val IC705_AUDIO_SMALL_RX_PACKET_SAMPLES = 69
 internal const val IC705_AUDIO_MAX_CONCEALED_PACKETS = 2
