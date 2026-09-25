@@ -84,7 +84,9 @@ class RadioAudioBackend(
         if (!isRunning.compareAndSet(false, true)) return
 
         AppLog.i(TAG, "starting_radio_audio_backend", mapOf("txRate" to txSampleRateHz))
-        radioControl.open()
+        if (!radioControl.isOpen) {
+            radioControl.open()
+        }
 
         rxThread = Thread({
             runRxLoop()

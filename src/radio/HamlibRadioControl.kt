@@ -22,10 +22,12 @@ class HamlibRadioControl(
         get() = handle.isOpen
 
     override fun open() {
+        if (isOpen) return
         handle.open(transport.endpoint)
     }
 
     override fun closePort() {
+        if (!isOpen) return
         handle.closePort()
     }
 

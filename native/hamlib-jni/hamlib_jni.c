@@ -370,6 +370,10 @@ Java_org_aprsdroid_app_hamlib_HamlibNative_nativeOpen(JNIEnv *env, jclass clazz,
     if (slot == NULL) {
         return HJNI_EHANDLE;
     }
+    if (slot->opened) {
+        hjni_release(slot);
+        return RIG_OK;
+    }
 
     if (pathname != NULL) {
         path = (*env)->GetStringUTFChars(env, pathname, NULL);

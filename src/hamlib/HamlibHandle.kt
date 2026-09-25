@@ -40,6 +40,7 @@ class HamlibHandle private constructor(
     /** Opens the rig port. A null/blank [pathname] uses the backend default. */
     fun open(pathname: String? = null) {
         requireUsable()
+        if (isOpen) return
         val code = HamlibNative.open(nativeId, pathname)
         HamlibError.require(code, "rig_open", HamlibNative.errorText(code))
     }
@@ -47,6 +48,7 @@ class HamlibHandle private constructor(
     /** Closes the rig port but keeps the handle usable for a later [open]. */
     fun closePort() {
         requireUsable()
+        if (!isOpen) return
         val code = HamlibNative.closeRig(nativeId)
         HamlibError.require(code, "rig_close", HamlibNative.errorText(code))
     }
