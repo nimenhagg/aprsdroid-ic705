@@ -4,14 +4,12 @@ import org.aprsdroid.app.hamlib.HamlibHandle
 import org.aprsdroid.app.hamlib.HamlibRig
 
 /**
- * RadioControl implementation backed by the generic Hamlib JNI layer.
+ * PTT-only RadioControl implementation backed by the generic Hamlib JNI layer.
  *
- * The transport is deliberately supplied separately from [HamlibRig]:
- * selecting a radio model does not select USB, serial or network transport.
- *
- * This class is not wired into the existing IC-705 WLAN backend yet. In
- * particular, [HamlibHandle.setPtt] must not replace the IC-705 ACK-based PTT
- * state machine.
+ * Frequency and mode remain outside this application control contract. The
+ * transport is supplied separately from [HamlibRig]. This adapter is not wired
+ * into the existing IC-705 WLAN backend and must not replace its ACK-based PTT
+ * safety state machine.
  */
 class HamlibRadioControl(
     override val radio: RadioDescriptor,
@@ -31,21 +29,6 @@ class HamlibRadioControl(
         handle.closePort()
     }
 
-    override fun frequencyHz(): Double = handle.frequencyHz()
-
-    override fun setFrequencyHz(hz: Double) {
-        handle.setFrequencyHz(hz)
-    }
-
-    override fun mode(): RadioMode {
-        val value = handle.mode()
-        return RadioMode(value.mode, value.passbandHz)
-    }
-
-    override fun setMode(mode: Long, passbandHz: Long) {
-        handle.setMode(mode, passbandHz)
-    }
-
     override fun isPttOn(): Boolean = handle.isPttOn()
 
     override fun setPtt(on: Boolean) {
@@ -57,12 +40,7 @@ class HamlibRadioControl(
     }
 
     companion object {
-        /**
-         * Builds a generic control from an enumerated Hamlib rig.
-         *
-         * The caller owns the transport choice; this method never infers one
-         * from the model number.
-         */
+        /** Builds a PTT control from an enumerated Hamlib rig. */
         fun create(
             rig: HamlibRig,
             transport: RadioTransport,
@@ -77,13 +55,8 @@ class HamlibRadioControl(
                     driverStable = rig.isStable,
                 ),
                 capabilities = RadioCapabilities(
-                    canGetFrequency = rig.capabilities.canGetFrequency,
-                    canSetFrequency = rig.capabilities.canSetFrequency,
-                    canGetMode = rig.capabilities.canGetMode,
-                    canSetMode = rig.capabilities.canSetMode,
                     canGetPtt = rig.capabilities.canGetPtt,
                     canSetPtt = rig.capabilities.canSetPtt,
-                    supportedModesMask = rig.capabilities.supportedModesMask,
                 ),
                 handle = handle,
                 transport = transport,
