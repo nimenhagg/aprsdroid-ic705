@@ -19,23 +19,23 @@ class RadioPttSequence(
 
     fun transmit(writeAndDrainAudio: () -> Unit): Result {
         radio.setPtt(true)
-        if (!radio.capabilities.canGetPtt || !radio.isPttOn()) {
-            return Result.PttOnNotConfirmed
+        val result = if (!radio.capabilities.canGetPtt || !radio.isPttOn()) {
+            Result.PttOnNotConfirmed
+        } else {
+            try {
+                writeAndDrainAudio()
+                Result.Completed
+            } catch (_: Exception) {
+                Result.AudioFailed
+            }
         }
 
-        return try {
-            writeAndDrainAudio()
-            Result.Completed
-        } catch (_: Throwable) {
-            Result.AudioFailed
-        } finally {
-            radio.setPtt(false)
-        }.let { result ->
-            if (radio.capabilities.canGetPtt && radio.isPttOn()) {
-                Result.PttOffNotConfirmed
-            } else {
-                result
-            }
+        // Always request PTT OFF, including when ON readback or audio fails.
+        radio.setPtt(false)
+        return if (radio.capabilities.canGetPtt && radio.isPttOn()) {
+            Result.PttOffNotConfirmed
+        } else {
+            result
         }
     }
 }
