@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.Manifest
 import android.location.Location
 import android.os.Bundle
 import android.os.Handler
@@ -52,7 +53,6 @@ import org.aprsdroid.app.ui.viewmodel.ConversationsViewModel
 import org.aprsdroid.app.ui.viewmodel.HubViewModel
 import org.aprsdroid.app.ui.viewmodel.LogViewModel
 import org.aprsdroid.app.ui.viewmodel.MapViewModel
-import org.aprsdroid.app.location.LocationSource
 import org.aprsdroid.app.service.ImmediateLocationCoordinator
 import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.update.GitHubUpdateChecker
@@ -374,7 +374,13 @@ class HubActivity : BaseRecyclerActivity() {
     }
 
     private fun requestMapCurrentLocation() {
-        if (checkPermissions(LocationSource.getPermissions(prefs), MAP_LOCATION_PERMISSION)) {
+        if (checkPermissions(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+                MAP_LOCATION_PERMISSION,
+            ) {
             mapLocationCoordinator.triggerDeviceLocation()
         }
     }
