@@ -68,8 +68,11 @@ internal class ImmediateLocationCoordinator(
     }
 
     private fun requestSingleUpdate(locationManager: LocationManager) {
+        var completed = false
         val listener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
+                if (completed) return
+                completed = true
                 Log.i(logTag, "triggerImmediateLocation singleListener got location: $location")
                 try {
                     locationManager.removeUpdates(this)
