@@ -24,13 +24,16 @@ internal class ImmediateLocationCoordinator(
     private val mainLooper: Looper = Looper.getMainLooper(),
 ) {
     fun trigger(locationSource: LocationSource) {
-        try {
-            if (locationSource is FixedPosition) {
-                // Preserve the existing manual-position behavior and side effects.
-                locationSource.start(true)
-                return
-            }
+        if (locationSource is FixedPosition) {
+            // Preserve the existing manual-position behavior and side effects.
+            locationSource.start(true)
+            return
+        }
+        triggerDeviceLocation()
+    }
 
+    fun triggerDeviceLocation() {
+        try {
             val locationManager = locationManagerProvider()
             val bestLocation = newestByTimestamp(readCachedLocations(locationManager)) { it.time }
             if (bestLocation != null) {
