@@ -497,4 +497,6 @@
     <string name="station_search_placeholder">Search callsign or comment…</string>
     <string name="station_search_empty">No matching stations</string>
     <string name="station_search_close">Close search</string>
+    <string name="map_location_fallback">Unable to get current location; showing saved APRS position.</string>
+    <string name="map_location_unavailable">Unable to get current location or saved APRS position.</string>
 </resources>
