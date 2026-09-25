@@ -55,7 +55,7 @@ class RadioPttSequenceTest {
         override val radio = RadioDescriptor(1, "Test", "Fake")
         override val capabilities = RadioCapabilities(canGetPtt = true, canSetPtt = true)
         override var isOpen: Boolean = true
-        private var pttState: Boolean = false
+        var pttState: Boolean = false
         val commands = mutableListOf<Boolean>()
 
         override fun open() = Unit
