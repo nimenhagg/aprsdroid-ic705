@@ -1,9 +1,9 @@
 name: Hamlib Android CI
 on:
   pull_request:
-    paths: ['third_party/hamlib/**', '.github/scripts/build_hamlib_android.sh', '.github/scripts/package_hamlib_source.sh', '.github/workflows/hamlib-ci.yml', '.github/workflows/ci.yml', '.github/workflows/release.yml', 'build.gradle', 'AGENT.md']
+    paths: ['third_party/hamlib/**', 'native/hamlib-jni/**', 'src/hamlib/**', 'test/java/org/aprsdroid/app/hamlib/**', '.github/scripts/build_hamlib_android.sh', '.github/scripts/build_hamlib_jni_android.sh', '.github/scripts/build_hamlib_jni_host.sh', '.github/scripts/package_hamlib_source.sh', '.github/workflows/hamlib-ci.yml', '.github/workflows/ci.yml', '.github/workflows/release.yml', 'build.gradle', 'AGENT.md']
   push:
-    branches: [feat/hamlib-build-foundation]
+    branches: [feat/hamlib-build-foundation, feat/hamlib-jni]
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,6 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { fetch-depth: 0 }
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
       - run: |
           sudo apt-get update
           sudo apt-get install -y autoconf automake libtool pkg-config patchelf
@@ -21,6 +25,12 @@ jobs:
           bash .github/scripts/build_hamlib_android.sh armeabi-v7a
           test -s build/generated/hamlibJniLibs/arm64-v8a/libhamlib.so
           test -s build/generated/hamlibJniLibs/armeabi-v7a/libhamlib.so
+      - run: |
+          set -euo pipefail
+          for abi in arm64-v8a armeabi-v7a; do
+            bash .github/scripts/build_hamlib_jni_android.sh "$abi"
+            test -s "build/generated/hamlibJniLibs/$abi/libaprs_hamlib.so"
+          done
       - run: |
           out="$RUNNER_TEMP/hamlib-source"
           bash .github/scripts/package_hamlib_source.sh "$out"
@@ -31,5 +41,76 @@ jobs:
           name: hamlib-android-${{ github.sha }}
           path: |
             build/generated/hamlibJniLibs/arm64-v8a/libhamlib.so
+            build/generated/hamlibJniLibs/arm64-v8a/libaprs_hamlib.so
             build/generated/hamlibJniLibs/armeabi-v7a/libhamlib.so
+            build/generated/hamlibJniLibs/armeabi-v7a/libaprs_hamlib.so
           if-no-files-found: error
+
+  jvm-native:
+    name: JVM native lifecycle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake libtool pkg-config
+      # Builds pinned Hamlib for the host plus libaprs_hamlib.so for the JVM, so
+      # the handle lifecycle and error mapping are exercised against the real
+      # library instead of a mock.
+      - run: bash .github/scripts/build_hamlib_jni_host.sh
+      - name: Run Hamlib JVM tests against the host native library
+        env:
+          APRSDROID_HAMLIB_NATIVE: ${{ github.workspace }}/build/generated/hamlibJniHost/libaprs_hamlib.so
+          # Fails instead of skipping when the native library is missing.
+          APRSDROID_HAMLIB_REQUIRE_NATIVE: '1'
+        run: |
+          chmod +x gradlew
+          ./gradlew \
+            testArm64OpenglDebugUnitTest \
+            --tests 'org.aprsdroid.app.hamlib.*' \
+            --no-daemon --stacktrace
+      - name: Report failing Hamlib tests
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+
+          for path in sorted(glob.glob('build/test-results/testArm64OpenglDebugUnitTest/*.xml')):
+              for case in ET.parse(path).iter('testcase'):
+                  for kind in ('failure', 'error'):
+                      for node in case.findall(kind):
+                          message = (node.get('message') or node.text or '').strip().replace('\n', ' ')
+                          print(f"{case.get('classname')}.{case.get('name')} [{kind}]: {message[:400]}")
+          PY
+      # Always last, so the summary is what a log reader sees at the end.
+      - name: Summarise Hamlib native tests
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+
+          for path in sorted(glob.glob('build/test-results/testArm64OpenglDebugUnitTest/*.xml')):
+              suite = ET.parse(path).getroot()
+              if 'hamlib' not in (suite.get('name') or ''):
+                  continue
+              print(f"{suite.get('name')}: tests={suite.get('tests')} failures={suite.get('failures')} "
+                    f"errors={suite.get('errors')} skipped={suite.get('skipped')}")
+              for case in suite.iter('testcase'):
+                  status = 'passed'
+                  for kind in ('failure', 'error', 'skipped'):
+                      if case.find(kind) is not None:
+                          status = kind
+                  print(f"  {case.get('name')}: {status}")
+              for node in suite.iter('system-out'):
+                  for line in (node.text or '').splitlines():
+                      if 'Hamlib registered' in line:
+                          print(f"  {line.strip()}")
+          PY
