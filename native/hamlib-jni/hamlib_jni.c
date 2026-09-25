@@ -204,8 +204,10 @@ static int hjni_caps_callback(const struct rig_caps *caps, rig_ptr_t data)
 
     ctx->index++;
     if (ctx->array == NULL) {
-        /* Counting pass: no JNI objects are created yet. */
-        return 0;
+        /* Counting pass: no JNI objects are created yet.
+         * Hamlib rig_list_foreach stops when cfunc returns 0;
+         * return non-zero to continue enumerating all rigs. */
+        return -1;
     }
 
     /* Tab separated, ASCII only: the Kotlin side decodes this into a value
@@ -222,14 +224,16 @@ static int hjni_caps_callback(const struct rig_caps *caps, rig_ptr_t data)
 
     text = (*ctx->env)->NewStringUTF(ctx->env, line);
     if (text == NULL) {
-        return 1; /* stop: an exception is already pending */
+        return 0; /* stop: an exception is already pending */
     }
     if (ctx->index - 1 < ctx->capacity) {
         (*ctx->env)->SetObjectArrayElement(ctx->env, ctx->array, ctx->index - 1,
                                            text);
     }
     (*ctx->env)->DeleteLocalRef(ctx->env, text);
-    return 0;
+    /* Hamlib rig_list_foreach stops when cfunc returns 0;
+     * return non-zero to continue enumerating all rigs. */
+    return -1;
 }
 
 JNIEXPORT jint JNICALL

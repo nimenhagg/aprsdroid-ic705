@@ -48,11 +48,15 @@ class RadioProfileTest {
     fun findByModelIdAndName() {
         assertEquals(RadioProfile.IC705_USB, RadioProfile.findByModelId(3085))
         assertEquals(RadioProfile.IC7100_USB, RadioProfile.findByModelId(3070))
+        assertEquals(RadioProfile.FT891_USB, RadioProfile.findByModelId(1036))
+        assertEquals(RadioProfile.FT991A_USB, RadioProfile.findByModelId(1035))
         assertEquals(RadioProfile.HAMLIB_DUMMY, RadioProfile.findByModelId(1))
         assertNull(RadioProfile.findByModelId(999999))
 
         assertEquals(RadioProfile.IC705_USB, RadioProfile.findByName("Icom IC-705 (USB)"))
         assertEquals(RadioProfile.IC705_USB, RadioProfile.findByName("icom ic-705 (usb)"))
+        assertEquals(RadioProfile.FT891_USB, RadioProfile.findByName("Yaesu FT-891 (USB)"))
+        assertEquals(RadioProfile.FT991A_USB, RadioProfile.findByName("Yaesu FT-991/A (USB)"))
         assertNull(RadioProfile.findByName("Unknown Radio"))
     }
 

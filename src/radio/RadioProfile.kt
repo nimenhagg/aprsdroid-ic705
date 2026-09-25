@@ -109,7 +109,7 @@ data class RadioProfile(
          */
         val FT891_USB = RadioProfile(
             name = "Yaesu FT-891 (USB)",
-            hamlibModelId = 1035,
+            hamlibModelId = 1036,
             defaultBaudRate = 38400,
             supportedBaudRates = listOf(9600, 19200, 38400),
             defaultCivAddress = null,
@@ -123,7 +123,7 @@ data class RadioProfile(
          */
         val FT991A_USB = RadioProfile(
             name = "Yaesu FT-991/A (USB)",
-            hamlibModelId = 1036,
+            hamlibModelId = 1035,
             defaultBaudRate = 38400,
             supportedBaudRates = listOf(9600, 19200, 38400),
             defaultCivAddress = null,
