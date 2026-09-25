@@ -118,6 +118,19 @@ jobs:
             test "$actual" = "$expected"
           done
 
+      - name: Verify libc++_shared is packaged
+        run: |
+          set -euo pipefail
+          expected=$(sha256sum build/generated/hamlibJniLibs/arm64-v8a/libc++_shared.so | awk '{print $1}')
+          for variant in debug release; do
+            apk=$(find "build/outputs/apk/arm64Opengl/${variant}" -name '*.apk' -print -quit)
+            test -n "$apk"
+            count=$(unzip -Z1 "$apk" | grep -Fxc 'lib/arm64-v8a/libc++_shared.so')
+            test "$count" -eq 1
+            actual=$(unzip -p "$apk" 'lib/arm64-v8a/libc++_shared.so' | sha256sum | awk '{print $1}')
+            test "$actual" = "$expected"
+          done
+
       - name: Upload debug APK and lint reports
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
