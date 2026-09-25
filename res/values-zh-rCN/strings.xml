@@ -377,6 +377,7 @@
 
     <!-- IC-705 Wi-Fi 模块与设置 -->
     <string name="p_conn_ic705">IC-705 Wi-Fi</string>
+    <string name="p_conn_usbradio">USB 电台 (Hamlib)</string>
     <string name="ic705_rx_title">IC-705 Wi-Fi 诊断</string>
     <string name="ic705_rx_address">电台 IP 地址</string>
     <string name="ic705_rx_port">控制 UDP 端口</string>

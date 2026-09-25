@@ -164,6 +164,7 @@
 <string name="p_conn_aprsis">Internet (APRS-IS)</string>
 <string name="p_conn_afsk">Audio (AFSK)</string>
 <string name="p_conn_ic705">IC-705 Wi-Fi</string>
+<string name="p_conn_usbradio">USB Radio (Hamlib)</string>
 <string name="p_conn_kiss">TNC (KISS)</string>
 <string name="p_conn_tnc2">TNC (plaintext TNC2)</string>
 <string name="p_conn_kwd">Kenwood (NMEA waypoint)</string>
