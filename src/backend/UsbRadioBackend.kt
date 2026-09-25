@@ -22,8 +22,8 @@ import org.aprsdroid.app.AprsService
 import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.R
 import org.aprsdroid.app.StorageDatabase
-import org.aprsdroid.app.audio.Ax25PacketConsumer
-import org.aprsdroid.app.audio.Ax25SubmitSink
+import org.aprsdroid.app.Ax25PacketConsumer
+import org.aprsdroid.app.Ax25SubmitSink
 import org.aprsdroid.app.audio.PcmEncoding
 import org.aprsdroid.app.audio.PcmFormat
 import org.aprsdroid.app.hamlib.HamlibRigCatalog
