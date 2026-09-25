@@ -95,6 +95,23 @@ class HamlibNativeLifecycleTest {
     }
 
     @Test
+    fun openAndClosePortAreIdempotent() {
+        HamlibHandle.createDummy().use { handle ->
+            handle.open()
+            assertTrue(handle.isOpen)
+            // Second open must be an idempotent no-op and NOT throw Invalid Parameter (-1)
+            handle.open()
+            assertTrue(handle.isOpen)
+
+            handle.closePort()
+            assertFalse(handle.isOpen)
+            // Second closePort must be an idempotent no-op
+            handle.closePort()
+            assertFalse(handle.isOpen)
+        }
+    }
+
+    @Test
     fun setAndReadBackMode() {
         // Use a mode the dummy backend actually advertises instead of assuming
         // it accepts a packet mode.

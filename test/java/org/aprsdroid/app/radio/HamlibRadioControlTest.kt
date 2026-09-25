@@ -55,6 +55,26 @@ class HamlibRadioControlTest {
     }
 
     @Test
+    fun openAndClosePortAreIdempotent() {
+        val rig = HamlibRigCatalog.findByModelId(HamlibRigCatalog.DUMMY_MODEL_ID)!!
+        HamlibRadioControl.create(
+            rig,
+            RadioTransport(RadioTransport.Kind.LOOPBACK),
+        ).use { control ->
+            control.open()
+            assertTrue(control.isOpen)
+            // Second open must succeed without throwing HamlibException
+            control.open()
+            assertTrue(control.isOpen)
+
+            control.closePort()
+            assertFalse(control.isOpen)
+            control.closePort()
+            assertFalse(control.isOpen)
+        }
+    }
+
+    @Test
     fun pttCapabilityAndDescriptorDoNotDependOnTransport() {
         val rig = HamlibRigCatalog.findByModelId(HamlibRigCatalog.DUMMY_MODEL_ID)!!
         HamlibRadioControl.create(
