@@ -60,6 +60,7 @@ class AprsService : Service() {
 
         // Broadcast actions
         const val UPDATE = "$PACKAGE.UPDATE"
+        const val LIVE_STATUS = "$PACKAGE.LIVE_STATUS"
         const val MESSAGE = "$PACKAGE.MESSAGE"
         const val MESSAGETX = "$PACKAGE.MESSAGETX"
 
@@ -130,16 +131,23 @@ class AprsService : Service() {
     private fun updateLiveStatus(activity: LiveActivity) {
         liveStatusVersion.incrementAndGet()
         ServiceNotifier.instance.updateLiveStatus(this, liveStatus(activity))
+        notifyLiveStatusChanged()
+    }
+
+    private fun notifyLiveStatusChanged() {
+        sendBroadcast(privateIntent(this, LIVE_STATUS))
     }
 
     private fun startNotifier(status: String, activity: LiveActivity) {
         liveStatusVersion.incrementAndGet()
         ServiceNotifier.instance.start(this, status, liveStatus(activity))
+        notifyLiveStatusChanged()
     }
 
     private fun markTransientLiveStatus(activity: LiveActivity, holdMillis: Long) {
         val token = liveStatusVersion.incrementAndGet()
         ServiceNotifier.instance.updateLiveStatus(this, liveStatus(activity))
+        notifyLiveStatusChanged()
         handler.postDelayed({
             if (serviceRuntimeState.isRunning && liveStatusVersion.get() == token) {
                 updateLiveStatus(LiveActivity.READY)
@@ -358,6 +366,7 @@ class AprsService : Service() {
         locSource.stop()
         try { unregisterReceiver(msgNotifier) } catch (_: Exception) {}
         ServiceNotifier.instance.stop(this)
+        notifyLiveStatusChanged()
         packetSendCoordinator.shutdownNow()
     }
 
