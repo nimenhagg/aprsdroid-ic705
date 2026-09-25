@@ -37,7 +37,8 @@ data class RadioAudioDevice(
         }
 
         fun findDeviceInfo(audioManager: AudioManager, deviceId: Int): AudioDeviceInfo? {
-            return audioManager.getDevices(AudioManager.GET_DEVICES_ALL).firstOrNull { it.id == deviceId }
+            val flags = AudioManager.GET_DEVICES_INPUTS or AudioManager.GET_DEVICES_OUTPUTS
+            return audioManager.getDevices(flags).firstOrNull { it.id == deviceId }
         }
     }
 }
