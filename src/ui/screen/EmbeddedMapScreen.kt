@@ -322,6 +322,7 @@ private fun GoogleEmbeddedRenderer(
     stations: List<MapStation>,
     myLat: Int,
     myLon: Int,
+    currentLocation: Location?,
     actions: EmbeddedMapActions,
     onStationClick: (String) -> Unit,
     onLoadingChanged: (Boolean) -> Unit
