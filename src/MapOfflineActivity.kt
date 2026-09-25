@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import org.aprsdroid.app.map.MapLibreOfflineManager
 import org.aprsdroid.app.ui.theme.AprsTheme
-import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.offline.OfflineRegion
 import org.maplibre.android.offline.OfflineRegionStatus
@@ -124,8 +123,10 @@ class MapOfflineActivity : ComponentActivity() {
     private fun downloadCurrentView() {
         val tileUrls = intent.getStringArrayExtra(EXTRA_TILE_URLS) ?: return
         val bounds = LatLngBounds.from(
-            LatLng(intent.getDoubleExtra(EXTRA_SOUTH, 0.0), intent.getDoubleExtra(EXTRA_WEST, 0.0)),
-            LatLng(intent.getDoubleExtra(EXTRA_NORTH, 0.0), intent.getDoubleExtra(EXTRA_EAST, 0.0))
+            intent.getDoubleExtra(EXTRA_NORTH, 0.0),
+            intent.getDoubleExtra(EXTRA_EAST, 0.0),
+            intent.getDoubleExtra(EXTRA_SOUTH, 0.0),
+            intent.getDoubleExtra(EXTRA_WEST, 0.0)
         )
         MapLibreOfflineManager.createRegion(
             this,
