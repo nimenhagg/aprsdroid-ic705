@@ -17,3 +17,18 @@ interface PcmSink : Closeable {
      */
     fun reset() = Unit
 }
+
+/**
+ * A [PcmSink] capable of blocking until queued audio samples have finished physical playback/drain.
+ */
+interface DrainablePcmSink : PcmSink {
+    /**
+     * Blocks until all queued audio samples have completed playback or [timeoutMs] has elapsed.
+     */
+    fun drain(timeoutMs: Long = DEFAULT_DRAIN_TIMEOUT_MS)
+
+    companion object {
+        const val DEFAULT_DRAIN_TIMEOUT_MS = 5000L
+    }
+}
+
