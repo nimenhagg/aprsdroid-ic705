@@ -4,7 +4,7 @@
 
 ## Hamlib 与多电台架构规划
 
-> **状态：分阶段实现中，尚未形成稳定版多电台能力。** PR1 只建立 Hamlib Android 构建基础（`minSdk 28`、固定 revision、CI 源码构建、ARM64/ARMv7 产物与许可证/源码归档）；PR2 才加入最小 JNI。不得把后续目标描述成当前已发布能力。当前 IC-705 WLAN 路径、PTT 安全状态机、Graywolf RX 和既有设置仍以本文件前文的现状约束为准。
+> **状态：分阶段实现中，尚未形成稳定版多电台能力。** PR1（Android 构建基础）、PR2（最小 JNI 交互）与 PR3（通用 RadioControl 契约与适配层）已合并至主线；当前正在实施 PR4（Android USB CAT bridge 本地回环桥接）。不得把后续目标描述成当前已发布能力。当前 IC-705 WLAN 路径、PTT 安全状态机、Graywolf RX 和既有设置仍以本文件前文的现状约束为准。
 
 ### 16.1 总体原则
 
