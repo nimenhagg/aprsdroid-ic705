@@ -297,15 +297,6 @@ private fun MapLibreEmbeddedRenderer(
         )
     }
 
-    LaunchedEffect(map, currentLocation) {
-        val location = currentLocation ?: return@LaunchedEffect
-        map?.animateCamera(
-            GoogleCameraUpdateFactory.newLatLng(
-                GoogleLatLng(location.latitude, location.longitude)
-            )
-        )
-    }
-
     actions.savePosition = {
         val camera = map?.cameraPosition
         val target = camera?.target
@@ -455,6 +446,15 @@ private fun GoogleEmbeddedRenderer(
 
     actions.zoomIn = { map?.animateCamera(GoogleCameraUpdateFactory.zoomBy(1f)) }
     actions.zoomOut = { map?.animateCamera(GoogleCameraUpdateFactory.zoomBy(-1f)) }
+    LaunchedEffect(map, currentLocation) {
+        val location = currentLocation ?: return@LaunchedEffect
+        map?.animateCamera(
+            GoogleCameraUpdateFactory.newLatLng(
+                GoogleLatLng(location.latitude, location.longitude)
+            )
+        )
+    }
+
     actions.savePosition = {
         map?.cameraPosition?.let { camera ->
             savePosition(prefs, camera.target.latitude, camera.target.longitude, camera.zoom)
