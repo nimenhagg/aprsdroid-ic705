@@ -5,7 +5,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.location.Location
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.animation.EnterTransition
@@ -49,6 +52,8 @@ import org.aprsdroid.app.ui.viewmodel.ConversationsViewModel
 import org.aprsdroid.app.ui.viewmodel.HubViewModel
 import org.aprsdroid.app.ui.viewmodel.LogViewModel
 import org.aprsdroid.app.ui.viewmodel.MapViewModel
+import org.aprsdroid.app.location.LocationSource
+import org.aprsdroid.app.service.ImmediateLocationCoordinator
 import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.update.GitHubUpdateChecker
 import org.aprsdroid.app.update.UpdateCheckResult
@@ -57,6 +62,7 @@ class HubActivity : BaseRecyclerActivity() {
 
     companion object {
         const val EXTRA_START_DESTINATION = "start_destination"
+        private const val MAP_LOCATION_PERMISSION = 1021
     }
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
@@ -83,7 +89,21 @@ class HubActivity : BaseRecyclerActivity() {
     private val firstRunDialogVisible = mutableStateOf(false)
     private val pendingStartDestination = mutableStateOf<String?>(null)
     private val updateAvailableState = mutableStateOf<UpdateCheckResult.UpdateAvailable?>(null)
+    private val mapCurrentLocation = mutableStateOf<Location?>(null)
     private var activeRoute: String = MainRoutes.STATIONS
+
+    private val mapLocationCoordinator by lazy {
+        ImmediateLocationCoordinator(
+            locationManagerProvider = {
+                getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager
+            },
+            handler = Handler(Looper.getMainLooper()),
+            onLocation = { location ->
+                runOnUiThread { mapCurrentLocation.value = location }
+            },
+            logTag = "APRSdroid.MapLocation",
+        )
+    }
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -202,6 +222,7 @@ class HubActivity : BaseRecyclerActivity() {
                                     showObjects = mapState.showObjects,
                                     myLat = hubState.myLat,
                                     myLon = hubState.myLon,
+                                    currentLocation = mapCurrentLocation.value,
                                     onShowObjectsChanged = { showObjects -> mapViewModel.refresh(showObjects) },
                                     onStationClick = { call ->
                                         showMapStation(call) { target -> openMessaging(target) }
@@ -349,6 +370,20 @@ class HubActivity : BaseRecyclerActivity() {
         pendingStartDestination.value = intent
             ?.getStringExtra(EXTRA_START_DESTINATION)
             ?.let(MainRoutes::normalizeStartDestination)
+    }
+
+    private fun requestMapCurrentLocation() {
+        if (checkPermissions(LocationSource.getPermissions(prefs), MAP_LOCATION_PERMISSION)) {
+            mapLocationCoordinator.trigger(LocationSource.instanciateLocation(this, prefs))
+        }
+    }
+
+    override fun onAllPermissionsGranted(action: Int) {
+        if (action == MAP_LOCATION_PERMISSION) {
+            mapLocationCoordinator.trigger(LocationSource.instanciateLocation(this, prefs))
+        } else {
+            super.onAllPermissionsGranted(action)
+        }
     }
 
     private fun toggleTracking() {
