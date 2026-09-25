@@ -216,7 +216,7 @@ advanced manual override（仅必要时）
 
 验收：Hamlib dummy 与现有 IC-705 路径均可独立工作，旧设置不迁移、不丢失。
 
-#### PR 4：Android USB CAT bridge
+#### PR 4：Android USB CAT bridge (已合并到主线)
 
 - Android USB Host/serial 权限与生命周期；
 - loopback CAT bridge；
@@ -226,7 +226,7 @@ advanced manual override（仅必要时）
 
 验收：真机可由 Hamlib 对 USB 电台稳定完成读频、设频、mode 和无 RF 风险的控制操作。
 
-#### PR 5：通用 Radio Audio backend
+#### PR 5：通用 Radio Audio backend (已实现)
 
 - 显式 USB Audio input/output 选择；
 - RX → Graywolf；
