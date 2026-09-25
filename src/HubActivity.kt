@@ -10,6 +10,9 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,6 +48,9 @@ import org.aprsdroid.app.ui.viewmodel.ConversationsViewModel
 import org.aprsdroid.app.ui.viewmodel.HubViewModel
 import org.aprsdroid.app.ui.viewmodel.LogViewModel
 import org.aprsdroid.app.ui.viewmodel.MapViewModel
+import org.aprsdroid.app.diagnostic.AppLog
+import org.aprsdroid.app.update.GitHubUpdateChecker
+import org.aprsdroid.app.update.UpdateCheckResult
 
 class HubActivity : BaseRecyclerActivity() {
 
@@ -75,6 +81,7 @@ class HubActivity : BaseRecyclerActivity() {
     }
     private val firstRunDialogVisible = mutableStateOf(false)
     private val pendingStartDestination = mutableStateOf<String?>(null)
+    private val updateAvailableState = mutableStateOf<UpdateCheckResult.UpdateAvailable?>(null)
     private var activeRoute: String = MainRoutes.STATIONS
 
     private val updateReceiver = object : BroadcastReceiver() {
@@ -99,6 +106,14 @@ class HubActivity : BaseRecyclerActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         consumeNavigationIntent(intent)
+        GitHubUpdateChecker.checkAutomatically(BuildConfig.VERSION_NAME) { update ->
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed) {
+                    AppLog.i("UPDATE", "automatic_check_update_available", mapOf("current" to update.current, "latest" to update.latest))
+                    updateAvailableState.value = update
+                }
+            }
+        }
 
         setContent {
             AprsTheme {
@@ -268,6 +283,33 @@ class HubActivity : BaseRecyclerActivity() {
                             onDestinationSelected = { route -> navController.navigateTopLevel(route) }
                         )
                     }
+                }
+
+                updateAvailableState.value?.let { update ->
+                    AlertDialog(
+                        onDismissRequest = { updateAvailableState.value = null },
+                        title = {
+                            Text(stringResource(R.string.update_available_title, update.latest))
+                        },
+                        text = {
+                            Text(stringResource(R.string.update_available_message, update.current))
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    updateAvailableState.value = null
+                                    UrlOpener.open(this@HubActivity, update.releaseUrl)
+                                },
+                            ) {
+                                Text(stringResource(R.string.update_open_release))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { updateAvailableState.value = null }) {
+                                Text(stringResource(android.R.string.cancel))
+                            }
+                        },
+                    )
                 }
 
                 if (firstRunDialogVisible.value) {
