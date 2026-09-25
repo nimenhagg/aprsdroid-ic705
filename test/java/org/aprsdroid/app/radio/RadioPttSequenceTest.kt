@@ -12,12 +12,12 @@ class RadioPttSequenceTest {
 
         val result = RadioPttSequence(radio).transmit {
             audioRuns = true
-            assertTrue(radio.ptt)
+            assertTrue(radio.pttState)
         }
 
         assertEquals(RadioPttSequence.Result.Completed, result)
         assertTrue(audioRuns)
-        assertTrue(!radio.ptt)
+        assertTrue(!radio.pttState)
         assertEquals(listOf(true, false), radio.commands)
     }
 
@@ -32,7 +32,7 @@ class RadioPttSequenceTest {
 
         assertEquals(RadioPttSequence.Result.PttOnNotConfirmed, result)
         assertTrue(!audioRuns)
-        assertTrue(!radio.ptt)
+        assertTrue(!radio.pttState)
         assertEquals(listOf(true, false), radio.commands)
     }
 
@@ -45,7 +45,7 @@ class RadioPttSequenceTest {
         }
 
         assertEquals(RadioPttSequence.Result.AudioFailed, result)
-        assertTrue(!radio.ptt)
+        assertTrue(!radio.pttState)
         assertEquals(listOf(true, false), radio.commands)
     }
 
@@ -55,15 +55,15 @@ class RadioPttSequenceTest {
         override val radio = RadioDescriptor(1, "Test", "Fake")
         override val capabilities = RadioCapabilities(canGetPtt = true, canSetPtt = true)
         override var isOpen: Boolean = true
-        var ptt: Boolean = false
+        var pttState: Boolean = false
         val commands = mutableListOf<Boolean>()
 
         override fun open() = Unit
         override fun closePort() = Unit
-        override fun isPttOn(): Boolean = ptt && readback
+        override fun isPttOn(): Boolean = pttState && readback
         override fun setPtt(on: Boolean) {
             commands += on
-            ptt = on
+            pttState = on
         }
         override fun close() = Unit
     }
