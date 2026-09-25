@@ -20,17 +20,21 @@ internal class ImmediateLocationCoordinator(
     private val locationManagerProvider: () -> LocationManager?,
     private val handler: Handler,
     private val onLocation: (Location) -> Unit,
+    private val onFailure: () -> Unit = {},
     private val logTag: String,
     private val mainLooper: Looper = Looper.getMainLooper(),
 ) {
     fun trigger(locationSource: LocationSource) {
-        try {
-            if (locationSource is FixedPosition) {
-                // Preserve the existing manual-position behavior and side effects.
-                locationSource.start(true)
-                return
-            }
+        if (locationSource is FixedPosition) {
+            // Preserve the existing manual-position behavior and side effects.
+            locationSource.start(true)
+            return
+        }
+        triggerDeviceLocation()
+    }
 
+    fun triggerDeviceLocation() {
+        try {
             val locationManager = locationManagerProvider()
             val bestLocation = newestByTimestamp(readCachedLocations(locationManager)) { it.time }
             if (bestLocation != null) {
@@ -42,9 +46,12 @@ internal class ImmediateLocationCoordinator(
             Log.w(logTag, "triggerImmediateLocation: no cached location, requesting immediate update")
             if (locationManager != null) {
                 requestSingleUpdate(locationManager)
+            } else {
+                onFailure()
             }
         } catch (e: Throwable) {
             Log.e(logTag, "triggerImmediateLocation error: $e")
+            onFailure()
         }
     }
 
@@ -63,8 +70,11 @@ internal class ImmediateLocationCoordinator(
     }
 
     private fun requestSingleUpdate(locationManager: LocationManager) {
+        var completed = false
         val listener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
+                if (completed) return
+                completed = true
                 Log.i(logTag, "triggerImmediateLocation singleListener got location: $location")
                 try {
                     locationManager.removeUpdates(this)
@@ -100,17 +110,26 @@ internal class ImmediateLocationCoordinator(
                     mainLooper,
                 )
             }
-            handler.postDelayed(
-                {
-                    try {
-                        locationManager.removeUpdates(listener)
-                    } catch (_: Exception) {
-                    }
-                },
-                SINGLE_UPDATE_TIMEOUT_MS,
-            )
+            handler.postDelayed({
+                if (completed) return@postDelayed
+                completed = true
+                try {
+                    locationManager.removeUpdates(listener)
+                } catch (_: Exception) {
+                }
+                Log.w(logTag, "triggerImmediateLocation timed out")
+                onFailure()
+            }, SINGLE_UPDATE_TIMEOUT_MS)
         } catch (_: SecurityException) {
+            if (!completed) {
+                completed = true
+                onFailure()
+            }
         } catch (_: Exception) {
+            if (!completed) {
+                completed = true
+                onFailure()
+            }
         }
     }
 
