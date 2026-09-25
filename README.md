@@ -152,7 +152,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 - Release CI 从 MapLibre Native `android-v13.5.1` 构建 `MinSizeRel` + IPO/LTO 原生库，替换 APK 内对应 ABI 的 `libmaplibre.so` 后重新执行 16 KiB 对齐、签名和 SHA-256 校验。
 - OpenStreetMap 请求包含可识别的 User-Agent，遵循服务端缓存规则，并在地图上显示可点击的 `© OpenStreetMap contributors`。
 - 正式 Release 在构建时注入受包名和签名证书限制的 Google Maps Key；自行构建未配置 Key 时隐藏 Google 图源。
-- 不提供 MapLibre Offline 区域下载/管理功能，也不批量预取 OSM 瓦片。
+- 提供 MapLibre Offline 区域下载/管理入口，但当前仅允许用户配置的 Custom tile source；标准 OpenStreetMap `tile.openstreetmap.org` 不提供预取/离线下载，仍只使用正常交互缓存。
 
 ### 权限说明
 
