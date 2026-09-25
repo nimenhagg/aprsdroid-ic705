@@ -4,7 +4,7 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 Wi-Fi 直连 APRS 收
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.2.4`**
+**最新稳定版 / Latest release: `Mod-v2.3.0`**
 
 ### 社区交流
 
