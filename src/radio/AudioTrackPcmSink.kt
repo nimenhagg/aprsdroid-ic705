@@ -14,14 +14,37 @@ class AudioTrackPcmSink(
     override val format: PcmFormat,
     preferredDevice: AudioDeviceInfo? = null,
     val bufferCapacitySamples: Int = DEFAULT_BUFFER_CAPACITY_SAMPLES,
+    val drainTailMarginMs: Long = DEFAULT_DRAIN_TAIL_MARGIN_MS,
 ) : DrainablePcmSink {
 
     companion object {
         const val DEFAULT_BUFFER_CAPACITY_SAMPLES = 8192
+        const val DEFAULT_DRAIN_TAIL_MARGIN_MS = 100L
+
+        /**
+         * Calculates the maximum expected duration (in ms) to wait for [samples] to physically play out
+         * at [sampleRateHz], accounting for elapsed time since transmission began and a tail margin.
+         */
+        fun calculateDrainTimeoutMs(
+            samples: Long,
+            sampleRateHz: Int,
+            elapsedSinceStartMs: Long = 0L,
+            tailMarginMs: Long = DEFAULT_DRAIN_TAIL_MARGIN_MS,
+            maxTimeoutCeilingMs: Long = 5000L,
+        ): Long {
+            if (samples <= 0L || sampleRateHz <= 0) return 0L
+            val totalAudioDurationMs = (samples * 1000L) / sampleRateHz
+            val remainingAudioMs = (totalAudioDurationMs - elapsedSinceStartMs).coerceAtLeast(0L)
+            val calculatedWaitMs = remainingAudioMs + tailMarginMs
+            return minOf(maxTimeoutCeilingMs, calculatedWaitMs)
+        }
     }
 
     private val audioTrack: AudioTrack
     private var totalSamplesWritten: Long = 0
+    private var burstSamplesWritten: Long = 0
+    private var burstStartTimeMs: Long = 0
+    private var burstStartHeadPosition: Long = 0
     private var closed = false
 
     init {
@@ -59,6 +82,10 @@ class AudioTrackPcmSink(
         if (audioTrack.playState != AudioTrack.PLAYSTATE_PLAYING) {
             audioTrack.play()
         }
+        if (burstSamplesWritten == 0L) {
+            burstStartTimeMs = System.currentTimeMillis()
+            burstStartHeadPosition = audioTrack.playbackHeadPosition.toLong() and 0xFFFFFFFFL
+        }
         var written = 0
         while (written < length && !closed) {
             val res = audioTrack.write(buffer, offset + written, length - written)
@@ -66,6 +93,7 @@ class AudioTrackPcmSink(
                 throw IllegalStateException("AudioTrack.write failed with code $res")
             }
             written += res
+            burstSamplesWritten += res
             totalSamplesWritten += res
         }
     }
@@ -75,23 +103,63 @@ class AudioTrackPcmSink(
     }
 
     override fun drain(timeoutMs: Long) {
-        if (totalSamplesWritten == 0L || audioTrack.playState != AudioTrack.PLAYSTATE_PLAYING) return
-        val targetHead = totalSamplesWritten and 0xFFFFFFFFL
-        val deadline = System.currentTimeMillis() + timeoutMs
+        if (burstSamplesWritten == 0L || audioTrack.playState != AudioTrack.PLAYSTATE_PLAYING) return
+
+        val burstDurationMs = (burstSamplesWritten * 1000L) / format.sampleRateHz
+        val elapsedSinceStartMs = System.currentTimeMillis() - burstStartTimeMs
+        val remainingWaitMs = calculateDrainTimeoutMs(
+            samples = burstSamplesWritten,
+            sampleRateHz = format.sampleRateHz,
+            elapsedSinceStartMs = elapsedSinceStartMs,
+            tailMarginMs = drainTailMarginMs,
+            maxTimeoutCeilingMs = timeoutMs,
+        )
+        val deadline = System.currentTimeMillis() + remainingWaitMs
+        val targetHead = burstStartHeadPosition + burstSamplesWritten
+
+        var lastHead = audioTrack.playbackHeadPosition.toLong() and 0xFFFFFFFFL
+        var stallCount = 0
+
         while (!closed && System.currentTimeMillis() < deadline) {
             val currentHead = audioTrack.playbackHeadPosition.toLong() and 0xFFFFFFFFL
             if (currentHead >= targetHead) {
+                // Playback head reached or surpassed all written samples; brief tail for DAC output
+                Thread.sleep(minOf(drainTailMarginMs, 50L))
                 break
             }
+
+            // If real elapsed time exceeds total audio duration, check if head position has stalled (underrun)
+            if (System.currentTimeMillis() >= burstStartTimeMs + burstDurationMs) {
+                if (currentHead == lastHead) {
+                    stallCount++
+                    if (stallCount >= 3) {
+                        // Position hasn't advanced for 30ms past audio duration; buffer is drained
+                        Thread.sleep(minOf(drainTailMarginMs, 50L))
+                        break
+                    }
+                } else {
+                    stallCount = 0
+                    lastHead = currentHead
+                }
+            }
+
             Thread.sleep(10)
         }
+
         runCatching {
             audioTrack.stop()
+            audioTrack.flush()
         }
+        burstSamplesWritten = 0L
+        burstStartTimeMs = 0L
+        burstStartHeadPosition = 0L
     }
 
     override fun reset() {
-        totalSamplesWritten = 0
+        burstSamplesWritten = 0L
+        burstStartTimeMs = 0L
+        burstStartHeadPosition = 0L
+        totalSamplesWritten = 0L
         runCatching {
             audioTrack.pause()
             audioTrack.flush()
@@ -101,6 +169,9 @@ class AudioTrackPcmSink(
     override fun close() {
         if (closed) return
         closed = true
+        burstSamplesWritten = 0L
+        burstStartTimeMs = 0L
+        burstStartHeadPosition = 0L
         runCatching {
             audioTrack.pause()
             audioTrack.flush()
