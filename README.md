@@ -6,6 +6,12 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 Wi-Fi 直连 APRS 收
 
 **最新稳定版 / Latest release: `Mod-v2.2.4`**
 
+### 社区交流
+
+- QQ 群：**1124716537**（APRSdroid Mod 测试群）
+- [点击链接加入群聊【APRSdroid Mod测试】](https://qun.qq.com/universal-share/share?ac=1&authKey=PjrBi5011R2U%2F1ExGjHnHycWPkdQUhKRJUbPyQltK6QFnujWWIouWDJGP2ZJ7%2BJ%2B&busi_data=eyJncm91cENvZGUiOiIxMTI0NzE2NTM3IiwidG9rZW4iOiJWK0xVZ0JGNVVNMEF3T2FYOEY2UjFWUnJla2dpZVdERWpwNERWS21VOUJNRWxYWXhPWjBlYVlYL1NQdXZ1NE1FIiwidWluIjoiMzIwMDQ1NjE3NCJ9&data=y4e4QQ6_nM_FMmqYhGCnyQtGt-qJn7kUuOWVY_ho9XyiHYs8vwZBnMAKdxOdDOpMUdNBpwK8B8H8F1_Z6wln7g&svctype=4&tempid=h5_group_info)
+- Telegram：[@APRSdroid_Mod](https://t.me/APRSdroid_Mod)
+
 > 本项目是非官方社区修改版，与 Icom、原 APRSdroid 作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 
 ## 中文说明
