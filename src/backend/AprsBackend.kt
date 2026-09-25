@@ -5,6 +5,7 @@ import android.Manifest
 import android.os.Build
 import net.ab0oo.aprs.parser.APRSPacket
 import org.aprsdroid.app.backend.Ic705WifiBackend
+import org.aprsdroid.app.backend.UsbRadioBackend
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -74,7 +75,8 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
             "tcp" to BackendInfo({ s, p -> TcpUploader(s, p) }, emptySet(), CAN_DUPLEX, PASSCODE_OPTIONAL),
             "bluetooth" to BackendInfo({ s, p -> BluetoothTnc(s, p) }, setOf(BLUETOOTH_PERMISSION), CAN_DUPLEX, PASSCODE_NONE),
             "tcpip" to BackendInfo({ s, p -> TcpUploader(s, p) }, emptySet(), CAN_DUPLEX, PASSCODE_NONE),
-            "usb" to BackendInfo({ s, p -> UsbTnc(s, p) }, emptySet(), CAN_DUPLEX, PASSCODE_NONE)
+            "usb" to BackendInfo({ s, p -> UsbTnc(s, p) }, emptySet(), CAN_DUPLEX, PASSCODE_NONE),
+            "usbradio" to BackendInfo({ s, p -> UsbRadioBackend(s, p) }, setOf(Manifest.permission.RECORD_AUDIO), CAN_DUPLEX, PASSCODE_NONE)
         )
 
         @JvmField
@@ -82,6 +84,7 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
             "aprsis" to ProtoInfo({ s, isStream, osStream -> AprsIsProto(s, isStream, osStream) }, "aprsis"),
             "afsk" to ProtoInfo(null, null),
             "ic705" to ProtoInfo(null, null),
+            "usbradio" to ProtoInfo(null, null),
             "kiss" to ProtoInfo({ s, isStream, osStream -> KissProto(s, isStream, osStream) }, "link"),
             "tnc2" to ProtoInfo({ _, isStream, osStream -> Tnc2Proto(isStream, osStream) }, "link"),
             "kenwood" to ProtoInfo({ s, isStream, osStream -> KenwoodProto(s, isStream, osStream) }, "link")

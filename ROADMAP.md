@@ -226,7 +226,7 @@ advanced manual override（仅必要时）
 
 验收：真机可由 Hamlib 对 USB 电台稳定完成读频、设频、mode 和无 RF 风险的控制操作。
 
-#### PR 5：通用 Radio Audio backend (已实现)
+#### PR 5：通用 Radio Audio backend (已合并到主线)
 
 - 显式 USB Audio input/output 选择；
 - RX → Graywolf；
@@ -237,9 +237,9 @@ advanced manual override（仅必要时）
 
 验收：synthetic + Android audio loopback 先通过，再进入低功率/假负载真机测试。
 
-#### PR 6：首台完整 Hamlib 电台
+#### PR 6：首台完整 Hamlib 电台（已实现：IC-705 USB OTG + 通用 Profile）
 
-首选 **IC-7100**，因为它同时验证：
+真机验证靶标选用 **IC-705 (USB OTG)**，兼顾 **IC-7100**，统一验证：
 
 - Icom CI-V；
 - Android USB CAT；
