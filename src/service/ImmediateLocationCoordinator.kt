@@ -46,6 +46,8 @@ internal class ImmediateLocationCoordinator(
             Log.w(logTag, "triggerImmediateLocation: no cached location, requesting immediate update")
             if (locationManager != null) {
                 requestSingleUpdate(locationManager)
+            } else {
+                onFailure()
             }
         } catch (e: Throwable) {
             Log.e(logTag, "triggerImmediateLocation error: $e")
@@ -109,6 +111,8 @@ internal class ImmediateLocationCoordinator(
                 )
             }
             handler.postDelayed({
+                if (completed) return@postDelayed
+                completed = true
                 try {
                     locationManager.removeUpdates(listener)
                 } catch (_: Exception) {
@@ -117,14 +121,16 @@ internal class ImmediateLocationCoordinator(
                 onFailure()
             }, SINGLE_UPDATE_TIMEOUT_MS)
         } catch (_: SecurityException) {
-            onFailure()
+            if (!completed) {
+                completed = true
+                onFailure()
+            }
         } catch (_: Exception) {
-            onFailure()
+            if (!completed) {
+                completed = true
+                onFailure()
+            }
         }
-        handler.postDelayed({
-            Log.w(logTag, "triggerImmediateLocation timed out")
-            onFailure()
-        }, SINGLE_UPDATE_TIMEOUT_MS)
     }
 
     private companion object {
