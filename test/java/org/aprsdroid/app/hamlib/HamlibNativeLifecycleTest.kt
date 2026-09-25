@@ -70,6 +70,17 @@ class HamlibNativeLifecycleTest {
         assertTrue("dummy backend missing from the catalog", dummy != null)
         assertTrue(dummy!!.capabilities.canControlFrequency)
         assertTrue(dummy.capabilities.canControlPtt)
+
+        assertTrue("Hamlib catalog should enumerate full backend catalog, got ${raw.size}", raw.size >= 100)
+        val ic705 = HamlibRigCatalog.findByModelId(3085)
+        assertTrue("IC-705 (model 3085) must be present in Hamlib catalog", ic705 != null)
+        assertEquals("Icom", ic705?.manufacturer)
+        assertTrue(ic705?.model?.contains("705") == true)
+
+        val ft891 = HamlibRigCatalog.findByModelId(1036)
+        assertTrue("FT-891 (model 1036) must be present in Hamlib catalog", ft891 != null)
+        assertEquals("Yaesu", ft891?.manufacturer)
+        assertTrue(ft891?.model?.contains("891") == true)
     }
 
     @Test
