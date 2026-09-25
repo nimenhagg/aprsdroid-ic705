@@ -20,7 +20,7 @@ internal class ImmediateLocationCoordinator(
     private val locationManagerProvider: () -> LocationManager?,
     private val handler: Handler,
     private val onLocation: (Location) -> Unit,
-    private val onFailure: () -> Unit,
+    private val onFailure: () -> Unit = {},
     private val logTag: String,
     private val mainLooper: Looper = Looper.getMainLooper(),
 ) {
