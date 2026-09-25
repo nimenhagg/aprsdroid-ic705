@@ -20,6 +20,7 @@ internal class ImmediateLocationCoordinator(
     private val locationManagerProvider: () -> LocationManager?,
     private val handler: Handler,
     private val onLocation: (Location) -> Unit,
+    private val onFailure: () -> Unit,
     private val logTag: String,
     private val mainLooper: Looper = Looper.getMainLooper(),
 ) {
@@ -48,6 +49,7 @@ internal class ImmediateLocationCoordinator(
             }
         } catch (e: Throwable) {
             Log.e(logTag, "triggerImmediateLocation error: $e")
+            onFailure()
         }
     }
 
@@ -103,18 +105,23 @@ internal class ImmediateLocationCoordinator(
                     mainLooper,
                 )
             }
-            handler.postDelayed(
-                {
-                    try {
-                        locationManager.removeUpdates(listener)
-                    } catch (_: Exception) {
-                    }
-                },
-                SINGLE_UPDATE_TIMEOUT_MS,
-            )
+            handler.postDelayed({
+                try {
+                    locationManager.removeUpdates(listener)
+                } catch (_: Exception) {
+                }
+                Log.w(logTag, "triggerImmediateLocation timed out")
+                onFailure()
+            }, SINGLE_UPDATE_TIMEOUT_MS)
         } catch (_: SecurityException) {
+            onFailure()
         } catch (_: Exception) {
+            onFailure()
         }
+        handler.postDelayed({
+            Log.w(logTag, "triggerImmediateLocation timed out")
+            onFailure()
+        }, SINGLE_UPDATE_TIMEOUT_MS)
     }
 
     private companion object {
