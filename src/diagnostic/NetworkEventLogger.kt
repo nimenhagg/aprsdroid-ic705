@@ -12,6 +12,9 @@ object NetworkEventLogger {
     @Volatile
     private var registered = false
 
+    private val wifiNetworksLock = Any()
+    private val wifiNetworks = LinkedHashSet<Network>()
+
     fun start(context: Context) {
         if (registered) return
         val appContext = context.applicationContext
@@ -24,11 +27,12 @@ object NetworkEventLogger {
             runCatching {
                 connectivity.registerNetworkCallback(request, object : ConnectivityManager.NetworkCallback() {
                     override fun onAvailable(network: Network) {
+                        rememberWifi(network)
                         AppLog.i("NET", "wifi_available", mapOf("network" to network.toString()))
-                        updateSnapshot(connectivity, network)
                     }
 
                     override fun onLost(network: Network) {
+                        forgetWifi(network)
                         AppLog.w("NET", "wifi_lost", mapOf("network" to network.toString()))
                         val selected = AppLog.snapshotState()["ic705.network"]
                         if (selected == network.toString()) {
@@ -37,6 +41,11 @@ object NetworkEventLogger {
                     }
 
                     override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+                        if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                            rememberWifi(network)
+                        } else {
+                            forgetWifi(network)
+                        }
                         AppLog.i(
                             "NET",
                             "wifi_capabilities_changed",
@@ -47,7 +56,7 @@ object NetworkEventLogger {
                                 "not_metered" to capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
                             ),
                         )
-                        updateSnapshot(connectivity, network)
+                        updateCapabilitiesSnapshot(network, capabilities)
                     }
 
                     override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
@@ -61,7 +70,7 @@ object NetworkEventLogger {
                                 "routes" to linkProperties.routes.joinToString(";") { it.toString() },
                             ),
                         )
-                        updateSnapshot(connectivity, network)
+                        updateLinkSnapshot(network, linkProperties)
                     }
                 })
                 registered = true
@@ -71,26 +80,71 @@ object NetworkEventLogger {
         }
     }
 
+    /**
+     * Returns the Wi-Fi networks observed by the long-lived NetworkCallback.
+     * Calling this also ensures callback registration for service-only process starts.
+     */
+    fun wifiNetworksSnapshot(context: Context): List<Network> {
+        start(context)
+        return synchronized(wifiNetworksLock) { wifiNetworks.toList() }
+    }
+
     fun snapshot(context: Context): List<String> {
-        val connectivity = context.applicationContext
+        val appContext = context.applicationContext
+        val connectivity = appContext
             .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return emptyList()
         return runCatching {
-            @Suppress("DEPRECATION")
-            connectivity.allNetworks.map { network -> describe(connectivity, network) }
+            val networks = mergeSnapshotNetworks(
+                activeNetwork = connectivity.activeNetwork,
+                trackedWifiNetworks = wifiNetworksSnapshot(appContext),
+            )
+            networks.map { network -> describe(connectivity, network) }
         }.getOrElse {
             listOf("network snapshot failed: ${it.javaClass.simpleName}: ${it.message}")
         }
     }
 
-    private fun updateSnapshot(connectivity: ConnectivityManager, network: Network) {
+    internal fun <T> mergeSnapshotNetworks(
+        activeNetwork: T?,
+        trackedWifiNetworks: List<T>,
+    ): List<T> {
+        val networks = LinkedHashSet<T>()
+        if (activeNetwork != null) networks.add(activeNetwork)
+        networks.addAll(trackedWifiNetworks)
+        return networks.toList()
+    }
+
+    private fun rememberWifi(network: Network) {
+        synchronized(wifiNetworksLock) {
+            wifiNetworks.add(network)
+        }
+    }
+
+    private fun forgetWifi(network: Network) {
+        synchronized(wifiNetworksLock) {
+            wifiNetworks.remove(network)
+        }
+    }
+
+    private fun updateCapabilitiesSnapshot(network: Network, capabilities: NetworkCapabilities) {
         val selected = AppLog.snapshotState()["ic705.network"]
         if (selected != network.toString()) return
-        val caps = connectivity.getNetworkCapabilities(network)
-        val links = connectivity.getLinkProperties(network)
         AppLog.setState("ic705.network_status", "AVAILABLE")
-        AppLog.setState("ic705.network_validated", caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
-        AppLog.setState("ic705.network_interface", links?.interfaceName)
-        AppLog.setState("ic705.network_addresses", links?.linkAddresses?.joinToString(",") { it.toString() })
+        AppLog.setState(
+            "ic705.network_validated",
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+        )
+    }
+
+    private fun updateLinkSnapshot(network: Network, linkProperties: LinkProperties) {
+        val selected = AppLog.snapshotState()["ic705.network"]
+        if (selected != network.toString()) return
+        AppLog.setState("ic705.network_status", "AVAILABLE")
+        AppLog.setState("ic705.network_interface", linkProperties.interfaceName)
+        AppLog.setState(
+            "ic705.network_addresses",
+            linkProperties.linkAddresses.joinToString(",") { it.toString() },
+        )
     }
 
     private fun describe(connectivity: ConnectivityManager, network: Network): String {

@@ -105,16 +105,25 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
         fun defaultProtoInfo(prefs: PrefsWrapper): ProtoInfo = defaultProtoInfo(prefs.getProto())
 
         @JvmStatic
+        fun selectedBackendKey(prefs: PrefsWrapper): String {
+            val protoInfo = defaultProtoInfo(prefs)
+            return if (protoInfo.link != null) {
+                prefs.getString(protoInfo.link, DEFAULT_LINK)
+            } else {
+                prefs.getProto()
+            }
+        }
+
+        @JvmStatic
         fun defaultBackendInfo(prefs: PrefsWrapper): BackendInfo {
-            val pi = defaultProtoInfo(prefs)
-            return backend_collection[defaultBackendKey(prefs, pi)] ?: backend_collection[DEFAULT_CONNTYPE]!!
+            return backend_collection[selectedBackendKey(prefs)] ?: backend_collection[DEFAULT_CONNTYPE]!!
         }
 
         @JvmStatic
         fun defaultBackendPermissions(prefs: PrefsWrapper): Set<String> {
             val perms = mutableSetOf<String>()
             perms.addAll(defaultBackendInfo(prefs).permissions)
-            val backendKey = defaultBackendKey(prefs, defaultProtoInfo(prefs))
+            val backendKey = selectedBackendKey(prefs)
             if (requiresLocalNetworkPermission(backendKey, Build.VERSION.SDK_INT)) {
                 perms.add(LOCAL_NETWORK_PERMISSION)
             }
@@ -126,14 +135,6 @@ abstract class AprsBackend(@JvmField val prefs: PrefsWrapper) {
                 perms.add(Manifest.permission.POST_NOTIFICATIONS)
             }
             return perms
-        }
-
-        private fun defaultBackendKey(prefs: PrefsWrapper, protoInfo: ProtoInfo): String {
-            return if (protoInfo.link != null) {
-                prefs.getString(protoInfo.link, DEFAULT_LINK)
-            } else {
-                prefs.getProto()
-            }
         }
 
         internal fun requiresLocalNetworkPermission(backendKey: String, sdkInt: Int): Boolean {
