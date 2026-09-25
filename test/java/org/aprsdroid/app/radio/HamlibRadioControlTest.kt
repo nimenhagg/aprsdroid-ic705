@@ -38,7 +38,7 @@ class HamlibRadioControlTest {
     }
 
     @Test
-    fun delegatesFrequencyModeAndPttToHamlib() {
+    fun delegatesPttToHamlib() {
         val rig = HamlibRigCatalog.findByModelId(HamlibRigCatalog.DUMMY_MODEL_ID)!!
         HamlibRadioControl.create(
             rig,
@@ -46,14 +46,6 @@ class HamlibRadioControlTest {
         ).use { control ->
             control.open()
             assertTrue(control.isOpen)
-
-            control.setFrequencyHz(14_074_000.0)
-            assertEquals(14_074_000.0, control.frequencyHz(), 1.0)
-
-            val advertised = rig.capabilities.supportedModesMask
-            val mode = if (advertised == 0L) 0L else advertised and -advertised
-            control.setMode(mode)
-            assertEquals(mode, control.mode().mode)
 
             control.setPtt(true)
             assertTrue(control.isPttOn())
@@ -63,15 +55,15 @@ class HamlibRadioControlTest {
     }
 
     @Test
-    fun capabilityAndDescriptorDoNotDependOnTransport() {
+    fun pttCapabilityAndDescriptorDoNotDependOnTransport() {
         val rig = HamlibRigCatalog.findByModelId(HamlibRigCatalog.DUMMY_MODEL_ID)!!
         HamlibRadioControl.create(
             rig,
             RadioTransport(RadioTransport.Kind.NETWORK, "dummy"),
         ).use { control ->
-            assertEquals(rig.capabilities.canControlFrequency, control.capabilities.canControlFrequency)
-            assertEquals(rig.capabilities.canControlMode, control.capabilities.canControlMode)
-            assertEquals(rig.capabilities.canControlPtt, control.capabilities.canControlPtt)
+            assertEquals(rig.capabilities.canGetPtt, control.capabilities.canGetPtt)
+            assertEquals(rig.capabilities.canSetPtt, control.capabilities.canSetPtt)
+            assertEquals(rig.capabilities.canGetPtt && rig.capabilities.canSetPtt, control.capabilities.canControlPtt)
             assertEquals(rig.manufacturer, control.radio.manufacturer)
             assertEquals(rig.model, control.radio.model)
         }
