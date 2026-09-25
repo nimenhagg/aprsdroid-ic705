@@ -6,7 +6,13 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 **最新稳定版 / Latest release: `Mod-v2.2.4`**
 
-**当前 main / Current main:** 在 `Mod-v2.2.4` 之上开始 Hamlib 分阶段集成：首批仅建立 Android 源码构建/打包基础并将最低系统提升到 Android 9（API 28），尚未把 IC-705 WLAN 或其它电台迁移到 Hamlib。 / Starts the staged Hamlib integration on top of `Mod-v2.2.4`: the first batch only adds reproducible Android source-build/packaging foundations and raises the minimum OS to Android 9 (API 28); IC-705 WLAN and other radios are not migrated to Hamlib yet.
+**当前 main / Current main:** 在 `Mod-v2.2.4` 之上已合入 Hamlib PR1/PR2、首页实时后端连接状态、APRS-IS 密集收包性能优化、台站搜索，以及 IC-705 RX 音频诊断/时序修复；这些仍属于未打新 tag 的开发线变更。/ Since `Mod-v2.2.4`, main has merged Hamlib PR1/PR2, live backend connection state on the home card, APRS-IS busy-receive performance improvements, station search, and IC-705 RX audio timing/diagnostic fixes; these remain unreleased development-line changes until a new tag is published.
+
+### 社区 / Community
+
+- QQ 群：1124716537（APRSdroid Mod 测试）
+- Telegram：<https://t.me/APRSdroid_Mod>
+
 
 > `Mod-v2.2.4` 优化 APRS-IS 密集收包时地图与主界面卡顿：复用图标、后台生成位图与 GeoJSON、合并查询，并只刷新可见页面。主页台站列表右上角新增放大镜入口，按呼号或备注搜索，保留距离排序和显示期限。
 >
