@@ -101,6 +101,9 @@ class HubActivity : BaseRecyclerActivity() {
             onLocation = { location ->
                 runOnUiThread { mapCurrentLocation.value = location }
             },
+            onFailure = {
+                runOnUiThread { fallbackMapToOwnAprsPosition() }
+            },
             logTag = "APRSdroid.MapLocation",
         )
     }
@@ -387,9 +390,32 @@ class HubActivity : BaseRecyclerActivity() {
 
     override fun onAllPermissionsGranted(action: Int) {
         if (action == MAP_LOCATION_PERMISSION) {
-            mapLocationCoordinator.trigger(LocationSource.instanciateLocation(this, prefs))
+            mapLocationCoordinator.triggerDeviceLocation()
         } else {
             super.onAllPermissionsGranted(action)
+        }
+    }
+
+    override fun onPermissionsFailedCancel(action: Int) {
+        if (action == MAP_LOCATION_PERMISSION) {
+            fallbackMapToOwnAprsPosition()
+        } else {
+            super.onPermissionsFailedCancel(action)
+        }
+    }
+
+    private fun fallbackMapToOwnAprsPosition() {
+        val lat = viewModel.uiState.value.myLat
+        val lon = viewModel.uiState.value.myLon
+        if (lat != 0 || lon != 0) {
+            val fallback = Location("APRS").apply {
+                latitude = lat / 1_000_000.0
+                longitude = lon / 1_000_000.0
+            }
+            mapCurrentLocation.value = fallback
+            Toast.makeText(this, R.string.map_location_fallback, Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, R.string.map_location_unavailable, Toast.LENGTH_SHORT).show()
         }
     }
 
