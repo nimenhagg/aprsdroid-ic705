@@ -6,7 +6,7 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 **最新稳定版 / Latest release: `Mod-v2.2.4`**
 
-**当前 main / Current main:** 与 `Mod-v2.2.4` 发布基线一致，无额外未发布变更。 / Matches the `Mod-v2.2.4` release baseline, with no additional unreleased changes.
+**当前 main / Current main:** 在 `Mod-v2.2.4` 之上开始 Hamlib 分阶段集成：首批仅建立 Android 源码构建/打包基础并将最低系统提升到 Android 9（API 28），尚未把 IC-705 WLAN 或其它电台迁移到 Hamlib。 / Starts the staged Hamlib integration on top of `Mod-v2.2.4`: the first batch only adds reproducible Android source-build/packaging foundations and raises the minimum OS to Android 9 (API 28); IC-705 WLAN and other radios are not migrated to Hamlib yet.
 
 > `Mod-v2.2.4` 优化 APRS-IS 密集收包时地图与主界面卡顿：复用图标、后台生成位图与 GeoJSON、合并查询，并只刷新可见页面。主页台站列表右上角新增放大镜入口，按呼号或备注搜索，保留距离排序和显示期限。
 >
@@ -67,7 +67,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 
 | 项目 | 要求或状态 |
 | --- | --- |
-| Android | Android 8.1+（API 27） |
+| Android | Android 9+（API 28） |
 | 目标平台 | Android 17 / API 37 |
 | CPU / ABI | 正式 Release：`arm64-v8a`、`armeabi-v7a`；源码仍保留 `x86_64` / `x86` flavor，但当前不提供对应 Graywolf native，本地 AFSK RX 不属于这些 ABI 的正式支持范围 |
 | 正式 Release | ARM64 OpenGL + ARMv7 OpenGL |
@@ -280,7 +280,7 @@ APRSdroid IC-705 adds direct IC-705 WLAN APRS receive/transmit support to APRSdr
 
 | Item | Status |
 | --- | --- |
-| Android | 8.1+ / API 27 minimum |
+| Android | 9.0+ / API 28 minimum |
 | Target | Android 17 / API 37 |
 | Official APKs | ARM64 OpenGL and ARMv7 OpenGL |
 | Radio | Icom IC-705 with WLAN and Network User enabled |

@@ -12,7 +12,7 @@
 | `build.gradle` 默认版本 | `2.2.4` |
 | Android versionCode | `2026091301` |
 | 上游历史基线 | APRSdroid `v1.7.0` |
-| Android | `minSdk 27`，`compileSdk 37`，`targetSdk 37` |
+| Android | `minSdk 28`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
 | Kotlin / Compose Compiler | AGP 9 built-in Kotlin `2.3.21` / Compose Compiler `2.3.21` |
 | Java | `17` |
@@ -55,6 +55,7 @@ README 必须始终区分 **Latest release** 与 **Current main**。未打 tag �
 | `src/ic705/` | IC-705 protocol / transport / session / backend / diagnostic |
 | `src/audio/` | AFSK1200 与 PCM Kotlin 边界 |
 | `native/graywolf-jni/` | Rust JNI adapter 与 Graywolf AFSK1200 receive core |
+| `third_party/hamlib/` | Hamlib pinned revision、许可证与构建/再分发说明；native 产物只在 CI/build 目录生成 |
 | `src/diagnostic/` | 持久日志、网络事件、诊断快照与 ZIP 导出 |
 | `src/update/` | 手动 GitHub Release 检查 |
 | `res/` | values、drawable、mipmap、menu 等；生产页面无 `res/layout` |
@@ -535,7 +536,7 @@ Release workflow 会：
 
 ## 16. Hamlib 与多电台架构规划
 
-> **状态：规划，尚未实现。** 本节定义后续多电台支持的实施方向，不得把这里的目标描述成当前已发布能力。当前 IC-705 WLAN 路径、PTT 安全状态机、Graywolf RX 和既有设置仍以本文件前文的现状约束为准。
+> **状态：分阶段实现中，尚未形成稳定版多电台能力。** PR1 只建立 Hamlib Android 构建基础（`minSdk 28`、固定 revision、CI 源码构建、ARM64/ARMv7 产物与许可证/源码归档）；PR2 才加入最小 JNI。不得把后续目标描述成当前已发布能力。当前 IC-705 WLAN 路径、PTT 安全状态机、Graywolf RX 和既有设置仍以本文件前文的现状约束为准。
 
 ### 16.1 总体原则
 
@@ -571,7 +572,7 @@ Release workflow 会：
 
 ### 16.2 API 基线与 Hamlib 构建
 
-首个 Hamlib 实施 PR 应把项目 `minSdk` 从 27 提升到 **28**，与 Hamlib 官方 Android NDK 构建基线对齐。该动作属于实现变更；在真正修改 `build.gradle` 前，本文件前文的“当前基线”仍保持 minSdk 27，不得提前伪装成已完成。
+Hamlib PR1 已把项目 `minSdk` 从 27 提升到 **28**，与固定 Hamlib 4.7.2 的 Android NDK 构建基线对齐。后续不得在没有完整兼容性与 native 构建验证时下调该基线。
 
 Hamlib 集成要求：
 

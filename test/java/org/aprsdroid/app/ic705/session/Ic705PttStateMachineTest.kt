@@ -66,11 +66,27 @@ class Ic705PttStateMachineTest {
             0xfd.toByte(),
         )
 
-    private fun acknowledgeRelease(sm: Ic705PttStateMachine) {
-        sm.onCivReceived(ackFrame())
-        if (sm.state != Ic705PttState.RX_IDLE) {
-            sm.onCivReceived(pttStatusFrame(transmitting = false))
+    /**
+     * Answers PTT OFF attempts the way a real radio does: every attempt is
+     * acknowledged and, when the coordinator asks for a readback, reports RX.
+     *
+     * The coordinator keeps retrying on its own retry timer while the ACK is
+     * missing, so a single acknowledgement is only correct when it happens to
+     * land inside one retry window. On a loaded machine that window (10 ms in
+     * these tests) can elapse between two test statements, which is a race in
+     * the test, not in the state machine. Keep answering until the coordinator
+     * confirms release on its own.
+     */
+    private fun acknowledgeRelease(sm: Ic705PttStateMachine, timeoutMs: Long = 2_000L) {
+        val deadline = System.nanoTime() + timeoutMs * 1_000_000L
+        while (sm.state != Ic705PttState.RX_IDLE && System.nanoTime() < deadline) {
+            sm.onCivReceived(ackFrame())
+            if (sm.state != Ic705PttState.RX_IDLE) {
+                sm.onCivReceived(pttStatusFrame(transmitting = false))
+            }
+            if (sm.state != Ic705PttState.RX_IDLE) Thread.sleep(2L)
         }
+        assertEquals("radio release was not confirmed within ${timeoutMs}ms", Ic705PttState.RX_IDLE, sm.state)
     }
 
     @Test
