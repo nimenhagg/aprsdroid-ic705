@@ -42,6 +42,20 @@ internal object GitHubUpdateChecker {
         "https://api.github.com/repos/nimenhagg/aprsdroid-ic705/releases/latest"
 
     private val client by lazy { OkHttpClient() }
+    private val automaticCheckStarted = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /**
+     * Runs at most once per application process. Failures and an up-to-date result are silent
+     * to callers; only an available update is delivered.
+     */
+    fun checkAutomatically(currentVersionName: String, callback: (UpdateCheckResult.UpdateAvailable) -> Unit) {
+        if (!automaticCheckStarted.compareAndSet(false, true)) return
+        check(currentVersionName) { result ->
+            if (result is UpdateCheckResult.UpdateAvailable) {
+                callback(result)
+            }
+        }
+    }
 
     fun check(currentVersionName: String, callback: (UpdateCheckResult) -> Unit) {
         val current = parseAppVersion(currentVersionName)
