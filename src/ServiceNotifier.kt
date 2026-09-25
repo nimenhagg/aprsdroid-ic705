@@ -40,6 +40,8 @@ class ServiceNotifier {
     @Volatile
     private var lastLiveStatus: ServiceLiveStatus? = null
 
+    internal fun currentLiveStatus(): ServiceLiveStatus? = lastLiveStatus
+
     fun setupChannels(ctx: Context) {
         if (channelsReady) return
         synchronized(channelSetupLock) {
