@@ -23,7 +23,7 @@ README 必须区分 Latest release 与 Current main；未发布能力不得写�
 - `Afsk1200Modulator` 只保留稳定 TX PCM 生成和 host-JVM 测试辅助；没有独立迁移理由不要重写 TX。
 - PTT OFF 必须遵守 ACK、安全状态和 watchdog 语义；本地 UDP send 成功不等于电台确认 RX。
 - IC-705 CONTROL / CI-V / AUDIO 使用角色化 liveness 与局部 recovery，不恢复“一条通道超时就 teardown 整个 session”。
-- 更新检查只能由用户主动触发；不得启动时、后台或周期检查，也不得自动下载/安装。
+- 更新检查：应用启动时自动静默检查一次；无更新、网络失败或解析失败均静默；仅发现新版本时弹窗提示。设置页仍可手动检查；不得后台/周期检查，也不得自动下载/安装。
 - 没有完整协议迁移设计前，不要擅自强制 TLS；不要用厂商/机型特判掩盖状态机问题。
 - AGP 9 使用 built-in Kotlin；Java 17 是基线，不为版本数字随意切换 Java 21。
 
