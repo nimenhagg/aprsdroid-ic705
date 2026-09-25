@@ -238,7 +238,8 @@ class HubActivity : BaseRecyclerActivity() {
                                             onStopLoading()
                                             refreshTopLevelState()
                                         }.execute()
-                                    }
+                                    },
+                                    onRequestCurrentLocation = { requestMapCurrentLocation() }
                                 )
                             }
 
@@ -374,7 +375,7 @@ class HubActivity : BaseRecyclerActivity() {
 
     private fun requestMapCurrentLocation() {
         if (checkPermissions(LocationSource.getPermissions(prefs), MAP_LOCATION_PERMISSION)) {
-            mapLocationCoordinator.trigger(LocationSource.instanciateLocation(this, prefs))
+            mapLocationCoordinator.triggerDeviceLocation()
         }
     }
 
