@@ -81,4 +81,30 @@ class ForegroundServiceTypeResolverTest {
             ),
         )
     }
+
+    @Test
+    fun `usb radio declares microphone and connected device`() {
+        assertEquals(
+            ForegroundServiceWork(microphone = true, location = true, connectedDevice = true),
+            ForegroundServiceTypeResolver.determineWork(
+                backendKey = "usbradio",
+                protocol = "usbradio",
+                locationSource = "smartbeaconing",
+                kenwoodGps = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `usb tnc declares connected device`() {
+        assertEquals(
+            ForegroundServiceWork(connectedDevice = true),
+            ForegroundServiceTypeResolver.determineWork(
+                backendKey = "usb",
+                protocol = "kiss",
+                locationSource = "manual",
+                kenwoodGps = false,
+            ),
+        )
+    }
 }

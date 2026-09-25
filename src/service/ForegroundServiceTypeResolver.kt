@@ -26,8 +26,8 @@ object ForegroundServiceTypeResolver {
         val usesLocation = locationSource == "smartbeaconing" ||
             locationSource == "periodic" ||
             (protocol == "kenwood" && kenwoodGps)
-        val usesMicrophone = backendKey == "afsk"
-        val usesConnectedDevice = backendKey == "bluetooth"
+        val usesMicrophone = backendKey == "afsk" || backendKey == "usbradio"
+        val usesConnectedDevice = backendKey == "bluetooth" || backendKey == "usb" || backendKey == "usbradio"
         val usesSpecialUse = backendKey == "ic705" ||
             (!usesMicrophone && !usesLocation && !usesConnectedDevice)
 
