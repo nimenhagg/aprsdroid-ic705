@@ -77,6 +77,9 @@
 		android:parentActivityName=".HubActivity"
 		android:alwaysRetainTaskState="true"
 		/>
+	<activity android:name=".MapOfflineActivity" android:label="@string/map_offline_title"
+		android:parentActivityName=".HubActivity"
+		android:exported="false" />
 	<activity android:name=".PrefsAct" android:label="@string/app_prefs"
 		android:parentActivityName=".HubActivity"
 		/>

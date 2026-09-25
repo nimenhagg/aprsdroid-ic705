@@ -22,7 +22,7 @@
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-`Mod-v2.2.4` 是当前发布基线，main 与该版本一致：在 2.2.3 的消息/ACK/PTT 修复基础上，优化接收触发的地图与列表刷新，并新增台站呼号/备注搜索。性能修复使用不可变地图快照、稳定图标缓存、后台位图/GeoJSON、可见页面查询与合并队列；搜索在 SQL LIMIT 之前筛选，不扩大默认结果数量。APRS-IS 文本、ACK/PTT 和 Graywolf 路径保持原有语义。legacy LoTW/实验性 TLS trust 行为仍保持兼容，直到真实 24580 握手能证明严格 CA/hostname 验证可用。后续 main 若领先最新 tag / GitHub Release，仍必须区分已发布与未发布能力。
+`Mod-v2.2.4` 是当前发布基线。当前 main 已在其上继续合入 Hamlib PR1/PR2、首页实时后端连接状态、APRS-IS 密集收包性能优化、台站搜索，以及 IC-705 RX 音频诊断/时序修复；这些尚未进入新的 release tag。PR24 在此基础上恢复 MapLibre OfflineManager 区域下载/管理，当前仅对用户配置的 Custom tile source 开放；标准 OpenStreetMap 瓦片仍只走正常交互缓存，不做批量离线预取。APRS-IS 文本、ACK/PTT 和 Graywolf 路径保持原有语义；legacy LoTW/实验性 TLS trust 行为仍保持兼容，直到真实 24580 握手能证明严格 CA/hostname 验证可用。后续 main 若领先最新 tag / GitHub Release，仍必须区分已发布与未发布能力。
 
 README 必须始终区分 **Latest release** 与 **Current main**。未打 tag 的功能、修复和行为变化不得提前写成稳定版能力。
 
@@ -518,7 +518,7 @@ Release workflow 会：
 - 通知点击一次构造 messages → chat Activity 栈，不用 Hub 二次 LaunchedEffect；
 - HTTP/HTTPS 外链统一走 Custom Tabs + `ACTION_VIEW` fallback；
 - 台站/报文列表支持标准与紧凑两档几何密度并尊重系统 fontScale；
-- Mapsforge 与专用离线瓦片下载器已移除；主地图为 MapLibre + Google Maps；
+- Mapsforge 与旧专用离线瓦片下载器已移除；主地图为 MapLibre + Google Maps；MapLibre OfflineManager 区域下载/管理已恢复，但当前仅用于用户配置的 Custom tile source，标准 OSM 瓦片不做批量离线预取；
 - 外部存储读写权限已删除；文档导入/导出使用 SAF / ContentResolver；
 - HTTP POST 使用 `HttpURLConnection`；
 - Release 使用 R8 并保留 mapping；
@@ -536,7 +536,7 @@ Release workflow 会：
 
 ## 16. Hamlib 与多电台架构规划
 
-> **状态：分阶段实现中，尚未形成稳定版多电台能力。** PR1 只建立 Hamlib Android 构建基础（`minSdk 28`、固定 revision、CI 源码构建、ARM64/ARMv7 产物与许可证/源码归档）；PR2 才加入最小 JNI。不得把后续目标描述成当前已发布能力。当前 IC-705 WLAN 路径、PTT 安全状态机、Graywolf RX 和既有设置仍以本文件前文的现状约束为准。
+> **状态：分阶段实现中，尚未形成稳定版多电台能力。** PR1（构建基础）与 PR2（最小 JNI）均已合入 main，但尚未把 IC-705 WLAN 或其它电台迁移到 Hamlib；下一阶段是 PR3 的通用 `RadioControl` / `HamlibRadioControl` 抽象。不得把后续目标描述成当前已发布能力。当前 IC-705 WLAN 路径、PTT 安全状态机、Graywolf RX 和既有设置仍以本文件前文的现状约束为准。
 
 ### 16.1 总体原则
 

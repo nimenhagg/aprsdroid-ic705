@@ -497,4 +497,13 @@
     <string name="station_search_placeholder">Search callsign or comment…</string>
     <string name="station_search_empty">No matching stations</string>
     <string name="station_search_close">Close search</string>
+
+    <string name="map_offline_title">Offline maps</string>
+    <string name="map_offline_download_current">Download current map area</string>
+    <string name="map_offline_custom_only">Offline area downloads are currently available for custom tile sources. OpenStreetMap's standard tile service does not permit bulk/offline prefetching.</string>
+    <string name="map_offline_region">Offline map region</string>
+    <string name="map_offline_current_area">Current map area</string>
+    <string name="map_offline_status_loading">Reading download status…</string>
+    <string name="map_offline_status_complete">%1$d tiles · %2$s</string>
+    <string name="map_offline_status_progress">%1$d / %2$d resources</string>
 </resources>

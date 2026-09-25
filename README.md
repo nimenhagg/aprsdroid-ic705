@@ -6,7 +6,13 @@ APRSdroid 的现代化修改版，包含 Icom IC-705 Wi-Fi 直连 / A modern APR
 
 **最新稳定版 / Latest release: `Mod-v2.2.4`**
 
-**当前 main / Current main:** 在 `Mod-v2.2.4` 之上开始 Hamlib 分阶段集成：首批仅建立 Android 源码构建/打包基础并将最低系统提升到 Android 9（API 28），尚未把 IC-705 WLAN 或其它电台迁移到 Hamlib。 / Starts the staged Hamlib integration on top of `Mod-v2.2.4`: the first batch only adds reproducible Android source-build/packaging foundations and raises the minimum OS to Android 9 (API 28); IC-705 WLAN and other radios are not migrated to Hamlib yet.
+**当前 main / Current main:** 在 `Mod-v2.2.4` 之上已合入 Hamlib PR1/PR2、首页实时后端连接状态、APRS-IS 密集收包性能优化、台站搜索，以及 IC-705 RX 音频诊断/时序修复；这些仍属于未打新 tag 的开发线变更。/ Since `Mod-v2.2.4`, main has merged Hamlib PR1/PR2, live backend connection state on the home card, APRS-IS busy-receive performance improvements, station search, and IC-705 RX audio timing/diagnostic fixes; these remain unreleased development-line changes until a new tag is published.
+
+### 社区 / Community
+
+- QQ 群：1124716537（APRSdroid Mod 测试）
+- Telegram：<https://t.me/APRSdroid_Mod>
+
 
 > `Mod-v2.2.4` 优化 APRS-IS 密集收包时地图与主界面卡顿：复用图标、后台生成位图与 GeoJSON、合并查询，并只刷新可见页面。主页台站列表右上角新增放大镜入口，按呼号或备注搜索，保留距离排序和显示期限。
 >
@@ -152,7 +158,7 @@ IC-705 的 UDP Socket 会逐个绑定到 Android 选定的 Wi-Fi `Network`，因
 - Release CI 从 MapLibre Native `android-v13.5.1` 构建 `MinSizeRel` + IPO/LTO 原生库，替换 APK 内对应 ABI 的 `libmaplibre.so` 后重新执行 16 KiB 对齐、签名和 SHA-256 校验。
 - OpenStreetMap 请求包含可识别的 User-Agent，遵循服务端缓存规则，并在地图上显示可点击的 `© OpenStreetMap contributors`。
 - 正式 Release 在构建时注入受包名和签名证书限制的 Google Maps Key；自行构建未配置 Key 时隐藏 Google 图源。
-- 不提供 MapLibre Offline 区域下载/管理功能，也不批量预取 OSM 瓦片。
+- 提供 MapLibre Offline 区域下载/管理入口，但当前仅允许用户配置的 Custom tile source；标准 OpenStreetMap `tile.openstreetmap.org` 不提供预取/离线下载，仍只使用正常交互缓存。
 
 ### 权限说明
 

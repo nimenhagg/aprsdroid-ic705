@@ -1,8 +1,15 @@
 ## [Unreleased]
 
+### Added
+- 恢复 MapLibre Native `OfflineManager` 区域下载/管理入口；离线数据存储在应用数据目录，不把地图瓦片打进 APK。
+- 地图溢出菜单新增“Offline maps”入口，支持查看下载进度、已完成瓦片/资源大小与删除区域；当前首版仅允许用户配置的 Custom tile source。
+- README 增加 APRSdroid Mod QQ 测试群与 Telegram 社区入口。
+
 ### Changed
-- 开始 Hamlib 分阶段集成的 PR1 构建基础：最低系统从 Android 8.1（API 27）提升到 Android 9（API 28）；固定 Hamlib 4.7.2 / commit `40f63488fe0bd751b147f48d62fd217bf53713a0`，由 CI 从源码交叉编译 ARM64/ARMv7 native library，校验 16 KiB ELF 对齐、SONAME、APK 内 SHA-256，并在 tagged release 附带对应源码归档。
-- 本阶段不改变 IC-705 WLAN、PTT、APRS/AFSK 或现有连接运行时行为；通用 Hamlib JNI 与 dummy/mock 生命周期验证属于后续 PR2。
+- Hamlib 分阶段集成已完成 PR1 构建基础与 PR2 最小 JNI：最低系统为 Android 9（API 28），固定 Hamlib 4.7.2 / commit `40f63488fe0bd751b147f48d62fd217bf53713a0`，由 CI 从源码交叉编译 ARM64/ARMv7 native library，校验 16 KiB ELF 对齐、SONAME、APK 内 SHA-256，并在 tagged release 附带对应源码归档；下一步为通用 `RadioControl` / `HamlibRadioControl`（PR3）。
+- 首页状态卡已接入实时后端连接状态；APRS-IS 密集收包时的地图/主界面性能与台站搜索已合入 main；IC-705 RX 音频 concealment 时序和 AFSK→AX.25 诊断边界也已进入当前开发线。
+- 标准 OpenStreetMap 瓦片仍只使用正常交互缓存，不批量预取离线区域；高德等其它图源不在首版 OfflineManager 预取范围内，避免在未验证供应商条款前假定允许批量下载。
+
 
 ## [Mod-v2.2.4] - 2026-09-13
 
