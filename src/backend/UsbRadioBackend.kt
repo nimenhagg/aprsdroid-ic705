@@ -142,13 +142,14 @@ class UsbRadioBackend(
         serialDevice = serial
 
         val profile = resolveProfile()
-        serial.setBaudRate(profile.defaultBaudRate)
+        val baudRate = prefs.getStringInt("radio.baudrate", profile.defaultBaudRate)
+        serial.setBaudRate(baudRate)
         serial.setDataBits(UsbSerialInterface.DATA_BITS_8)
         serial.setStopBits(UsbSerialInterface.STOP_BITS_1)
         serial.setParity(UsbSerialInterface.PARITY_NONE)
         serial.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF)
 
-        log("USB Serial opened at ${profile.defaultBaudRate}bd for ${profile.name}")
+        log("USB Serial opened at ${baudRate}bd for ${profile.name}")
 
         val catStream = UsbSerialByteStream(serial)
 

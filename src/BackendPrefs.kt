@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
+import org.aprsdroid.app.radio.RadioProfile
+import org.aprsdroid.app.ui.component.RadioSelectDialog
 import org.aprsdroid.app.ui.component.PasscodeDialogCompose
 import org.aprsdroid.app.ui.component.PreferenceCategoryHeader
 import org.aprsdroid.app.ui.component.PreferenceEditDialog
@@ -99,6 +101,10 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
     private val kenwoodGpsState = mutableStateOf(false)
     private val kenwoodGpsDebugState = mutableStateOf(false)
 
+    private val radioModelIdState = mutableStateOf(RadioProfile.IC705_USB.hamlibModelId)
+    private val radioBaudRateState = mutableStateOf("19200")
+    private val radioCivAddressState = mutableStateOf("A4")
+
     private val editDialogKey = mutableStateOf<String?>(null)
     private val showProtoDialog = mutableStateOf(false)
     private val showAprsIsLinkDialog = mutableStateOf(false)
@@ -107,6 +113,8 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
     private val showBaudRateDialog = mutableStateOf(false)
     private val showAfskOutputDialog = mutableStateOf(false)
     private val showPasscodeDialog = mutableStateOf(false)
+    private val showRadioModelDialog = mutableStateOf(false)
+    private val showRadioBaudRateDialog = mutableStateOf(false)
 
     private fun refreshState() {
         protoState.value = prefs.getString("proto", "aprsis")
@@ -138,6 +146,14 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
         kissDelayState.value = prefs.getString("kiss.delay", "300")
         kenwoodGpsState.value = prefs.getBoolean("kenwood.gps", false)
         kenwoodGpsDebugState.value = prefs.getBoolean("kenwood.gps_debug", false)
+
+        radioModelIdState.value = prefs.getStringInt("radio.model_id", RadioProfile.IC705_USB.hamlibModelId)
+        val currentProfile = RadioProfile.findByModelId(radioModelIdState.value) ?: RadioProfile.IC705_USB
+        radioBaudRateState.value = prefs.getString("radio.baudrate", currentProfile.defaultBaudRate.toString())
+        radioCivAddressState.value = prefs.getString(
+            "radio.civ_address",
+            currentProfile.defaultCivAddress?.let { Integer.toHexString(it).uppercase() } ?: ""
+        )
     }
 
     private fun hasBluetoothPermission(): Boolean {
@@ -185,6 +201,7 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                 val protoOptions = listOf(
                     "aprsis" to stringResource(R.string.setting_proto_aprsis),
                     "ic705" to stringResource(R.string.setting_proto_ic705),
+                    "usbradio" to stringResource(R.string.setting_proto_usbradio),
                     "afsk" to stringResource(R.string.setting_proto_afsk),
                     "kiss" to stringResource(R.string.setting_proto_kiss),
                     "kenwood" to stringResource(R.string.setting_proto_kenwood),
@@ -405,6 +422,52 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                                                 ),
                                             )
                                         },
+                                    )
+                                }
+                            }
+
+                            "usbradio" -> {
+                                PreferenceCategoryHeader(title = stringResource(R.string.setting_usbradio_category))
+                                PreferenceGroupCard {
+                                    val currentProfile = RadioProfile.findByModelId(radioModelIdState.value) ?: RadioProfile.IC705_USB
+                                    PreferenceValueItem(
+                                        title = stringResource(R.string.setting_usbradio_model),
+                                        value = currentProfile.name,
+                                        summary = stringResource(R.string.setting_usbradio_model_summary),
+                                        icon = Icons.Default.Radio,
+                                        onClick = { showRadioModelDialog.value = true },
+                                    )
+
+                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    PreferenceValueItem(
+                                        title = stringResource(R.string.setting_usbradio_baudrate),
+                                        value = "${radioBaudRateState.value} bd",
+                                        summary = stringResource(R.string.setting_usbradio_baudrate_summary),
+                                        icon = Icons.Default.Usb,
+                                        onClick = { showRadioBaudRateDialog.value = true },
+                                    )
+
+                                    if (currentProfile.isIcom) {
+                                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                        val displayCiv = radioCivAddressState.value.ifBlank {
+                                            currentProfile.defaultCivAddress?.let { Integer.toHexString(it).uppercase() } ?: "A4"
+                                        }
+                                        PreferenceValueItem(
+                                            title = stringResource(R.string.setting_usbradio_civ_address),
+                                            value = "${displayCiv}h",
+                                            summary = stringResource(R.string.setting_usbradio_civ_summary),
+                                            icon = Icons.Default.Router,
+                                            onClick = { editDialogKey.value = "radio.civ_address" },
+                                        )
+                                    }
+
+                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    PreferenceItem(
+                                        title = stringResource(R.string.setting_usbradio_audio_routing),
+                                        summary = stringResource(R.string.setting_usbradio_audio_routing_summary),
+                                        icon = Icons.Default.SettingsEthernet,
+                                        onClick = {},
+                                        showChevron = false,
                                     )
                                 }
                             }
@@ -715,6 +778,44 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                                     putBoolean("firstrun", false)
                                 }
                                 showPasscodeDialog.value = false
+                                refreshState()
+                            },
+                        )
+                    }
+
+                    if (showRadioModelDialog.value) {
+                        RadioSelectDialog(
+                            selectedModelId = radioModelIdState.value,
+                            onDismiss = { showRadioModelDialog.value = false },
+                            onSelect = { profile ->
+                                radioModelIdState.value = profile.hamlibModelId
+                                prefs.set("radio.model_id", profile.hamlibModelId.toString())
+                                radioBaudRateState.value = profile.defaultBaudRate.toString()
+                                prefs.set("radio.baudrate", profile.defaultBaudRate.toString())
+                                profile.defaultCivAddress?.let { civ ->
+                                    val civHex = Integer.toHexString(civ).uppercase()
+                                    radioCivAddressState.value = civHex
+                                    prefs.set("radio.civ_address", civHex)
+                                } ?: run {
+                                    radioCivAddressState.value = ""
+                                    prefs.set("radio.civ_address", "")
+                                }
+                                showRadioModelDialog.value = false
+                                refreshState()
+                            },
+                        )
+                    }
+
+                    if (showRadioBaudRateDialog.value) {
+                        PreferenceSelectDialog(
+                            title = stringResource(R.string.setting_usbradio_baudrate),
+                            options = baudRateOptions,
+                            selected = radioBaudRateState.value,
+                            onDismiss = { showRadioBaudRateDialog.value = false },
+                            onSelect = { baud ->
+                                radioBaudRateState.value = baud
+                                prefs.set("radio.baudrate", baud)
+                                showRadioBaudRateDialog.value = false
                                 refreshState()
                             },
                         )

@@ -70,4 +70,15 @@ class RadioProfileTest {
         assertNull(custom.defaultCivAddress)
         assertTrue(custom.isExperimental)
     }
+
+    @Test
+    fun manufacturerCategorization() {
+        assertEquals("Icom", RadioProfile.IC705_USB.manufacturer)
+        assertEquals("Yaesu", RadioProfile.FT891_USB.manufacturer)
+        assertEquals("Kenwood", RadioProfile.TS590SG_USB.manufacturer)
+        assertEquals("Hamlib", RadioProfile.HAMLIB_DUMMY.manufacturer)
+        assertTrue(RadioProfile.MANUFACTURERS.contains("Icom"))
+        assertTrue(RadioProfile.MANUFACTURERS.contains("Yaesu"))
+        assertTrue(RadioProfile.MANUFACTURERS.contains("Kenwood"))
+    }
 }

@@ -4,6 +4,7 @@
 		<item>@string/p_conn_aprsis</item>
 		<item>@string/p_conn_afsk</item>
 		<item>@string/p_conn_ic705</item>
+		<item>@string/p_conn_usbradio</item>
 		<item>@string/p_conn_kiss</item>
 		<item>@string/p_conn_tnc2</item>
 		<item>@string/p_conn_kwd</item>
@@ -12,6 +13,7 @@
 		<item>aprsis</item>
 		<item>afsk</item>
 		<item>ic705</item>
+		<item>usbradio</item>
 		<item>kiss</item>
 		<item>tnc2</item>
 		<item>kenwood</item>
