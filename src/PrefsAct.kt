@@ -296,12 +296,8 @@ class PrefsAct : ComponentActivity() {
     }
 
     private fun checkForUpdatesManually() {
-        if (updateCheckInFlight) {
-            Toast.makeText(this, R.string.update_check_in_progress, Toast.LENGTH_SHORT).show()
-            return
-        }
+        if (updateCheckInFlight) return
         updateCheckInFlight = true
-        Toast.makeText(this, R.string.update_check_github, Toast.LENGTH_SHORT).show()
         AppLog.i("UPDATE", "manual_check_started", mapOf("current" to BuildConfig.VERSION_NAME))
 
         GitHubUpdateChecker.check(BuildConfig.VERSION_NAME) { result ->
@@ -315,11 +311,6 @@ class PrefsAct : ComponentActivity() {
                             "manual_check_up_to_date",
                             mapOf("current" to result.current, "latest" to result.latest),
                         )
-                        Toast.makeText(
-                            this,
-                            getString(R.string.update_up_to_date, result.current),
-                            Toast.LENGTH_LONG,
-                        ).show()
                     }
                     is UpdateCheckResult.UpdateAvailable -> {
                         AppLog.i(
@@ -335,11 +326,6 @@ class PrefsAct : ComponentActivity() {
                             "manual_check_failed",
                             mapOf("reason" to result.message),
                         )
-                        Toast.makeText(
-                            this,
-                            getString(R.string.update_check_failed, result.message),
-                            Toast.LENGTH_LONG,
-                        ).show()
                     }
                 }
             }
