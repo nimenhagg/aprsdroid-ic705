@@ -1,6 +1,7 @@
 package org.aprsdroid.app.ui.screen
 
 import android.content.Context
+import android.location.Location
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -89,12 +90,14 @@ fun EmbeddedMapScreen(
     showObjects: Boolean,
     myLat: Int,
     myLon: Int,
+    currentLocation: Location?,
     onShowObjectsChanged: (Boolean) -> Unit,
     onStationClick: (String) -> Unit,
     onBack: () -> Unit,
     onOpenPackets: () -> Unit,
     onOpenSettings: () -> Unit,
-    onClearLogs: () -> Unit
+    onClearLogs: () -> Unit,
+    onRequestCurrentLocation: () -> Unit
 ) {
     val context = LocalContext.current
     MapModes.initialize(context)
@@ -127,7 +130,7 @@ fun EmbeddedMapScreen(
                 currentMode = mode
             }
         },
-        onMyLocationClick = { actions.moveToMyLocation() },
+        onMyLocationClick = onRequestCurrentLocation,
         onZoomIn = { actions.zoomIn() },
         onZoomOut = { actions.zoomOut() },
         onBackClick = onBack,
@@ -145,6 +148,7 @@ fun EmbeddedMapScreen(
                     stations = stations,
                     myLat = myLat,
                     myLon = myLon,
+                    currentLocation = currentLocation,
                     actions = actions,
                     onStationClick = onStationClick,
                     onLoadingChanged = { rendererLoading = it }
@@ -157,6 +161,7 @@ fun EmbeddedMapScreen(
                     stations = stations,
                     myLat = myLat,
                     myLon = myLon,
+                    currentLocation = currentLocation,
                     actions = actions,
                     onStationClick = onStationClick,
                     onLoadingChanged = { rendererLoading = it }
@@ -183,7 +188,6 @@ fun EmbeddedMapScreen(
 private class EmbeddedMapActions {
     var zoomIn: () -> Unit = {}
     var zoomOut: () -> Unit = {}
-    var moveToMyLocation: () -> Unit = {}
     var savePosition: () -> Unit = {}
 }
 
@@ -194,6 +198,7 @@ private fun MapLibreEmbeddedRenderer(
     stations: List<MapStation>,
     myLat: Int,
     myLon: Int,
+    currentLocation: Location?,
     actions: EmbeddedMapActions,
     onStationClick: (String) -> Unit,
     onLoadingChanged: (Boolean) -> Unit
@@ -283,15 +288,24 @@ private fun MapLibreEmbeddedRenderer(
 
     actions.zoomIn = { map?.animateCamera(MapLibreCameraUpdateFactory.zoomBy(1.0)) }
     actions.zoomOut = { map?.animateCamera(MapLibreCameraUpdateFactory.zoomBy(-1.0)) }
-    actions.moveToMyLocation = {
-        if (myLat != 0 || myLon != 0) {
-            map?.animateCamera(
-                MapLibreCameraUpdateFactory.newLatLng(
-                    MapLibreLatLng(myLat / 1_000_000.0, myLon / 1_000_000.0)
-                )
+    LaunchedEffect(map, currentLocation) {
+        val location = currentLocation ?: return@LaunchedEffect
+        map?.animateCamera(
+            MapLibreCameraUpdateFactory.newLatLng(
+                MapLibreLatLng(location.latitude, location.longitude)
             )
-        }
+        )
     }
+
+    LaunchedEffect(map, currentLocation) {
+        val location = currentLocation ?: return@LaunchedEffect
+        map?.animateCamera(
+            GoogleCameraUpdateFactory.newLatLng(
+                GoogleLatLng(location.latitude, location.longitude)
+            )
+        )
+    }
+
     actions.savePosition = {
         val camera = map?.cameraPosition
         val target = camera?.target
@@ -441,15 +455,6 @@ private fun GoogleEmbeddedRenderer(
 
     actions.zoomIn = { map?.animateCamera(GoogleCameraUpdateFactory.zoomBy(1f)) }
     actions.zoomOut = { map?.animateCamera(GoogleCameraUpdateFactory.zoomBy(-1f)) }
-    actions.moveToMyLocation = {
-        if (myLat != 0 || myLon != 0) {
-            map?.animateCamera(
-                GoogleCameraUpdateFactory.newLatLng(
-                    GoogleLatLng(myLat / 1_000_000.0, myLon / 1_000_000.0)
-                )
-            )
-        }
-    }
     actions.savePosition = {
         map?.cameraPosition?.let { camera ->
             savePosition(prefs, camera.target.latitude, camera.target.longitude, camera.zoom)
