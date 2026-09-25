@@ -4,27 +4,22 @@
 >
 > `AI_CONTEXT.md` 只保留兼容入口；后续只维护 `AGENT.md`，不得维护两份独立正文。
 
-## 1. 版本基线与当前 main
+## 1. 当前工程基线
 
 | 项目 | 当前值 |
 | --- | --- |
 | 最新 GitHub Release | `Mod-v2.2.4` |
-| `build.gradle` 默认版本 | `2.2.4` |
-| Android versionCode | `2026091301` |
-| 上游历史基线 | APRSdroid `v1.7.0` |
+| build.gradle 默认版本 | `2.2.4` |
 | Android | `minSdk 28`，`compileSdk 37`，`targetSdk 37` |
 | 构建链 | Gradle `9.5.0`，AGP `9.3.2` |
 | Kotlin / Compose Compiler | AGP 9 built-in Kotlin `2.3.21` / Compose Compiler `2.3.21` |
 | Java | `17` |
-| 核心库 | Material `1.14.0`，OkHttp `5.3.0`，Browser `1.10.0`，Core-KTX `1.19.0`，Activity Compose `1.13.0`，Lifecycle runtime-compose `2.11.0`，Navigation Compose `2.10.0` |
 | AFSK1200 RX | Graywolf `graywolf-demod 0.14.13`，固定 upstream commit `34cd0111b7a40e7d91607699b7b4dd188574970a` |
 | 地图 | MapLibre Native `13.5.1` + Google Maps SDK |
 | 应用 ID | `me.nimenhagg.aprsdroidic705mod` |
 | UI | Jetpack Compose + Material 3；生产页面无 `res/layout` XML |
 
-`Mod-v2.2.4` 是当前发布基线，main 与该版本一致：在 2.2.3 的消息/ACK/PTT 修复基础上，优化接收触发的地图与列表刷新，并新增台站呼号/备注搜索。性能修复使用不可变地图快照、稳定图标缓存、后台位图/GeoJSON、可见页面查询与合并队列；搜索在 SQL LIMIT 之前筛选，不扩大默认结果数量。APRS-IS 文本、ACK/PTT 和 Graywolf 路径保持原有语义。legacy LoTW/实验性 TLS trust 行为仍保持兼容，直到真实 24580 握手能证明严格 CA/hostname 验证可用。后续 main 若领先最新 tag / GitHub Release，仍必须区分已发布与未发布能力。
-
-README 必须始终区分 **Latest release** 与 **Current main**。未打 tag 的功能、修复和行为变化不得提前写成稳定版能力。
+README 必须区分 **Latest release** 与 **Current main**；未打 tag 的能力不得写成稳定版能力。
 
 ## 2. 项目目标与边界
 
