@@ -36,6 +36,12 @@ object HamlibLibrary {
             if (explicit != null) {
                 System.load(explicit)
             } else {
+                try {
+                    System.loadLibrary("c++_shared")
+                } catch (_: Throwable) {}
+                try {
+                    System.loadLibrary("hamlib")
+                } catch (_: Throwable) {}
                 System.loadLibrary(NATIVE_LIBRARY_NAME)
             }
             loaded = true

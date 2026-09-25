@@ -78,3 +78,32 @@ PY
 echo "Hamlib $HAMLIB_VERSION $HAMLIB_REV API $ANDROID_API $ABI"
 "$READELF" -d "$OUTPUT" | grep -E 'SONAME|NEEDED' || true
 sha256sum "$OUTPUT"
+
+# Locate and package NDK libc++_shared.so for this ABI
+LIBCXX_SO=""
+for candidate in \
+  "$TOOLCHAIN/sysroot/usr/lib/$HOST/libc++_shared.so" \
+  "$TOOLCHAIN/sysroot/usr/lib/$CLANG_TRIPLE/libc++_shared.so" \
+  "$TOOLCHAIN/sysroot/usr/lib/arm-linux-androideabi/libc++_shared.so" \
+  "$NDK/sources/cxx-stl/llvm-libc++/libs/$ABI/libc++_shared.so"; do
+  if [ -s "$candidate" ]; then
+    LIBCXX_SO="$candidate"
+    break
+  fi
+done
+if [ -z "$LIBCXX_SO" ]; then
+  LIBCXX_SO="$(find "$NDK" -name "libc++_shared.so" 2>/dev/null | grep -E "/$ABI/|/$HOST/|arm-linux-androideabi" | head -n 1 || true)"
+fi
+[ -s "$LIBCXX_SO" ] || { echo "libc++_shared.so not found in NDK for $ABI" >&2; exit 1; }
+LIBCXX_DEST="$(dirname "$OUTPUT")/libc++_shared.so"
+cp "$LIBCXX_SO" "$LIBCXX_DEST"
+"$STRIP" --strip-unneeded "$LIBCXX_DEST"
+"$READELF" -lW "$LIBCXX_DEST" > "$tmp"
+python3 - "$tmp" "$ABI" <<'PY'
+import pathlib,sys
+loads=[int(x.split()[-1],16) for x in pathlib.Path(sys.argv[1]).read_text().splitlines() if x.split() and x.split()[0]=="LOAD"]
+if not loads or min(loads)<0x4000: raise SystemExit(f"libc++_shared {sys.argv[2]} invalid LOAD alignment: {loads}")
+print("libc++_shared",sys.argv[2],"LOAD alignments:",", ".join(hex(x) for x in loads))
+PY
+echo "Packaged libc++_shared.so for $ABI: $(sha256sum "$LIBCXX_DEST" | awk '{print $1}')"
+
