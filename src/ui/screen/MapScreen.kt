@@ -87,6 +87,7 @@ fun MapScreen(
     onBackClick: () -> Unit = {},
     onOpenLogs: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    onOpenOfflineMaps: () -> Unit = {},
     onClearLogs: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
     mapContent: @Composable () -> Unit
@@ -165,6 +166,16 @@ fun MapScreen(
                                 onClick = {
                                     showMenu = false
                                     onToggleShowObjects()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.map_offline_title)) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Download, contentDescription = null)
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    onOpenOfflineMaps()
                                 }
                             )
                             HorizontalDivider()
