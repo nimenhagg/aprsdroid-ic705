@@ -383,7 +383,7 @@ class HubActivity : BaseRecyclerActivity() {
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                 ),
                 MAP_LOCATION_PERMISSION,
-            ) {
+            )) {
             mapLocationCoordinator.triggerDeviceLocation()
         }
     }
