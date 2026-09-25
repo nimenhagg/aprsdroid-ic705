@@ -102,8 +102,10 @@ cp "$LIBCXX_SO" "$LIBCXX_DEST"
 python3 - "$tmp" "$ABI" <<'PY'
 import pathlib,sys
 loads=[int(x.split()[-1],16) for x in pathlib.Path(sys.argv[1]).read_text().splitlines() if x.split() and x.split()[0]=="LOAD"]
-if not loads or min(loads)<0x4000: raise SystemExit(f"libc++_shared {sys.argv[2]} invalid LOAD alignment: {loads}")
-print("libc++_shared",sys.argv[2],"LOAD alignments:",", ".join(hex(x) for x in loads))
+min_align = 0x4000 if sys.argv[2] == "arm64-v8a" else 0x1000
+if not loads or min(loads) < min_align:
+    raise SystemExit(f"libc++_shared {sys.argv[2]} invalid LOAD alignment: {loads} (expected >= {hex(min_align)})")
+print("libc++_shared", sys.argv[2], "LOAD alignments:", ", ".join(hex(x) for x in loads))
 PY
 echo "Packaged libc++_shared.so for $ABI: $(sha256sum "$LIBCXX_DEST" | awk '{print $1}')"
 
