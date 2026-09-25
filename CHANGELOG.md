@@ -1,3 +1,15 @@
+## [Unreleased]
+
+### Added
+
+- 恢复 MapLibre Native `OfflineManager` 区域下载/管理入口；离线数据存储在应用数据目录，不把地图瓦片打进 APK。
+- 地图溢出菜单新增 “Offline maps” 入口，支持查看下载进度、已完成瓦片/资源大小与删除区域；当前首版仅允许用户配置的 Custom tile source。
+- README 增加 APRSdroid Mod QQ 测试群与 Telegram 社区入口。
+
+### Changed
+
+- 标准 OpenStreetMap 瓦片仍只使用正常交互缓存，不批量预取离线区域；高德等其它图源不在首版 OfflineManager 预取范围内，避免在未验证供应商条款前假定允许批量下载。
+
 ## [Mod-v2.4.1] - 2026-10-01
 
 ### Added
@@ -36,6 +48,7 @@
 - **修复 USB 电台型号选择菜单打开时 StackOverflowError 崩溃**：修复从 Hamlib 目录构建非预置电台 Profile 时的递归循环调用，并在 Compose 列表增强 Key 唯一性。
 
 ### Changed
+
 - **安装包体积深度优化**：
   - Hamlib 原生交叉编译启用 `-Os`、`-ffunction-sections`、`-fdata-sections`、`-Wl,--gc-sections` 优化并剥离符号。
   - 启用 R8/ProGuard dead-code 剪裁与优化，安装包体积由 ~98 MB 缩减至 ~44 MB，瘦身超过 50%。
