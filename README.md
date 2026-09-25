@@ -109,7 +109,7 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连
 - 高德、OpenStreetMap、自定义在线栅格：MapLibre Native。
 - Google 普通、卫星/混合地图：Google Maps SDK。
 - OpenStreetMap 请求使用可识别 User-Agent，并显示 attribution。
-- 不提供 MapLibre Offline 区域下载，也不批量预取 OSM 瓦片。
+- 提供 MapLibre Offline 区域下载/管理入口，但当前仅允许用户配置的 Custom tile source；标准 OpenStreetMap `tile.openstreetmap.org` 不提供预取/离线下载，仍只使用正常交互缓存。
 
 ### 从源码构建
 
