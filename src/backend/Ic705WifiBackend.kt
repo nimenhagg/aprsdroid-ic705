@@ -7,6 +7,7 @@ import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.ic705.backend.Ic705BackendPrefs
 import org.aprsdroid.app.ic705.backend.Ic705BackendService
 import org.aprsdroid.app.ic705.backend.Ic705WifiBackendController
+import org.aprsdroid.app.radio.WlanRadioModel
 
 class Ic705WifiBackend(
     service: AprsService,
@@ -50,5 +51,15 @@ class Ic705WifiBackend(
             get() = preferences.getString("ic705.username", "")
         override val password: String
             get() = preferences.getString("ic705.password", "")
+        override val model: String
+            get() = preferences.getString("ic705.model", "IC-705")
+        override val civAddress: Int
+            get() {
+                val modelObj = WlanRadioModel.findById(model)
+                return WlanRadioModel.parseCivAddress(
+                    preferences.getString("ic705.civ_address", ""),
+                    defaultAddress = modelObj.defaultCivAddress,
+                )
+            }
     }
 }

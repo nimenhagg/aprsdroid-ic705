@@ -17,6 +17,7 @@ import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.diagnostic.Ic705DiagnosticState
 import org.aprsdroid.app.ic705.android.Ic705AndroidSocketFactoryProvider
 import org.aprsdroid.app.ic705.protocol.Ic705AudioPacketCodec
+import org.aprsdroid.app.ic705.protocol.Ic705CivCommands
 import org.aprsdroid.app.ic705.session.Ic705PacketRejectionKind
 import org.aprsdroid.app.ic705.session.Ic705RadioSession
 import org.aprsdroid.app.ic705.session.Ic705RxSession
@@ -44,6 +45,8 @@ interface Ic705BackendPrefs {
     val controlPort: Int
     val username: String
     val password: String
+    val civAddress: Int get() = Ic705CivCommands.DEFAULT_RADIO_ADDRESS
+    val model: String get() = "IC-705"
 }
 
 /** Creates the radio session for a resolved socket factory. */
@@ -145,6 +148,7 @@ class Ic705WifiBackendController(
                 clientName = "APRSdroid",
                 // Reconnect above this layer so each generation gets a fresh Android Network.
                 autoReconnect = false,
+                radioCivAddress = prefs.civAddress,
             )
         }.getOrElse { error ->
             AppLog.e("IC705", "invalid_settings", error = error)
