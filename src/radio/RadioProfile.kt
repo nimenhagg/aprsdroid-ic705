@@ -1,5 +1,8 @@
 package org.aprsdroid.app.radio
 
+import org.aprsdroid.app.hamlib.HamlibRig
+import org.aprsdroid.app.hamlib.HamlibRigCatalog
+
 /**
  * Configuration and capability profile for a radio model supported via Hamlib / USB.
  *
@@ -17,7 +20,7 @@ data class RadioProfile(
     val manufacturer: String = defaultManufacturer(name),
 ) {
     val isIcom: Boolean
-        get() = defaultCivAddress != null
+        get() = defaultCivAddress != null || manufacturer.equals("Icom", ignoreCase = true)
 
     companion object {
         const val DEFAULT_BAUD_RATE = 19200
@@ -234,11 +237,55 @@ data class RadioProfile(
             "Other",
         )
 
-        fun findByModelId(modelId: Int): RadioProfile? =
-            PRESETS.firstOrNull { it.hamlibModelId == modelId }
+        fun fromHamlibRig(rig: HamlibRig): RadioProfile {
+            findByModelId(rig.modelId)?.let { return it }
+
+            val mfr = rig.manufacturer.trim().ifEmpty { "Other" }
+            val model = rig.model.trim()
+            val fullName = if (model.startsWith(mfr, ignoreCase = true)) model else "$mfr $model"
+
+            val baud = when {
+                mfr.equals("Icom", ignoreCase = true) -> 19200
+                mfr.equals("Yaesu", ignoreCase = true) -> 38400
+                mfr.equals("Kenwood", ignoreCase = true) -> 115200
+                else -> DEFAULT_BAUD_RATE
+            }
+
+            return RadioProfile(
+                name = fullName,
+                hamlibModelId = rig.modelId,
+                defaultBaudRate = baud,
+                supportedBaudRates = DEFAULT_BAUD_RATES,
+                defaultCivAddress = null,
+                defaultAudioSampleRateHz = DEFAULT_AUDIO_SAMPLE_RATE_HZ,
+                isExperimental = !rig.isStable,
+                manufacturer = mfr,
+            )
+        }
+
+        fun allProfiles(): List<RadioProfile> {
+            val catalogRigs = HamlibRigCatalog.list()
+            val allList = if (catalogRigs.isEmpty()) {
+                PRESETS
+            } else {
+                val catalogProfiles = catalogRigs.map { fromHamlibRig(it) }
+                val presetIds = PRESETS.map { it.hamlibModelId }.toSet()
+                val nonPresetCatalog = catalogProfiles.filter { it.hamlibModelId !in presetIds }
+                PRESETS + nonPresetCatalog
+            }
+            return allList.sortedWith(
+                compareBy<RadioProfile> { it.manufacturer.lowercase() }
+                    .thenBy { it.name.lowercase() }
+            )
+        }
+
+        fun findByModelId(modelId: Int): RadioProfile? {
+            PRESETS.firstOrNull { it.hamlibModelId == modelId }?.let { return it }
+            return HamlibRigCatalog.findByModelId(modelId)?.let { fromHamlibRig(it) }
+        }
 
         fun findByName(name: String): RadioProfile? =
-            PRESETS.firstOrNull { it.name.equals(name, ignoreCase = true) }
+            allProfiles().firstOrNull { it.name.equals(name, ignoreCase = true) }
 
         fun createCustom(
             name: String,

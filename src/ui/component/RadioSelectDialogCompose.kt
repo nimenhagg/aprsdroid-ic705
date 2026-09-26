@@ -1,7 +1,6 @@
 package org.aprsdroid.app.ui.component
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,15 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,42 +46,20 @@ fun RadioSelectDialog(
     onSelect: (RadioProfile) -> Unit,
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("Recommended") }
+    val allAvailable = remember { RadioProfile.allProfiles() }
 
-    val filteredProfiles = remember(searchQuery, selectedCategory) {
-        val baseList = when (selectedCategory) {
-            "Recommended" -> RadioProfile.RECOMMENDED
-            "Icom" -> RadioProfile.PRESETS.filter { it.manufacturer.equals("Icom", ignoreCase = true) }
-            "Yaesu" -> RadioProfile.PRESETS.filter { it.manufacturer.equals("Yaesu", ignoreCase = true) }
-            "Kenwood" -> RadioProfile.PRESETS.filter { it.manufacturer.equals("Kenwood", ignoreCase = true) }
-            "Other" -> RadioProfile.PRESETS.filter {
-                !it.manufacturer.equals("Icom", ignoreCase = true) &&
-                !it.manufacturer.equals("Yaesu", ignoreCase = true) &&
-                !it.manufacturer.equals("Kenwood", ignoreCase = true)
-            }
-            else -> RadioProfile.PRESETS
-        }
-
+    val filteredProfiles = remember(searchQuery, allAvailable) {
         if (searchQuery.isBlank()) {
-            baseList
+            allAvailable
         } else {
             val query = searchQuery.trim()
-            RadioProfile.PRESETS.filter { profile ->
+            allAvailable.filter { profile ->
                 profile.name.contains(query, ignoreCase = true) ||
                 profile.hamlibModelId.toString().contains(query) ||
                 profile.manufacturer.contains(query, ignoreCase = true)
             }
         }
     }
-
-    val categories = listOf(
-        "Recommended" to stringResource(R.string.setting_usbradio_mfr_presets),
-        "All" to stringResource(R.string.setting_usbradio_mfr_all),
-        "Icom" to "Icom",
-        "Yaesu" to "Yaesu",
-        "Kenwood" to "Kenwood",
-        "Other" to stringResource(R.string.setting_usbradio_mfr_other),
-    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -145,33 +119,10 @@ fun RadioSelectDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    categories.forEach { (catKey, catLabel) ->
-                        val isSelected = selectedCategory == catKey
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = {
-                                selectedCategory = catKey
-                                searchQuery = ""
-                            },
-                            label = { Text(catLabel, style = MaterialTheme.typography.labelMedium) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            ),
-                        )
-                    }
-                }
-
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 340.dp),
+                        .heightIn(max = 400.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     if (filteredProfiles.isEmpty()) {
@@ -232,7 +183,7 @@ fun RadioSelectDialog(
                                             },
                                         )
                                         val details = buildString {
-                                            append("Hamlib #${profile.hamlibModelId} · ${profile.defaultBaudRate}bd")
+                                            append("${profile.manufacturer} · #${profile.hamlibModelId} · ${profile.defaultBaudRate}bd")
                                             if (profile.defaultCivAddress != null) {
                                                 append(" · CI-V 0x${Integer.toHexString(profile.defaultCivAddress).uppercase()}")
                                             }

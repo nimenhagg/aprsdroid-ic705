@@ -85,4 +85,36 @@ class RadioProfileTest {
         assertTrue(RadioProfile.MANUFACTURERS.contains("Yaesu"))
         assertTrue(RadioProfile.MANUFACTURERS.contains("Kenwood"))
     }
+
+    @Test
+    fun allProfilesContainsPresetsAndIsSortedByBrand() {
+        val all = RadioProfile.allProfiles()
+        assertTrue(all.contains(RadioProfile.IC705_USB))
+        assertTrue(all.contains(RadioProfile.FT891_USB))
+        assertTrue(all.contains(RadioProfile.TS590SG_USB))
+
+        for (i in 0 until all.size - 1) {
+            val cmp = all[i].manufacturer.compareTo(all[i + 1].manufacturer, ignoreCase = true)
+            assertTrue("Expected sorted manufacturers: ${all[i].manufacturer} <= ${all[i+1].manufacturer}", cmp <= 0)
+        }
+    }
+
+    @Test
+    fun fromHamlibRigWrapsCorrectly() {
+        val rig = org.aprsdroid.app.hamlib.HamlibRig(
+            modelId = 1020,
+            manufacturer = "Yaesu",
+            model = "FT-817",
+            driverVersion = "20240101",
+            driverStatus = 3,
+            capabilities = org.aprsdroid.app.hamlib.HamlibRigCapabilities.fromFlags(0, 0, 0),
+        )
+        val profile = RadioProfile.fromHamlibRig(rig)
+        assertEquals("Yaesu FT-817", profile.name)
+        assertEquals(1020, profile.hamlibModelId)
+        assertEquals("Yaesu", profile.manufacturer)
+        assertEquals(38400, profile.defaultBaudRate)
+        assertFalse(profile.isExperimental)
+        assertFalse(profile.isIcom)
+    }
 }
