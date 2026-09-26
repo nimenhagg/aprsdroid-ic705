@@ -37,7 +37,7 @@ for tool in "$CC" "$STRIP" "$READELF" "$NM"; do
   [ -x "$tool" ] || { echo "Missing NDK tool: $tool" >&2; exit 2; }
 done
 
-"$CC" -shared -fPIC -O2 -Wall \
+"$CC" -shared -fPIC -Os -ffunction-sections -fdata-sections -Wall \
   -DHAMLIB_JNI_PINNED_VERSION="\"$HAMLIB_VERSION\"" \
   -DHAMLIB_JNI_PINNED_REVISION="\"$HAMLIB_REV\"" \
   -I"$INSTALL/include" \
@@ -45,7 +45,7 @@ done
   -o "$OUTPUT" \
   "$ROOT/native/hamlib-jni/hamlib_jni.c" \
   -L"$OUT_DIR" -lhamlib -pthread \
-  -Wl,-z,max-page-size=16384
+  -Wl,-z,max-page-size=16384 -Wl,--gc-sections
 
 # Strip here as well as in the Hamlib script: AGP strips packaged native
 # libraries, so the artifact that lands in the APK has to be the one this
