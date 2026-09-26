@@ -103,16 +103,36 @@ object HamlibRigCatalog {
     /** Model number of the dummy backend variant without VFO support. */
     const val DUMMY_NOVFO_MODEL_ID = 6
 
-    fun list(): List<HamlibRig> =
-        HamlibNative.listRigs()
-            .mapNotNull(HamlibRig::decodeOrNull)
-            .sortedWith(compareBy({ it.manufacturer.lowercase() }, { it.model.lowercase() }))
+    @Volatile
+    private var cachedList: List<HamlibRig>? = null
 
-    fun count(): Int = HamlibNative.rigCount()
+    fun list(): List<HamlibRig> {
+        cachedList?.let { return it }
+        val result = try {
+            HamlibNative.listRigs()
+                .mapNotNull(HamlibRig::decodeOrNull)
+                .sortedWith(compareBy({ it.manufacturer.lowercase() }, { it.model.lowercase() }))
+        } catch (_: Throwable) {
+            emptyList()
+        }
+        if (result.isNotEmpty()) {
+            cachedList = result
+        }
+        return result
+    }
+
+    fun count(): Int {
+        cachedList?.let { return it.size }
+        return try {
+            HamlibNative.rigCount()
+        } catch (_: Throwable) {
+            0
+        }
+    }
 
     fun findByModelId(modelId: Int): HamlibRig? = list().firstOrNull { it.modelId == modelId }
 
-    fun version(): String = HamlibNative.version()
+    fun version(): String = try { HamlibNative.version() } catch (_: Throwable) { "" }
 
-    fun backendRevision(): String = HamlibNative.backendRevision()
+    fun backendRevision(): String = try { HamlibNative.backendRevision() } catch (_: Throwable) { "" }
 }
