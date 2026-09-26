@@ -141,7 +141,7 @@ fun RadioSelectDialog(
                             }
                         }
                     } else {
-                        items(filteredProfiles, key = { it.hamlibModelId }) { profile ->
+                        items(filteredProfiles, key = { "${it.hamlibModelId}_${it.name}" }) { profile ->
                             val isSelected = profile.hamlibModelId == selectedModelId
                             Surface(
                                 shape = RoundedCornerShape(12.dp),

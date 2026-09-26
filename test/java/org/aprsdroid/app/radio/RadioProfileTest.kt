@@ -117,4 +117,35 @@ class RadioProfileTest {
         assertFalse(profile.isExperimental)
         assertFalse(profile.isIcom)
     }
+
+    @Test
+    fun fromHamlibRigReturnsPresetIfModelIdMatches() {
+        val rig = org.aprsdroid.app.hamlib.HamlibRig(
+            modelId = 3085, // IC-705
+            manufacturer = "Icom",
+            model = "IC-705",
+            driverVersion = "20240101",
+            driverStatus = 3,
+            capabilities = org.aprsdroid.app.hamlib.HamlibRigCapabilities.fromFlags(0, 0, 0),
+        )
+        val profile = RadioProfile.fromHamlibRig(rig)
+        assertEquals(RadioProfile.IC705_USB, profile)
+        assertEquals(0xA4, profile.defaultCivAddress)
+    }
+
+    @Test
+    fun nonPresetModelResolutionDoesNotRecurse() {
+        // Rig not in PRESETS
+        val rig = org.aprsdroid.app.hamlib.HamlibRig(
+            modelId = 99999,
+            manufacturer = "TestBrand",
+            model = "TestRig-1",
+            driverVersion = "1.0",
+            driverStatus = 3,
+            capabilities = org.aprsdroid.app.hamlib.HamlibRigCapabilities.fromFlags(0, 0, 0),
+        )
+        val profile = RadioProfile.fromHamlibRig(rig)
+        assertEquals(99999, profile.hamlibModelId)
+        assertEquals("TestBrand TestRig-1", profile.name)
+    }
 }

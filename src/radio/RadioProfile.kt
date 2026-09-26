@@ -238,7 +238,7 @@ data class RadioProfile(
         )
 
         fun fromHamlibRig(rig: HamlibRig): RadioProfile {
-            findByModelId(rig.modelId)?.let { return it }
+            PRESETS.firstOrNull { it.hamlibModelId == rig.modelId }?.let { return it }
 
             val mfr = rig.manufacturer.trim().ifEmpty { "Other" }
             val model = rig.model.trim()
@@ -273,7 +273,7 @@ data class RadioProfile(
                 val nonPresetCatalog = catalogProfiles.filter { it.hamlibModelId !in presetIds }
                 PRESETS + nonPresetCatalog
             }
-            return allList.sortedWith(
+            return allList.distinctBy { it.hamlibModelId }.sortedWith(
                 compareBy<RadioProfile> { it.manufacturer.lowercase() }
                     .thenBy { it.name.lowercase() }
             )

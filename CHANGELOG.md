@@ -17,11 +17,14 @@
   - 接入 Android 12+ 现代化蓝牙通信音频路由 API（`setCommunicationDevice`）。
   - IC-705 Wi-Fi 状态改用非阻塞 NetworkCallback 事件追踪，消除回调内同步网络查询延迟。
 
+### Fixed
+- **修复 USB 电台型号选择菜单打开时 StackOverflowError 崩溃**：修复从 Hamlib 目录构建非预置电台 Profile 时的递归循环调用，并在 Compose 列表增强 Key 唯一性。
+
 ### Changed
 - **安装包体积深度优化**：
   - Hamlib 原生交叉编译启用 `-Os`、`-ffunction-sections`、`-fdata-sections`、`-Wl,--gc-sections` 优化并剥离符号。
   - 启用 R8/ProGuard dead-code 剪裁与优化，安装包体积由 ~98 MB 缩减至 ~44 MB，瘦身超过 50%。
-- 版本更新为 `Mod-v2.4.0`（`versionCode 2026092600`）。
+- 版本更新为 `Mod-v2.4.0`（`versionCode 2026092601`）。
 
 ## [Mod-v2.2.4] - 2026-09-13
 
