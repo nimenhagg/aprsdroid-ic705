@@ -6,7 +6,7 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 Release | `Mod-v2.2.4` |
+| 最新 GitHub Release | `Mod-v2.4.0` |
 | Android | minSdk 28 / compileSdk 37 / targetSdk 37 |
 | Build | Gradle 9.5.0 / AGP 9.3.2 / Java 17 |
 | Kotlin / Compose Compiler | 2.3.21 |

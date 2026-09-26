@@ -1,10 +1,10 @@
 # APRSdroid Mod
 
-APRSdroid 的现代化社区修改版，增加 Icom IC-705 Wi-Fi 直连 APRS 收发，并持续维护现代 Android UI、诊断和性能改进。
+APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连 APRS 收发与 Hamlib 多电台控制，并持续维护现代 Android UI、诊断和性能改进。
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.3.0`**
+**最新稳定版 / Latest release: `Mod-v2.4.0`**
 
 ### 社区交流
 
@@ -18,15 +18,16 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 Wi-Fi 直连 APRS 收
 
 ### 主要功能
 
-- IC-705 Wi-Fi 半双工 APRS：AX.25、AFSK1200、12 kHz 单声道 PCM、CI-V PTT；无需音频线或外接 TNC。
-- IC-705 可使用电台热点或同一局域网；电台流量绑定选定 Wi-Fi Network，APRS-IS 等互联网流量仍可走手机默认网络。
+- **WLAN 电台直连**：支持 Icom IC-705、IC-9700、IC-7610、IC-905 及自定义型号；半双工 AX.25、AFSK1200、12 kHz 单声道 PCM、CI-V PTT；自定义 CI-V 地址配置与默认预置自动填充；无需音频线或外接 TNC。
+- **USB 电台（Hamlib）**：集成 Hamlib 4.7.2 原生库与 400+ 款常见电台（Icom、Yaesu、Kenwood、Elecraft 等），支持品牌字母排序与即时模糊搜索；内置免 root 本地 Android USB CAT 环回桥接与通用音频后端，提供专属 USB 声卡输入/输出选择与发射音量控制滑块。
+- **发射安全与物理排空计算**：依据音频采样率与缓冲区精确推算声卡物理排空延时，彻底杜绝 PTT 释放挂起与空载波长发；保留 PTT OFF ACK 与安全 watchdog 机制。
+- **体积与性能优化**：Hamlib 原生库深度优化（`-Os`、函数/数据分节、Dead Code 剪裁与符号剥离），结合 R8 优化，安装包体积由近 100 MB 缩减至 ~44 MB。
+- **电台与网络隔离**：电台流量绑定选定 Wi-Fi Network，APRS-IS 等互联网流量仍可走手机默认蜂窝网络。
 - 本地 AFSK1200 RX 统一使用 Graywolf，支持 IC-705 12 kHz、AudioRecord 11.025 kHz、Bluetooth SCO 8 kHz；旧 Java modulator 仅用于 TX 音频生成。
-- PTT OFF ACK、安全 watchdog 和分通道连接恢复，降低 Android 网络切换、Wi-Fi 驱动和线程调度差异造成的故障。
-- 持久结构化诊断日志与可分享 ZIP，记录网络、IC-705 session、PTT、恢复和崩溃现场；敏感字段自动脱敏。
+- 持久结构化诊断日志与可分享 ZIP，记录网络、电台 session、PTT、恢复和崩溃现场；敏感字段自动脱敏。
 - 应用启动时自动静默检查更新；只有发现新版本才弹窗提示，无更新或检查失败均不提示。设置页仍可手动检查；不会后台/定时联网，也不会自动下载/安装 APK。
 - Android 16+ 可选 Live Updates / 状态胶囊，显示连接、接收、发射、信标和错误等状态。
-- Material 3 + Jetpack Compose；台站、地图、消息、报文四个一级页面统一导航，并支持紧凑列表。
-- 台站搜索支持按呼号或备注匹配，同时保留距离排序和显示期限；地图/列表刷新针对密集 APRS-IS 收包进行了优化。
+- Material 3 + Jetpack Compose；台站、地图、消息、报文四个一级页面统一导航，并支持紧凑列表与即时呼号搜索。
 - MapLibre Native 支持高德、OpenStreetMap 和自定义栅格；Google Maps SDK 支持 Google 普通/卫星地图。
 - 保留 APRSdroid 原有 APRS-IS、AFSK、KISS、TNC2、Kenwood、蓝牙、USB、LAN TCP TNC 等路径。
 
@@ -37,8 +38,8 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 Wi-Fi 直连 APRS 收
 | Android | Android 9+ / API 28 |
 | 目标平台 | Android 17 / API 37 |
 | 正式 APK | ARM64 OpenGL、ARMv7 OpenGL |
-| 电台 | Icom IC-705，启用 WLAN 与 Network User |
-| 默认控制端口 | UDP `50001` |
+| 电台 | Icom WLAN 电台（IC-705 等）或通过 USB OTG / 声卡连接的 Hamlib 支持电台 |
+| 默认控制端口 | UDP `50001`（WLAN 模式） |
 | 构建环境 | JDK 17、Android SDK API 37 |
 
 源码还保留 ARM64 Vulkan、x86 和 x86_64 flavor；当前正式本地 AFSK RX 只支持 ARM64/ARMv7。
@@ -56,17 +57,32 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 Wi-Fi 直连 APRS 收
 
 应用 ID：`me.nimenhagg.aprsdroidic705mod`。若旧 APK 使用不同签名，Android 可能要求先卸载；卸载会删除该安装的本地设置和诊断日志。
 
-### IC-705 配置
+### 电台配置
 
-1. 电台：`MENU → SET → WLAN & Internet → WLAN`，启用 WLAN。
-2. 使用电台 Access Point，或让手机与电台加入同一局域网。
-3. 在 Network User / Pass 建立用户名和密码；当前实现要求用户名非空，用户名和密码最长 16 个 US-ASCII 字符。
-4. 确认控制端口，通常为 `50001`。
+#### 1. WLAN 电台（IC-705 / IC-9700 / IC-7610 / IC-905）
+
+1. 电台端：以 IC-705 为例，`MENU → SET → WLAN & Internet → WLAN` 开启 WLAN。
+2. 使用电台 Access Point 模式，或让手机与电台接入同一局域网。
+3. 在 Network User / Pass 建立用户名和密码（用户名和密码最长 16 个 US-ASCII 字符）。
+4. 确认控制端口（默认 `50001`）。
 5. 手机保持连接电台 Wi-Fi；Android 提示网络无互联网时选择继续连接。
+6. 应用内配置：
+   - 连接协议选择 `IC-705 Wi-Fi`。
+   - 选择预置型号（`IC-705`、`IC-9700`、`IC-7610`、`IC-905` 或 `CUSTOM`），系统会自动填充默认 CI-V 地址（如 IC-705 填充 `A4`）。
+   - 若电台修改了 CI-V 地址，可直接在此处输入对应的 2 位十六进制 CI-V 地址。
+   - 填写电台 IP、端口及 Network User 凭据。可先使用 IC-705 诊断页确认握手与音频接收。
 
-应用中：设置呼号、SSID、数字中继路径和位置来源 → 连接设置选择 `IC-705 Wi-Fi` → 填写电台 IP、端口和 Network User 凭据。可先使用 IC-705 诊断页确认握手和音频接收；诊断页不会发射。
+#### 2. USB 电台（Hamlib）
 
-**不要在截图、Issue 或日志中公开电台网络密码。首次发射请使用低功率或合适的假负载，并确认 PTT 能及时释放。**
+1. 手机通过 USB OTG 转接线连接电台自带的 USB 接口（如 IC-705、IC-7300、FT-891、FT-991A 等自带 USB 串口与 USB 声卡）。
+2. 应用内配置：
+   - 连接协议选择 `USB 电台 (Hamlib)`。
+   - 点击“电台型号”，在弹出列表中搜索并选择电台型号（已内置 400+ 款常见电台，按品牌连续排列）。
+   - 系统将根据型号自动设定推荐波特率与默认 CI-V 地址，也可按需手动调整。
+   - 在“音频输入设备”与“音频输出设备”中选择识别到的 USB 声卡（例如 USB Audio Device）。
+   - 可在“发射音量”滑块中微调输出电平，防止调制过度过冲或驱动不足。
+
+**安全提示：不要在截图、Issue 或日志中公开电台网络密码。首次发射请使用低功率或合适的假负载，并确认 PTT 能及时释放。**
 
 ### 诊断与故障排查
 
@@ -127,16 +143,19 @@ Graywolf 的 `Cargo.lock` 已提交，native 构建使用 `--locked`。Windows �
 
 APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APRS support, modern Android UI, persistent diagnostics, and performance improvements.
 
-**Latest stable release: `Mod-v2.2.4`.**
+**Latest stable release: `Mod-v2.4.0`.**
 
 ### Highlights
 
-- Direct half-duplex IC-705 WLAN APRS using AX.25, AFSK1200, 12 kHz mono PCM and CI-V PTT.
-- Selected Android Wi-Fi Network is used only for radio traffic, allowing APRS-IS to keep using the phone's default internet path.
+- **WLAN Radios**: Direct half-duplex WLAN APRS for Icom IC-705, IC-9700, IC-7610, IC-905, and custom models using AX.25, AFSK1200, 12 kHz mono PCM, and CI-V PTT with configurable CI-V hex addresses.
+- **USB Radios (Hamlib)**: Integrated Hamlib 4.7.2 supporting 400+ radios (Icom, Yaesu, Kenwood, Elecraft, etc.), alphabetical brand sorting, instant search, root-free local USB CAT loopback bridge, dedicated USB soundcard I/O selection, and TX output volume control.
+- **PTT Timing & Audio Drain Safety**: Physical audio drain duration calculated from sample rate and buffer length to eliminate empty-carrier hanging issues upon PTT release.
+- **Size & Performance Optimization**: Native Hamlib build compiled with `-Os` and dead-code stripping, coupled with R8 optimizations, cutting APK size by >50% (down to ~44 MB).
+- **Network Isolation**: Selected Android Wi-Fi Network is used only for radio traffic, allowing APRS-IS to keep using the phone's default internet path.
 - Graywolf is the production local AFSK1200 RX engine; the legacy Java modulator remains for stable TX PCM generation.
 - ACK-aware PTT safety, watchdogs, channel-specific recovery, persistent structured diagnostics and exportable reports.
 - Manual, Settings-only GitHub Release checking; no startup/background polling and no automatic APK download/install.
-- Material 3 / Jetpack Compose UI, station search, compact lists and optimized dense APRS-IS map/list updates.
+- Android 16+ Live Updates / status chip display, Material 3 / Jetpack Compose UI, station search, and compact lists.
 - MapLibre Native for AMap/OSM/custom raster maps and Google Maps SDK for Google map/satellite modes.
 - Original APRSdroid APRS-IS, AFSK, KISS, TNC2, Kenwood, Bluetooth, USB and LAN TNC paths remain available.
 
@@ -145,7 +164,7 @@ APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APR
 - Android 9+ / API 28
 - Target Android 17 / API 37
 - Official APKs: ARM64 OpenGL and ARMv7 OpenGL
-- IC-705 with WLAN and Network User enabled
+- Radios: Icom WLAN radios (IC-705, etc.) or USB OTG/soundcard radios supported by Hamlib
 - JDK 17 / Gradle 9.5.0 / AGP 9.3.2
 
 Download official builds from [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases).

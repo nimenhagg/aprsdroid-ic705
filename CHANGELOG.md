@@ -1,8 +1,27 @@
-## [Unreleased]
+## [Mod-v2.4.0] - 2026-09-26
+
+### Added
+- **WLAN 多电台预置与自定义 CI-V 地址**：
+  - 连接设置选择 `IC-705 Wi-Fi` 时，新增常用 WLAN 电台预设：`IC-705`（`0xA4`）、`IC-9700`（`0xA2`）、`IC-7610`（`0x98`）、`IC-905`（`0xAC`）及自定义型号（`CUSTOM`）。
+  - 动态 CI-V 地址配置：切换预置型号自动同步默认 CI-V 十六进制地址，同时支持自由修改与两字符十六进制输入校验；会话通信彻底解耦硬编码地址。
+- **Hamlib USB 电台支持**：
+  - 正式集成 Hamlib 4.7.2 核心，新增 `USB 电台 (Hamlib)` 连接后端。
+  - 内置 400+ 款常见短波/超短波电台（Icom、Yaesu、Kenwood、Elecraft、Xiegu 等），支持按品牌字母连续分组与实时快速搜索。
+  - Android USB CAT 环回桥接（`LocalLoopbackCatBridge` + `UsbSerialByteStream`），免 root 与免 libusb 实现 Android USB 串口与 Hamlib 通信。
+  - 通用 `RadioAudioBackend`：支持独立选择 USB 音频输入声卡、输出声卡以及发射音量调节滑块。
+- **PTT 时序与音频排空保护**：
+  - 引入通用 `RadioPttSequence` 状态机（PTT ON → TX Audio → 物理排空 → PTT OFF）。
+  - 依据音频缓冲采样率和已写入样本精确推算声卡物理排空延时，彻底解决发射结束时偶发空载波卡死挂起问题。
+- **Android 14+ / 17 平台现代化**：
+  - 前台服务支持 Android 14+ `connectedDevice` 类型声明，适配高版本后台运行限制。
+  - 接入 Android 12+ 现代化蓝牙通信音频路由 API（`setCommunicationDevice`）。
+  - IC-705 Wi-Fi 状态改用非阻塞 NetworkCallback 事件追踪，消除回调内同步网络查询延迟。
 
 ### Changed
-- 开始 Hamlib 分阶段集成的 PR1 构建基础：最低系统从 Android 8.1（API 27）提升到 Android 9（API 28）；固定 Hamlib 4.7.2 / commit `40f63488fe0bd751b147f48d62fd217bf53713a0`，由 CI 从源码交叉编译 ARM64/ARMv7 native library，校验 16 KiB ELF 对齐、SONAME、APK 内 SHA-256，并在 tagged release 附带对应源码归档。
-- 本阶段不改变 IC-705 WLAN、PTT、APRS/AFSK 或现有连接运行时行为；通用 Hamlib JNI 与 dummy/mock 生命周期验证属于后续 PR2。
+- **安装包体积深度优化**：
+  - Hamlib 原生交叉编译启用 `-Os`、`-ffunction-sections`、`-fdata-sections`、`-Wl,--gc-sections` 优化并剥离符号。
+  - 启用 R8/ProGuard dead-code 剪裁与优化，安装包体积由 ~98 MB 缩减至 ~44 MB，瘦身超过 50%。
+- 版本更新为 `Mod-v2.4.0`（`versionCode 2026092600`）。
 
 ## [Mod-v2.2.4] - 2026-09-13
 

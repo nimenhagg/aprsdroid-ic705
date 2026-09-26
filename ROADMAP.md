@@ -4,7 +4,7 @@
 
 ## Hamlib 与多电台架构规划
 
-> **状态：分阶段实现中。** PR1（Android 构建基础）、PR2（最小 JNI 交互）、PR3（通用 RadioControl 契约与适配层）、PR4（Android USB CAT bridge 本地回环桥接）、PR5（通用 Radio Audio 路由与 TX drain）、PR6（IC-705 USB OTG 核心会话与后台）与 PR7（USB 电台设置 UI 与 WSJT-X 风格多品牌分类选择器）已全部合并至主线。当前 IC-705 WLAN 路径、PTT 安全状态机、Graywolf RX 和既有设置仍以本文件前文的现状约束为准。
+> **状态：分阶段实现中。** PR1（Android 构建基础）、PR2（最小 JNI 交互）、PR3（通用 RadioControl 契约与适配层）、PR4（Android USB CAT bridge 本地回环桥接）、PR5（通用 Radio Audio 路由与 TX drain）、PR6（IC-705 USB OTG 核心会话与后台）、PR7（USB 电台设置 UI、WSJT-X 风格选择器、400+ 电台库与品牌排序）与 PR8（WLAN 电台预置与自定义 CI-V 地址）已全部合并至主线。当前 IC-705 WLAN 路径、PTT 安全状态机、Graywolf RX 和既有设置仍以本文件前文的现状约束为准。
 
 ### 16.1 总体原则
 
@@ -266,25 +266,19 @@ advanced manual override（仅必要时）
 - 在“连接协议”中正式暴露 `USB 电台 (Hamlib)`（`usbradio`）；
 - 仿照 WSJT-X / 现代国家选择器交互，实现 `RadioSelectDialogCompose`：
   - 顶部关键字即时搜索（按型号名称、Hamlib ID 或厂商过滤）；
-  - 水平厂商分类 Chip 标签（`推荐常用`、`全部`、`Icom`、`Yaesu`、`Kenwood`、`其他`）；
+  - 整合 400+ 款 Hamlib 支持电台，按品牌首字母排序连续展示，提供流畅平滑的浏览体验；
   - 列表卡片展示电台名称、Hamlib 模型编号、默认波特率及 CI-V 地址；
 - 扩展常用主流电台预置（IC-705、IC-7100、IC-7300、IC-7610、IC-9700、FT-891、FT-991A、FTDX10、FT-710、TS-590SG、TS-890S 等）；
 - 切换电台自动同步推荐波特率与默认 CI-V 地址；
-- 支持自定义波特率与十六进制 CI-V 地址输入。
+- 支持自定义波特率与十六进制 CI-V 地址输入；
+- 引入专属 USB 声卡输入/输出设备选择与发射音量控制滑块；
+- 实施物理排空精确计时保护，消除空载波悬挂。
 
-#### PR 8：Icom LAN 泛化（Wi-Fi 连接其他支持的 Icom 电台）
+#### PR 8：Icom LAN 泛化与自定义 CI-V 地址（已合并至主线）
 
-在 Hamlib USB 路径稳定后，再逐步：
-
-- 抽取 `IcomLan*` 通用概念；
-- 增加 0xA8 capability decoder；
-- 动态 CI-V address；
-- model quirk database；
-- 优先试验 IC-9700 Wi-Fi/以太网连接；
-- 后续 IC-905；
-- 保持 `Ic705*` 兼容 wrapper 或等价迁移层，避免旧用户配置断裂。
-
-禁止把“大规模 rename + capability + 新型号 + Hamlib + UI 重构”塞进一个 PR。
+- WLAN 连接电台型号预设：IC-705 (`0xA4`)、IC-9700 (`0xA2`)、IC-7610 (`0x98`)、IC-905 (`0xAC`) 与自定义型号 (`CUSTOM`)；
+- 动态 CI-V 地址配置与严格校验；
+- 解耦核心 CI-V 与控制会话的硬编码地址，保持老用户现有配置透明兼容。
 
 ### 16.8 设置模型目标
 
