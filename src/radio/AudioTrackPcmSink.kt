@@ -15,11 +15,13 @@ class AudioTrackPcmSink(
     preferredDevice: AudioDeviceInfo? = null,
     val bufferCapacitySamples: Int = DEFAULT_BUFFER_CAPACITY_SAMPLES,
     val drainTailMarginMs: Long = DEFAULT_DRAIN_TAIL_MARGIN_MS,
+    val txVolumePercent: Int = DEFAULT_TX_VOLUME_PERCENT,
 ) : DrainablePcmSink {
 
     companion object {
         const val DEFAULT_BUFFER_CAPACITY_SAMPLES = 8192
         const val DEFAULT_DRAIN_TAIL_MARGIN_MS = 100L
+        const val DEFAULT_TX_VOLUME_PERCENT = 100
 
         /**
          * Calculates the maximum expected duration (in ms) to wait for [samples] to physically play out
@@ -74,6 +76,15 @@ class AudioTrackPcmSink(
             .build()
 
         preferredDevice?.let { audioTrack.preferredDevice = it }
+        setVolume(txVolumePercent)
+    }
+
+    /**
+     * Dynamically adjusts the TX audio output volume percentage (0..100).
+     */
+    fun setVolume(volumePercent: Int) {
+        val gain = volumePercent.coerceIn(0, 100) / 100.0f
+        runCatching { audioTrack.setVolume(gain) }
     }
 
     override fun write(buffer: ShortArray, offset: Int, length: Int) {

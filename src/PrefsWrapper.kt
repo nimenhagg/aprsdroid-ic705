@@ -12,6 +12,7 @@ import androidx.core.content.edit
 import java.util.Locale
 import org.aprsdroid.app.location.LocationSource
 import org.aprsdroid.app.location.PeriodicGPS
+import org.aprsdroid.app.radio.RadioProfile
 
 class PrefsWrapper(@JvmField val context: Context) {
     companion object {
@@ -148,6 +149,16 @@ class PrefsWrapper(@JvmField val context: Context) {
             "kiss" -> context.getString(R.string.setting_proto_kiss)
             "kenwood" -> context.getString(R.string.setting_proto_kenwood)
             "tnc2" -> context.getString(R.string.setting_proto_tnc2)
+            "usbradio" -> {
+                val modelId = getStringInt("radio.model_id", RadioProfile.IC705_USB.hamlibModelId)
+                val profile = RadioProfile.findByModelId(modelId)
+                val baseProto = context.getString(R.string.setting_proto_usbradio)
+                if (profile != null) {
+                    "$baseProto · ${profile.name}"
+                } else {
+                    baseProto
+                }
+            }
             else -> proto
         }
         return when (AprsBackend.defaultProtoInfo(this).link()) {
