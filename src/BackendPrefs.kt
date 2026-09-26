@@ -51,6 +51,7 @@ import androidx.core.content.edit
 import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
 import org.aprsdroid.app.radio.RadioAudioDevice
 import org.aprsdroid.app.radio.RadioProfile
+import org.aprsdroid.app.radio.WlanRadioModel
 import org.aprsdroid.app.ui.component.RadioSelectDialog
 import org.aprsdroid.app.ui.component.PasscodeDialogCompose
 import org.aprsdroid.app.ui.component.PreferenceCategoryHeader
@@ -86,6 +87,8 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
     private val udpServerState = mutableStateOf("srvr.aprs-is.net")
     private val httpServerState = mutableStateOf("srvr.aprs-is.net")
 
+    private val ic705ModelState = mutableStateOf("IC-705")
+    private val ic705CivAddressState = mutableStateOf("A4")
     private val ic705AddressState = mutableStateOf("192.168.59.1")
     private val ic705PortState = mutableStateOf("50001")
     private val ic705UsernameState = mutableStateOf("ic705")
@@ -113,6 +116,7 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
 
     private val editDialogKey = mutableStateOf<String?>(null)
     private val showProtoDialog = mutableStateOf(false)
+    private val showWlanModelDialog = mutableStateOf(false)
     private val showAprsIsLinkDialog = mutableStateOf(false)
     private val showTncLinkDialog = mutableStateOf(false)
     private val showBluetoothDeviceDialog = mutableStateOf(false)
@@ -136,6 +140,10 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
         udpServerState.value = prefs.getString("udp.server", "srvr.aprs-is.net")
         httpServerState.value = prefs.getString("http.server", "srvr.aprs-is.net")
 
+        ic705ModelState.value = prefs.getString("ic705.model", "IC-705")
+        val wlanModel = WlanRadioModel.findById(ic705ModelState.value)
+        val savedCiv = prefs.getString("ic705.civ_address", "")
+        ic705CivAddressState.value = savedCiv.ifBlank { wlanModel.defaultCivHex }
         ic705AddressState.value = prefs.getString("ic705.address", "192.168.59.1")
         ic705PortState.value = prefs.getString("ic705.control_port", "50001")
         ic705UsernameState.value = prefs.getString("ic705.username", "ic705")
@@ -382,6 +390,26 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                             "ic705" -> {
                                 PreferenceCategoryHeader(title = stringResource(R.string.setting_ic705_category))
                                 PreferenceGroupCard {
+                                    val selectedModel = WlanRadioModel.findById(ic705ModelState.value)
+                                    PreferenceValueItem(
+                                        title = stringResource(R.string.setting_wlan_radio_model),
+                                        value = selectedModel.modelName,
+                                        summary = stringResource(R.string.setting_wlan_radio_model_summary),
+                                        icon = Icons.Default.Radio,
+                                        onClick = { showWlanModelDialog.value = true },
+                                    )
+                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    val displayCiv = ic705CivAddressState.value.ifBlank {
+                                        selectedModel.defaultCivHex
+                                    }
+                                    PreferenceValueItem(
+                                        title = stringResource(R.string.setting_wlan_civ_address),
+                                        value = "${displayCiv}h",
+                                        summary = stringResource(R.string.setting_wlan_civ_address_summary),
+                                        icon = Icons.Default.Router,
+                                        onClick = { editDialogKey.value = "ic705.civ_address" },
+                                    )
+                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceValueItem(
                                         title = stringResource(R.string.ic705_rx_address),
                                         value = ic705AddressState.value,
@@ -899,13 +927,48 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                         )
                     }
 
+                    if (showWlanModelDialog.value) {
+                        val modelOptions = WlanRadioModel.ALL.map { model ->
+                            model.id to "${model.modelName} (CI-V: ${model.defaultCivHex}h)"
+                        }
+                        PreferenceSelectDialog(
+                            title = stringResource(R.string.setting_wlan_radio_model),
+                            options = modelOptions,
+                            selected = ic705ModelState.value,
+                            onDismiss = { showWlanModelDialog.value = false },
+                            onSelect = { selectedId ->
+                                val model = WlanRadioModel.findById(selectedId)
+                                ic705ModelState.value = model.id
+                                prefs.set("ic705.model", model.id)
+                                ic705CivAddressState.value = model.defaultCivHex
+                                prefs.set("ic705.civ_address", model.defaultCivHex)
+                                showWlanModelDialog.value = false
+                                refreshState()
+                            },
+                        )
+                    }
+
                     editDialogKey.value?.let { key ->
+                        val initialVal = if (key == "ic705.civ_address") {
+                            val model = WlanRadioModel.findById(ic705ModelState.value)
+                            prefs.getString(key, model.defaultCivHex).ifBlank { model.defaultCivHex }
+                        } else {
+                            prefs.getString(key, "")
+                        }
                         PreferenceEditDialog(
                             title = stringResource(R.string.setting_edit_value),
-                            initialValue = prefs.getString(key, ""),
+                            initialValue = initialVal,
                             onDismiss = { editDialogKey.value = null },
                             onSave = { newValue ->
-                                prefs.set(key, newValue)
+                                if (key == "ic705.civ_address" || key == "radio.civ_address") {
+                                    val clean = newValue.trim()
+                                        .removePrefix("0x").removePrefix("0X")
+                                        .removeSuffix("h").removeSuffix("H")
+                                        .trim().uppercase()
+                                    prefs.set(key, clean)
+                                } else {
+                                    prefs.set(key, newValue)
+                                }
                                 refreshState()
                             },
                         )

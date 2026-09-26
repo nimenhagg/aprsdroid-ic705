@@ -1,6 +1,7 @@
 package org.aprsdroid.app.ic705.session
 
 import java.net.InetAddress
+import org.aprsdroid.app.ic705.protocol.Ic705CivCommands
 import org.aprsdroid.app.ic705.transport.Ic705ChannelRole
 
 data class Ic705RxSessionTiming(
@@ -68,9 +69,11 @@ class Ic705RxSessionConfig(
     val clientName: String = "APRSdroid",
     val autoReconnect: Boolean = true,
     val timing: Ic705RxSessionTiming = Ic705RxSessionTiming(),
+    val radioCivAddress: Int = Ic705CivCommands.DEFAULT_RADIO_ADDRESS,
 ) {
     init {
         require(controlPort in 1..0xffff) { "controlPort must be a valid UDP port" }
+        require(radioCivAddress in 1..0xef) { "radioCivAddress must be a valid CI-V address (0x01..0xEF)" }
         require(username.isNotBlank()) { "username must not be blank" }
         require(username.length <= 16) { "username must be at most 16 characters" }
         require(password.length <= 16) { "password must be at most 16 characters" }
@@ -86,7 +89,7 @@ class Ic705RxSessionConfig(
     override fun toString(): String =
         "Ic705RxSessionConfig(radioAddress=$radioAddress, controlPort=$controlPort, " +
             "username=<redacted>, password=<redacted>, clientName=$clientName, " +
-            "autoReconnect=$autoReconnect)"
+            "autoReconnect=$autoReconnect, radioCivAddress=${Integer.toHexString(radioCivAddress).uppercase()})"
 }
 
 enum class Ic705RxSessionIssueCode {

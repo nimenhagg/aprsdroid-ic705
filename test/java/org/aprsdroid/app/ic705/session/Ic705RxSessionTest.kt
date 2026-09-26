@@ -74,6 +74,55 @@ class Ic705RxSessionTest {
     }
 
     @Test
+    fun transmitWithCustomCivAddressUsesConfiguredAddressInPttFrame() {
+        val customConfig = Ic705RxSessionConfig(
+            radioAddress = RADIO_ADDRESS.address,
+            controlPort = RADIO_ADDRESS.port,
+            username = "N0CALL",
+            password = "test-password",
+            autoReconnect = false,
+            timing = quietTiming(),
+            radioCivAddress = 0xA2, // e.g. IC-9700
+        )
+        val harness = SessionHarness(config = customConfig)
+        try {
+            harness.advanceToReceiving()
+            val civChannel = harness.factory.channel(Ic705ChannelRole.CIV)
+
+            val testAx25 = Packet(
+                "APRS",
+                "N0CALL",
+                arrayOf("WIDE1-1"),
+                Packet.AX25_CONTROL_APRS,
+                Packet.AX25_PROTOCOL_NO_LAYER_3,
+                "!4903.50N/07201.75W-Custom CI-V test".toByteArray(Charsets.ISO_8859_1),
+            )
+            val packet = Parser.parseAX25(testAx25.bytesWithoutCRC())
+            val started = harness.session.transmit(packet)
+            assertTrue(started)
+
+            // Verify CI-V frame was sent with radioAddress 0xA2
+            val civSent = civChannel.sentPackets.filter {
+                it.size > Ic705CivDatagramCodec.HEADER_SIZE &&
+                    (it[0x10].toInt() and 0xff) == Ic705CivDatagramCodec.CIV_MARKER
+            }
+            assertTrue(civSent.isNotEmpty())
+            val firstCivFrame = civSent.first()
+            val frameOffset = Ic705CivDatagramCodec.HEADER_SIZE
+            assertEquals(0xFE.toByte(), firstCivFrame[frameOffset])
+            assertEquals(0xFE.toByte(), firstCivFrame[frameOffset + 1])
+            assertEquals(0xA2.toByte(), firstCivFrame[frameOffset + 2]) // Custom CI-V address 0xA2!
+            assertEquals(0xE0.toByte(), firstCivFrame[frameOffset + 3]) // Controller address 0xE0
+            assertEquals(0x1C.toByte(), firstCivFrame[frameOffset + 4]) // Transceiver status
+            assertEquals(0x00.toByte(), firstCivFrame[frameOffset + 5]) // PTT
+            assertEquals(0x01.toByte(), firstCivFrame[frameOffset + 6]) // PTT ON
+            assertEquals(0xFD.toByte(), firstCivFrame[frameOffset + 7]) // Terminator
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
     fun defaultControlTimingMatchesSuccessfulRsBa1Cadence() {
         val timing = Ic705RxSessionTiming()
         assertEquals(100L, timing.pingPeriodMillis)
@@ -506,6 +555,14 @@ class Ic705RxSessionTest {
     private class SessionHarness(
         audioSink: PcmSink = NoOpPcmSink,
         wireProfile: Ic705RxWireProfile = Ic705RxWireProfile.WFVIEW,
+        config: Ic705RxSessionConfig = Ic705RxSessionConfig(
+            radioAddress = RADIO_ADDRESS.address,
+            controlPort = RADIO_ADDRESS.port,
+            username = "N0CALL",
+            password = "test-password",
+            autoReconnect = false,
+            timing = quietTiming(),
+        ),
     ) : AutoCloseable {
         val factory = FakeChannelFactory()
         val issues = CopyOnWriteArrayList<Ic705RxSessionIssue>()
@@ -528,14 +585,7 @@ class Ic705RxSessionTest {
         private var randomIndex = 0
 
         val session = Ic705RxSession(
-            config = Ic705RxSessionConfig(
-                radioAddress = RADIO_ADDRESS.address,
-                controlPort = RADIO_ADDRESS.port,
-                username = "N0CALL",
-                password = "test-password",
-                autoReconnect = false,
-                timing = quietTiming(),
-            ),
+            config = config,
             audioSink = audioSink,
             callbacks = Ic705RxSessionCallbacks(onIssue = issues::add),
             channelFactory = factory,

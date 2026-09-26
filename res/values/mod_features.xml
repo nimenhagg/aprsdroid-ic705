@@ -103,7 +103,7 @@
     <string name="setting_connection_mode">Connection mode</string>
     <string name="setting_connection_mode_summary">Choose the APRS transport or radio interface</string>
     <string name="setting_proto_aprsis">APRS-IS (Internet)</string>
-    <string name="setting_proto_ic705">IC-705 Wi-Fi direct</string>
+    <string name="setting_proto_ic705">WLAN (Wi-Fi Radio)</string>
     <string name="setting_proto_afsk">AFSK audio</string>
     <string name="setting_proto_kiss">KISS TNC</string>
     <string name="setting_proto_kenwood">Kenwood (NMEA waypoint)</string>
@@ -123,7 +123,7 @@
     <string name="setting_usbradio_audio_auto">Auto-detect &amp; bind</string>
     <string name="setting_usbradio_audio_none">No USB soundcard detected</string>
     <string name="setting_usbradio_tx_volume">TX audio level (gain)</string>
-    <string name="setting_usbradio_tx_volume_summary">Modulation output level sent to transceiver (recommend 70%~100%)</string>
+    <string name="setting_usbradio_tx_volume_summary" formatted="false">Modulation output level sent to transceiver (recommend 70%~100%)</string>
     <string name="setting_usbradio_search_hint">Search model (e.g. 705, 7300, 891...)</string>
     <string name="setting_usbradio_custom_model">Custom Hamlib Model ID</string>
     <string name="setting_usbradio_mfr_all">All</string>
@@ -148,12 +148,16 @@
     <string name="setting_filter_summary">Optional APRS-IS server-side filter</string>
     <string name="setting_filter_radius">Filter radius</string>
     <string name="setting_filter_radius_summary">Radius used by the automatic APRS-IS range filter</string>
-    <string name="setting_ic705_category">IC-705 Wi-Fi</string>
-    <string name="setting_ic705_address_summary">IC-705 address on the local network</string>
+    <string name="setting_ic705_category">WLAN Radio (Wi-Fi / LAN)</string>
+    <string name="setting_wlan_radio_model">Radio model</string>
+    <string name="setting_wlan_radio_model_summary">Select WLAN / Wi-Fi radio model preset</string>
+    <string name="setting_wlan_civ_address">CI-V address</string>
+    <string name="setting_wlan_civ_address_summary">Icom hex address (e.g. A4 for IC-705, A2 for IC-9700)</string>
+    <string name="setting_ic705_address_summary">Radio IP address on the local network</string>
     <string name="setting_ic705_port_summary">Control UDP port (default 50001)</string>
     <string name="setting_ic705_username_summary">Network User name configured on the radio</string>
     <string name="setting_ic705_password_summary">Network User password configured on the radio</string>
-    <string name="setting_ic705_diagnostics">IC-705 live diagnostics</string>
+    <string name="setting_ic705_diagnostics">WLAN live diagnostics</string>
     <string name="setting_ic705_diagnostics_summary">Inspect UDP session, PCM audio, and AX.25 decoding in real time</string>
     <string name="setting_afsk_category">AFSK audio</string>
     <string name="setting_afsk_bluetooth_sco">Bluetooth SCO audio</string>

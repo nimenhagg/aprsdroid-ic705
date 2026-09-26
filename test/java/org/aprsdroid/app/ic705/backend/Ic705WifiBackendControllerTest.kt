@@ -716,4 +716,34 @@ class Ic705WifiBackendControllerTest {
         assertEquals(800L, lowJitter.delayMillis(0))
         assertEquals(1_200L, highJitter.delayMillis(0))
     }
+
+    @Test
+    fun customCivAddressIsPropagatedToSessionConfig() {
+        val service = FakeService()
+        val basePrefs = FakePrefs(
+            address = "192.168.1.143",
+            controlPort = 50_001,
+            username = "ic705",
+            password = "testpass",
+        )
+        val customCivPrefs = object : Ic705BackendPrefs by basePrefs {
+            override val civAddress: Int = 0xA2
+            override val model: String = "IC-9700"
+        }
+        val sessionFactory = FakeSessionFactory()
+        val controller = Ic705WifiBackendController(
+            service = service,
+            prefs = customCivPrefs,
+            sdkAtLeast = { true },
+            socketFactoryProvider = { FakeSocketFactory() },
+            sessionFactory = sessionFactory,
+            decoderFactory = FakeDecoderFactory(),
+            reconnectScheduler = FakeReconnectScheduler(),
+        )
+
+        controller.start()
+
+        val createdSession = sessionFactory.sessions.single()
+        assertEquals(0xA2, createdSession.config.radioCivAddress)
+    }
 }

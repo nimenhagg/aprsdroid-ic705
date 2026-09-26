@@ -216,6 +216,7 @@ class Ic705RxSession internal constructor(
                 }
             }
         },
+        radioAddress = config.radioCivAddress,
         watchdogExecutor = controlExecutor,
     )
 

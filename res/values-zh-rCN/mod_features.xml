@@ -103,7 +103,7 @@
     <string name="setting_connection_mode">连接方式</string>
     <string name="setting_connection_mode_summary">选择 APRS 数据传输方式或无线电接口</string>
     <string name="setting_proto_aprsis">APRS-IS（互联网）</string>
-    <string name="setting_proto_ic705">IC-705 Wi-Fi 直连</string>
+    <string name="setting_proto_ic705">WLAN (Wi-Fi 电台)</string>
     <string name="setting_proto_afsk">AFSK 音频</string>
     <string name="setting_proto_kiss">KISS TNC</string>
     <string name="setting_proto_kenwood">Kenwood（NMEA 航点）</string>
@@ -123,7 +123,7 @@
     <string name="setting_usbradio_audio_auto">自动检测绑定</string>
     <string name="setting_usbradio_audio_none">未检测到 USB 声卡</string>
     <string name="setting_usbradio_tx_volume">TX 发射音频电平 (增益)</string>
-    <string name="setting_usbradio_tx_volume_summary">调节发送到电台的调制信号幅度，防止削波失真 (建议 70%~100%)</string>
+    <string name="setting_usbradio_tx_volume_summary" formatted="false">调节发送到电台的调制信号幅度，防止削波失真 (建议 70%~100%)</string>
     <string name="setting_usbradio_search_hint">搜索电台型号 (例如 705, 7300, 891...)</string>
     <string name="setting_usbradio_custom_model">自定义 Hamlib 模型 ID</string>
     <string name="setting_usbradio_mfr_all">全部</string>
@@ -148,12 +148,16 @@
     <string name="setting_filter_summary">可选的 APRS-IS 服务器端过滤规则</string>
     <string name="setting_filter_radius">过滤半径</string>
     <string name="setting_filter_radius_summary">自动 APRS-IS 范围过滤使用的半径</string>
-    <string name="setting_ic705_category">IC-705 Wi-Fi</string>
-    <string name="setting_ic705_address_summary">IC-705 在局域网中的地址</string>
+    <string name="setting_ic705_category">WLAN 电台 (Wi-Fi / LAN)</string>
+    <string name="setting_wlan_radio_model">电台型号</string>
+    <string name="setting_wlan_radio_model_summary">选择 WLAN / Wi-Fi 电台型号预置</string>
+    <string name="setting_wlan_civ_address">CI-V 地址</string>
+    <string name="setting_wlan_civ_address_summary">Icom 十六进制地址（例如 IC-705 为 A4，IC-9700 为 A2）</string>
+    <string name="setting_ic705_address_summary">电台在局域网中的 IP 地址</string>
     <string name="setting_ic705_port_summary">控制 UDP 端口（默认 50001）</string>
     <string name="setting_ic705_username_summary">电台 Network User 中设置的用户名</string>
     <string name="setting_ic705_password_summary">电台 Network User 中设置的密码</string>
-    <string name="setting_ic705_diagnostics">IC-705 实时诊断</string>
+    <string name="setting_ic705_diagnostics">WLAN 实时诊断</string>
     <string name="setting_ic705_diagnostics_summary">实时查看 UDP 会话、PCM 音频与 AX.25 解码状态</string>
     <string name="setting_afsk_category">AFSK 音频</string>
     <string name="setting_afsk_bluetooth_sco">蓝牙 SCO 音频</string>

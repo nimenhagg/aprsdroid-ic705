@@ -22,6 +22,7 @@ import org.aprsdroid.app.ic705.session.Ic705RxSessionCallbacks
 import org.aprsdroid.app.ic705.session.Ic705RxSessionConfig
 import org.aprsdroid.app.ic705.session.Ic705RxSessionEngine
 import org.aprsdroid.app.ic705.transport.Ic705DatagramSocketFactory
+import org.aprsdroid.app.radio.WlanRadioModel
 import org.aprsdroid.app.ui.screen.Ic705RxDiagnosticScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
 import java.net.DatagramSocket
@@ -160,6 +161,12 @@ class Ic705RxDiagnosticActivity : ComponentActivity() {
             }
         }
 
+        val modelObj = WlanRadioModel.findById(prefs.getString("ic705.model", "IC-705"))
+        val civAddr = WlanRadioModel.parseCivAddress(
+            prefs.getString("ic705.civ_address", ""),
+            defaultAddress = modelObj.defaultCivAddress,
+        )
+
         val config = try {
             Ic705RxSessionConfig(
                 radioAddress = parsedAddress,
@@ -167,7 +174,8 @@ class Ic705RxDiagnosticActivity : ComponentActivity() {
                 username = targetUsername.ifBlank { "ic705" },
                 password = targetPassword,
                 clientName = "APRSdroid",
-                autoReconnect = false
+                autoReconnect = false,
+                radioCivAddress = civAddr,
             )
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.ic705_rx_config_error, e.message), Toast.LENGTH_LONG).show()
