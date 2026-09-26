@@ -156,8 +156,22 @@ class UsbRadioBackend(
         // Select explicit USB audio devices if available
         val usbInputs = RadioAudioDevice.listUsbDevices(audioManager, isInput = true)
         val usbOutputs = RadioAudioDevice.listUsbDevices(audioManager, isInput = false)
-        val preferredInput = usbInputs.firstOrNull()?.let { RadioAudioDevice.findDeviceInfo(audioManager, it.id) }
-        val preferredOutput = usbOutputs.firstOrNull()?.let { RadioAudioDevice.findDeviceInfo(audioManager, it.id) }
+        val userSelectedInId = prefs.getStringInt("radio.audio_device_in", -1)
+        val userSelectedOutId = prefs.getStringInt("radio.audio_device_out", -1)
+
+        val preferredInput = if (userSelectedInId != -1) {
+            RadioAudioDevice.findDeviceInfo(audioManager, userSelectedInId)
+        } else {
+            usbInputs.firstOrNull()?.let { RadioAudioDevice.findDeviceInfo(audioManager, it.id) }
+        }
+
+        val preferredOutput = if (userSelectedOutId != -1) {
+            RadioAudioDevice.findDeviceInfo(audioManager, userSelectedOutId)
+        } else {
+            usbOutputs.firstOrNull()?.let { RadioAudioDevice.findDeviceInfo(audioManager, it.id) }
+        }
+
+        val txVolume = prefs.getStringInt("radio.tx_volume", 100)
 
         val pcmFormat = PcmFormat(
             sampleRateHz = profile.defaultAudioSampleRateHz,
@@ -166,7 +180,11 @@ class UsbRadioBackend(
         )
 
         val audioSource = AudioRecordPcmSource(pcmFormat, preferredDevice = preferredInput)
-        val audioSink = AudioTrackPcmSink(pcmFormat, preferredDevice = preferredOutput)
+        val audioSink = AudioTrackPcmSink(
+            format = pcmFormat,
+            preferredDevice = preferredOutput,
+            txVolumePercent = txVolume,
+        )
 
         val newSession = UsbRadioSession(
             profile = profile,

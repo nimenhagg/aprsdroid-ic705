@@ -75,4 +75,9 @@ class AudioTrackPcmSinkTest {
             AudioTrackPcmSink.calculateDrainTimeoutMs(1000, 0),
         )
     }
+
+    @Test
+    fun defaultTxVolumePercentIs100() {
+        assertEquals(100, AudioTrackPcmSink.DEFAULT_TX_VOLUME_PERCENT)
+    }
 }

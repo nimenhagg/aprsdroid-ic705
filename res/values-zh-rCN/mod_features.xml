@@ -118,6 +118,12 @@
     <string name="setting_usbradio_civ_summary">Icom 十六进制地址（例如 IC-705 为 A4）</string>
     <string name="setting_usbradio_audio_routing">USB 音频路由</string>
     <string name="setting_usbradio_audio_routing_summary">自动绑定 USB 声卡进行无损收发 (16kHz PCM)</string>
+    <string name="setting_usbradio_audio_device">USB 声卡设备</string>
+    <string name="setting_usbradio_audio_device_summary">选择指定的 USB 声卡或自动绑定</string>
+    <string name="setting_usbradio_audio_auto">自动检测绑定</string>
+    <string name="setting_usbradio_audio_none">未检测到 USB 声卡</string>
+    <string name="setting_usbradio_tx_volume">TX 发射音频电平 (增益)</string>
+    <string name="setting_usbradio_tx_volume_summary">调节发送到电台的调制信号幅度，防止削波失真 (建议 70%~100%)</string>
     <string name="setting_usbradio_search_hint">搜索电台型号 (例如 705, 7300, 891...)</string>
     <string name="setting_usbradio_custom_model">自定义 Hamlib 模型 ID</string>
     <string name="setting_usbradio_mfr_all">全部</string>

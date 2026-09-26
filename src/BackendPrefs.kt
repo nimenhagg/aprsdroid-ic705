@@ -17,16 +17,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import android.media.AudioManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -46,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
+import org.aprsdroid.app.radio.RadioAudioDevice
 import org.aprsdroid.app.radio.RadioProfile
 import org.aprsdroid.app.ui.component.RadioSelectDialog
 import org.aprsdroid.app.ui.component.PasscodeDialogCompose
@@ -104,6 +108,8 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
     private val radioModelIdState = mutableStateOf(RadioProfile.IC705_USB.hamlibModelId)
     private val radioBaudRateState = mutableStateOf("19200")
     private val radioCivAddressState = mutableStateOf("A4")
+    private val radioAudioDeviceOutState = mutableStateOf("-1")
+    private val radioTxVolumeState = mutableStateOf("100")
 
     private val editDialogKey = mutableStateOf<String?>(null)
     private val showProtoDialog = mutableStateOf(false)
@@ -115,6 +121,8 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
     private val showPasscodeDialog = mutableStateOf(false)
     private val showRadioModelDialog = mutableStateOf(false)
     private val showRadioBaudRateDialog = mutableStateOf(false)
+    private val showRadioAudioDeviceDialog = mutableStateOf(false)
+    private val showRadioTxVolumeDialog = mutableStateOf(false)
 
     private fun refreshState() {
         protoState.value = prefs.getString("proto", "aprsis")
@@ -154,6 +162,8 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
             "radio.civ_address",
             currentProfile.defaultCivAddress?.let { Integer.toHexString(it).uppercase() } ?: ""
         )
+        radioAudioDeviceOutState.value = prefs.getString("radio.audio_device_out", "-1")
+        radioTxVolumeState.value = prefs.getString("radio.tx_volume", "100")
     }
 
     private fun hasBluetoothPermission(): Boolean {
@@ -462,12 +472,34 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                                     }
 
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceItem(
-                                        title = stringResource(R.string.setting_usbradio_audio_routing),
-                                        summary = stringResource(R.string.setting_usbradio_audio_routing_summary),
-                                        icon = Icons.Default.SettingsEthernet,
-                                        onClick = {},
-                                        showChevron = false,
+                                    val audioManager = getSystemService(AUDIO_SERVICE) as? AudioManager
+                                    val usbOutputs = audioManager?.let { RadioAudioDevice.listUsbDevices(it, isInput = false) }.orEmpty()
+                                    val selectedOutId = radioAudioDeviceOutState.value.toIntOrNull() ?: -1
+                                    val audioDeviceDisplay = if (selectedOutId == -1) {
+                                        if (usbOutputs.isNotEmpty()) {
+                                            "${stringResource(R.string.setting_usbradio_audio_auto)} (${usbOutputs.first().productName.ifEmpty { "USB Audio" }})"
+                                        } else {
+                                            "${stringResource(R.string.setting_usbradio_audio_auto)} (${stringResource(R.string.setting_usbradio_audio_none)})"
+                                        }
+                                    } else {
+                                        usbOutputs.firstOrNull { it.id == selectedOutId }?.productName?.ifEmpty { "USB Audio (ID: $selectedOutId)" }
+                                            ?: "ID: $selectedOutId"
+                                    }
+                                    PreferenceValueItem(
+                                        title = stringResource(R.string.setting_usbradio_audio_device),
+                                        value = audioDeviceDisplay,
+                                        summary = stringResource(R.string.setting_usbradio_audio_device_summary),
+                                        icon = Icons.Default.Headphones,
+                                        onClick = { showRadioAudioDeviceDialog.value = true },
+                                    )
+
+                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    PreferenceValueItem(
+                                        title = stringResource(R.string.setting_usbradio_tx_volume),
+                                        value = "${radioTxVolumeState.value}%",
+                                        summary = stringResource(R.string.setting_usbradio_tx_volume_summary),
+                                        icon = Icons.Default.VolumeUp,
+                                        onClick = { showRadioTxVolumeDialog.value = true },
                                     )
                                 }
                             }
@@ -816,6 +848,52 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                                 radioBaudRateState.value = baud
                                 prefs.set("radio.baudrate", baud)
                                 showRadioBaudRateDialog.value = false
+                                refreshState()
+                            },
+                        )
+                    }
+
+                    if (showRadioAudioDeviceDialog.value) {
+                        val audioManager = getSystemService(AUDIO_SERVICE) as? AudioManager
+                        val usbOutputs = audioManager?.let { RadioAudioDevice.listUsbDevices(it, isInput = false) }.orEmpty()
+                        val audioOptions = buildList {
+                            add("-1" to stringResource(R.string.setting_usbradio_audio_auto))
+                            usbOutputs.forEach { dev ->
+                                add(dev.id.toString() to (dev.productName.ifEmpty { "USB Audio" } + " (ID: ${dev.id})"))
+                            }
+                        }
+                        PreferenceSelectDialog(
+                            title = stringResource(R.string.setting_usbradio_audio_device),
+                            options = audioOptions,
+                            selected = radioAudioDeviceOutState.value,
+                            onDismiss = { showRadioAudioDeviceDialog.value = false },
+                            onSelect = { devId ->
+                                radioAudioDeviceOutState.value = devId
+                                prefs.set("radio.audio_device_out", devId)
+                                showRadioAudioDeviceDialog.value = false
+                                refreshState()
+                            },
+                        )
+                    }
+
+                    if (showRadioTxVolumeDialog.value) {
+                        val volumeOptions = listOf(
+                            "100" to "100%",
+                            "90" to "90%",
+                            "80" to "80%",
+                            "70" to "70%",
+                            "60" to "60%",
+                            "50" to "50%",
+                        )
+                        PreferenceSelectDialog(
+                            title = stringResource(R.string.setting_usbradio_tx_volume),
+                            options = volumeOptions,
+                            selected = radioTxVolumeState.value,
+                            onDismiss = { showRadioTxVolumeDialog.value = false },
+                            onSelect = { vol ->
+                                radioTxVolumeState.value = vol
+                                prefs.set("radio.tx_volume", vol)
+                                showRadioTxVolumeDialog.value = false
                                 refreshState()
                             },
                         )

@@ -118,6 +118,12 @@
     <string name="setting_usbradio_civ_summary">Icom hex address (e.g. A4 for IC-705)</string>
     <string name="setting_usbradio_audio_routing">USB Audio routing</string>
     <string name="setting_usbradio_audio_routing_summary">Automatically bound to USB Audio Codec (16kHz PCM)</string>
+    <string name="setting_usbradio_audio_device">USB Audio soundcard</string>
+    <string name="setting_usbradio_audio_device_summary">Select explicit USB soundcard or auto-detect</string>
+    <string name="setting_usbradio_audio_auto">Auto-detect &amp; bind</string>
+    <string name="setting_usbradio_audio_none">No USB soundcard detected</string>
+    <string name="setting_usbradio_tx_volume">TX audio level (gain)</string>
+    <string name="setting_usbradio_tx_volume_summary">Modulation output level sent to transceiver (recommend 70%~100%)</string>
     <string name="setting_usbradio_search_hint">Search model (e.g. 705, 7300, 891...)</string>
     <string name="setting_usbradio_custom_model">Custom Hamlib Model ID</string>
     <string name="setting_usbradio_mfr_all">All</string>
