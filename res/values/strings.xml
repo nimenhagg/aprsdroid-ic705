@@ -398,6 +398,8 @@
 <string name="ic705_backend_requires_api_22">IC-705 Wi-Fi requires Android 5.1 or later.</string>
 <string name="ic705_backend_no_wifi">No Wi-Fi network is available for the IC-705.</string>
 <string name="ic705_backend_invalid_settings">The IC-705 Wi-Fi settings are invalid. Check the address, port, username, and password.</string>
+<string name="ic705_backend_missing_address">The IC-705 Wi-Fi settings have no radio address. Set the radio IP address first.</string>
+<string name="ic705_backend_missing_username">The IC-705 Wi-Fi settings have no username. Set the Network User name configured on the radio.</string>
 <string name="ic705_backend_failed">The IC-705 Wi-Fi session failed. Check the network and restart the service.</string>
 <string name="ic705_backend_tx_ok">IC-705 OK</string>
 <string name="ic705_backend_tx_busy">IC-705 busy</string>

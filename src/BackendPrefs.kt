@@ -91,7 +91,7 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
     private val ic705CivAddressState = mutableStateOf("A4")
     private val ic705AddressState = mutableStateOf("192.168.59.1")
     private val ic705PortState = mutableStateOf("50001")
-    private val ic705UsernameState = mutableStateOf("ic705")
+    private val ic705UsernameState = mutableStateOf("")
     private val ic705PasswordState = mutableStateOf("")
 
     private val afskBtScoState = mutableStateOf(false)
@@ -146,7 +146,7 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
         ic705CivAddressState.value = savedCiv.ifBlank { wlanModel.defaultCivHex }
         ic705AddressState.value = prefs.getString("ic705.address", "192.168.59.1")
         ic705PortState.value = prefs.getString("ic705.control_port", "50001")
-        ic705UsernameState.value = prefs.getString("ic705.username", "ic705")
+        ic705UsernameState.value = prefs.getString("ic705.username", "")
         ic705PasswordState.value = prefs.getString("ic705.password", "")
 
         afskBtScoState.value = prefs.getBoolean("afsk.btsco", false)

@@ -82,16 +82,26 @@ object DiagnosticReportBuilder {
             "proto",
             "link",
             "activity",
+            "ic705.model",
             "ic705.address",
             "ic705.control_port",
+            "ic705.civ_address",
             "ic705.username",
+            "ic705.password",
             "tcp.server",
             "tcp.sotimeout",
         )
         keys.forEach { key ->
-            if (!prefs.contains(key)) return@forEach
-            val value = if (key.contains("username", ignoreCase = true)) "[REDACTED]" else prefs.all[key]
-            appendLine("$key = $value")
+            // Absent keys are reported explicitly: an unset IC-705 credential used to be
+            // invisible here because only existing keys were listed, which pointed field
+            // diagnosis at the wrong setting.
+            val raw = prefs.all[key]
+            val rendered = when {
+                raw == null -> "<unset>"
+                isCredentialKey(key) -> "<set>"
+                else -> raw.toString()
+            }
+            appendLine("$key = $rendered")
         }
         appendLine()
 
@@ -109,5 +119,15 @@ object DiagnosticReportBuilder {
         out.putNextEntry(ZipEntry(entryName))
         file.inputStream().use { input -> input.copyTo(out) }
         out.closeEntry()
+    }
+
+    /** Credential keys are exported as a set/unset flag only; values never leave the device. */
+    private fun isCredentialKey(key: String): Boolean {
+        val lower = key.lowercase(Locale.US)
+        return lower.contains("password") ||
+            lower.contains("username") ||
+            lower.contains("passcode") ||
+            lower.contains("secret") ||
+            lower.contains("token")
     }
 }

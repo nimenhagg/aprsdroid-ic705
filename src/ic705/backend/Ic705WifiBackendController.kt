@@ -138,8 +138,39 @@ class Ic705WifiBackendController(
         Ic705DiagnosticState.set("controller", "STARTING")
         if (!sdkAtLeast(22)) return fail(R.string.ic705_backend_requires_api_22)
 
+        AppLog.i(
+            "IC705",
+            "backend_config",
+            mapOf(
+                "radio_address" to prefs.address,
+                "control_port" to prefs.controlPort,
+                "model" to prefs.model,
+                "civ_address" to prefs.civAddress,
+                "username_set" to prefs.username.isNotBlank(),
+                "password_set" to prefs.password.isNotEmpty(),
+            ),
+        )
+
+        // Name the missing field. The generic "check address, port, username and password"
+        // message previously sent field reports hunting the wrong setting.
+        val blankField = when {
+            prefs.address.isBlank() -> "address"
+            prefs.username.isBlank() -> "username"
+            else -> null
+        }
+        if (blankField != null) {
+            AppLog.e("IC705", "invalid_settings", mapOf("field" to blankField, "reason" to "blank"))
+            Ic705DiagnosticState.set("settings_issue", "${blankField}_blank")
+            return fail(
+                when (blankField) {
+                    "address" -> R.string.ic705_backend_missing_address
+                    else -> R.string.ic705_backend_missing_username
+                },
+            )
+        }
+        Ic705DiagnosticState.set("settings_issue", null)
+
         val parsedConfig = runCatching {
-            require(prefs.address.isNotEmpty())
             Ic705RxSessionConfig(
                 radioAddress = InetAddress.getByName(prefs.address),
                 controlPort = prefs.controlPort,

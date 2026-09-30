@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import org.aprsdroid.app.audio.PcmSink
+import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.ic705.protocol.Ic705AudioPacketCodec
 import org.aprsdroid.app.ic705.protocol.Ic705CivChannelAction
 import org.aprsdroid.app.ic705.protocol.Ic705CivOpenClosePacket
@@ -248,11 +249,13 @@ class Ic705RxSession internal constructor(
 
     override fun start() {
         check(!closed.get()) { "IC-705 RX session is closed" }
+        AppLog.i(LOG_TAG, "session_start", mapOf("config" to config.toString()))
         controlExecutor.execute { dispatch(Ic705RxSessionEngine.Event.Start) }
     }
 
     override fun stop() {
         if (closed.get()) return
+        AppLog.i(LOG_TAG, "session_stop")
         controlExecutor.execute { dispatch(Ic705RxSessionEngine.Event.Stop) }
     }
 
@@ -451,6 +454,7 @@ class Ic705RxSession internal constructor(
             closeComplete = true
             pendingCloseCallbacks.toList().also { pendingCloseCallbacks.clear() }
         }
+        AppLog.i(LOG_TAG, "session_closed")
         txExecutor.shutdownNow()
         closeCallbacks.forEach(::safeCallback)
     }
@@ -459,6 +463,7 @@ class Ic705RxSession internal constructor(
         val transition = Ic705RxSessionEngine.reduce(engineState, event)
         val previousState = engineState
         engineState = transition.state
+        logEngineEvent(event, previousState, transition.state)
         if (previousState != transition.state) {
             safeCallback { callbacks.onStateChanged(transition.state) }
             updateStageTimeout(transition.state)
@@ -467,6 +472,7 @@ class Ic705RxSession internal constructor(
     }
 
     private fun executeAction(action: Ic705RxSessionEngine.Action) {
+        AppLog.i(LOG_TAG, "session_action", mapOf("action" to describeAction(action)))
         try {
             when (action) {
                 Ic705RxSessionEngine.Action.OpenSockets -> openSockets()
@@ -1553,6 +1559,59 @@ class Ic705RxSession internal constructor(
         }
     }
 
+    /**
+     * Credential-free trace of the handshake.
+     *
+     * The engine event/action stream is the only record of where radio bring-up stopped.
+     * It is persisted for every session generation, including sessions started from the
+     * on-device diagnostic screen, which keeps its event list in memory only. Payloads,
+     * tokens, usernames and passwords are never logged; [config] already redacts them.
+     */
+    private fun logEngineEvent(
+        event: Ic705RxSessionEngine.Event,
+        previousState: Ic705RxSessionEngine.State,
+        state: Ic705RxSessionEngine.State,
+    ) {
+        AppLog.i(
+            LOG_TAG,
+            "session_event",
+            mapOf(
+                "event" to describeEvent(event),
+                "phase" to state.phase.name,
+                "retry_attempt" to state.retryAttempt,
+            ),
+        )
+        if (previousState.phase != state.phase || previousState.failureReason != state.failureReason) {
+            AppLog.i(
+                LOG_TAG,
+                "session_phase",
+                mapOf(
+                    "from" to previousState.phase.name,
+                    "to" to state.phase.name,
+                    "failure_reason" to state.failureReason,
+                ),
+            )
+        }
+    }
+
+    private fun describeEvent(event: Ic705RxSessionEngine.Event): String = when (event) {
+        is Ic705RxSessionEngine.Event.LoginRejected -> "LoginRejected(${event.reason})"
+        is Ic705RxSessionEngine.Event.StatusNotReady ->
+            "StatusNotReady(error=${event.errorCode}, disconnect=${event.disconnectFlag})"
+        is Ic705RxSessionEngine.Event.StatusEndpointsReceived ->
+            "StatusEndpointsReceived(civ=${event.endpoints.civPort}, audio=${event.endpoints.audioPort})"
+        is Ic705RxSessionEngine.Event.RecoverableFailure -> "RecoverableFailure(${event.reason})"
+        else -> event.javaClass.simpleName
+    }
+
+    private fun describeAction(action: Ic705RxSessionEngine.Action): String = when (action) {
+        is Ic705RxSessionEngine.Action.ScheduleRetry ->
+            "ScheduleRetry(attempt=${action.attempt}, cooldown=${action.cooldown})"
+        is Ic705RxSessionEngine.Action.SendOpenStreams ->
+            "SendOpenStreams(civ=${action.endpoints.civPort}, audio=${action.endpoints.audioPort})"
+        else -> action.javaClass.simpleName
+    }
+
     private fun reportIssue(
         code: Ic705RxSessionIssueCode,
         role: Ic705ChannelRole?,
@@ -1591,6 +1650,7 @@ class Ic705RxSession internal constructor(
 
     private companion object {
         const val TAG = "Ic705RxSession"
+        const val LOG_TAG = "IC705.SESSION"
         const val CLOSE_WAIT_SLICE_MILLIS = 2_000L
         const val TASK_WATCHDOG = "watchdog"
         const val TASK_TOKEN_RENEWAL = "token-renewal"
