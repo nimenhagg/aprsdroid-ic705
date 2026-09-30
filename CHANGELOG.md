@@ -1,3 +1,18 @@
+## [Mod-v2.4.1] - 2026-10-01
+
+### Added
+
+- **电台连接功能附加 GPL-2.0-or-later 授权**：
+  - 由本项目作者独立编写、上游 APRSdroid 无对应实现的 82 个文件（`src/ic705/**`、`src/radio/**`、`src/hamlib/**`、`src/diagnostic/**`、两个新后端、IC-705 诊断界面及其单元测试）统一添加 `SPDX-License-Identifier: GPL-2.0-or-later`，供其他项目按 “GPLv2 或更高版本” 引用。
+  - 新增 [LICENSING.md](LICENSING.md)：附加授权范围、逐文件判定标准与证据（与上游最后提交 `65fb5fa` 比对）、以及禁止在派生文件上混标的边界。
+  - 新增 [PROVENANCE.md](PROVENANCE.md)：参考来源（Icom RS-BA1/OEM 协议资料与自有抓包、Kappanhang、rigplane、FT8CN、Hamlib、Graywolf、wfview 行为对照）、AI 辅助协作方式与相似度核查结果。
+
+### Changed
+
+- **项目整体许可不变**：`LICENSE` 仍为 GPL-2.0-only（上游决定）；README 致谢与许可段落说明附加授权与整体分发关系。
+- `AGENT.md` 增加“逐文件许可”不变量：仅独立编写文件可标 v2+，上游派生文件禁止混标。
+- 版本更新为 `Mod-v2.4.1`（`versionCode 2026092602`）。
+
 ## [Mod-v2.4.0] - 2026-09-26
 
 ### Added

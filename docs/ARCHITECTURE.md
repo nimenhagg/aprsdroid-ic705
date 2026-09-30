@@ -19,6 +19,8 @@
 | `androidTest/java/` | Android instrumentation 测试 |
 | `.github/workflows/` | 构建、测试、Lint、Release 和专项 CI |
 
+**逐文件许可**：`src/ic705/`、`src/radio/`、`src/hamlib/`、`src/diagnostic/`，以及 `src/backend/Ic705WifiBackend.kt`、`src/backend/UsbRadioBackend.kt`、`src/ui/screen/Ic705RxDiagnosticScreen.kt` 为独立编写文件，额外按 GPL-2.0-or-later 提供；`src/audio/`、`src/tncproto/`、`src/service/` 与其余顶层 `src/*.kt` 为上游派生，保持 GPL-2.0-only。范围、判定证据与下游使用方式见 [LICENSING.md](../LICENSING.md)。
+
 AGP 9 使用 built-in Kotlin；不要重新应用 `org.jetbrains.kotlin.android`。Compose Compiler 与 Kotlin 基线保持一致。Java 17 是当前基线，没有明确需求和完整验证时不要仅为版本数字切换 Java 21。
 
 正式 GitHub Release 当前发布：

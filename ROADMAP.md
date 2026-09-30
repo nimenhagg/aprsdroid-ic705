@@ -165,6 +165,8 @@ Icom LAN 后续泛化时，协议行为应交叉参考：
 - FT8CN 为 MIT，可在满足 attribution/license notice 的前提下参考或移植适当代码；
 - wfview 为 GPLv3；当前项目不得把其 GPLv3 实现直接复制进 GPLv2-only 代码路径，除非先明确解决项目整体许可兼容性；
 - 优先把 wfview 当行为、数据格式和测试 oracle，而不是代码来源。
+- 自 `Mod-v2.4.1` 起，由本项目独立编写、上游 APRSdroid 无对应实现的电台连接与诊断文件（82 个，见 [LICENSING.md](LICENSING.md)）额外按 GPL-2.0-or-later 提供；项目整体仍为 GPL-2.0-only。后续把这些文件拆分为独立库时，库只允许包含该清单内的文件与新写的接口层。
+- 拆分前必须先完成 wfview 派生性逐函数复核（见 [PROVENANCE.md](PROVENANCE.md) 第 4 节）；复核未完成前不得把相关函数作为 v2+ 授权对外发布为新库。
 
 Icom LAN capability 不能只相信运行时 bitmap。后续策略应为：
 
