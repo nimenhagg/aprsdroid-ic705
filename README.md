@@ -187,6 +187,11 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for implementation constraints 
 - 协议与实现参考 / Protocol references: [N0BOY/FT8CN](https://github.com/N0BOY/FT8CN), [wfview](https://wfview.org/)
 - 地图引擎 / Map engine: [MapLibre Native](https://maplibre.org/maplibre-native/); OpenStreetMap data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)
 - 许可证 / License: [GNU General Public License v2.0](LICENSE)
+- 附加授权 / Additional grant: 本项目作者独立编写的电台连接与诊断文件（共 82 个，见 [LICENSING.md](LICENSING.md)）**额外按 GPL-2.0-or-later 提供**，可由其他项目按 “GPLv2 或更高版本” 引用；项目整体仍按 GPL-2.0-only 分发。
+
+  The radio-link and diagnostics files authored inside this repository (82 files, listed in [LICENSING.md](LICENSING.md))
+  are **additionally available under GPL-2.0-or-later**; the project as a whole remains GPL-2.0-only.
+  来源与核查记录见 [PROVENANCE.md](PROVENANCE.md)。
 
 项目开发包含 AI 辅助协作；维护者仍负责审查、测试和发布。
 

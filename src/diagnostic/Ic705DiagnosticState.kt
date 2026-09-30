@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// See LICENSING.md: this file is additionally available under GPL-2.0-or-later.
+
 package org.aprsdroid.app.diagnostic
 
 /** Convenience bridge for IC-705 code to expose the latest runtime state in diagnostic bundles. */
