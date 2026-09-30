@@ -391,6 +391,8 @@
     <string name="ic705_backend_requires_api_22">IC-705 Wi-Fi 需要 Android 5.1 或更高版本。</string>
     <string name="ic705_backend_no_wifi">未找到可用于连接 IC-705 的 Wi-Fi 网络。</string>
     <string name="ic705_backend_invalid_settings">IC-705 Wi-Fi 设置无效，请检查地址、端口、用户名和密码。</string>
+    <string name="ic705_backend_missing_address">IC-705 Wi-Fi 设置里没有填写电台地址，请先填写电台 IP 地址。</string>
+    <string name="ic705_backend_missing_username">IC-705 Wi-Fi 设置里没有填写用户名，请填写电台里配置的 Network User 用户名。</string>
     <string name="ic705_backend_failed">IC-705 Wi-Fi 会话失败，请检查网络并重新启动服务。</string>
     <string name="ic705_backend_tx_ok">IC-705 OK</string>
     <string name="ic705_backend_tx_busy">IC-705 忙</string>

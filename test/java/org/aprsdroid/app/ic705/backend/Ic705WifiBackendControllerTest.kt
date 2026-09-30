@@ -454,7 +454,7 @@ class Ic705WifiBackendControllerTest {
     }
 
     @Test
-    fun invalidSettingsFailCleanlyWithoutCreatingSessionOrDecoder() {
+    fun blankAddressFailsCleanlyWithoutCreatingSessionOrDecoder() {
         val service = FakeService()
         val prefs = FakePrefs(address = "")
         val sessionFactory = FakeSessionFactory()
@@ -469,7 +469,30 @@ class Ic705WifiBackendControllerTest {
         assertFalse(ctl.start())
 
         assertEquals(
-            listOf(service.getString(R.string.ic705_backend_invalid_settings)),
+            listOf(service.getString(R.string.ic705_backend_missing_address)),
+            service.aborts.toList(),
+        )
+        assertEquals(0, sessionFactory.sessions.size)
+        assertEquals(0, decoderFactory.decoders.size)
+    }
+
+    @Test
+    fun blankUsernameFailsCleanlyWithoutCreatingSessionOrDecoder() {
+        val service = FakeService()
+        val prefs = FakePrefs(username = "")
+        val sessionFactory = FakeSessionFactory()
+        val decoderFactory = FakeDecoderFactory()
+        val ctl = controller(
+            service = service,
+            prefs = prefs,
+            sessionFactory = sessionFactory,
+            decoderFactory = decoderFactory,
+        )
+
+        assertFalse(ctl.start())
+
+        assertEquals(
+            listOf(service.getString(R.string.ic705_backend_missing_username)),
             service.aborts.toList(),
         )
         assertEquals(0, sessionFactory.sessions.size)

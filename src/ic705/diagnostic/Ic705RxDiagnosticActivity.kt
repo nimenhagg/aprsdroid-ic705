@@ -171,7 +171,9 @@ class Ic705RxDiagnosticActivity : ComponentActivity() {
             Ic705RxSessionConfig(
                 radioAddress = parsedAddress,
                 controlPort = targetPort,
-                username = targetUsername.ifBlank { "ic705" },
+                // Never substitute a placeholder credential: a blank field must fail
+                // loudly here instead of silently masking broken saved settings.
+                username = targetUsername,
                 password = targetPassword,
                 clientName = "APRSdroid",
                 autoReconnect = false,
