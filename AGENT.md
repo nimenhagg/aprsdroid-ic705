@@ -26,6 +26,7 @@ README 必须区分 Latest release 与 Current main；未发布能力不得写�
 - 更新检查：应用启动时自动静默检查一次；无更新、网络失败或解析失败均静默；仅发现新版本时弹窗提示。设置页仍可手动检查；不得后台/周期检查，也不得自动下载/安装。
 - 没有完整协议迁移设计前，不要擅自强制 TLS；不要用厂商/机型特判掩盖状态机问题。
 - AGP 9 使用 built-in Kotlin；Java 17 是基线，不为版本数字随意切换 Java 21。
+- 逐文件许可：项目整体保持 GPL-2.0-only（上游决定，不得更改 `LICENSE`）。仅 [LICENSING.md](LICENSING.md) 第 1 节列出的**独立编写**文件可标注 `SPDX-License-Identifier: GPL-2.0-or-later`；上游派生文件（`src/audio/**`、`src/backend/` 其余文件、`src/tncproto/**`、`src/service/**`、其余顶层 `src/*.kt`、`res/**`）**不得**标注 v2+。新增电台相关模块时，同步更新 LICENSING.md 的清单与文件计数。
 
 具体状态机、时序、参数和 UI/地图约束见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 

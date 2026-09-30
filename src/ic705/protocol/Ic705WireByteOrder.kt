@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// See LICENSING.md: this file is additionally available under GPL-2.0-or-later.
+
 package org.aprsdroid.app.ic705.protocol
 
 /** Raised when a UDP datagram does not match the IC-705 wire format. */

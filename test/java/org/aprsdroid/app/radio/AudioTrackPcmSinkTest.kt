@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+// See LICENSING.md: this file is additionally available under GPL-2.0-or-later.
+
 package org.aprsdroid.app.radio
 
 import org.junit.Assert.assertEquals
