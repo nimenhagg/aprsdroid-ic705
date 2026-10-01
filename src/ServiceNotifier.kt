@@ -217,8 +217,7 @@ class ServiceNotifier {
 
     fun stop(ctx: Service) {
         try {
-            @Suppress("DEPRECATION")
-            ctx.stopForeground(true)
+            ServiceCompat.stopForeground(ctx, ServiceCompat.STOP_FOREGROUND_REMOVE)
         } catch (_: Exception) {}
         lastStatus = null
         lastLiveStatus = null
