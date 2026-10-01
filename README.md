@@ -143,7 +143,7 @@ Graywolf 的 `Cargo.lock` 已提交，native 构建使用 `--locked`。Windows �
 
 APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APRS support, modern Android UI, persistent diagnostics, and performance improvements.
 
-**Latest stable release: `Mod-v2.4.0`.**
+**Latest stable release: `Mod-v2.4.1`.**
 
 ### Highlights
 
@@ -154,7 +154,7 @@ APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APR
 - **Network Isolation**: Selected Android Wi-Fi Network is used only for radio traffic, allowing APRS-IS to keep using the phone's default internet path.
 - Graywolf is the production local AFSK1200 RX engine; the legacy Java modulator remains for stable TX PCM generation.
 - ACK-aware PTT safety, watchdogs, channel-specific recovery, persistent structured diagnostics and exportable reports.
-- Manual, Settings-only GitHub Release checking; no startup/background polling and no automatic APK download/install.
+- GitHub Release checking runs once silently at app startup; failures and an up-to-date result remain silent. Settings also provides a manual check. No background/periodic polling and no automatic APK download/install.
 - Android 16+ Live Updates / status chip display, Material 3 / Jetpack Compose UI, station search, and compact lists.
 - MapLibre Native for AMap/OSM/custom raster maps and Google Maps SDK for Google map/satellite modes.
 - Original APRSdroid APRS-IS, AFSK, KISS, TNC2, Kenwood, Bluetooth, USB and LAN TNC paths remain available.
