@@ -11,6 +11,8 @@ ANDROID_API=28
 case "$ABI" in
  arm64-v8a) HOST="aarch64-linux-android"; CLANG_TRIPLE="aarch64-linux-android" ;;
  armeabi-v7a) HOST="armv7a-linux-androideabi"; CLANG_TRIPLE="armv7a-linux-androideabi" ;;
+ x86) HOST="i686-linux-android"; CLANG_TRIPLE="i686-linux-android" ;;
+ x86_64) HOST="x86_64-linux-android"; CLANG_TRIPLE="x86_64-linux-android" ;;
  *) echo "Unsupported Hamlib ABI: $ABI" >&2; exit 2 ;;
 esac
 : "${ANDROID_HOME:?ANDROID_HOME must point to the Android SDK}"
