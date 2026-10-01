@@ -20,6 +20,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -318,7 +322,17 @@ class HubActivity : BaseRecyclerActivity() {
                             Text(stringResource(R.string.update_available_title, update.latest))
                         },
                         text = {
-                            Text(stringResource(R.string.update_available_message, update.current))
+                            Text(
+                            stringResource(
+                                R.string.update_available_message,
+                                update.current,
+                                update.deviceArchitecture,
+                                update.releaseNotes,
+                            ),
+                            modifier = Modifier
+                                .heightIn(max = 400.dp)
+                                .verticalScroll(rememberScrollState()),
+                        )
                         },
                         confirmButton = {
                             TextButton(
