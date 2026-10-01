@@ -1,27 +1,46 @@
 # APRSdroid Activities and UI Architecture
 
-Current release baseline: `Mod-v2.2.4`. See [AGENT.md](AGENT.md) for maintenance rules and [CHANGELOG.md](CHANGELOG.md) for release history.
+Current baseline: `Mod-v2.4.1`. This file describes the current Android navigation/activity structure; release history belongs in [CHANGELOG.md](CHANGELOG.md), maintenance invariants in [AGENT.md](AGENT.md), and stable implementation constraints in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Main navigation
 
-`HubActivity` hosts four peer Compose destinations in a single Navigation Compose graph. Root transitions do not animate the entire screen. `BaseRecyclerActivity` extends AndroidX `ComponentActivity` and supplies permissions and common APRS actions.
+`HubActivity` hosts the four primary Compose destinations in one Navigation Compose graph:
 
-- **Stations — HubStationScreen:** tracking status, station list, and explicit position sending. A top-right magnifier expands a callsign/comment search field in the toolbar. Filtering runs before the 300-result limit and preserves station age and distance order.
-- **Map — EmbeddedMapScreen:** embedded MapLibre for AMap / OpenStreetMap / custom raster tiles, or Google Maps normal / hybrid modes. MapView follows destination and host lifecycle; station snapshots and stable image/marker caches avoid rebuilding every icon on reception.
+- **Stations — HubStationScreen:** station tracking/listing, explicit position sending, and callsign/comment search.
+- **Map — EmbeddedMapScreen:** MapLibre for AMap/OpenStreetMap/custom raster sources, or Google Maps for Google modes.
 - **Messages — ConversationsScreen:** conversation overview and entry to per-callsign chat.
 - **Packets — LogScreen:** packet monitor, filtering, search, and log export.
 
-Hub refreshes the visible destination only. The map additionally reads the local station position. Station, map, and packet ViewModels are owned by the Activity ViewModelStore, and their 250 ms conflated query queues serialize database refreshes. Bitmap rasterization and GeoJSON preparation run off the UI thread; Map SDK calls remain on the UI thread.
+The four root destinations are peers. Do not recreate the old full-screen XML navigation or add a second root navigation stack.
 
-## Secondary and compatibility activities
+## Secondary activities
 
-- **MessageActivity — MessageChatScreen:** per-callsign messaging.
-- **StationActivity — StationDetailScreen:** callsign detail, packet history, and digipeater path.
-- **PrefsAct:** `ComponentActivity` with Compose preference screens; no AndroidX PreferenceActivity.
-- **PrefSymbolAct — SymbolPickerScreen:** APRS symbol selection.
-- **Ic705RxDiagnosticActivity — Ic705RxDiagnosticScreen:** IC-705 receive diagnostics and event stream.
-- **LogActivity / ConversationsActivity:** compatibility and secondary entry points; the main bottom tabs stay inside HubActivity.
-- **MapAct / GoogleMapAct:** coordinate picking and compatibility map entry points, not the primary map tab. MapLoaderBase retains their shared loading behavior.
-- **ProfileImportActivity / KeyfileImportActivity:** configuration JSON and PKCS#12 key import entry points.
+These remain explicit Android activity boundaries where platform Back / predictive back semantics are useful:
 
-Secondary activities use Android BackDispatcher / predictive back. Keep [AI_CONTEXT.md](AI_CONTEXT.md) as a pointer to AGENT.md rather than duplicating the maintenance specification.
+- `MessageActivity` — per-callsign chat;
+- `StationActivity` — station details and packet history;
+- `NotificationSettingsActivity` — notification settings;
+- `PrefsAct` — Compose-based application settings;
+- `PrefSymbolAct` — APRS symbol picker;
+- `Ic705RxDiagnosticActivity` — IC-705 receive diagnostics;
+- `MapAct` / `GoogleMapAct` — coordinate-picking and compatibility map entry points;
+- `ProfileImportActivity` / `KeyfileImportActivity` — configuration and key-file import entry points.
+
+`LogActivity` and `ConversationsActivity` remain compatibility/secondary entry points; the primary packet and message destinations are hosted by `HubActivity`.
+
+## Navigation rules
+
+- Toolbar Back and system/predictive Back must converge on the Android activity back dispatcher.
+- Do not restore global `windowAnimationStyle` or a second Compose transition layer over secondary activities.
+- Notification-to-chat navigation creates the required task stack directly; do not route through a Hub-side delayed navigation effect.
+- System Settings intents are launched directly; application navigation must not wait for NotificationManager Binder work.
+- Root destination switching must not animate the entire screen with cross-fade/slide/alpha effects.
+
+## Performance ownership
+
+- Database refreshes use the current ViewModel/repository boundaries and conflated query queues.
+- Map rendering keeps immutable station snapshots and reuses marker/icon resources.
+- MapLibre/Google Maps lifecycle follows the host destination/activity lifecycle.
+- Visual navigation and predictive-back behavior require real-device verification; CI alone does not prove animation correctness.
+
+For detailed state, networking, IC-705 session, PTT, diagnostics, and permission constraints, use [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
