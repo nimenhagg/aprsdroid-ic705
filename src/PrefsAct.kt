@@ -267,7 +267,17 @@ class PrefsAct : ComponentActivity() {
                             Text(stringResource(R.string.update_available_title, update.latest))
                         },
                         text = {
-                            Text(stringResource(R.string.update_available_message, update.current))
+                            Text(
+                            stringResource(
+                                R.string.update_available_message,
+                                update.current,
+                                update.deviceArchitecture,
+                                update.releaseNotes,
+                            ),
+                            modifier = Modifier
+                                .heightIn(max = 400.dp)
+                                .verticalScroll(rememberScrollState()),
+                        )
                         },
                         confirmButton = {
                             TextButton(
