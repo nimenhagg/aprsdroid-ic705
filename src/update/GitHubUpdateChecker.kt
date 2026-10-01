@@ -37,9 +37,6 @@ internal sealed interface UpdateCheckResult {
     data class Failure(val message: String) : UpdateCheckResult
 }
 
-/**
- * One-shot update checker. It never schedules work and never runs unless [check] is called.
- */
 internal fun formatDeviceArchitecture(abis: Array<String>): String {
     val abi = abis.firstOrNull()?.takeIf { it.isNotBlank() } ?: "unknown"
     val label = when (abi) {
@@ -52,6 +49,9 @@ internal fun formatDeviceArchitecture(abis: Array<String>): String {
     return "$label ($abi)"
 }
 
+/**
+ * One-shot update checker. It never schedules work and never runs unless [check] is called.
+ */
 internal object GitHubUpdateChecker {
     private const val LATEST_RELEASE_URL =
         "https://api.github.com/repos/nimenhagg/aprsdroid-ic705/releases/latest"
@@ -105,7 +105,7 @@ internal object GitHubUpdateChecker {
                     val tag = json.optString("tag_name")
                     val latest = parseAppVersion(tag)
                     val releaseUrl = json.optString("html_url")
-                    val releaseNotes = json.optString("body").trim()
+                    val releaseNotes = json.optString("body").trim().ifBlank { "No release notes provided." }
                     if (latest == null || releaseUrl.isBlank()) {
                         callback(UpdateCheckResult.Failure("GitHub Release 缺少有效版本信息"))
                         return
