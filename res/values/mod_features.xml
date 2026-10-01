@@ -194,7 +194,7 @@
     <string name="update_check_github">Checking GitHub Releases…</string>
     <string name="update_up_to_date">You are up to date: %1$s</string>
     <string name="update_available_title">New version available: %1$s</string>
-    <string name="update_available_message">Current version: %1$s\nOpen GitHub Releases for release notes and downloads.</string>
+    <string name="update_available_message">Current version: %1$s\nDevice architecture: %2$s\n\nRelease notes\n%3$s</string>
     <string name="update_open_release">Open release page</string>
     <string name="update_check_failed">Update check failed: %1$s</string>
 
