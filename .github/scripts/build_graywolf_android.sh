@@ -20,6 +20,16 @@ case "$ABI" in
     LINKER_PREFIX="armv7a-linux-androideabi"
     CARGO_TARGET_ENV="ARMV7_LINUX_ANDROIDEABI"
     ;;
+  x86)
+    TARGET="i686-linux-android"
+    LINKER_PREFIX="i686-linux-android"
+    CARGO_TARGET_ENV="I686_LINUX_ANDROID"
+    ;;
+  x86_64)
+    TARGET="x86_64-linux-android"
+    LINKER_PREFIX="x86_64-linux-android"
+    CARGO_TARGET_ENV="X86_64_LINUX_ANDROID"
+    ;;
   *)
     echo "Unsupported Graywolf ABI: $ABI" >&2
     exit 2
