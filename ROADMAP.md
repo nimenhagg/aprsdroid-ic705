@@ -1,367 +1,132 @@
-# APRSdroid Mod：Hamlib 与多电台开发路线
+# APRSdroid Mod：后续开发路线
 
-> 本文件描述长期开发路线与阶段性架构计划。它不是当前任务指令。只有用户明确要求推进某个阶段时，Agent 才应按此路线实施。
+> 本文件只记录**尚未完成的长期方向**。已经合并到 `main` 的工作不再作为“待办 PR”重复列出；具体历史请看 [CHANGELOG.md](CHANGELOG.md)，当前工程不变量请看 [AGENT.md](AGENT.md)。
 
-## Hamlib 与多电台架构规划
+## 1. 当前基线
 
-> **状态：分阶段实现中。** PR1（Android 构建基础）、PR2（最小 JNI 交互）、PR3（通用 RadioControl 契约与适配层）、PR4（Android USB CAT bridge 本地回环桥接）、PR5（通用 Radio Audio 路由与 TX drain）、PR6（IC-705 USB OTG 核心会话与后台）、PR7（USB 电台设置 UI、WSJT-X 风格选择器、400+ 电台库与品牌排序）与 PR8（WLAN 电台预置与自定义 CI-V 地址）已全部合并至主线。当前 IC-705 WLAN 路径、PTT 安全状态机、Graywolf RX 和既有设置仍以本文件前文的现状约束为准。
+截至 `Mod-v2.4.1`：
 
-### 16.1 总体原则
+- Hamlib Android 构建、JNI、USB CAT loopback bridge、通用 RadioControl、USB Audio 路由和 TX drain 已进入主线。
+- USB 电台设置、400+ Hamlib 电台型号选择、品牌排序、自定义 CI-V 地址已经进入主线。
+- IC-705 WLAN 已有独立的协议编解码、UDP transport、generation 化 session、CONTROL/CI-V/AUDIO 分角色 recovery、音频重排、PTT ACK/readback/watchdog 和诊断体系。
+- IC-705 WLAN 支持 IC-705、IC-9700、IC-7610、IC-905 预置以及 CUSTOM CI-V 地址。
+- 本地 AFSK1200 RX 使用 Graywolf；TX 继续使用稳定的 APRSdroid PCM 生成链。
+- 正式 Release 当前提供 ARM64/ARMv7 OpenGL APK。
+- 项目整体仍为 GPL-2.0-only；[LICENSING.md](LICENSING.md) 列出的独立文件另有 GPL-2.0-or-later 授权。
 
-后续多电台支持采用“**Hamlib 负责电台控制语义，Android/Kotlin 负责设备与网络 transport，APRSdroid 负责 APRS/AFSK/DSP**”的分层，不继续为每个型号手写一套 CAT/CI-V 命令。
+## 2. 后续方向
 
-目标边界：
+### 2.1 IC-705 WLAN 核心可复用化
 
-```text
-                    APRSdroid
-                        │
-             ┌──────────┴──────────┐
-             │                     │
-        APRS / AFSK            Radio Control
-       AX.25 / DSP                Hamlib
-             │                     │
-        Radio Audio            CAT byte stream
-             │                     │
-      ┌──────┴──────┐       ┌──────┴─────────┐
-      │             │       │                │
- Android Audio   Icom LAN   USB Serial    Network
-      │             │       │
- USB声卡        现有会话层   Android USB bridge
-```
+目标是把与 APRSdroid 数据模型、Android UI 和服务生命周期无关的 IC-705 核心整理成清晰的独立边界，便于未来复用到其它 APRS/TNC 项目。
 
-必须保持：
+优先拆分：
 
-- Hamlib 不负责 APRS packet、AX.25、AFSK1200 调制/解调或 APRSdroid 数据模型；
-- Graywolf 继续作为生产本地 PCM AFSK1200 RX 的唯一 decoder；
-- 现有 AFSK TX PCM 生成链不因 Hamlib 接入而重写；
-- Android USB 权限、USB serial、USB audio、Wi-Fi `Network.bindSocket()` 和移动数据/VPN 共存仍由 Android/Kotlin 层掌握；
-- 不为 IC-7100、FT-710、TS-590 等分别创建独立 APRS backend；型号差异优先交给 Hamlib；
-- 现有 `proto=ic705`、`ic705.*` 设置和 IC-705 用户升级兼容性不得被首轮 Hamlib 接入破坏。
+1. protocol codecs；
+2. UDP transport；
+3. session/recovery state；
+4. PTT state machine；
+5. RX/TX audio packetization；
+6. 与 APRSdroid 的 adapter。
 
-### 16.2 API 基线与 Hamlib 构建
+约束：
 
-Hamlib PR1 已把项目 `minSdk` 从 27 提升到 **28**，与固定 Hamlib 4.7.2 的 Android NDK 构建基线对齐。后续不得在没有完整兼容性与 native 构建验证时下调该基线。
+- 不复制 APRSdroid 的 AX.25/AFSK/PCM 数据模型进核心；
+- 不把 Android Activity/Service 生命周期塞进协议核心；
+- 不改变现有 IC-705 真机行为；
+- 拆分前继续遵守 [LICENSING.md](LICENSING.md) 的逐文件授权边界；
+- wfview 仍只作为行为/协议对照，不能直接引入其 GPL-3.0-only 实现。
 
-Hamlib 集成要求：
+### 2.2 Icom LAN 泛化
 
-- 固定明确的 Hamlib upstream revision/tag，不跟随浮动 master；
-- CI 从源码交叉编译 Android Hamlib，不把预构建 `.so` 直接提交到源码目录；
-- 正式 ABI 首先覆盖 `arm64-v8a` 与 `armeabi-v7a`，x86/x86_64 只按项目实际支持策略补充；
-- 记录 Hamlib revision、构建参数、许可证和可获取源码方式；
-- Hamlib library 以其 LGPL-2.1-or-later 条款使用；项目分发必须保留相应许可义务；
-- Hamlib 官方 Android 构建当前使用 NDK/autotools，并明确 `--without-libusb`；不要假设提升到 API 28 就自动获得 Android USB Host/libusb 能力；
-- 若后续 Hamlib Android 官方构建方式发生变化，以实际 upstream 和可复现 CI 为准，并更新本节。
-
-### 16.3 Hamlib JNI 边界
-
-JNI 必须保持薄层，不把业务逻辑搬进 native。
-
-建议 Kotlin/native 边界只覆盖：
-
-- Hamlib version/build revision；
-- 枚举 rig model / manufacturer / capability；
-- create/init / open / close / cleanup；
-- get/set frequency；
-- get/set mode；
-- get/set PTT；
-- 必要的 VFO / split / config token；
-- 错误码、错误文本和最小诊断信息。
-
-Kotlin 侧建立通用 `RadioControl` / `HamlibRadioControl` 抽象。单个 rig handle 的 Hamlib 调用必须串行化，避免 UI、service、TX/PTT 与轮询线程并发敲同一 handle。
-
-首轮 JNI 不得：
-
-- 暴露整个 Hamlib C struct 给 Kotlin；
-- 复制一套 Icom/Yaesu/Kenwood 型号判断到 Kotlin；
-- 在 JNI 中实现 APRS/AFSK；
-- 为了 Android 方便大规模 fork Hamlib I/O 核心；
-- 把现有 IC-705 LAN PTT 安全状态机替换成简单 `rig_set_ptt()`。
-
-### 16.4 USB CAT transport
-
-Hamlib Android 当前 `--without-libusb`，因此 USB CAT 的首选架构是：
-
-```text
-Hamlib rig backend
-      │
-  127.0.0.1:<ephemeral port>
-      │
-Local CAT byte-stream bridge
-      │
-Android UsbSerialPort / USB Host
-      │
-     Radio
-```
+在现有 IC-705 路径稳定的基础上，继续验证更多 Icom WLAN 电台。
 
 原则：
 
-- Android 层负责枚举 USB 设备、权限、打开/关闭、断线和重连；
-- bridge 只做可靠字节流搬运，不解析 CI-V/CAT；
-- Hamlib 继续看到普通 network byte stream，并负责 Icom/Yaesu/Kenwood 控制语义；
-- 本地监听仅绑定 loopback，不开放到 LAN；
-- 端口使用临时端口并有明确生命周期 owner；
-- bridge teardown 必须先阻止新写入，再关闭 socket/USB，避免 zombie reader/writer；
-- 必须记录连接建立、USB detach、bridge EOF、Hamlib open/close 和错误原因；
-- 若特定 Hamlib backend 不能可靠使用 network pathname，再评估 native PTY/custom transport；不要在没有证据时先 fork Hamlib。
-
-### 16.5 Radio Audio 与 CAT 解耦
-
-音频设备与电台控制是两个正交配置，不得把“USB Audio + Hamlib CAT”硬编码成某个型号 backend。
-
-目标数据流：
-
-```text
-RX:
-USB/Android Audio
-    → PCM
-    → FeedableAfskDecoder
-    → Graywolf
-    → AX.25/APRS
-
-TX:
-APRSPacket
-    → AX.25
-    → AFSK PCM
-    → Android/USB Audio output
-    → Radio
-
-PTT:
-RadioControl.setPtt(true)
-    → TX audio
-    → drain
-    → RadioControl.setPtt(false)
-```
+- 型号能力表与 transport 分离；
+- CI-V 地址、端口和 capability 不写死在 session 状态机；
+- runtime capability、实际音频流到达和已验证型号行为共同决定能力；
+- 每个新型号都区分“Hamlib/协议上支持”和“本项目已经真机验证”。
 
-要求：
+新增型号必须经过：
 
-- Android 使用明确选定的输入/输出 `AudioDeviceInfo`，不能靠系统默认设备碰运气；
-- RX sample-rate adaptation 继续进入现有统一 `FeedableAfskDecoder` seam；
-- TX 必须保留“PTT ON 确认 → 允许 audio → drain → PTT OFF”的安全时序；
-- 普通 Hamlib PTT 后端若不能提供 ACK/readback 级确认，UI/诊断必须如实区分“命令已提交”和“已确认 RX”；
-- IC-705 WLAN 路径仍遵守本文件第 7 节更严格的 ACK/PTT 安全不变量，不能因统一 `RadioControl` 接口而降级。
+1. handshake/control；
+2. CI-V；
+3. RX audio；
+4. PTT ON/OFF；
+5. TX audio；
+6. 长时间收发；
+7. Wi-Fi 断开/重连；
+8. 低功率或假负载 RF 验证。
 
-### 16.6 IC-705 / Icom LAN 的处理
+### 2.3 Hamlib 多电台继续扩展
 
-**首轮 Hamlib 集成不得迁移或重写现有 IC-705 WLAN backend。**
+继续使用组合式模型：
 
-现有实现已经具备 Android 特有且必须保留的能力：
+`连接方式 + 电台型号 + 控制 + 音频 + PTT`
 
-- Wi-Fi `Network.bindSocket()`，允许电台 AP 与移动数据/VPN 并存；
-- generation 化 session，旧 generation callback 隔离；
-- CONTROL / CI-V / AUDIO 角色化 watchdog；
-- CI-V / AUDIO stream-local soft recovery；
-- AUDIO reorder / gap concealment / discontinuity reset；
-- tracked retransmission；
-- PTT ACK/readback/retry/watchdog 和 teardown 安全语义。
+而不是为每个电台重新创建 APRS backend。
 
-Icom LAN 后续泛化时，协议行为应交叉参考：
+后续重点：
 
-1. **Hamlib Icom network backend / PR #2178**：协议分层、streaming、codec、liveness、测试和已知硬件 quirks；
-2. **FT8CN**：Android/Java 的 Icom LAN 实例、0xA8 capability、CI-V address/TX/audio capability 解析；
-3. **wfview**：长期 Icom LAN 行为与型号 capability/profile 参考。
+- 更多真实硬件验证；
+- USB serial permission / detach / reconnect 的边界测试；
+- USB Audio 设备变化与安全 PTT release；
+- Hamlib backend 能力与实际硬件能力的差异诊断；
+- 保持 CAT、音频和 APRS packet 层解耦。
 
-许可证边界：
+### 2.4 APK 体积与构建产物优化
 
-- FT8CN 为 MIT，可在满足 attribution/license notice 的前提下参考或移植适当代码；
-- wfview 为 GPLv3；当前项目不得把其 GPLv3 实现直接复制进 GPLv2-only 代码路径，除非先明确解决项目整体许可兼容性；
-- 优先把 wfview 当行为、数据格式和测试 oracle，而不是代码来源。
-- 自 `Mod-v2.4.1` 起，由本项目独立编写、上游 APRSdroid 无对应实现的电台连接与诊断文件（82 个，见 [LICENSING.md](LICENSING.md)）额外按 GPL-2.0-or-later 提供；项目整体仍为 GPL-2.0-only。后续把这些文件拆分为独立库时，库只允许包含该清单内的文件与新写的接口层。
-- 拆分前必须先完成 wfview 派生性逐函数复核（见 [PROVENANCE.md](PROVENANCE.md) 第 4 节）；复核未完成前不得把相关函数作为 v2+ 授权对外发布为新库。
+继续优化正式 APK 的体积，但不能以删除运行时能力或破坏 ABI 为代价。
 
-Icom LAN capability 不能只相信运行时 bitmap。后续策略应为：
+优先检查：
 
-```text
-runtime 0xA8 capability
-        ↓
-known model / validated quirk database
-        ↓
-actual stream-arrival watchdog
-        ↓
-advanced manual override（仅必要时）
-```
+- native library strip / dead-code elimination；
+- R8 与资源裁剪；
+- MapLibre native library；
+- ABI 产物是否包含不必要内容；
+- Release CI 中源码构建产物、APK 中 native library 和 source archive 是否一致。
 
-原因：Hamlib Icom network 实测已经出现“电台 capability 宣称支持某 codec/sample-rate，但协商成功后实际无 audio”的组合。必须用真实流到达情况做最后判定。
-
-### 16.7 分阶段实施 PR
+每次体积优化都必须同时验证功能、ABI、16 KiB alignment、签名和 SHA-256。
 
-后续新对话/Agent 应按小步 PR 推进，不做一次性大重构。
+### 2.5 UI / Android 平台演进
 
-#### PR 1：Hamlib build foundation
+继续维护 Compose / Material 3 / predictive back / Android 17 行为。
 
-- `minSdk 27 → 28`；
-- pin Hamlib revision；
-- CI 可重复构建 Android Hamlib；
-- ARM64/ARMv7 native artifact 校验；
-- license/source attribution；
-- 不改变任何现有运行行为。
+原则：
 
-验收：现有 unit/lint/release/Graywolf/IC-705 gate 全绿，APK 能加载 Hamlib native library。
+- 不恢复旧 XML 一级页面；
+- 不恢复全局 Activity animation override；
+- 不用设备/ROM 特判掩盖生命周期或状态机问题；
+- Live Updates、权限和前台服务行为以当前 Android 平台实际要求为准；
+- 真机视觉与交互验证不能由 CI 替代。
 
-#### PR 2：最小 Hamlib JNI
+### 2.6 诊断与可维护性
 
-- version；
-- rig enumeration；
-- init/open/close；
-- freq/mode/PTT；
-- capability 与错误映射；
-- dummy/mock rig 测试；
-- 不接真 USB，不进行真实发射。
+继续让结构化诊断成为网络、电台和 PTT 问题的主要排障入口。
 
-验收：JVM/native/instrumentation 可证明 JNI 生命周期和错误处理正确，无 handle 泄漏或并发 use-after-close。
+后续可扩展：
 
-#### PR 3：通用 RadioControl
+- 更明确的 session/recovery timeline；
+- 更容易脱敏和分享的诊断包；
+- IC-705 / Hamlib / USB Audio 的统一连接状态模型；
+- 对关键 recovery、PTT 和 transport 竞态增加回归测试。
 
-- 引入 `RadioControl`；
-- 新增 `HamlibRadioControl`；
-- 把“型号”和“transport”从 APRS backend 概念中拆开；
-- 保持现有 IC-705 WLAN PTT/session 不变。
+## 3. 明确不作为当前路线的事项
 
-验收：Hamlib dummy 与现有 IC-705 路径均可独立工作，旧设置不迁移、不丢失。
+除非重新评估并明确提出，不恢复：
 
-#### PR 4：Android USB CAT bridge (已合并到主线)
+- 旧 XML UI；
+- Mapsforge / 旧专用瓦片下载器；
+- 全局 Activity 动画；
+- IC-705 “任一通道超时即 teardown”模型；
+- PTT OFF 未经电台确认就假定 RX；
+- Graywolf RX 失败时静默回退 legacy demodulator；
+- 把整个 App 绑定到电台 Wi-Fi；
+- 为每个电台型号复制一套 APRS backend。
 
-- Android USB Host/serial 权限与生命周期；
-- loopback CAT bridge；
-- Hamlib network pathname 接入；
-- detach/reconnect/EOF/timeout 诊断；
-- 首先验证 Icom CI-V 字节流。
+## 4. 推进原则
 
-验收：真机可由 Hamlib 对 USB 电台稳定完成读频、设频、mode 和无 RF 风险的控制操作。
+后续工作继续采用小步、可验证的 PR。任何涉及真实 RF、PTT、音频或网络 recovery 的修改，都必须先通过单元/CI 验证，再进行低功率或假负载真机验证。
 
-#### PR 5：通用 Radio Audio backend (已合并到主线)
-
-- 显式 USB Audio input/output 选择；
-- RX → Graywolf；
-- TX → AFSK PCM → audio device；
-- Hamlib CAT PTT；
-- audio/CAT 独立配置；
-- TX drain 与失败恢复。
-
-验收：synthetic + Android audio loopback 先通过，再进入低功率/假负载真机测试。
-
-#### PR 6：首台完整 Hamlib 电台架构（已合并至主线：IC-705 USB OTG + 通用 Profile）
-
-真机验证靶标选用 **IC-705 (USB OTG)**，兼顾 **IC-7100**，统一验证：
-
-- Icom CI-V；
-- Android USB CAT；
-- USB Audio；
-- VHF/UHF；
-- APRS AFSK 收发；
-- CAT PTT。
-
-验证顺序：
-
-1. open/close；
-2. read frequency；
-3. set frequency；
-4. mode/VFO；
-5. PTT 空载/假负载安全测试；
-6. RX AFSK；
-7. TX AFSK；
-8. 长时间收发与 USB detach/reconnect。
-
-只有完成对应硬件验证后才能在 README/Release 中标为支持；未充分验证时只能标 Experimental。
-
-#### PR 7：设置 UI 集成与 WSJT-X 风格电台选择器（已合并至主线）
-
-- 在“连接协议”中正式暴露 `USB 电台 (Hamlib)`（`usbradio`）；
-- 仿照 WSJT-X / 现代国家选择器交互，实现 `RadioSelectDialogCompose`：
-  - 顶部关键字即时搜索（按型号名称、Hamlib ID 或厂商过滤）；
-  - 整合 400+ 款 Hamlib 支持电台，按品牌首字母排序连续展示，提供流畅平滑的浏览体验；
-  - 列表卡片展示电台名称、Hamlib 模型编号、默认波特率及 CI-V 地址；
-- 扩展常用主流电台预置（IC-705、IC-7100、IC-7300、IC-7610、IC-9700、FT-891、FT-991A、FTDX10、FT-710、TS-590SG、TS-890S 等）；
-- 切换电台自动同步推荐波特率与默认 CI-V 地址；
-- 支持自定义波特率与十六进制 CI-V 地址输入；
-- 引入专属 USB 声卡输入/输出设备选择与发射音量控制滑块；
-- 实施物理排空精确计时保护，消除空载波悬挂。
-
-#### PR 8：Icom LAN 泛化与自定义 CI-V 地址（已合并至主线）
-
-- WLAN 连接电台型号预设：IC-705 (`0xA4`)、IC-9700 (`0xA2`)、IC-7610 (`0x98`)、IC-905 (`0xAC`) 与自定义型号 (`CUSTOM`)；
-- 动态 CI-V 地址配置与严格校验；
-- 解耦核心 CI-V 与控制会话的硬编码地址，保持老用户现有配置透明兼容。
-
-### 16.8 设置模型目标
-
-最终设置应从“每个型号一个 backend”逐渐转成组合式模型：
-
-```text
-连接方式
-  Icom LAN
-  USB Radio
-
-电台
-  Icom IC-7100
-  Yaesu FT-710
-  Kenwood TS-590SG
-  ...
-
-控制
-  Hamlib
-
-CAT 设备
-  <USB serial device>
-
-音频输入
-  <USB audio input>
-
-音频输出
-  <USB audio output>
-
-PTT
-  CAT
-```
-
-IC-705 WLAN 继续可表现为：
-
-```text
-连接方式
-  Icom LAN
-
-电台
-  Auto / IC-705
-
-地址
-  192.168.x.x
-
-控制
-  Icom LAN
-
-音频
-  Icom LAN
-```
-
-设置层必须支持未来“同一型号不同 transport”，例如 IC-705 可有 Icom LAN，也可有 USB Audio + Hamlib CI-V；不得把型号和 transport 永久绑死。
-
-### 16.9 测试与安全门槛
-
-Hamlib/多电台相关变更除本文件第 13 节通用 gate 外，还至少要求：
-
-- Hamlib pinned revision 可从干净 checkout 重建；
-- JNI ABI/export/16 KiB page alignment 校验；
-- rig handle create/open/close/reopen 循环测试；
-- 并发调用被串行化；
-- USB permission grant/deny/detach/replug；
-- loopback bridge 不可从非 loopback 网络访问；
-- USB reader/writer teardown 无 zombie thread；
-- CAT 失败不能让 APRS service 崩溃；
-- Audio device 消失时立即停止 TX audio，并进入安全 PTT release 流程；
-- 不允许“本地写成功”直接等价为电台 PTT 已确认；
-- 真实 RF TX 必须使用低功率/假负载并人工确认 PTT OFF；
-- 每个新型号都要区分“Hamlib 声称支持”与“本项目真机验证支持”。
-
-### 16.10 当前实施起点
-
-下一次开始此规划时，**第一批工作只做 PR 1 + PR 2**：
-
-1. 提升 minSdk 到 28；
-2. pin Hamlib；
-3. 建立可重复 Android NDK build；
-4. 接入最小 JNI；
-5. 枚举 rigs；
-6. dummy/mock rig；
-7. 验证 freq/mode/PTT API 与生命周期。
-
-在这两步稳定前，不启动 IC-9700/IC-905 支持，不重命名现有 `Ic705*`，不迁移 IC-705 WLAN PTT，不同时重做连接设置 UI。
-
+路线图不是自动任务队列；只有明确提出某项工作时才开始实施。
