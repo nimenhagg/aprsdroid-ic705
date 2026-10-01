@@ -24,6 +24,15 @@ class GitHubUpdateCheckerTest {
     }
 
     @Test
+    fun formatsSupportedArchitectures() {
+        assertEquals("ARM64 (arm64-v8a)", formatDeviceArchitecture(arrayOf("arm64-v8a", "armeabi-v7a")))
+        assertEquals("ARMv7 (armeabi-v7a)", formatDeviceArchitecture(arrayOf("armeabi-v7a")))
+        assertEquals("x86_64 (x86_64)", formatDeviceArchitecture(arrayOf("x86_64")))
+        assertEquals("Unknown (riscv64)", formatDeviceArchitecture(arrayOf("riscv64")))
+        assertEquals("Unknown (unknown)", formatDeviceArchitecture(emptyArray()))
+    }
+
+    @Test
     fun rejectsStringsWithoutSemanticVersion() {
         assertNull(parseAppVersion("unknown"))
     }
