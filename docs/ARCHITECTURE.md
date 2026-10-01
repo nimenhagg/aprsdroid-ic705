@@ -237,7 +237,7 @@ APRSdroid 能做到的是：立即发 Intent、不额外等 Binder、不先做�
 
 ## 5. 地图架构
 
-`Mod-v2.2.4` 包含地图/列表刷新性能修复：地图使用独立的不可变 `MapStation` 快照，图标按呼号/符号复用；Canvas 位图生成和 GeoJSON 序列化在后台执行，MapLibre Style 与 Google Marker 操作仍在主线程。不得恢复每条 UPDATE 广播删除全部图片或 `GoogleMap.clear()` 后重建的路径。
+`Mod-v2.4.1` 包含地图/列表刷新性能修复：地图使用独立的不可变 `MapStation` 快照，图标按呼号/符号复用；Canvas 位图生成和 GeoJSON 序列化在后台执行，MapLibre Style 与 Google Marker 操作仍在主线程。不得恢复每条 UPDATE 广播删除全部图片或 `GoogleMap.clear()` 后重建的路径。
 
 台站、地图、报文使用 `LatestQuery` 合并请求并保证同一页面最多一个查询进行中。对应 ViewModel 必须由 Activity 的 ViewModelStore 管理，避免常驻刷新协程脱离生命周期；过滤条件切换必须抑制旧结果。Hub 只更新当前页面所需数据，地图页额外读取本台位置，不查询隐藏报文列表或完整邻站列表。
 
@@ -287,7 +287,7 @@ OSM 必须保留可识别 User-Agent 与可点击的 `© OpenStreetMap contribut
 - **CI-V**：RX/空闲超时先做 stream rediscovery，连续失败再升级完整 reconnect；PTT 期间按安全关键路径处理；
 - **AUDIO**：TX 期间 RX 静默不能触发 session teardown；长时间失活先局部恢复，失败后升级。
 
-`Mod-v2.1.0` 已包含 recovery/link-state 修复；涉及 link on/off、poster 状态、session recovery 行为时先阅读相应测试和专项 CI，不要只凭更早 Release 代码推断。
+`Mod-v2.4.1` 已包含 recovery/link-state 修复；涉及 link on/off、poster 状态、session recovery 行为时先阅读相应测试和专项 CI，不要只凭更早 Release 代码推断。
 
 
 ## 7. TX / PTT 安全不变量
