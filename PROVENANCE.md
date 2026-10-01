@@ -10,13 +10,11 @@
   for review, testing and releases." 一致。
 - 可核验的过程记录：本仓库的提交历史（IC-705 LAN 功能首个提交 `a68a0ae`）与真机测试记录。早期提交使用了未正确配置的 Git author email（显示为 `APRSdroid Contributor <contributor@aprsdroid.org>`）；该 Git 元数据是本地配置错误，不用于判断实际代码作者或版权归属。
 
-### 待维护者补充（可选，用于完整留痕）
+### 当前工作记录
 
-| 项目 | 值 |
-| --- | --- |
-| AI 辅助工具与模型 | _待补充_ |
-| 主要开发时段 | 2026-08 至 2026-10 |
-| 真机验证设备 | Icom IC-705（WLAN 直连 / USB OTG）、Google Pixel 8 |
+- 主要开发时段：2026-08 至 2026-10。
+- 主要真机验证设备：Icom IC-705（WLAN 直连 / USB OTG）、Google Pixel 8。
+- 本文件不把具体 AI 工具或模型名称作为版权归属依据；代码归属以实际作者、贡献记录和适用许可证为准。
 
 ## 2. 参考来源（仅作协议行为、数据格式与互操作性对照）
 
