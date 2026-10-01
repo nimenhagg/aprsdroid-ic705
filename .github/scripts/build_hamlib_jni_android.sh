@@ -16,6 +16,8 @@ INSTALL="$ROOT/build/hamlib-install/$ABI/hamlib"
 case "$ABI" in
  arm64-v8a) CLANG_TRIPLE="aarch64-linux-android" ;;
  armeabi-v7a) CLANG_TRIPLE="armv7a-linux-androideabi" ;;
+ x86) CLANG_TRIPLE="i686-linux-android" ;;
+ x86_64) CLANG_TRIPLE="x86_64-linux-android" ;;
  *) echo "Unsupported Hamlib JNI ABI: $ABI" >&2; exit 2 ;;
 esac
 
