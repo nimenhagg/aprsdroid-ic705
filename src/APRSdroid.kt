@@ -2,8 +2,8 @@ package org.aprsdroid.app
 
 import android.app.Activity
 import android.content.Intent
-import androidx.core.content.IntentCompat
 import android.os.Bundle
+import androidx.core.content.IntentCompat
 import org.aprsdroid.app.ui.navigation.MainRoutes
 
 class APRSdroid : Activity() {
