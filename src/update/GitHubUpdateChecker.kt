@@ -1,5 +1,6 @@
 package org.aprsdroid.app.update
 
+import android.os.Build
 import java.io.IOException
 import okhttp3.Call
 import okhttp3.Callback
@@ -30,6 +31,8 @@ internal sealed interface UpdateCheckResult {
         val current: AppVersion,
         val latest: AppVersion,
         val releaseUrl: String,
+        val deviceArchitecture: String,
+        val releaseNotes: String,
     ) : UpdateCheckResult
     data class Failure(val message: String) : UpdateCheckResult
 }
@@ -37,6 +40,18 @@ internal sealed interface UpdateCheckResult {
 /**
  * One-shot update checker. It never schedules work and never runs unless [check] is called.
  */
+internal fun formatDeviceArchitecture(abis: Array<String>): String {
+    val abi = abis.firstOrNull()?.takeIf { it.isNotBlank() } ?: "unknown"
+    val label = when (abi) {
+        "arm64-v8a" -> "ARM64"
+        "armeabi-v7a" -> "ARMv7"
+        "x86_64" -> "x86_64"
+        "x86" -> "x86"
+        else -> "Unknown"
+    }
+    return "$label ($abi)"
+}
+
 internal object GitHubUpdateChecker {
     private const val LATEST_RELEASE_URL =
         "https://api.github.com/repos/nimenhagg/aprsdroid-ic705/releases/latest"
@@ -90,6 +105,7 @@ internal object GitHubUpdateChecker {
                     val tag = json.optString("tag_name")
                     val latest = parseAppVersion(tag)
                     val releaseUrl = json.optString("html_url")
+                    val releaseNotes = json.optString("body").trim()
                     if (latest == null || releaseUrl.isBlank()) {
                         callback(UpdateCheckResult.Failure("GitHub Release 缺少有效版本信息"))
                         return
@@ -100,6 +116,8 @@ internal object GitHubUpdateChecker {
                                 current = current,
                                 latest = latest,
                                 releaseUrl = releaseUrl,
+                                deviceArchitecture = formatDeviceArchitecture(Build.SUPPORTED_ABIS),
+                                releaseNotes = releaseNotes,
                             ),
                         )
                     } else {
