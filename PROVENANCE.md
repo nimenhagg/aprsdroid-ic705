@@ -8,7 +8,7 @@
 - 代码由**维护者主持、AI 辅助生成**：由维护者提出设计约束与验收标准，AI 生成实现，维护者负责审查、真机验证与发布。
 - 该说明与 [README](README.md) 中的 "AI-assisted development is used in this repository; maintainers remain responsible
   for review, testing and releases." 一致。
-- 可核验的过程记录：本仓库的提交历史（`2026-08-23` 起，IC-705 LAN 功能首个提交 `a68a0ae`）与真机测试记录。
+- 可核验的过程记录：本仓库的提交历史（IC-705 LAN 功能首个提交 `a68a0ae`）与真机测试记录。早期提交使用了未正确配置的 Git author email（显示为 `APRSdroid Contributor <contributor@aprsdroid.org>`）；该 Git 元数据是本地配置错误，不用于判断实际代码作者或版权归属。
 
 ### 待维护者补充（可选，用于完整留痕）
 
