@@ -2,6 +2,7 @@ package org.aprsdroid.app
 
 import android.app.Activity
 import android.content.Intent
+import androidx.core.content.IntentCompat
 import android.os.Bundle
 import org.aprsdroid.app.ui.navigation.MainRoutes
 
@@ -25,8 +26,7 @@ class APRSdroid : Activity() {
         val prefs = PrefsWrapper(this)
         val sp = prefs.prefs
 
-        @Suppress("DEPRECATION")
-        val device = intent.getParcelableExtra<android.os.Parcelable>("device")
+        val device = IntentCompat.getParcelableExtra(intent, "device", android.hardware.usb.UsbDevice::class.java)
         if (UsbTnc.checkDeviceHandle(sp, device) && sp.getBoolean("service_running", false)) {
             startService(AprsService.intent(this, AprsService.SERVICE))
         }
