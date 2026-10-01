@@ -130,18 +130,16 @@ jobs:
           fi
           build_and_package arm64Opengl arm64-v8a assembleArm64OpenglRelease
           if [ "$GITHUB_REF_TYPE" != "tag" ]; then rm -f release.jks; exit 0; fi
-          bash .github/scripts/package_graywolf_source.sh "$PWD/release-apks"
-          bash .github/scripts/package_hamlib_source.sh "$PWD/release-apks"
           python3 .github/scripts/extract_release_notes.py
-          (cd release-apks && sha256sum *.apk *.tar.gz > SHA256SUMS.txt)
-          gh release create "$GITHUB_REF_NAME" release-apks/*.apk release-apks/*.tar.gz release-apks/SHA256SUMS.txt release-mappings/arm64Opengl-mapping.txt --verify-tag --notes-file RELEASE_NOTES.md --title "$GITHUB_REF_NAME"
+          (cd release-apks && sha256sum *.apk > SHA256SUMS.txt)
+          gh release create "$GITHUB_REF_NAME" release-apks/APRSdroid-$BUILD_LABEL-arm64-v8a-opengl.apk release-apks/SHA256SUMS.txt --verify-tag --notes-file RELEASE_NOTES.md --title "$GITHUB_REF_NAME"
           build_and_package arm32Opengl armeabi-v7a assembleArm32OpenglRelease
-          gh release upload "$GITHUB_REF_NAME" "release-apks/APRSdroid-$BUILD_LABEL-armeabi-v7a-opengl.apk" release-mappings/arm32Opengl-mapping.txt --clobber
+          gh release upload "$GITHUB_REF_NAME" "release-apks/APRSdroid-$BUILD_LABEL-armeabi-v7a-opengl.apk" --clobber
           build_and_package x86Multi x86 assembleX86MultiRelease
-          gh release upload "$GITHUB_REF_NAME" "release-apks/APRSdroid-$BUILD_LABEL-x86-opengl.apk" release-mappings/x86Multi-mapping.txt --clobber
+          gh release upload "$GITHUB_REF_NAME" "release-apks/APRSdroid-$BUILD_LABEL-x86-opengl.apk" --clobber
           build_and_package x8664Multi x86_64 assembleX8664MultiRelease
-          gh release upload "$GITHUB_REF_NAME" "release-apks/APRSdroid-$BUILD_LABEL-x86_64-opengl.apk" release-mappings/x8664Multi-mapping.txt --clobber
-          (cd release-apks && sha256sum *.apk *.tar.gz > SHA256SUMS.txt)
+          gh release upload "$GITHUB_REF_NAME" "release-apks/APRSdroid-$BUILD_LABEL-x86_64-opengl.apk" --clobber
+          (cd release-apks && sha256sum *.apk > SHA256SUMS.txt)
           gh release delete-asset "$GITHUB_REF_NAME" SHA256SUMS.txt --yes
           gh release upload "$GITHUB_REF_NAME" release-apks/SHA256SUMS.txt --clobber
           rm -f release.jks
