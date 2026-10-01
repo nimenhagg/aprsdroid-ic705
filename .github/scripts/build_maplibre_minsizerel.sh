@@ -8,7 +8,7 @@ NDK_VERSION="28.2.13676358"
 MAPLIBRE_REV="f0bd259b53f5dda65cd092cc5f6ff15d4d9d2d83"
 
 case "$ABI" in
-  arm64-v8a|armeabi-v7a) ;;
+  arm64-v8a|armeabi-v7a|x86|x86_64) ;;
   *) echo "Unsupported ABI: $ABI" >&2; exit 2 ;;
 esac
 
