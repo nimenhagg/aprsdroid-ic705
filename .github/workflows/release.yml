@@ -17,7 +17,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release:'))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout Code
@@ -241,31 +241,3 @@ jobs:
           echo "Created ${tag}, but could not dispatch the tagged release workflow." >&2
           exit 1
 
-  publish:
-    name: Publish GitHub Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download verified release bundle
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: aprsdroid-release-bundle
-          path: release-bundle
-
-      - name: Publish to GitHub Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
-        with:
-          files: |
-            release-bundle/release-apks/*.apk
-            release-bundle/release-apks/*.tar.gz
-            release-bundle/release-apks/SHA256SUMS.txt
-            release-bundle/release-mappings/*.txt
-          body_path: release-bundle/RELEASE_NOTES.md
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
