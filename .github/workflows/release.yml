@@ -54,268 +54,97 @@ jobs:
           bash .github/scripts/test_graywolf_loopback.sh
           git diff --exit-code -- native/graywolf-jni/Cargo.lock
 
-      - name: Restore ARM64 MinSizeRel MapLibre
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: .cache/maplibre-minsizerel/13.5.1/arm64-v8a
-          key: maplibre-minsizerel-v2-13.5.1-arm64-v8a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
-
-      - name: Restore ARMv7 MinSizeRel MapLibre
+      - name: Restore MinSizeRel MapLibre caches
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: .cache/maplibre-minsizerel/13.5.1/armeabi-v7a
-          key: maplibre-minsizerel-v2-13.5.1-armeabi-v7a-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
+          path: |
+            .cache/maplibre-minsizerel/13.5.1/arm64-v8a
+            .cache/maplibre-minsizerel/13.5.1/armeabi-v7a
+            .cache/maplibre-minsizerel/13.5.1/x86
+            .cache/maplibre-minsizerel/13.5.1/x86_64
+          key: ${{ runner.os }}-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
 
-      - name: Build MinSizeRel MapLibre Native
-        run: |
-          bash .github/scripts/build_maplibre_minsizerel.sh \
-            13.5.1 arm64-v8a \
-            "$PWD/.cache/maplibre-minsizerel/13.5.1/arm64-v8a/libmaplibre.so"
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            bash .github/scripts/build_maplibre_minsizerel.sh \
-              13.5.1 armeabi-v7a \
-              "$PWD/.cache/maplibre-minsizerel/13.5.1/armeabi-v7a/libmaplibre.so"
-          fi
-
-      - name: Build Graywolf Android Native
-        run: |
-          bash .github/scripts/build_graywolf_android.sh arm64-v8a
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            bash .github/scripts/build_graywolf_android.sh armeabi-v7a
-          fi
-
-      - name: Build pinned Hamlib Android Native
-        run: |
-          bash .github/scripts/build_hamlib_android.sh arm64-v8a
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            bash .github/scripts/build_hamlib_android.sh armeabi-v7a
-          fi
-          for abi in arm64-v8a armeabi-v7a; do
-            if [ -s "build/generated/hamlibJniLibs/${abi}/libhamlib.so" ]; then
-              bash .github/scripts/build_hamlib_jni_android.sh "$abi"
-            fi
-          done
-
-      - name: Grant Execute Permission to Gradlew
-        run: chmod +x gradlew
-
-      - name: Run Tests, Blocking Lint, and Build Release APK
-        run: |
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -z "${MAPS_API_KEY:-}" ]; then
-            echo "A tagged release requires the MAPS_API_KEY secret." >&2
-            exit 1
-          fi
-
-          tasks=(
-            verifyReleaseVersion
-            testArm64OpenglDebugUnitTest
-            lintArm64OpenglDebug
-            lintArm64OpenglRelease
-            assembleArm64OpenglRelease
-          )
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            tasks+=(assembleArm32OpenglRelease)
-          fi
-          ./gradlew "${tasks[@]}" --no-daemon --stacktrace
-        env:
-          JAVA_TOOL_OPTIONS: "-Dorg.gradle.native=false -Dorg.gradle.vfs.watch=false"
-          MAPS_API_KEY: ${{ startsWith(github.ref, 'refs/tags/') && secrets.MAPS_API_KEY || '' }}
-
-      - name: Prepare, Verify, and Sign Release APKs
-        id: sign_app
+      - name: Build, verify, and publish architectures sequentially
         env:
           KEYSTORE_BASE64: ${{ startsWith(github.ref, 'refs/tags/') && secrets.KEYSTORE_BASE64 || '' }}
           KEYSTORE_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/') && secrets.KEYSTORE_PASSWORD || '' }}
           KEY_ALIAS: ${{ startsWith(github.ref, 'refs/tags/') && secrets.KEY_ALIAS || '' }}
           KEY_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/') && secrets.KEY_PASSWORD || '' }}
+          MAPS_API_KEY: ${{ startsWith(github.ref, 'refs/tags/') && secrets.MAPS_API_KEY || '' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            BUILD_LABEL="$GITHUB_REF_NAME"
-          else
-            BUILD_LABEL=$(git rev-parse --short HEAD)
-          fi
-
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ] && [ -z "${KEYSTORE_BASE64:-}" ]; then
-            echo "A tagged release requires KEYSTORE_BASE64 and its signing secrets." >&2
-            exit 1
-          fi
-
+          BUILD_LABEL="$GITHUB_REF_NAME"
+          [ "$GITHUB_REF_TYPE" = "tag" ] || BUILD_LABEL="$(git rev-parse --short HEAD)"
           BUILD_TOOLS_VERSION=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)
           APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
           ZIPALIGN="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/zipalign"
-
-          mkdir -p release-apks "$RUNNER_TEMP/maplibre-patched"
-          if [ -n "${KEYSTORE_BASE64:-}" ]; then
-            echo "Signing tagged release with repository keystore..."
+          mkdir -p release-apks release-mappings "$RUNNER_TEMP/maplibre-patched"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            [ -n "$KEYSTORE_BASE64" ] || { echo "Missing signing secrets" >&2; exit 1; }
+            [ -n "$MAPS_API_KEY" ] || { echo "Missing MAPS_API_KEY" >&2; exit 1; }
             echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > release.jks
           fi
-
-          publish_apk() {
-            local flavor="$1"
-            local abi="$2"
-            local renderer="$3"
-            local maplibre_count="$4"
-            local source
-            source=$(find "build/outputs/apk/${flavor}/release" -name "*.apk" -print -quit)
-            if [ -z "$source" ]; then
-              echo "Missing APK for ${flavor}" >&2
-              exit 1
-            fi
-
-            local custom_so="$PWD/.cache/maplibre-minsizerel/13.5.1/${abi}/libmaplibre.so"
-            if [ ! -s "$custom_so" ]; then
-              echo "Missing custom MinSizeRel MapLibre library for ${abi}" >&2
-              exit 1
-            fi
-            local graywolf_so="$PWD/build/generated/rustJniLibs/${abi}/libaprs_graywolf.so"
-            if [ ! -s "$graywolf_so" ]; then
-              echo "Missing Graywolf JNI library for ${abi}" >&2
-              exit 1
-            fi
-            local hamlib_so="$PWD/build/generated/hamlibJniLibs/${abi}/libhamlib.so"
-            if [ ! -s "$hamlib_so" ]; then
-              echo "Missing Hamlib native library for ${abi}" >&2
-              exit 1
-            fi
-            local hamlib_jni_so="$PWD/build/generated/hamlibJniLibs/${abi}/libaprs_hamlib.so"
-            if [ ! -s "$hamlib_jni_so" ]; then
-              echo "Missing Hamlib JNI library for ${abi}" >&2
-              exit 1
-            fi
-
-            local patched="$RUNNER_TEMP/maplibre-patched/${flavor}-patched.apk"
-            local aligned="$RUNNER_TEMP/maplibre-patched/${flavor}-aligned.apk"
-            python3 .github/scripts/replace_apk_maplibre.py \
-              "$source" "$abi" "$custom_so" "$patched"
-            "$ZIPALIGN" -P 16 -f 4 "$patched" "$aligned"
-            "$ZIPALIGN" -P 16 -c 4 "$aligned"
-
-            local destination="release-apks/APRSdroid-${BUILD_LABEL}-${abi}-${renderer}.apk"
-            if [ -n "${KEYSTORE_BASE64:-}" ]; then
-              "$APKSIGNER" sign \
-                --v1-signing-enabled false \
-                --v2-signing-enabled true \
-                --v3-signing-enabled true \
-                --v4-signing-enabled true \
-                --ks release.jks \
-                --ks-pass pass:"$KEYSTORE_PASSWORD" \
-                --ks-key-alias "$KEY_ALIAS" \
-                --key-pass pass:"$KEY_PASSWORD" \
-                --out "$destination" "$aligned"
-              "$APKSIGNER" verify --verbose "$destination"
-            else
-              cp "$aligned" "$destination"
-            fi
-
-            "$ZIPALIGN" -P 16 -c 4 "$destination"
-
-            local expected_so actual_so
-            expected_so=$(sha256sum "$custom_so" | awk '{print $1}')
-            actual_so=$(unzip -p "$destination" "lib/${abi}/libmaplibre.so" | sha256sum | awk '{print $1}')
-            if [ "$actual_so" != "$expected_so" ]; then
-              echo "Packaged MapLibre hash mismatch for ${abi}" >&2
-              echo "expected=${expected_so}" >&2
-              echo "actual=${actual_so}" >&2
-              exit 1
-            fi
-            echo "Verified MinSizeRel MapLibre ${abi}: ${actual_so}"
-
-            local expected_graywolf actual_graywolf graywolf_count
-            expected_graywolf=$(sha256sum "$graywolf_so" | awk '{print $1}')
-            graywolf_count=$(unzip -Z1 "$destination" | grep -c "^lib/${abi}/libaprs_graywolf\\.so$")
-            if [ "$graywolf_count" -ne 1 ]; then
-              echo "Unexpected Graywolf JNI count for ${abi}: ${graywolf_count}" >&2
-              exit 1
-            fi
-            actual_graywolf=$(unzip -p "$destination" "lib/${abi}/libaprs_graywolf.so" | sha256sum | awk '{print $1}')
-            if [ "$actual_graywolf" != "$expected_graywolf" ]; then
-              echo "Packaged Graywolf hash mismatch for ${abi}" >&2
-              echo "expected=${expected_graywolf}" >&2
-              echo "actual=${actual_graywolf}" >&2
-              exit 1
-            fi
-            echo "Verified Graywolf JNI ${abi}: ${actual_graywolf}"
-
-            local expected_hamlib actual_hamlib hamlib_count
-            expected_hamlib=$(sha256sum "$hamlib_so" | awk '{print $1}')
-            hamlib_count=$(unzip -Z1 "$destination" | grep -c "^lib/${abi}/libhamlib\\.so$")
-            test "$hamlib_count" -eq 1
-            actual_hamlib=$(unzip -p "$destination" "lib/${abi}/libhamlib.so" | sha256sum | awk '{print $1}')
-            test "$actual_hamlib" = "$expected_hamlib"
-            echo "Verified Hamlib native ${abi}: ${actual_hamlib}"
-
-            local expected_hamlib_jni actual_hamlib_jni hamlib_jni_count
-            expected_hamlib_jni=$(sha256sum "$hamlib_jni_so" | awk '{print $1}')
-            hamlib_jni_count=$(unzip -Z1 "$destination" | grep -c "^lib/${abi}/libaprs_hamlib\\.so$")
-            test "$hamlib_jni_count" -eq 1
-            actual_hamlib_jni=$(unzip -p "$destination" "lib/${abi}/libaprs_hamlib.so" | sha256sum | awk '{print $1}')
-            test "$actual_hamlib_jni" = "$expected_hamlib_jni"
-            echo "Verified Hamlib JNI ${abi}: ${actual_hamlib_jni}"
-
-            mapfile -t packaged_abis < <(
-              unzip -Z1 "$destination" |
-                sed -n 's#^lib/\([^/]*\)/.*#\1#p' |
-                sort -u
-            )
-            if [ "${#packaged_abis[@]}" -ne 1 ] || [ "${packaged_abis[0]}" != "$abi" ]; then
-              echo "Unexpected ABIs in ${destination}: ${packaged_abis[*]}" >&2
-              exit 1
-            fi
-
-            local actual_maplibre_count
-            actual_maplibre_count=$(unzip -Z1 "$destination" | grep -c '/libmaplibre')
-            if [ "$actual_maplibre_count" -ne "$maplibre_count" ]; then
-              echo "Unexpected MapLibre backend count in ${destination}: ${actual_maplibre_count}" >&2
-              exit 1
-            fi
+          build_native() {
+            local abi="$1"
+            bash .github/scripts/build_maplibre_minsizerel.sh 13.5.1 "$abi" ".cache/maplibre-minsizerel/13.5.1/$abi/libmaplibre.so"
+            bash .github/scripts/build_graywolf_android.sh "$abi"
+            bash .github/scripts/build_hamlib_android.sh "$abi"
+            bash .github/scripts/build_hamlib_jni_android.sh "$abi"
           }
-
-          publish_apk arm64Opengl arm64-v8a opengl 1
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            publish_apk arm32Opengl armeabi-v7a opengl 1
+          build_and_package() {
+            local flavor="$1" abi="$2" task="$3"
+            build_native "$abi"
+            ./gradlew "$task" --no-daemon --stacktrace
+            local source="$(find "build/outputs/apk/$flavor/release" -name '*.apk' -print -quit)"
+            [ -n "$source" ] || { echo "Missing APK for $flavor" >&2; exit 1; }
+            local so=".cache/maplibre-minsizerel/13.5.1/$abi/libmaplibre.so"
+            local gray="build/generated/rustJniLibs/$abi/libaprs_graywolf.so"
+            local ham="build/generated/hamlibJniLibs/$abi/libhamlib.so"
+            local jni="build/generated/hamlibJniLibs/$abi/libaprs_hamlib.so"
+            for f in "$so" "$gray" "$ham" "$jni"; do [ -s "$f" ] || { echo "Missing native artifact: $f" >&2; exit 1; }; done
+            local patched="$RUNNER_TEMP/maplibre-patched/$flavor-patched.apk"
+            local aligned="$RUNNER_TEMP/maplibre-patched/$flavor-aligned.apk"
+            python3 .github/scripts/replace_apk_maplibre.py "$source" "$abi" "$so" "$patched"
+            "$ZIPALIGN" -P 16 -f 4 "$patched" "$aligned"
+            local dest="release-apks/APRSdroid-$BUILD_LABEL-$abi-opengl.apk"
+            if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+              "$APKSIGNER" sign --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled true --v4-signing-enabled true --ks release.jks --ks-pass pass:"$KEYSTORE_PASSWORD" --ks-key-alias "$KEY_ALIAS" --key-pass pass:"$KEY_PASSWORD" --out "$dest" "$aligned"
+              "$APKSIGNER" verify --verbose "$dest"
+            else
+              cp "$aligned" "$dest"
+            fi
+            "$ZIPALIGN" -P 16 -c 4 "$dest"
+            test "$(unzip -p "$dest" "lib/$abi/libmaplibre.so" | sha256sum | awk '{print $1}')" = "$(sha256sum "$so" | awk '{print $1}')"
+            test "$(unzip -p "$dest" "lib/$abi/libaprs_graywolf.so" | sha256sum | awk '{print $1}')" = "$(sha256sum "$gray" | awk '{print $1}')"
+            test "$(unzip -p "$dest" "lib/$abi/libhamlib.so" | sha256sum | awk '{print $1}')" = "$(sha256sum "$ham" | awk '{print $1}')"
+            test "$(unzip -p "$dest" "lib/$abi/libaprs_hamlib.so" | sha256sum | awk '{print $1}')" = "$(sha256sum "$jni" | awk '{print $1}')"
+            local abi_count="$(unzip -Z1 "$dest" | sed -n 's#^lib/\([^/]*\)/.*#\1#p' | sort -u | wc -l | tr -d ' ')"
+            [ "$abi_count" = "1" ] || { echo "Unexpected packaged ABI count: $abi_count" >&2; exit 1; }
+            cp "build/outputs/mapping/$flavor""Release/mapping.txt" "release-mappings/$flavor-mapping.txt"
+            test -s "release-mappings/$flavor-mapping.txt"
+          }
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            ./gradlew verifyReleaseVersion testArm64OpenglDebugUnitTest lintArm64OpenglDebug lintArm64OpenglRelease --no-daemon --stacktrace
           fi
-
-          rm -f release.jks
-          (cd release-apks && sha256sum *.apk > SHA256SUMS.txt)
-          mkdir -p release-mappings
-          flavors=(arm64Opengl)
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            flavors+=(arm32Opengl)
-          fi
-          for flavor in "${flavors[@]}"; do
-            mapping="build/outputs/mapping/${flavor}Release/mapping.txt"
-            test -s "$mapping"
-            cp "$mapping" "release-mappings/${flavor}-mapping.txt"
-          done
-          echo "build_label=${BUILD_LABEL}" >> "$GITHUB_OUTPUT"
-          ls -lh release-apks
-          ls -lh release-mappings
-
-      - name: Package corresponding native sources
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
+          build_and_package arm64Opengl arm64-v8a assembleArm64OpenglRelease
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then rm -f release.jks; exit 0; fi
           bash .github/scripts/package_graywolf_source.sh "$PWD/release-apks"
           bash .github/scripts/package_hamlib_source.sh "$PWD/release-apks"
+          python3 .github/scripts/extract_release_notes.py
           (cd release-apks && sha256sum *.apk *.tar.gz > SHA256SUMS.txt)
-
-      - name: Extract Release Notes from CHANGELOG
-        if: startsWith(github.ref, 'refs/tags/')
-        run: python3 .github/scripts/extract_release_notes.py
-
-      - name: Upload release bundle
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: aprsdroid-release-bundle
-          path: |
-            release-apks/*.apk
-            release-apks/*.tar.gz
-            release-apks/SHA256SUMS.txt
-            release-mappings/*.txt
-            RELEASE_NOTES.md
-          if-no-files-found: error
-
+          gh release create "$GITHUB_REF_NAME" release-apks/*.apk release-apks/*.tar.gz release-apks/SHA256SUMS.txt release-mappings/arm64Opengl-mapping.txt --verify-tag --notes-file RELEASE_NOTES.md --title "$GITHUB_REF_NAME"
+          build_and_package arm32Opengl armeabi-v7a assembleArm32OpenglRelease
+          gh release upload "$GITHUB_REF_NAME" "release-apks/APRSdroid-$BUILD_LABEL-armeabi-v7a-opengl.apk" release-mappings/arm32Opengl-mapping.txt --clobber
+          build_and_package x86Multi x86 assembleX86MultiRelease
+          gh release upload "$GITHUB_REF_NAME" "release-apks/APRSdroid-$BUILD_LABEL-x86-opengl.apk" release-mappings/x86Multi-mapping.txt --clobber
+          build_and_package x8664Multi x86_64 assembleX8664MultiRelease
+          gh release upload "$GITHUB_REF_NAME" "release-apks/APRSdroid-$BUILD_LABEL-x86_64-opengl.apk" release-mappings/x8664Multi-mapping.txt --clobber
+          (cd release-apks && sha256sum *.apk *.tar.gz > SHA256SUMS.txt)
+          gh release delete-asset "$GITHUB_REF_NAME" SHA256SUMS.txt --yes
+          gh release upload "$GITHUB_REF_NAME" release-apks/SHA256SUMS.txt --clobber
+          rm -f release.jks
       - name: Upload R8 Mapping Files
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
