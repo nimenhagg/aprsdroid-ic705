@@ -20,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import java.util.Locale
 import org.aprsdroid.app.map.MapLibreOfflineManager
 import org.aprsdroid.app.ui.theme.AprsTheme
 import org.maplibre.android.geometry.LatLngBounds
@@ -55,11 +57,21 @@ class MapOfflineActivity : ComponentActivity() {
     private val statuses = mutableMapOf<Long, OfflineRegionStatus>()
     private var errorMessage by mutableStateOf<String?>(null)
 
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         refreshRegions()
         setContent {
             AprsTheme {
+                // Poll region status on the composition's effect scope. Running this
+                // outside setContent would never dispatch, because LaunchedEffect only
+                // registers while the composition is active.
+                LaunchedEffect(Unit) {
+                    while (!isFinishing && !isDestroyed) {
+                        refreshStatuses()
+                        delay(1000)
+                    }
+                }
                 Scaffold(
                     topBar = {
                         TopAppBar(
@@ -107,12 +119,6 @@ class MapOfflineActivity : ComponentActivity() {
                         }
                     }
                 }
-            }
-        }
-        LaunchedEffect(Unit) {
-            while (!isFinishing && !isDestroyed) {
-                refreshStatuses()
-                delay(1000)
             }
         }
     }
@@ -186,8 +192,8 @@ class MapOfflineActivity : ComponentActivity() {
 
     private fun formatBytes(bytes: Long): String = when {
         bytes < 1024L -> "$bytes B"
-        bytes < 1024L * 1024L -> String.format("%.1f KB", bytes / 1024.0)
-        bytes < 1024L * 1024L * 1024L -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
-        else -> String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
+        bytes < 1024L * 1024L -> String.format(Locale.US, "%.1f KB", bytes / 1024.0)
+        bytes < 1024L * 1024L * 1024L -> String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0))
+        else -> String.format(Locale.US, "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
     }
 }

@@ -68,8 +68,8 @@ object MapLibreOfflineManager {
 
     fun getStatus(context: Context, region: OfflineRegion, callback: (OfflineRegionStatus?, String?) -> Unit) {
         region.getStatus(object : OfflineRegion.OfflineRegionStatusCallback {
-            override fun onStatus(status: OfflineRegionStatus) { callback(status, null) }
-            override fun onError(error: String) { callback(null, error) }
+            override fun onStatus(status: OfflineRegionStatus?) { callback(status, null) }
+            override fun onError(error: String?) { callback(null, error) }
         })
     }
 
