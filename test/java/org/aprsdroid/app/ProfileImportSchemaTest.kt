@@ -72,6 +72,52 @@ class ProfileImportSchemaTest {
         assertNull(ProfileImportSchema.typeFor("future.unrecognized.key"))
     }
 
+    @Test
+    fun profileCallsignMustFitAnAx25AddressField() {
+        ProfileImportSchema.validateValue("callsign", "BG7XXX")
+        ProfileImportSchema.validateValue("callsign", "BG7XXX-5".substringBefore('-'))
+        expectIllegalArgument {
+            ProfileImportSchema.validateValue("callsign", "BG7XXXX")
+        }
+    }
+
+    @Test
+    fun profileCallsignMustNotCarryAnSsidSeparator() {
+        // The identity UI stores the callsign and SSID separately, so an
+        // embedded SSID would be written into the call sign field verbatim.
+        expectIllegalArgument {
+            ProfileImportSchema.validateValue("callsign", "BG7XXX-5")
+        }
+    }
+
+    @Test
+    fun nonIdentityKeysAreUnaffectedByValueValidation() {
+        ProfileImportSchema.validateValue("tcp.server", "a-rather-long-server-name.example.org")
+        ProfileImportSchema.validateValue("ic705.address", "192.168.59.1")
+    }
+
+    @Test
+    fun sensitiveKeysAreReportedForTheConfirmationDialog() {
+        assertTrue(ProfileImportSchema.isSensitiveKey("tcp.server"))
+        assertTrue(ProfileImportSchema.isSensitiveKey("ic705.password"))
+        assertTrue(ProfileImportSchema.isSensitiveKey("passcode"))
+        assertFalse(ProfileImportSchema.isSensitiveKey("show_age"))
+
+        // Only keys actually present in the profile are listed, in schema order.
+        assertEquals(
+            listOf("callsign", "tcp.server"),
+            ProfileImportSchema.sensitiveKeysIn(listOf("tcp.server", "show_age", "callsign")),
+        )
+    }
+
+    @Test
+    fun profilesWithoutConnectionChangesReportNoSensitiveKeys() {
+        assertEquals(
+            emptyList<String>(),
+            ProfileImportSchema.sensitiveKeysIn(listOf("show_age", "mapmode", "map_lat")),
+        )
+    }
+
     private inline fun expectIllegalArgument(block: () -> Unit) {
         try {
             block()

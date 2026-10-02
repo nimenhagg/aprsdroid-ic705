@@ -8,6 +8,7 @@ import com.nogy.afu.soundmodem.Afsk
 import com.nogy.afu.soundmodem.Message
 import net.ab0oo.aprs.parser.APRSPacket
 import net.ab0oo.aprs.parser.Digipeater
+import org.aprsdroid.app.audio.Ax25Limits
 
 class AfskUploader(
     val service: AprsService,
@@ -73,6 +74,19 @@ class AfskUploader(
         val from = packet.sourceCall
         val to = packet.destinationCall
         val data = packet.aprsInformation.toString()
+        // Validate before handing anything to the soundmodem library, which
+        // writes each address into a fixed 7-byte field and throws once the
+        // callsign runs past it. `start()` already refuses to open the backend
+        // in that state; this keeps the guarantee if the callsign changes while
+        // the service is running (settings edit or .aprs profile import).
+        val tooLong = sequenceOf(from, to)
+            .filterNotNull()
+            .firstOrNull { !Ax25Limits.fitsCallsign(it.substringBefore('-')) }
+        if (tooLong != null) {
+            val reason = service.getString(R.string.e_toolong_callsign)
+            log("update(): refusing to transmit, $reason ($tooLong)")
+            return reason
+        }
         val msg = APRSFrame(from, to, digis, data, frameLength).message
         Log.d(TAG, "update(): From: $from To: $to Via: $digis telling $data")
         return if (sendMessage(msg)) "AFSK OK" else "AFSK busy"

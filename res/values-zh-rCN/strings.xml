@@ -363,6 +363,8 @@
 <string name="profile_import_activity">配置导入</string>
 <string name="profile_import_done">导入配置文件: %s</string>
 <string name="profile_import_error">错误导入配置文件:%s!</string>
+<string name="profile_import_confirm_message">此配置文件将更改 %1$d 项设置。\n\n来源：%2$s</string>
+<string name="profile_import_confirm_sensitive">此配置文件还会更改连接或身份设置：</string>
 
 <!-- (USB) Serial TNC settings -->
 <string name="p_serial_baudrate">波特率</string>

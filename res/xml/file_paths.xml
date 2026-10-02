@@ -1,5 +1,7 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
    <external-files-path name="external_exports" path="Documents/APRSdroid" />
    <files-path name="internal_exports" path="APRSdroid" />
-   <cache-path name="cache_exports" path="." />
+   <!-- Only the diagnostic bundle directory is shared, not the whole cache tree.
+        DiagnosticReportBuilder writes there and LogReportManager shares from there. -->
+   <cache-path name="cache_exports" path="diagnostic_logs/" />
 </paths>

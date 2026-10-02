@@ -28,6 +28,7 @@ import org.aprsdroid.app.R
 import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.Ax25PacketConsumer
 import org.aprsdroid.app.Ax25SubmitSink
+import org.aprsdroid.app.audio.Ax25CallsignException
 import org.aprsdroid.app.audio.PcmEncoding
 import org.aprsdroid.app.audio.PcmFormat
 import org.aprsdroid.app.hamlib.HamlibRigCatalog
@@ -221,7 +222,13 @@ class UsbRadioBackend(
 
     override fun update(packet: APRSPacket): String {
         val s = session ?: return "USB radio not connected"
-        return when (s.transmit(packet)) {
+        val result = try {
+            s.transmit(packet)
+        } catch (error: Ax25CallsignException) {
+            log("Transmit refused: ${error.message}")
+            return service.getString(R.string.e_toolong_callsign)
+        }
+        return when (result) {
             is RadioPttSequence.Result.Completed -> "Radio TX OK"
             is RadioPttSequence.Result.AudioFailed -> "Radio Audio Failed"
             is RadioPttSequence.Result.PttOnNotConfirmed -> "Radio PTT Refused"

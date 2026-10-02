@@ -79,6 +79,7 @@ class ProfileImportActivity : Activity() {
 
             ProfileImportSchema.validateType(key, value)
             validateValueBounds(key, value)
+            ProfileImportSchema.validateValue(key, value)
             values[key] = value
         }
 
@@ -127,15 +128,29 @@ class ProfileImportActivity : Activity() {
 
     private fun showImportConfirmation(profile: ParsedProfile) {
         val location = profile.dataUri.path ?: profile.dataUri.toString()
-        AlertDialog.Builder(this)
-            .setTitle(R.string.profile_import_confirm_title)
-            .setMessage(
+        // Name the consequential keys explicitly. Without this the dialog only
+        // reports a count, so a profile that repoints the APRS-IS server or
+        // rewrites the radio credentials looks identical to one that only
+        // changes display options.
+        val sensitive = ProfileImportSchema.sensitiveKeysIn(profile.values.keys)
+        val message = buildString {
+            append(
                 getString(
                     R.string.profile_import_confirm_message,
                     profile.values.size,
                     location,
                 ),
             )
+            if (sensitive.isNotEmpty()) {
+                append("\n\n")
+                append(getString(R.string.profile_import_confirm_sensitive))
+                append('\n')
+                append(sensitive.joinToString("\n") { "• $it" })
+            }
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.profile_import_confirm_title)
+            .setMessage(message)
             .setNegativeButton(android.R.string.cancel) { _, _ -> finish() }
             .setPositiveButton(android.R.string.ok) { _, _ -> applyConfig(profile) }
             .setOnCancelListener { finish() }

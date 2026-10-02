@@ -230,7 +230,27 @@ class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(p
         }
     }
 
-    // Legacy certificate mode is an explicit compatibility option for existing APRS endpoints.
+    /**
+     * Legacy certificate mode: accepts any server certificate.
+     *
+     * This is a deliberate, documented compatibility decision, not an oversight.
+     * `CHANGELOG.md` records why it has not been replaced: `ssl.aprs2.net:24580`
+     * could not complete a TLS handshake from CI, so strict CA + hostname
+     * verification was never proven against a real APRS-IS endpoint. Shipping it
+     * blind risks breaking every TLS user.
+     *
+     * Consequences to keep in mind while it stays:
+     *  - Without an imported client certificate this is no weaker than the
+     *    plaintext 14580 path, so most users lose nothing.
+     *  - With an imported client certificate, server identity is unverified, so
+     *    an on-path attacker can impersonate APRS-IS and use that session. The
+     *    client private key itself is not exposed — TLS client auth proves
+     *    possession instead of transmitting the key.
+     *
+     * Remove the suppression only together with real server verification, and
+     * prefer a domain-scoped trust anchor in `network_security_config` over a
+     * global default trust manager.
+     */
     @SuppressLint("CustomX509TrustManager", "TrustAllX509TrustManager")
     class NaiveTrustManager : X509TrustManager {
         override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}

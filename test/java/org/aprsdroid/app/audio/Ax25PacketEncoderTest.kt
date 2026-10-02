@@ -30,4 +30,66 @@ class Ax25PacketEncoderTest {
         } catch (_: Ax25PayloadEncodingException) {
         }
     }
+
+    @Test
+    fun overLongCallsignIsRejectedInsteadOfSilentlyTruncated() {
+        val packet = APRSPacket(
+            "BG7XXXX",
+            "APRS",
+            ArrayList<Digipeater>(),
+            MessagePacket("TARGET", "hello", "1"),
+        )
+        try {
+            Ax25PacketEncoder.encode(packet)
+            fail("Expected Ax25CallsignException")
+        } catch (_: Ax25CallsignException) {
+        }
+    }
+
+    @Test
+    fun overLongCallsignIsRejectedByTheDirectFactoryToo() {
+        try {
+            Ax25PacketEncoder.create(
+                source = "BG7XXXX",
+                destination = "APRS",
+                payload = byteArrayOf(0x3a),
+            )
+            fail("Expected Ax25CallsignException")
+        } catch (_: Ax25CallsignException) {
+        }
+    }
+
+    @Test
+    fun overLongDigipeaterIsRejected() {
+        val packet = APRSPacket(
+            "N0CALL",
+            "APRS",
+            ArrayList(listOf(Digipeater("WIDE1234-1"))),
+            MessagePacket("TARGET", "hello", "1"),
+        )
+        try {
+            Ax25PacketEncoder.encode(packet)
+            fail("Expected Ax25CallsignException")
+        } catch (_: Ax25CallsignException) {
+        }
+    }
+
+    @Test
+    fun sixCharacterCallsignWithSsidIsStillAccepted() {
+        // The SSID is encoded in the address extension byte, not in the six
+        // call sign characters, so it must not count against the limit.
+        Ax25PacketEncoder.encode(
+            APRSPacket(
+                "BG7XXX-5",
+                "APRS",
+                ArrayList<Digipeater>(),
+                MessagePacket("TARGET", "hello", "1"),
+            ),
+        )
+        Ax25PacketEncoder.create(
+            source = "BG7XXX-15",
+            destination = "APRS",
+            payload = byteArrayOf(0x3a),
+        )
+    }
 }

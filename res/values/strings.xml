@@ -373,6 +373,7 @@
 <string name="profile_import_error">Error importing profile: %s!</string>
 <string name="profile_import_confirm_title">Import profile?</string>
 <string name="profile_import_confirm_message">This profile will change %1$d settings.\n\nSource: %2$s</string>
+<string name="profile_import_confirm_sensitive">This profile also changes connection or identity settings:</string>
 
 <!-- (USB) Serial TNC settings -->
 <string name="p_serial_baudrate">Baud Rate</string>

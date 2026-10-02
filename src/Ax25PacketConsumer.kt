@@ -1,5 +1,6 @@
 package org.aprsdroid.app
 
+import org.aprsdroid.app.audio.Ax25Limits
 import org.aprsdroid.app.diagnostic.AppLog
 import net.ab0oo.aprs.parser.Parser
 
@@ -28,6 +29,23 @@ class Ax25PacketConsumer(
             "afsk_frame_decoded",
             mapOf("backend_tag" to tag, "length" to data.size, "head_hex" to head),
         )
+        // Boundary guard: no valid AX.25 UI frame exceeds 330 bytes, so an
+        // oversized buffer cannot be a frame. Reject it here rather than relying
+        // on the vendor parser's own limits, which differ between libraries and
+        // are partly implemented with `assert` (a no-op on Android).
+        if (!Ax25Limits.fitsFrame(data.size)) {
+            AppLog.w(
+                "AFSK",
+                "ax25_frame_oversized",
+                mapOf(
+                    "backend_tag" to tag,
+                    "length" to data.size,
+                    "limit" to Ax25Limits.MAX_FRAME_BYTES,
+                    "head_hex" to head,
+                ),
+            )
+            return
+        }
         val parsed = try {
             Parser.parseAX25(data)
         } catch (error: Exception) {

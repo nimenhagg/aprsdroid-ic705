@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import java.util.Locale
 import org.aprsdroid.app.AprsPacket
 import org.aprsdroid.app.R
+import org.aprsdroid.app.audio.Ax25Limits
 
 @Composable
 fun PasscodeDialogCompose(
@@ -55,7 +56,12 @@ fun PasscodeDialogCompose(
     val focusManager = LocalFocusManager.current
 
     val trimmedCall = rawCall.trim().uppercase(Locale.US)
-    val isCallValid = trimmedCall.length in 3..7 && trimmedCall.matches(Regex("^[0-9A-Z]{3,7}$"))
+    // AX.25 address fields hold six characters, so a longer callsign can never
+    // be transmitted. The limit was previously 7 here, which let the dialog
+    // persist a callsign that every transmit path then refused or truncated.
+    val maxCall = Ax25Limits.MAX_CALLSIGN_CHARS
+    val isCallValid = trimmedCall.length in 3..maxCall &&
+        trimmedCall.matches(Regex("^[0-9A-Z]{3,$maxCall}$"))
     val isPassValid = passcode.isEmpty() || AprsPacket.passcodeAllowed(trimmedCall, passcode, true)
     val canSave = isCallValid && isPassValid
 
@@ -104,7 +110,7 @@ fun PasscodeDialogCompose(
                     onValueChange = { input ->
                         rawCall = input
                             .filter { it.isLetterOrDigit() }
-                            .take(7)
+                            .take(maxCall)
                             .uppercase(Locale.US)
                     },
                     label = { Text(stringResource(R.string.identity_callsign)) },
