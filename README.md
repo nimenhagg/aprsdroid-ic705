@@ -4,7 +4,7 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.4.1`**
+**最新稳定版 / Latest release: `Mod-v2.5.0`**
 
 ### 社区交流
 
@@ -37,12 +37,12 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连
 | --- | --- |
 | Android | Android 9+ / API 28 |
 | 目标平台 | Android 17 / API 37 |
-| 正式 APK | ARM64 OpenGL、ARMv7 OpenGL |
+| 正式 APK | ARM64 OpenGL、ARMv7 OpenGL、x86 OpenGL/Vulkan、x86_64 OpenGL/Vulkan |
 | 电台 | Icom WLAN 电台（IC-705 等）或通过 USB OTG / 声卡连接的 Hamlib 支持电台 |
 | 默认控制端口 | UDP `50001`（WLAN 模式） |
 | 构建环境 | JDK 17、Android SDK API 37 |
 
-源码还保留 ARM64 Vulkan、x86 和 x86_64 flavor；当前正式本地 AFSK RX 只支持 ARM64/ARMv7。
+源码还保留 ARM64 Vulkan flavor；当前正式本地 AFSK RX 只支持 ARM64/ARMv7。x86 / x86_64 包面向模拟器等 Intel/AMD 平台，可直接构建，但不属于本地 AFSK RX 的正式支持 ABI。
 
 ### 下载与安装
 
@@ -52,8 +52,10 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连
 | --- | --- |
 | `...-arm64-v8a-opengl.apk` | 大多数现代 64 位 ARM 手机 |
 | `...-armeabi-v7a-opengl.apk` | 支持 32 位 ARM 应用的设备 |
+| `...-x86-opengl.apk` | x86 模拟器等 Intel 32 位平台 |
+| `...-x86_64-opengl.apk` | x86_64 模拟器等 Intel/AMD 64 位平台 |
 
-正式 Release 提供 `SHA256SUMS.txt`；部分 64 位系统不能运行 ARMv7 APK，因此 ARMv7 不是 ARM64 的通用回退包。
+正式 Release 提供 `SHA256SUMS.txt`；部分 64 位系统不能运行 ARMv7 APK，因此 ARMv7 不是 ARM64 的通用回退包。若正式 Release 缺少某个 ABI 的 APK，说明该 ABI 的构建或校验未通过，可用源码自行构建。
 
 应用 ID：`me.nimenhagg.aprsdroidic705mod`。若旧 APK 使用不同签名，Android 可能要求先卸载；卸载会删除该安装的本地设置和诊断日志。
 
@@ -109,7 +111,7 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连
 - 高德、OpenStreetMap、自定义在线栅格：MapLibre Native。
 - Google 普通、卫星/混合地图：Google Maps SDK。
 - OpenStreetMap 请求使用可识别 User-Agent，并显示 attribution。
-- 不提供 MapLibre Offline 区域下载，也不批量预取 OSM 瓦片。
+- 提供 MapLibre Offline 区域下载/管理入口，但当前仅允许用户配置的 Custom tile source；标准 OpenStreetMap `tile.openstreetmap.org` 不提供预取/离线下载，仍只使用正常交互缓存。
 
 ### 从源码构建
 
@@ -133,7 +135,7 @@ bash .github/scripts/build_graywolf_android.sh armeabi-v7a
 
 Graywolf 的 `Cargo.lock` 已提交，native 构建使用 `--locked`。Windows 可通过 WSL / Git Bash / CI 运行 Bash helper。
 
-主要版本基线：AGP 9.3.2、Gradle 9.5.0、Kotlin/Compose Compiler 2.3.21、Compose BOM 2026.08.00、Material 1.14.0、OkHttp 5.3.0、Navigation Compose 2.10.0、MapLibre Native 13.5.1、Graywolf 0.14.13、NDK 28.2.13676358。
+主要版本基线：AGP 9.3.1、Gradle 9.7.0、Kotlin/Compose Compiler 2.4.20、Compose BOM 2026.08.00、Material 1.14.0、OkHttp 5.3.0、Navigation Compose 2.10.0、MapLibre Native 13.5.1、Graywolf 0.14.13、NDK 28.2.13676358。
 
 详细架构约束见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)；维护规范见 [AGENT.md](AGENT.md)；长期路线见 [ROADMAP.md](ROADMAP.md)。
 
@@ -143,7 +145,7 @@ Graywolf 的 `Cargo.lock` 已提交，native 构建使用 `--locked`。Windows �
 
 APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APRS support, modern Android UI, persistent diagnostics, and performance improvements.
 
-**Latest stable release: `Mod-v2.4.1`.**
+**Latest stable release: `Mod-v2.5.0`.**
 
 ### Highlights
 
@@ -163,9 +165,9 @@ APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APR
 
 - Android 9+ / API 28
 - Target Android 17 / API 37
-- Official APKs: ARM64 OpenGL and ARMv7 OpenGL
+- Official APKs: ARM64 OpenGL, ARMv7 OpenGL, x86 OpenGL/Vulkan and x86_64 OpenGL/Vulkan. The x86/x86_64 builds target emulators and Intel/AMD platforms; local AFSK RX is officially supported on ARM64/ARMv7 only.
 - Radios: Icom WLAN radios (IC-705, etc.) or USB OTG/soundcard radios supported by Hamlib
-- JDK 17 / Gradle 9.5.0 / AGP 9.3.2
+- JDK 17 / Gradle 9.7.0 / AGP 9.3.1
 
 Download official builds from [GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases).
 

@@ -6,10 +6,10 @@
 
 | 项目 | 当前值 |
 | --- | --- |
-| 最新 GitHub Release | `Mod-v2.4.1` |
+| 最新 GitHub Release | `Mod-v2.5.0` |
 | Android | minSdk 28 / compileSdk 37 / targetSdk 37 |
-| Build | Gradle 9.5.0 / AGP 9.3.2 / Java 17 |
-| Kotlin / Compose Compiler | 2.3.21 |
+| Build | Gradle 9.7.0 / AGP 9.3.1 / Java 17 |
+| Kotlin / Compose Compiler | 2.4.20 |
 | Graywolf RX | 0.14.13，commit `34cd0111b7a40e7d91607699b7b4dd188574970a` |
 | MapLibre | 13.5.1 |
 | Application ID | `me.nimenhagg.aprsdroidic705mod` |
@@ -83,11 +83,10 @@ Release workflow 的实际检查以 CI 为准，应覆盖测试/Lint、ARM64/ARM
 - 生产 XML UI；多 Activity 复制四个一级页面；root 整页 cross-fade/slide/alpha；全局 `windowAnimationStyle`。
 - 通知进入聊天的 Hub 二次 LaunchedEffect 跳转；通知设置等待 NotificationChannel Binder。
 - Mapsforge / 专用离线瓦片下载器；外部存储绝对路径式文档处理。
+- 注意区分：MapLibre OfflineManager 区域下载属于受支持能力，但**仅限用户配置的 Custom tile source**；标准 OpenStreetMap 瓦片不得批量预取或离线抓取，只走正常交互缓存。
 - PTT OFF 未经 ACK 假定 RX；Graywolf RX 失败静默回退 legacy demodulator。
 - 生成的 Graywolf `.so` 提交到源码 `libs/`；统一通道超时直接 teardown 整个 IC-705 session。
 
 ## 8. 路线
 
 长期 Hamlib / 多电台计划只看 [ROADMAP.md](ROADMAP.md)。只有用户明确要求推进某阶段时才执行；不要把路线图自动变成当前任务。
-
-`AI_CONTEXT.md` 仅保留兼容入口，不维护第二份规范正文。

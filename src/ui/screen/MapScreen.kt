@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ClearAll
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
@@ -87,6 +88,7 @@ fun MapScreen(
     onBackClick: () -> Unit = {},
     onOpenLogs: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
+    onOpenOfflineMaps: () -> Unit = {},
     onClearLogs: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
     mapContent: @Composable () -> Unit
@@ -165,6 +167,16 @@ fun MapScreen(
                                 onClick = {
                                     showMenu = false
                                     onToggleShowObjects()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.map_offline_title)) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Download, contentDescription = null)
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    onOpenOfflineMaps()
                                 }
                             )
                             HorizontalDivider()

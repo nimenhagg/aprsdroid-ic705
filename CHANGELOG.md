@@ -1,3 +1,46 @@
+## [Mod-v2.5.0] - 2026-10-03
+
+### Added
+
+- **MapLibre 离线地图区域下载/管理**：
+  - 恢复 MapLibre Native `OfflineManager` 支撑的区域下载；离线数据存储在 MapLibre 的应用数据目录，不把地图瓦片打进 APK。
+  - 地图溢出菜单新增 “Offline maps” 入口，管理界面可查看下载进度、已完成瓦片与资源大小，并删除区域。
+  - 每个离线区域持久化一份小型栅格 style，供现有程序化 MapLibre 渲染器复用已下载的瓦片资源。
+  - `MapOfflineActivity` 以 `exported="false"` 注册，仅应用内导航可达。
+- **更新对话框显示设备架构与更新日志**：检查到新版本时，除当前版本外还展示设备 ABI（ARM64 / ARMv7 / x86 / x86_64）与对应 Release 的更新说明。
+- **README 增加社区入口**：APRSdroid Mod QQ 测试群与 Telegram 群组链接。
+
+### Changed
+
+- **版本更新为 `Mod-v2.5.0`**（`versionCode 2026100301`）。
+- **构建链**：Gradle `9.7.0`（含 distribution checksum 修正）、Kotlin / Compose Compiler `2.4.20`；AGP 维持 `9.3.1`。
+- **原生构建脚本补齐 x86 / x86_64**：Graywolf JNI 与 Hamlib Android 交叉编译新增 `i686-linux-android` 与 `x86_64-linux-android` target，使已声明的 `x86Multi` / `x8664Multi` flavor 可以真正构建。正式 Release 仍以 ARM64 / ARMv7 OpenGL 为主，本地 AFSK RX 的正式支持 ABI 不变。
+- **Release 流程改为单一顺序构建 job**：签名、16 KiB 对齐、ABI 与 SHA-256 校验在同一 job 内按 ABI 顺序完成，不再并行发布；Release 资产聚焦 APK 与 `SHA256SUMS.txt`。
+- 移除已过时的 `AI_CONTEXT.md`；`AGENT.md` 是唯一规范正文（此前该文件仅作兼容入口）。
+- 移除 Android 8 及以下的兼容资源；整理 AndroidX import；前台服务关闭流程与 `Parcelable` extra 读取现代化。
+
+### Fixed
+
+- **呼号长度校验统一，修复静默发错呼号**：
+  - 设置对话框此前允许最多 7 个字符的呼号，而 AX.25 地址字段只能容纳 6 个。超长呼号在两条发送路径上表现不一致：AFSK 路径抛出 `ArrayIndexOutOfBoundsException`，IC-705 与 USB 电台路径**静默截断**并把错误呼号发到空中。
+  - 新增 `Ax25Limits` 作为六字符上限与 330 字节帧上限的单一来源；`Ax25PacketEncoder` 在进入第三方库之前校验源、目标与 digipeater 地址（SSID 不计入上限）。
+  - 三个发送后端（IC-705、USB 电台、AFSK）改为返回可读错误而非让异常穿透；设置对话框上限改为 6 字符；`.aprs` 配置导入拒绝超长或内嵌 SSID 的呼号。
+  - `Ax25PacketConsumer` 增加 330 字节帧长边界，不再依赖第三方库自身限制（`javAX25` 该层保护由 `assert` 实现，在 Android 上是空操作）。
+- **修复 MapLibre 离线地图无法编译**：转义字符串中的撇号（AAPT 会因此拒绝整个资源文件）；修正 `OfflineRegion` 回调的可空参数签名；把 `LaunchedEffect` 移入组合作用域（此前写在 `setContent` 之外，永不注册，进度不会刷新）；补 `@OptIn(ExperimentalMaterial3Api::class)`。
+- 下载大小改用 `Locale.US` 格式化，避免在逗号小数点的语言环境下显示错误。
+- 修复更新对话框的 import 问题，并为 Release 说明缺失时提供回退文案。
+
+### Security
+
+- **FileProvider 路径收窄**：`cache-path` 由整个 `cache/` 收窄为 `diagnostic_logs/`，与 `DiagnosticReportBuilder` 实际写入目录一致。
+- **配置导入确认框标注敏感键**：导入 `.aprs` 前会列出 `callsign`、`passcode`、`tcp.server`、`ic705.password` 等会改变连接目标或凭据的键，避免与仅调整显示选项的配置混淆。
+- **文档化 APRS-IS TLS 兼容模式的边界**：`NaiveTrustManager` 保留为既有兼容行为（尚无真实 `ssl.aprs2.net:24580` 握手结果可证明严格 CA/hostname 校验可用），并在代码中记录其影响范围与移除前提。
+
+### 说明
+
+- 离线区域预取**仅对用户配置的 Custom tile source 开放**。标准 OpenStreetMap `tile.openstreetmap.org` 仍只使用正常交互缓存，不做批量预取；高德等其它图源不在首版范围内，避免在未验证供应商条款前假定允许批量下载。
+- 呼号校验与离线地图下载均需真机验证（真实 RF 与自定义瓦片源），CI 绿不代表已完成验收。
+
 ## [Mod-v2.4.1] - 2026-10-01
 
 ### Added
@@ -36,6 +79,7 @@
 - **修复 USB 电台型号选择菜单打开时 StackOverflowError 崩溃**：修复从 Hamlib 目录构建非预置电台 Profile 时的递归循环调用，并在 Compose 列表增强 Key 唯一性。
 
 ### Changed
+
 - **安装包体积深度优化**：
   - Hamlib 原生交叉编译启用 `-Os`、`-ffunction-sections`、`-fdata-sections`、`-Wl,--gc-sections` 优化并剥离符号。
   - 启用 R8/ProGuard dead-code 剪裁与优化，安装包体积由 ~98 MB 缩减至 ~44 MB，瘦身超过 50%。

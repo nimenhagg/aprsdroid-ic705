@@ -4,7 +4,7 @@
 
 ## 1. 当前基线
 
-截至 `Mod-v2.4.1`：
+截至 `Mod-v2.5.0`：
 
 - Hamlib Android 构建、JNI、USB CAT loopback bridge、通用 RadioControl、USB Audio 路由和 TX drain 已进入主线。
 - USB 电台设置、400+ Hamlib 电台型号选择、品牌排序、自定义 CI-V 地址已经进入主线。
