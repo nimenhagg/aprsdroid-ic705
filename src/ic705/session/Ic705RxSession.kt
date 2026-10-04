@@ -415,19 +415,21 @@ class Ic705RxSession internal constructor(
                     dispatch(Ic705RxSessionEngine.Event.Stop)
                 } finally {
                     audioExecutor.shutdownNow()
+                    txExecutor.shutdownNow()
                     pttStateMachine.shutdown()
                     controlExecutor.shutdown()
-                    awaitAudioTermination()
+                    awaitExecutorsTermination()
                     finishClose()
                 }
             }
         } catch (_: RejectedExecutionException) {
             audioExecutor.shutdownNow()
+            txExecutor.shutdownNow()
             pttStateMachine.shutdown()
             controlExecutor.shutdown()
             Thread(
                 {
-                    awaitAudioTermination()
+                    awaitExecutorsTermination()
                     finishClose()
                 },
                 "IC-705 RX close",
@@ -438,15 +440,24 @@ class Ic705RxSession internal constructor(
         }
     }
 
-    private fun awaitAudioTermination() {
+    private fun awaitExecutorsTermination() {
         var interrupted = false
-        while (!audioExecutor.isTerminated) {
+        while (!audioExecutor.isTerminated || !txExecutor.isTerminated) {
             try {
-                if (audioExecutor.awaitTermination(CLOSE_WAIT_SLICE_MILLIS, TimeUnit.MILLISECONDS)) break
-                audioExecutor.shutdownNow()
+                if (!audioExecutor.isTerminated) {
+                    if (!audioExecutor.awaitTermination(CLOSE_WAIT_SLICE_MILLIS, TimeUnit.MILLISECONDS)) {
+                        audioExecutor.shutdownNow()
+                    }
+                }
+                if (!txExecutor.isTerminated) {
+                    if (!txExecutor.awaitTermination(CLOSE_WAIT_SLICE_MILLIS, TimeUnit.MILLISECONDS)) {
+                        txExecutor.shutdownNow()
+                    }
+                }
             } catch (_: InterruptedException) {
                 interrupted = true
                 audioExecutor.shutdownNow()
+                txExecutor.shutdownNow()
             }
         }
         if (interrupted) Thread.currentThread().interrupt()

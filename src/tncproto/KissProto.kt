@@ -56,9 +56,11 @@ class KissProto(val service: AprsService, isStream: InputStream, osStream: Outpu
                     }
                 }
                 FESC -> {
-                    when (isStream?.read()) {
+                    when (val escaped = isStream?.read()) {
                         TFEND -> buf.add(FEND.toByte())
                         TFESC -> buf.add(FESC.toByte())
+                        -1 -> throw java.io.IOException("KissReader out of data")
+                        else -> escaped?.let { buf.add(it.toByte()) }
                     }
                 }
                 -1 -> throw java.io.IOException("KissReader out of data")
@@ -79,12 +81,24 @@ class KissProto(val service: AprsService, isStream: InputStream, osStream: Outpu
     override fun writePacket(p: APRSPacket) {
         Log.d(TAG, "writePacket: $p")
         val frame = p.toAX25Frame()
-        val combined = ByteArray(frame.size + 3)
-        combined[0] = FEND.toByte()
-        combined[1] = CMD_DATA.toByte()
-        System.arraycopy(frame, 0, combined, 2, frame.size)
-        combined[combined.size - 1] = FEND.toByte()
-        osStream?.write(combined)
+        val bos = java.io.ByteArrayOutputStream(frame.size + 16)
+        bos.write(FEND)
+        bos.write(CMD_DATA)
+        for (b in frame) {
+            when (b.toInt() and 0xff) {
+                FEND -> {
+                    bos.write(FESC)
+                    bos.write(TFEND)
+                }
+                FESC -> {
+                    bos.write(FESC)
+                    bos.write(TFESC)
+                }
+                else -> bos.write(b.toInt())
+            }
+        }
+        bos.write(FEND)
+        osStream?.write(bos.toByteArray())
         osStream?.flush()
     }
 }

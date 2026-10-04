@@ -75,9 +75,9 @@ class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(p
             val kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
 
             return try {
-                val fis = FileInputStream(keyStoreFile)
-                ks.load(fis, KEYSTORE_PASS)
-                fis.close()
+                FileInputStream(keyStoreFile).use { fis ->
+                    ks.load(fis, KEYSTORE_PASS)
+                }
                 for (alias in ks.aliases()) {
                     if (ks.isKeyEntry(alias)) {
                         val c = ks.getCertificate(alias) as X509Certificate
@@ -201,10 +201,10 @@ class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(p
             Log.d(TAG, "TcpSocketThread.terminate()")
         }
 
-        fun update(packet: APRSPacket): String {
+        fun update(packet: APRSPacket): String = synchronized(this) {
             val s = socket
             val currentTnc = tnc
-            return if (s != null && s.isConnected && currentTnc != null) {
+            if (s != null && s.isConnected && currentTnc != null) {
                 currentTnc.writePacket(packet)
                 "TCP OK"
             } else {
@@ -218,8 +218,8 @@ class TcpUploader(val service: AprsService, prefs: PrefsWrapper) : AprsBackend(p
 
         fun shutdown() {
             Log.d(TAG, "shutdown()")
-            tnc?.stop()
             synchronized(this) {
+                tnc?.stop()
                 socket?.let { s ->
                     catchLog("shutdownInput") { s.shutdownInput() }
                     catchLog("shutdownOutput") { s.shutdownOutput() }

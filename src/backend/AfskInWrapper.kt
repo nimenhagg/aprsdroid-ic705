@@ -8,8 +8,11 @@ class AfskInWrapper(
 ) {
     private val demodulator = AfskDemodulator(au, inType, samplerate)
 
+    @Synchronized
     fun start() {
-        demodulator.start()
+        if (!demodulator.isAlive && demodulator.state == Thread.State.NEW) {
+            demodulator.start()
+        }
     }
 
     fun close() {

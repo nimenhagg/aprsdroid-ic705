@@ -51,7 +51,7 @@ internal class GraywolfAfskDecoder(
         for (index in 0 until sampleCount) {
             shortBuffer[index] = (
                 (buffer[source].toInt() and 0xff) or
-                    (buffer[source + 1].toInt() shl 8)
+                    ((buffer[source + 1].toInt() and 0xff) shl 8)
                 ).toShort()
             source += 2
         }
