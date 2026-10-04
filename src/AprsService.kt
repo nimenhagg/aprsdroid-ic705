@@ -78,8 +78,10 @@ class AprsService : Service() {
         const val API_VERSION_CODE = 1
 
         @JvmField
+        @Volatile
         var running = false
         @JvmField
+        @Volatile
         var link_error = 0
 
         @JvmStatic
