@@ -1,5 +1,6 @@
 package org.aprsdroid.app
 
+import org.aprsdroid.app.aprs.AprsCharsetDecoder
 import org.aprsdroid.app.audio.Ax25Limits
 import org.aprsdroid.app.diagnostic.AppLog
 import net.ab0oo.aprs.parser.Parser
@@ -57,7 +58,7 @@ class Ax25PacketConsumer(
             )
             return
         }
-        val text = parsed.toString().trim()
+        val text = AprsCharsetDecoder.repairString(parsed.toString().trim())
         AppLog.d(
             "AFSK",
             "ax25_parse_ok",

@@ -89,6 +89,7 @@ class MessageService(val s: AprsService) {
                     )
                     s.sendPacket(ack)
                 }
+                checkAndReplyAprsQuery(ap.sourceCall, msg.messageBody)
             }
         } else if (msg.targetCallsign.split("-")[0].equals(s.prefs.getCallsign(), ignoreCase = true) && !msg.isAck && !msg.isRej) {
             if (AprsPacket.sameMessageCallsign(ap.sourceCall, callssid)) return
@@ -152,6 +153,22 @@ class MessageService(val s: AprsService) {
 
         if (nextRun != Long.MAX_VALUE) {
             scheduleNextSend(nextRun)
+        }
+    }
+
+    private fun checkAndReplyAprsQuery(targetCall: String, body: String) {
+        val query = body.trim().uppercase(Locale.US)
+        val replyText = when {
+            query == "?VER?" || query == "?VER" -> s.prefs.getVersion()
+            query == "?PING?" || query == "?PING" -> "PONG"
+            query == "?APRST" || query == "?APRST?" -> "APRSdroid Mod OK"
+            else -> null
+        }
+        if (replyText != null) {
+            val replyMsg = s.newPacket(
+                MessagePacket(targetCall, replyText, "")
+            )
+            s.sendPacket(replyMsg)
         }
     }
 }

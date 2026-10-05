@@ -21,6 +21,8 @@ import net.ab0oo.aprs.parser.InformationField
 import net.ab0oo.aprs.parser.Parser
 import net.ab0oo.aprs.parser.Position as AprsPosition
 import net.ab0oo.aprs.parser.PositionPacket
+import org.aprsdroid.app.aprs.AprsCharsetDecoder
+import org.aprsdroid.app.aprs.AprsDao
 import org.aprsdroid.app.data.preferences.AprsServiceSettings
 import org.aprsdroid.app.data.repository.StorageDatabasePacketPostRepository
 import org.aprsdroid.app.location.LocationSource
@@ -384,7 +386,7 @@ class AprsService : Service() {
         return if (percentage in 0..100) "BAT:${percentage}%" else null
     }
 
-    private fun buildPositionComment(protocolFields: String, status: String): String {
+    private fun buildPositionComment(protocolFields: String, status: String, dao: String = ""): String {
         // APRS 101: comment field expanded to 62 chars so protocol extensions (PHG, speed,
         // freq, altitude) leave ample room for user status without premature truncation.
         val maxLength = 62
@@ -401,6 +403,12 @@ class AprsService : Service() {
             val separator = if (base.isEmpty()) "" else " "
             if (base.length + separator.length + battery.length <= maxLength) {
                 base.append(separator).append(battery)
+            }
+        }
+        if (dao.isNotEmpty()) {
+            val separator = if (base.isEmpty()) "" else " "
+            if (base.length + separator.length + dao.length <= maxLength) {
+                base.append(separator).append(dao)
             }
         }
         return base.toString()
@@ -425,7 +433,12 @@ class AprsService : Service() {
 
         val statusFreq = AprsPacket.formatFreq(dataExtensions, serviceSettings.frequencyMhz)
         val statusAlt = if (serviceSettings.includeAltitude) AprsPacket.formatAltitude(location) else ""
-        val comment = buildPositionComment(dataExtensions + statusFreq + statusAlt, status)
+        val daoToken = if (serviceSettings.positionAmbiguity == 0) {
+            AprsDao.encodeDao(location.latitude, location.longitude)
+        } else {
+            ""
+        }
+        val comment = buildPositionComment(dataExtensions + statusFreq + statusAlt, status, daoToken)
         return newPacket(PositionPacket(pos, comment, true))
     }
 
@@ -493,8 +506,9 @@ class AprsService : Service() {
     }
 
     fun postSubmit(post: String) {
+        val cleanPost = AprsCharsetDecoder.repairString(post)
         markTransientLiveStatus(LiveActivity.RECEIVING, 2_500L)
-        postAddPost(StorageDatabase.Companion.Post.TYPE_INCMG, R.string.post_incmg, post)
+        postAddPost(StorageDatabase.Companion.Post.TYPE_INCMG, R.string.post_incmg, cleanPost)
     }
 
     fun postAbort(post: String) {

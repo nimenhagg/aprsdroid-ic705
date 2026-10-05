@@ -538,6 +538,15 @@
     <string name="phg_dir_315">315° NW (7)</string>
     <string name="phg_dir_360">360° N (8)</string>
     <string name="phg_preview_label">Protocol extension preview</string>
-    <string name="phg_preview_desc">Power and height are rounded down to standard APRS 101 steps.</string>
+    <string name="phg_preview_desc">Power and height will be quantized according to APRS 101 rules.</string>
     <string name="packet_phg">PHG</string>
+    <string name="packet_weather">Weather</string>
+    <string name="packet_range">Radio Range</string>
+    <string name="station_coverage_radius">Radio coverage: ~%1$s km (%2$s mi)</string>
+
+    <!-- IC-705 Linkage Settings -->
+    <string name="setting_ic705_sync_freq">Auto-sync Frequency to QRG</string>
+    <string name="setting_ic705_sync_freq_summary">Read operating frequency from IC-705 via CI-V and update beacon QRG</string>
+    <string name="setting_ic705_use_gps">Use IC-705 Built-in GPS</string>
+    <string name="setting_ic705_use_gps_summary">Use IC-705 internal GPS receiver as location source to save phone battery</string>
 </resources>

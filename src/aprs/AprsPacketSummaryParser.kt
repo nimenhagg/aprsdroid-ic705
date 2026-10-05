@@ -36,12 +36,16 @@ data class ParsedAprsPacket(
     val comment: String? = null,
     val message: String? = null,
     val phg: PhgData? = null,
+    val dao: DaoOffset? = null,
+    val weather: WeatherData? = null,
+    val rngMiles: Double? = null,
 )
 
 object AprsPacketSummaryParser {
     private val altitudeRegex = Regex("""(?:^|/)A=(\d{6})(?:$|[^0-9])""")
 
-    fun parse(raw: String): ParsedAprsPacket {
+    fun parse(rawInput: String): ParsedAprsPacket {
+        val raw = AprsCharsetDecoder.repairString(rawInput)
         val colon = raw.indexOf(':')
         val header = if (colon >= 0) raw.substring(0, colon) else raw
         val payload = if (colon >= 0 && colon + 1 <= raw.length) raw.substring(colon + 1) else ""
@@ -79,7 +83,7 @@ object AprsPacketSummaryParser {
                             rawCode = "PHG${AprsPhg.powerToCode(phgExt.power.toDouble())}${AprsPhg.heightToCode(phgExt.height.toDouble())}${phgExt.gain}${AprsPhg.directivityToCode(phgExt.directivity)}",
                         )
                     }
-                    comment = info.comment?.trim()?.takeIf { it.isNotEmpty() }
+                    comment = AprsCharsetDecoder.repairNullable(info.comment?.trim())?.takeIf { it.isNotEmpty() }
                 }
                 is ObjectPacket -> {
                     kind = AprsPacketKind.OBJECT
@@ -98,18 +102,38 @@ object AprsPacketSummaryParser {
                             rawCode = "PHG${AprsPhg.powerToCode(phgExt.power.toDouble())}${AprsPhg.heightToCode(phgExt.height.toDouble())}${phgExt.gain}${AprsPhg.directivityToCode(phgExt.directivity)}",
                         )
                     }
-                    comment = info.comment?.trim()?.takeIf { it.isNotEmpty() }
+                    comment = AprsCharsetDecoder.repairNullable(info.comment?.trim())?.takeIf { it.isNotEmpty() }
                 }
                 is MessagePacket -> {
                     kind = AprsPacketKind.MESSAGE
-                    message = info.messageBody?.trim()?.takeIf { it.isNotEmpty() }
+                    message = AprsCharsetDecoder.repairNullable(info.messageBody?.trim())?.takeIf { it.isNotEmpty() }
                 }
+            }
+        }
+
+        var dao: DaoOffset? = null
+        if (latitude != null && longitude != null && comment != null) {
+            val parsedDao = AprsDao.parseDao(comment, isNorth = latitude >= 0, isEast = longitude >= 0)
+            if (parsedDao != null) {
+                dao = parsedDao
+                latitude = latitude + parsedDao.deltaLatDegrees
+                longitude = longitude + parsedDao.deltaLonDegrees
+                comment = AprsDao.stripDaoNullable(comment)
+            }
+        }
+
+        val weather = AprsWeather.parse(comment ?: payload)
+        if (weather != null && (kind == AprsPacketKind.UNKNOWN || kind == AprsPacketKind.POSITION)) {
+            if (kind == AprsPacketKind.UNKNOWN) {
+                kind = AprsPacketKind.WEATHER
             }
         }
 
         val altitude = altitudeRegex.find(payload)?.groupValues?.getOrNull(1)?.toIntOrNull()
         val frequency = AprsPacket.parseQrg(comment ?: payload)
         val phgResult = phg ?: AprsPacket.parsePhg(comment ?: payload)
+        val rngMiles = AprsPhg.parseRng(comment ?: payload)
+            ?: phgResult?.let { AprsPhg.estimateRadioRangeMiles(it) }
 
         return ParsedAprsPacket(
             raw = raw,
@@ -127,6 +151,9 @@ object AprsPacketSummaryParser {
             comment = comment,
             message = message,
             phg = phgResult,
+            dao = dao,
+            weather = weather,
+            rngMiles = rngMiles,
         )
     }
 

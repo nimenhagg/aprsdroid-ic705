@@ -752,9 +752,8 @@ class Ic705RxSession internal constructor(
 
     private fun handleCivDatagram(runtime: ChannelRuntime, data: ByteArray) {
         val civPacket = Ic705CivDatagramCodec.decode(data, expectedReceiverId = runtime.localId)
-        
-        
         pttStateMachine.onCivReceived(civPacket.civFrame)
+        safeCallback { callbacks.onCivFrame(civPacket.civFrame) }
     }
 
     private fun handleControlPacket(

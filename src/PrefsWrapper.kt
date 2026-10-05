@@ -23,6 +23,9 @@ class PrefsWrapper(@JvmField val context: Context) {
         const val KEY_PHG_GAIN = "phg_gain"
         const val KEY_PHG_DIR = "phg_dir"
 
+        const val KEY_IC705_SYNC_FREQ = "ic705.sync_freq"
+        const val KEY_IC705_USE_GPS = "ic705.use_gps"
+
         @JvmStatic
         fun defaultSharedPreferences(context: Context): SharedPreferences {
             return context.getSharedPreferences(
@@ -135,6 +138,12 @@ class PrefsWrapper(@JvmField val context: Context) {
 
     fun getPhgDir(): String = getString(KEY_PHG_DIR, "0")
     fun setPhgDir(dir: String): String = set(KEY_PHG_DIR, dir)
+
+    fun getIc705SyncFreq(): Boolean = prefs.getBoolean(KEY_IC705_SYNC_FREQ, false)
+    fun setIc705SyncFreq(enabled: Boolean): Boolean = setBoolean(KEY_IC705_SYNC_FREQ, enabled)
+
+    fun getIc705UseGps(): Boolean = prefs.getBoolean(KEY_IC705_USE_GPS, false)
+    fun setIc705UseGps(enabled: Boolean): Boolean = setBoolean(KEY_IC705_USE_GPS, enabled)
 
     fun getShowAge(): Long = getStringInt("show_age", 30) * 60L * 1000L
 

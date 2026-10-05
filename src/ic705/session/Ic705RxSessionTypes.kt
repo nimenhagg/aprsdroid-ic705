@@ -164,6 +164,7 @@ data class Ic705RxSessionCallbacks(
     val onIssue: (Ic705RxSessionIssue) -> Unit = {},
     val onAudioReset: (Ic705AudioReset) -> Unit = {},
     val onStreamRecovery: (Ic705StreamRecoveryEvent) -> Unit = {},
+    val onCivFrame: (ByteArray) -> Unit = {},
 )
 
 /**

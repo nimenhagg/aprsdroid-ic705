@@ -188,6 +188,30 @@ fun StationDetailScreen(
                                     )
                                 }
 
+                                val rng = item.rngMiles ?: phg?.let { org.aprsdroid.app.aprs.AprsPhg.estimateRadioRangeMiles(it) }
+                                if (rng != null) {
+                                    val km = kotlin.math.round(rng * 1.60934).toInt()
+                                    val mi = kotlin.math.round(rng).toInt()
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.station_coverage_radius, km, mi),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+
+                                val weather = comment?.let { org.aprsdroid.app.aprs.AprsWeather.parse(it) }
+                                if (weather != null) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "WX: ${org.aprsdroid.app.aprs.AprsWeather.formatWeatherSummary(weather)}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+
                                 if (!comment.isNullOrEmpty()) {
                                     if (item.isFmo || !qrg.isNullOrEmpty() || phg != null) Spacer(modifier = Modifier.height(6.dp))
                                     Text(

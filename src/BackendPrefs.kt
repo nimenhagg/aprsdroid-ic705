@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.CellTower
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Router
@@ -93,6 +94,8 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
     private val ic705PortState = mutableStateOf("50001")
     private val ic705UsernameState = mutableStateOf("")
     private val ic705PasswordState = mutableStateOf("")
+    private val ic705SyncFreqState = mutableStateOf(false)
+    private val ic705UseGpsState = mutableStateOf(false)
 
     private val afskBtScoState = mutableStateOf(false)
     private val afskOutputState = mutableStateOf("0")
@@ -148,6 +151,8 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
         ic705PortState.value = prefs.getString("ic705.control_port", "50001")
         ic705UsernameState.value = prefs.getString("ic705.username", "")
         ic705PasswordState.value = prefs.getString("ic705.password", "")
+        ic705SyncFreqState.value = prefs.getBoolean("ic705.sync_freq", false)
+        ic705UseGpsState.value = prefs.getBoolean("ic705.use_gps", false)
 
         afskBtScoState.value = prefs.getBoolean("afsk.btsco", false)
         afskOutputState.value = prefs.getString("afsk.output", "0")
@@ -446,6 +451,28 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
                                         summary = stringResource(R.string.setting_ic705_password_summary),
                                         icon = Icons.Default.Password,
                                         onClick = { editDialogKey.value = "ic705.password" },
+                                    )
+                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    PreferenceSwitchItem(
+                                        title = stringResource(R.string.setting_ic705_sync_freq),
+                                        summary = stringResource(R.string.setting_ic705_sync_freq_summary),
+                                        icon = Icons.Default.Radio,
+                                        checked = ic705SyncFreqState.value,
+                                        onCheckedChange = { checked ->
+                                            ic705SyncFreqState.value = checked
+                                            prefs.setBoolean("ic705.sync_freq", checked)
+                                        },
+                                    )
+                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                    PreferenceSwitchItem(
+                                        title = stringResource(R.string.setting_ic705_use_gps),
+                                        summary = stringResource(R.string.setting_ic705_use_gps_summary),
+                                        icon = Icons.Default.LocationOn,
+                                        checked = ic705UseGpsState.value,
+                                        onCheckedChange = { checked ->
+                                            ic705UseGpsState.value = checked
+                                            prefs.setBoolean("ic705.use_gps", checked)
+                                        },
                                     )
                                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                                     PreferenceItem(

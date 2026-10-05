@@ -4,6 +4,7 @@
 package org.aprsdroid.app.ic705.backend
 
 import android.content.Context
+import android.location.Location
 import android.os.Build
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicBoolean
@@ -20,6 +21,7 @@ import org.aprsdroid.app.audio.PcmSink
 import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.diagnostic.Ic705DiagnosticState
 import org.aprsdroid.app.ic705.android.Ic705AndroidSocketFactoryProvider
+import org.aprsdroid.app.ic705.civ.Ic705CivParser
 import org.aprsdroid.app.ic705.protocol.Ic705AudioPacketCodec
 import org.aprsdroid.app.ic705.protocol.Ic705CivCommands
 import org.aprsdroid.app.ic705.session.Ic705PacketRejectionKind
@@ -41,6 +43,8 @@ interface Ic705BackendService {
     fun postAbort(message: String)
     fun postSubmit(text: String)
     fun getString(resId: Int): String
+    fun onFrequencyChanged(frequencyMhz: Float) {}
+    fun onGpsLocation(location: Location) {}
 }
 
 /** Parsed IC-705 connection settings, decoupled from SharedPreferences for JVM tests. */
@@ -51,6 +55,8 @@ interface Ic705BackendPrefs {
     val password: String
     val civAddress: Int get() = Ic705CivCommands.DEFAULT_RADIO_ADDRESS
     val model: String get() = "IC-705"
+    val syncFreq: Boolean get() = false
+    val useGps: Boolean get() = false
 }
 
 /** Creates the radio session for a resolved socket factory. */
@@ -293,6 +299,11 @@ class Ic705WifiBackendController(
                 audioSink = decoderForCallbacks,
                 callbacks = Ic705RxSessionCallbacks(
                     onStateChanged = { state -> onSessionState(generation, state) },
+                    onCivFrame = { frame ->
+                        if (isActive(generation)) {
+                            handleCivFrame(frame)
+                        }
+                    },
                     onAudioReset = { reset ->
                         if (isActive(generation)) {
                             AppLog.w(
@@ -376,6 +387,23 @@ class Ic705WifiBackendController(
                 fail(R.string.ic705_backend_invalid_settings)
             } else {
                 scheduleReconnect()
+            }
+        }
+    }
+
+    private fun handleCivFrame(frame: ByteArray) {
+        if (prefs.syncFreq) {
+            val freqMhz = Ic705CivParser.parseOperatingFrequency(frame)
+            if (freqMhz != null) {
+                AppLog.i("IC705", "civ_freq_sync", mapOf("freq_mhz" to freqMhz))
+                service.onFrequencyChanged(freqMhz.toFloat())
+            }
+        }
+        if (prefs.useGps) {
+            val nmeaPos = Ic705CivParser.parseGpsSentence(frame)
+            if (nmeaPos != null) {
+                AppLog.i("IC705", "civ_gps_pos", mapOf("lat" to nmeaPos.latitude, "lon" to nmeaPos.longitude))
+                service.onGpsLocation(nmeaPos.toLocation())
             }
         }
     }

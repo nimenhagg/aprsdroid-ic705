@@ -11,6 +11,8 @@ import net.ab0oo.aprs.parser.APRSPacket
 import net.ab0oo.aprs.parser.CourseAndSpeedExtension
 import net.ab0oo.aprs.parser.MessagePacket
 import net.ab0oo.aprs.parser.Position as AprsPosition
+import org.aprsdroid.app.aprs.AprsCharsetDecoder
+import org.aprsdroid.app.aprs.AprsDao
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
@@ -226,11 +228,16 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     fun addPosition(ts: Long, ap: APRSPacket, pos: AprsPosition, cse: CourseAndSpeedExtension?, objectname: String?) {
         val cv = ContentValues()
         val call = ap.sourceCall
-        val lat: Int = (pos.latitude * 1000000).toInt()
-        val lon: Int = (pos.longitude * 1000000).toInt()
+        val rawComment = ap.aprsInformation.comment
+        val cleanComment = AprsCharsetDecoder.repairNullable(rawComment)
+        val dao = AprsDao.parseDao(cleanComment, isNorth = pos.latitude >= 0, isEast = pos.longitude >= 0)
+        val latDeg = if (dao != null) pos.latitude + dao.deltaLatDegrees else pos.latitude
+        val lonDeg = if (dao != null) pos.longitude + dao.deltaLonDegrees else pos.longitude
+        val lat: Int = (latDeg * 1000000).toInt()
+        val lon: Int = (lonDeg * 1000000).toInt()
         val sym = "${pos.symbolTable}${pos.symbolCode}"
-        val comment = ap.aprsInformation.comment
-        val qrg = AprsPacket.parseQrg(comment)
+        val strippedComment = AprsDao.stripDaoNullable(cleanComment)
+        val qrg = AprsPacket.parseQrg(strippedComment)
         cv.put(Position.TS, ts)
         cv.put(Position.CALL, objectname ?: call)
         cv.put(Position.LAT, lat)
@@ -239,7 +246,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
 
         if (objectname != null) cv.put(Station.ORIGIN, call)
         cv.put(Station.SYMBOL, sym)
-        cv.put(Station.COMMENT, comment)
+        cv.put(Station.COMMENT, strippedComment)
         cv.put(Station.QRG, qrg)
         var flags = 0
         if (objectname != null) flags = flags or Station.FLAG_OBJECT
@@ -251,7 +258,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             cv.put(Station.SPEED, cse.speed)
             cv.put(Station.COURSE, cse.course)
         }
-        Log.d(TAG, String.format(Locale.US, "got %s(%d, %d)%s -> %s", call, lat, lon, sym, comment))
+        Log.d(TAG, String.format(Locale.US, "got %s(%d, %d)%s -> %s", call, lat, lon, sym, strippedComment))
         writableDatabase.replaceOrThrow(Station.TABLE, Station.CALL, cv)
     }
 
@@ -284,7 +291,8 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     }
 
     fun addMessage(ts: Long, srccall: String, msg: MessagePacket): Boolean {
-        if (isMessageDuplicate(srccall, msg.messageNumber, msg.messageBody, ts)) {
+        val cleanBody = AprsCharsetDecoder.repairNullable(msg.messageBody).orEmpty()
+        if (isMessageDuplicate(srccall, msg.messageNumber, cleanBody, ts)) {
             Log.i(TAG, String.format(Locale.US, "received duplicate message from %s: %s", srccall, msg))
             return false
         }
@@ -294,7 +302,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             put(Message.CALL, AprsPacket.normalizeMessageCallsign(srccall))
             put(Message.MSGID, msg.messageNumber)
             put(Message.TYPE, Message.TYPE_INCOMING)
-            put(Message.TEXT, msg.messageBody)
+            put(Message.TEXT, cleanBody)
         }
         addMessage(cv)
         return true
@@ -351,11 +359,12 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     }
 
     fun addPost(ts: Long, posttype: Int, status: String, message: String) {
+        val cleanMessage = AprsCharsetDecoder.repairString(message)
         val cv = ContentValues().apply {
             put(Post.TS, ts)
             put(Post.TYPE, posttype)
             put(Post.STATUS, status)
-            put(Post.MESSAGE, message)
+            put(Post.MESSAGE, cleanMessage)
         }
         writableDatabase.insertOrThrow(Post.TABLE, Post.MESSAGE, cv)
         if (Post.trimCounter == 0) {

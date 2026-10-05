@@ -18,6 +18,10 @@ data class StationItem(
         get() = flags and StorageDatabase.Companion.Station.FLAG_FMO != 0
     val phg: org.aprsdroid.app.aprs.PhgData?
         get() = org.aprsdroid.app.AprsPacket.parsePhg(comment)
+    val rngMiles: Double?
+        get() = comment?.let { org.aprsdroid.app.aprs.AprsPhg.parseRngMiles(it) }
+    val coverageRadiusMeters: Double?
+        get() = org.aprsdroid.app.aprs.AprsPhg.estimateRangeMeters(phg, rngMiles)
     companion object {
         fun fromCursor(cursor: Cursor): List<StationItem> {
             val list = ArrayList<StationItem>(cursor.count)

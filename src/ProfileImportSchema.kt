@@ -32,7 +32,7 @@ internal object ProfileImportSchema {
             "show_objects", "show_satellite", "send_battery_aprsis", "periodicposition",
             "priv_spdbear", "priv_altitude", "afsk.btsco", "bt.client", "kenwood.gps",
             "kenwood.gps_debug", "keepscreen", "conn_log", "notification_live_updates",
-            "phg_enabled",
+            "phg_enabled", "ic705.sync_freq", "ic705.use_gps",
         )
 
         floats("map_lat", "map_lon", "map_zoom")

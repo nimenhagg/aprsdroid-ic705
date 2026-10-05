@@ -94,6 +94,12 @@ fun PacketHistoryCard(post: LogPostItem) {
             parsed.altitudeFeet?.let { DetailLine(stringResource(R.string.packet_altitude), "$it ft") }
             parsed.frequency?.let { DetailLine(stringResource(R.string.packet_frequency), "$it MHz") }
             parsed.phg?.let { DetailLine(stringResource(R.string.packet_phg), org.aprsdroid.app.aprs.AprsPhg.formatDescription(it)) }
+            parsed.rngMiles?.let {
+                val mi = kotlin.math.round(it).toInt()
+                val km = kotlin.math.round(it * 1.60934).toInt()
+                DetailLine(stringResource(R.string.packet_range), "$mi mi (~$km km)")
+            }
+            parsed.weather?.let { DetailLine(stringResource(R.string.packet_weather), org.aprsdroid.app.aprs.AprsWeather.formatWeatherSummary(it)) }
             parsed.message?.let { DetailLine(stringResource(R.string.packet_message), it) }
             parsed.comment?.let { DetailLine(stringResource(R.string.packet_comment), it) }
             if (parsed.kind == AprsPacketKind.UNKNOWN && parsed.payload.isNotBlank()) {

@@ -147,4 +147,32 @@ object AprsPhg {
         val dir = if (phg.directivityDeg == 0) "全向" else "${phg.directivityDeg}°"
         return "${phg.powerWatts}W · ${phg.heightFeet}ft (${phg.heightMeters}m) · ${phg.gainDb}dBi · $dir"
     }
+
+    val RNG_REGEX = Regex("""\bRNG([0-9]{4})\b""")
+
+    fun parseRngMiles(text: String): Double? {
+        val match = RNG_REGEX.find(text) ?: return null
+        return match.groupValues[1].toDoubleOrNull()
+    }
+
+    fun parseRng(text: String): Double? = parseRngMiles(text)
+
+    /**
+     * Estimate direct omni radio range in statute miles based on APRS 101 Chapter 10 formula:
+     * Range = sqrt(2 * H * sqrt((P / 10) * 10^(G / 10)))
+     * where H is HAAT in feet, P is Power in Watts, G is Gain in dB.
+     */
+    fun estimateRangeMiles(phg: PhgData): Double {
+        if (phg.powerWatts <= 0 || phg.heightFeet <= 0) return 0.0
+        val pFactor = (phg.powerWatts / 10.0) * Math.pow(10.0, phg.gainDb / 10.0)
+        return kotlin.math.sqrt(2.0 * phg.heightFeet * kotlin.math.sqrt(pFactor))
+    }
+
+    fun estimateRadioRangeMiles(phg: PhgData): Double = estimateRangeMiles(phg)
+
+    fun estimateRangeMeters(phg: PhgData?, rngMiles: Double? = null): Double? {
+        val miles = rngMiles ?: (phg?.let { estimateRangeMiles(it) }) ?: return null
+        if (miles <= 0.0) return null
+        return miles * 1609.344
+    }
 }

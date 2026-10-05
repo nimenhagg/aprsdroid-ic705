@@ -521,4 +521,13 @@
     <string name="phg_preview_label">协议扩展报文预览</string>
     <string name="phg_preview_desc">功率与有效高度将按 APRS 101 规则向下取档。</string>
     <string name="packet_phg">PHG 参数</string>
+    <string name="packet_weather">气象数据 (WX)</string>
+    <string name="packet_range">覆盖范围</string>
+    <string name="station_coverage_radius">预估覆盖半径: 约 %1$s km (%2$s mi)</string>
+
+    <!-- IC-705 联动设置 -->
+    <string name="setting_ic705_sync_freq">自动同步电台当前工作频率</string>
+    <string name="setting_ic705_sync_freq_summary">通过 CI-V 读取 IC-705 当前频点并更新语音信标频率 (QRG)</string>
+    <string name="setting_ic705_use_gps">使用 IC-705 内置 GPS 定位</string>
+    <string name="setting_ic705_use_gps_summary">接收 IC-705 的 GPS 卫星定位数据作为定位源，节省手机电量</string>
 </resources>
