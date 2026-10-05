@@ -4,7 +4,7 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连
 
 [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
-**最新稳定版 / Latest release: `Mod-v2.5.0`**
+**最新稳定版 / Latest release: `Mod-v2.6.0`**
 
 ### 社区交流
 
@@ -18,7 +18,14 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连
 
 ### 主要功能
 
-- **WLAN 电台直连**：支持 Icom IC-705、IC-9700、IC-7610、IC-905 及自定义型号；半双工 AX.25、AFSK1200、12 kHz 单声道 PCM、CI-V PTT；自定义 CI-V 地址配置与默认预置自动填充；无需音频线或外接 TNC。
+- **WLAN 电台直连与 IC-705 深度联动**：支持 Icom IC-705、IC-9700、IC-7610、IC-905 及自定义型号；半双工 AX.25、AFSK1200、12 kHz 单声道 PCM、CI-V PTT；自定义 CI-V 地址配置与默认预置自动填充；**新增工作频率（Operating Frequency）自动同步与机载 GPS 经纬度/航向/速度联动**（连接设置中选择 IC-705 后动态展开联动开关，可优先使用电台 GPS 发送信标）。
+- **现代 APRS 协议全规格实现**：
+  - **APRS 1.2 DAO 亚米级高精度定位**：支持 Base91 及微度格式，经纬度分辨率由 ~18.5 米提升至分米/厘米级，发送自动追加、接收自动融入高精度浮点坐标。
+  - **APRS 101 第 9 章 PHG 数据扩展**：发射功率（0~81W）、天线高度（10~5120ft）、增益（0~9dB）与主波束指向性设置、发送及台站卡片直观展示。
+  - **APRS 101 第 10 章 RNG / PHG 覆盖半径推算**：支持 `RNGxxxx` 直接覆盖报文解析，并依据严密经验物理公式智能推算直频覆盖半径（km）。
+  - **APRS 101 第 12 章 WX 气象报文解析**：支持风向、风速、阵风、温度（°F / °C 双单位）、湿度、气压及多时段降雨量，并在台站卡片与详情页展示专属气象徽章与卡片。
+  - **APRS 1.01 第 15 章 Queries 指令自动应答**：自动响应 `?PING?`、`?APRST`、`?VER?` 查询，内置防刷流控与冷却保护。
+- **智能自适应多编码字符集解码（消除乱码）**：内置 GB2312 / GBK / GB18030 与 UTF-8 字符集智能评分探测模型，并实现 Latin-1 错误转码逆向还原修复算法，彻底解决中国及亚太地区台站中文备注与气象播报乱码问题。
 - **USB 电台（Hamlib）**：集成 Hamlib 4.7.2 原生库与 400+ 款常见电台（Icom、Yaesu、Kenwood、Elecraft 等），支持品牌字母排序与即时模糊搜索；内置免 root 本地 Android USB CAT 环回桥接与通用音频后端，提供专属 USB 声卡输入/输出选择与发射音量控制滑块。
 - **发射安全与物理排空计算**：依据音频采样率与缓冲区精确推算声卡物理排空延时，彻底杜绝 PTT 释放挂起与空载波长发；保留 PTT OFF ACK 与安全 watchdog 机制。
 - **体积与性能优化**：Hamlib 原生库深度优化（`-Os`、函数/数据分节、Dead Code 剪裁与符号剥离），结合 R8 优化，安装包体积由近 100 MB 缩减至 ~44 MB。
@@ -29,7 +36,7 @@ APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连
 - Android 16+ 可选 Live Updates / 状态胶囊，显示连接、接收、发射、信标和错误等状态。
 - Material 3 + Jetpack Compose；台站、地图、消息、报文四个一级页面统一导航，并支持紧凑列表与即时呼号搜索。
 - MapLibre Native 支持高德、OpenStreetMap 和自定义栅格；Google Maps SDK 支持 Google 普通/卫星地图。
-- 保留 APRSdroid 原有 APRS-IS、AFSK、KISS、TNC2、Kenwood、蓝牙、USB、LAN TCP TNC 等路径。
+- 保留 APRSdroid 原有 APRS-IS、AFSK、KISS（已修复严谨转义与多线程安全）、TNC2、Kenwood、蓝牙、USB、LAN TCP TNC 等路径。
 
 ### 兼容性
 
@@ -145,11 +152,18 @@ Graywolf 的 `Cargo.lock` 已提交，native 构建使用 `--locked`。Windows �
 
 APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APRS support, modern Android UI, persistent diagnostics, and performance improvements.
 
-**Latest stable release: `Mod-v2.5.0`.**
+**Latest stable release: `Mod-v2.6.0`.**
 
 ### Highlights
 
-- **WLAN Radios**: Direct half-duplex WLAN APRS for Icom IC-705, IC-9700, IC-7610, IC-905, and custom models using AX.25, AFSK1200, 12 kHz mono PCM, and CI-V PTT with configurable CI-V hex addresses.
+- **WLAN Radios & IC-705 Linkage**: Direct half-duplex WLAN APRS for Icom IC-705, IC-9700, IC-7610, IC-905, and custom models using AX.25, AFSK1200, 12 kHz mono PCM, and CI-V PTT with configurable CI-V hex addresses. **New operating frequency sync and internal IC-705 GPS linkage** (allows prioritizing radio GPS coordinates for position beacons).
+- **Modern APRS Protocol Specifications**:
+  - **APRS 1.2 DAO Sub-meter Precision**: Base91 `!w..!` and micro-degree positional resolution, reducing precision grid step from ~18.5 m down to centimeter level.
+  - **APRS 101 Chapter 9 PHG Extension**: Power (0~81W), Height (10~5120ft), Gain (0~9dB), and Directivity configuration and tag rendering.
+  - **APRS 101 Chapter 10 RNG / PHG Radio Range**: Parsing `RNGxxxx` direct radio coverage range and physical propagation estimation for stations with PHG data.
+  - **APRS 101 Chapter 12 Weather Reports**: Full weather parser for wind speed/direction/gusts, temperature (°F/°C), humidity, barometric pressure, and rainfall with dedicated UI cards.
+  - **APRS 1.01 Chapter 15 Queries Auto-Reply**: Automatic rate-limited responses to `?PING?`, `?APRST`, and `?VER?` query frames.
+- **Adaptive Charset Decoding**: Multi-charset scoring model dynamically detecting GB2312 / GBK / GB18030 vs UTF-8, plus automated Latin-1 stream reverse byte recovery, completely resolving comment and weather character encoding issues in China and APAC.
 - **USB Radios (Hamlib)**: Integrated Hamlib 4.7.2 supporting 400+ radios (Icom, Yaesu, Kenwood, Elecraft, etc.), alphabetical brand sorting, instant search, root-free local USB CAT loopback bridge, dedicated USB soundcard I/O selection, and TX output volume control.
 - **PTT Timing & Audio Drain Safety**: Physical audio drain duration calculated from sample rate and buffer length to eliminate empty-carrier hanging issues upon PTT release.
 - **Size & Performance Optimization**: Native Hamlib build compiled with `-Os` and dead-code stripping, coupled with R8 optimizations, cutting APK size by >50% (down to ~44 MB).
@@ -159,7 +173,7 @@ APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APR
 - GitHub Release checking runs once silently at app startup; failures and an up-to-date result remain silent. Settings also provides a manual check. No background/periodic polling and no automatic APK download/install.
 - Android 16+ Live Updates / status chip display, Material 3 / Jetpack Compose UI, station search, and compact lists.
 - MapLibre Native for AMap/OSM/custom raster maps and Google Maps SDK for Google map/satellite modes.
-- Original APRSdroid APRS-IS, AFSK, KISS, TNC2, Kenwood, Bluetooth, USB and LAN TNC paths remain available.
+- Original APRSdroid APRS-IS, AFSK, KISS (hardened escape and concurrency handling), TNC2, Kenwood, Bluetooth, USB and LAN TNC paths remain available.
 
 ### Requirements and downloads
 
@@ -189,9 +203,9 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for implementation constraints 
 - 协议与实现参考 / Protocol references: [N0BOY/FT8CN](https://github.com/N0BOY/FT8CN), [wfview](https://wfview.org/)
 - 地图引擎 / Map engine: [MapLibre Native](https://maplibre.org/maplibre-native/); OpenStreetMap data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)
 - 许可证 / License: [GNU General Public License v2.0](LICENSE)
-- 附加授权 / Additional grant: 本项目作者独立编写的电台连接与诊断文件（共 82 个，见 [LICENSING.md](LICENSING.md)）**额外按 GPL-2.0-or-later 提供**，可由其他项目按 “GPLv2 或更高版本” 引用；项目整体仍按 GPL-2.0-only 分发。
+- 附加授权 / Additional grant: 本项目作者独立编写的电台连接与诊断文件（共 84 个，见 [LICENSING.md](LICENSING.md)）**额外按 GPL-2.0-or-later 提供**，可由其他项目按 “GPLv2 或更高版本” 引用；项目整体仍按 GPL-2.0-only 分发。
 
-  The radio-link and diagnostics files authored inside this repository (82 files, listed in [LICENSING.md](LICENSING.md))
+  The radio-link and diagnostics files authored inside this repository (84 files, listed in [LICENSING.md](LICENSING.md))
   are **additionally available under GPL-2.0-or-later**; the project as a whole remains GPL-2.0-only.
   来源与核查记录见 [PROVENANCE.md](PROVENANCE.md)。
 

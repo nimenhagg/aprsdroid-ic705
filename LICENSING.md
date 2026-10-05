@@ -16,16 +16,16 @@
 
 | 范围 | 文件数 | 内容 |
 | --- | --- | --- |
-| `src/ic705/**` | 26 | IC-705 LAN 协议编解码、UDP 传输、会话状态机与恢复、PTT 时序、后端控制器、Android 网络绑定、诊断页 |
+| `src/ic705/**` | 27 | IC-705 LAN 协议编解码、UDP 传输、会话状态机与恢复、PTT 时序、后端控制器、Android 网络绑定、诊断页 |
 | `src/radio/**` | 12 | Hamlib CAT 控制、USB 串口/音频路由、PTT 序列、电台型号目录、WLAN 型号表 |
 | `src/hamlib/**` | 5 | Hamlib JNI 封装（运行时依赖 LGPL-2.1 的 `libhamlib`） |
 | `src/diagnostic/**` | 6 + README | 结构化 JSONL 日志、诊断包导出、网络快照 |
 | `src/backend/Ic705WifiBackend.kt` | 1 | IC-705 WLAN 后端适配 |
 | `src/backend/UsbRadioBackend.kt` | 1 | USB/Hamlib 电台后端适配 |
 | `src/ui/screen/Ic705RxDiagnosticScreen.kt` | 1 | IC-705 实时诊断界面 |
-| `test/java/org/aprsdroid/app/{ic705,radio,hamlib}/**` | 30 | 上述功能的单元测试 |
+| `test/java/org/aprsdroid/app/{ic705,radio,hamlib}/**` | 31 | 上述功能的单元测试 |
 
-合计 82 个 Kotlin 文件。
+合计 84 个 Kotlin 文件。
 
 ## 2. 判定方法与证据
 
@@ -52,14 +52,14 @@
 
 ## 4. 组合与分发
 
-- 本项目发布的 APK 是 "GPL-2.0-only 项目 + 上述 82 个 GPL-2.0-or-later 文件" 的组合，**整体按 GPL-2.0-only 分发**（GPLv2 与 GPLv2+ 兼容）。
+- 本项目发布的 APK 是 "GPL-2.0-only 项目 + 上述 84 个 GPL-2.0-or-later 文件" 的组合，**整体按 GPL-2.0-only 分发**（GPLv2 与 GPLv2+ 兼容）。
 - 下游若只取第 1 节列出的文件（例如把电台连接部分抽成独立库），可以选择按 **GPL-2.0-or-later** 使用，从而与 GPLv3 项目结合。
 - 上游派生文件永远不得按 v2+ 使用；GPLv3 项目也不得引用这些派生文件。
 
 ### Consumer guidance
 
 1. The **APK / the project as a whole** is GPL-2.0-only: you must follow GPLv2.
-2. The 82 files listed in section 1 are **also** offered under GPL-2.0-or-later. If you use only those
+2. The 84 files listed in section 1 are **also** offered under GPL-2.0-or-later. If you use only those
    files (for example as a radio-link library), you may take them under "GPLv2 or any later version",
    which makes them combinable with GPLv3 projects.
 3. Files in section 3 are GPL-2.0-only. Do not treat them as "or later".

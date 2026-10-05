@@ -4,12 +4,13 @@
 
 ## 1. 当前基线
 
-截至 `Mod-v2.5.0`：
+截至 `Mod-v2.6.0`：
 
 - Hamlib Android 构建、JNI、USB CAT loopback bridge、通用 RadioControl、USB Audio 路由和 TX drain 已进入主线。
 - USB 电台设置、400+ Hamlib 电台型号选择、品牌排序、自定义 CI-V 地址已经进入主线。
-- IC-705 WLAN 已有独立的协议编解码、UDP transport、generation 化 session、CONTROL/CI-V/AUDIO 分角色 recovery、音频重排、PTT ACK/readback/watchdog 和诊断体系。
-- IC-705 WLAN 支持 IC-705、IC-9700、IC-7610、IC-905 预置以及 CUSTOM CI-V 地址。
+- IC-705 WLAN 支持 IC-705、IC-9700、IC-7610、IC-905 预置以及 CUSTOM CI-V 地址；支持 CI-V 工作频率自动同步与内部 GPS 联动。
+- APRS 现代协议全面实现：APRS 1.2 DAO 亚米级高精度位置扩展、APRS 101 第 9 章 PHG / 第 10 章 RNG 覆盖半径估算、第 12 章 WX 气象解析、第 15 章 Queries 协议指令自动应答。
+- 智能自适应多编码字符集解码器（GB2312/GBK/GB18030/UTF-8 与 Latin-1 恢复），彻底消除国内台站备注与气象乱码。
 - 本地 AFSK1200 RX 使用 Graywolf；TX 继续使用稳定的 APRSdroid PCM 生成链。
 - 正式 Release 当前提供 ARM64/ARMv7 OpenGL APK。
 - 项目整体仍为 GPL-2.0-only；[LICENSING.md](LICENSING.md) 列出的独立文件另有 GPL-2.0-or-later 授权。

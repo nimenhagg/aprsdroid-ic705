@@ -1,9 +1,9 @@
-package org.aprsdroid.app
+// SPDX-License-Identifier: GPL-2.0-or-later
 
-import org.aprsdroid.app.ic705.civ.Ic705CivParser
+package org.aprsdroid.app.ic705.civ
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class Ic705CivParserTest {
