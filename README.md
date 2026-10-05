@@ -1,16 +1,44 @@
+<div align="center">
+
+<img src="img/logo.svg" alt="APRSdroid Mod" width="160" height="160" style="border-radius:24px;"/>
+
 # APRSdroid Mod
 
-APRSdroid 的现代化社区修改版，增加 Icom IC-705 等 WLAN / USB 直连 APRS 收发与 Hamlib 多电台控制，并持续维护现代 Android UI、诊断和性能改进。
+**专为 HAM 打造的现代化 Android APRS 客户端 · IC-705 等 WLAN / USB 直连**
 
-[中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
+为业余无线电爱好者量身定制的现代化 APRS 终端 —— 协议全规格支持、无线电/网络双链路、硬件无缝直连、离线地图与优雅的 Material 3 界面，一站式掌握电波世界的一举一动。
+
+[![License: GPL-2.0](https://img.shields.io/badge/License-GPLv2-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Android%209%2B%20%7C%20API%2028--37-brightgreen.svg)]()
+[![Version](https://img.shields.io/badge/Version-Mod--v2.6.0-orange.svg)](https://github.com/nimenhagg/aprsdroid-ic705/releases)
+[![UI](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-purple.svg)]()
+[![Modem](https://img.shields.io/badge/Modem-Graywolf%20AFSK1200-success.svg)]()
+[![Radio](https://img.shields.io/badge/Radio-IC--705%20%7C%20Hamlib%20400%2B-blueviolet.svg)]()
+
+维护者：[nimenhagg](https://github.com/nimenhagg) · 源码仓库：[aprsdroid-ic705](https://github.com/nimenhagg/aprsdroid-ic705) · 最新版发布：[GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
+
+社区交流：[QQ 群 1124716537](https://qun.qq.com/universal-share/share?ac=1&authKey=PjrBi5011R2U%2F1ExGjHnHycWPkdQUhKRJUbPyQltK6QFnujWWIouWDJGP2ZJ7%2BJ%2B&busi_data=eyJncm91cENvZGUiOiIxMTI0NzE2NTM3IiwidG9rZW4iOiJWK0xVZ0JGNVVNMEF3T2FYOEY2UjFWUnJla2dpZVdERWpwNERWS21VOUJNRWxYWXhPWjBlYVlYL1NQdXZ1NE1FIiwidWluIjoiMzIwMDQ1NjE3NCJ9&data=y4e4QQ6_nM_FMmqYhGCnyQtGt-qJn7kUuOWVY_ho9XyiHYs8vwZBnMAKdxOdDOpMUdNBpwK8B8H8F1_Z6wln7g&svctype=4&tempid=h5_group_info) · Telegram：[@APRSdroid_Mod](https://t.me/APRSdroid_Mod)
+
+**🌐 语言 / Language：** [简体中文](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md) · [下载 / Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 
 **最新稳定版 / Latest release: `Mod-v2.6.0`**
 
-### 社区交流
+</div>
 
-- QQ 群：**1124716537**（APRSdroid Mod 测试群）
-- [点击链接加入群聊【APRSdroid Mod测试】](https://qun.qq.com/universal-share/share?ac=1&authKey=PjrBi5011R2U%2F1ExGjHnHycWPkdQUhKRJUbPyQltK6QFnujWWIouWDJGP2ZJ7%2BJ%2B&busi_data=eyJncm91cENvZGUiOiIxMTI0NzE2NTM3IiwidG9rZW4iOiJWK0xVZ0JGNVVNMEF3T2FYOEY2UjFWUnJla2dpZVdERWpwNERWS21VOUJNRWxYWXhPWjBlYVlYL1NQdXZ1NE1FIiwidWluIjoiMzIwMDQ1NjE3NCJ9&data=y4e4QQ6_nM_FMmqYhGCnyQtGt-qJn7kUuOWVY_ho9XyiHYs8vwZBnMAKdxOdDOpMUdNBpwK8B8H8F1_Z6wln7g&svctype=4&tempid=h5_group_info)
-- Telegram：[@APRSdroid_Mod](https://t.me/APRSdroid_Mod)
+---
+
+- [✨ 核心特性](#主要功能)
+- [📱 兼容性与架构](#兼容性)
+- [📥 下载与安装](#下载与安装)
+- [📻 电台连接配置](#电台配置)
+  - [1. WLAN 电台（IC-705 / IC-9700 等）](#1-wlan-电台ic-705--ic-9700--ic-7610--ic-905)
+  - [2. USB 电台（Hamlib 400+ 型号）](#2-usb-电台hamlib)
+- [🔍 诊断与故障排查](#诊断与故障排查)
+- [🗺️ 地图显示与离线包](#地图)
+- [🔨 从源码构建](#从源码构建)
+- [📄 致谢与许可证](#致谢与许可证--credits-and-license)
+
+---
 
 > 本项目是非官方社区修改版，与 Icom、原 APRSdroid 作者或 APRS-IS 运营方不存在隶属关系。发射前请确认当地法规、频率、功率、路径和呼号设置。
 
