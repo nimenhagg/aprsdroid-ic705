@@ -14,7 +14,7 @@
 [![Target](https://img.shields.io/badge/Target-Android%2017%20(API%2037)-brightgreen.svg)]()
 [![UI](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-purple.svg)]()
 
-交流群：[QQ 群 1124716537](https://qun.qq.com/universal-share/share?ac=1&authKey=PjrBi5011R2U%2F1ExGjHnHycWPkdQUhKRJUbPyQltK6QFnujWWIouWDJGP2ZJ7%2BJ%2B&busi_data=eyJncm91cENvZGUiOiIxMTI0NzE2NTM3IiwidG9rZW4iOiJWK0xVZ0JGNVVNMEF3T2FYOEY2UjFWUnJla2dpZVdERWpwNERWS21VOUJNRWxYWXhPWjBlYVlYL1NQdXZ1NE1FIiwidWluIjoiMzIwMDQ1NjE3NCJ9&data=y4e4QQ6_nM_FMmqYhGCnyQtGt-qJn7kUuOWVY_ho9XyiHYs8vwZBnMAKdxOdDOpMUdNBpwK8B8H8F1_Z6wln7g&svctype=4&tempid=h5_group_info) · Telegram：[@APRSdroid_Mod](https://t.me/APRSdroid_Mod) · 最新版发布：[GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases)
+官网：[GitHub Pages](https://nimenhagg.github.io/aprsdroid-ic705/) · 最新版发布：[GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases) · 交流群：[QQ 群 1124716537](https://qun.qq.com/universal-share/share?ac=1&authKey=PjrBi5011R2U%2F1ExGjHnHycWPkdQUhKRJUbPyQltK6QFnujWWIouWDJGP2ZJ7%2BJ%2B&busi_data=eyJncm91cENvZGUiOiIxMTI0NzE2NTM3IiwidG9rZW4iOiJWK0xVZ0JGNVVNMEF3T2FYOEY2UjFWUnJla2dpZVdERWpwNERWS21VOUJNRWxYWXhPWjBlYVlYL1NQdXZ1NE1FIiwidWluIjoiMzIwMDQ1NjE3NCJ9&data=y4e4QQ6_nM_FMmqYhGCnyQtGt-qJn7kUuOWVY_ho9XyiHYs8vwZBnMAKdxOdDOpMUdNBpwK8B8H8F1_Z6wln7g&svctype=4&tempid=h5_group_info) · Telegram：[@APRSdroid_Mod](https://t.me/APRSdroid_Mod)
 
 **🌐 语言 / Language：** [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md)
 
