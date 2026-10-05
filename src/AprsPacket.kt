@@ -94,6 +94,22 @@ object AprsPacket {
     }
 
     @JvmStatic
+    fun formatPhg(
+        powerWatts: Double?,
+        heightFeet: Double?,
+        gainDb: Double?,
+        directivityDeg: Int = 0,
+        isOmni: Boolean = (directivityDeg == 0),
+    ): String = org.aprsdroid.app.aprs.AprsPhg.encode(powerWatts, heightFeet, gainDb, directivityDeg, isOmni).orEmpty()
+
+    @JvmStatic
+    fun parsePhg(comment: String?): org.aprsdroid.app.aprs.PhgData? {
+        if (comment == null) return null
+        val match = org.aprsdroid.app.aprs.AprsPhg.PHG_REGEX.find(comment) ?: return null
+        return org.aprsdroid.app.aprs.AprsPhg.decode(match.value)
+    }
+
+    @JvmStatic
     fun formatLogin(callsign: String, ssid: String?, passcode: String, version: String): String {
         return String.format(Locale.US, "user %s pass %s vers %s", formatCallSsid(callsign, ssid), passcode, version)
     }

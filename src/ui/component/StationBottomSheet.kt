@@ -129,7 +129,7 @@ fun StationBottomSheetContent(
                         .fillMaxWidth()
                         .padding(14.dp)
                 ) {
-                    if (station.isFmo || !station.qrg.isNullOrEmpty()) {
+                    if (station.isFmo || !station.qrg.isNullOrEmpty() || station.phg != null) {
                         StationTagRow(station)
                         Spacer(modifier = Modifier.height(8.dp))
                     }

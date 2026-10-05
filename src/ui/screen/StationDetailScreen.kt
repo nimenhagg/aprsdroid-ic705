@@ -167,18 +167,29 @@ fun StationDetailScreen(
                         stationItem?.let { item ->
                             val qrg = item.qrg
                             val comment = item.comment
-                            if (item.isFmo || !qrg.isNullOrEmpty() || !comment.isNullOrEmpty()) {
+                            val phg = item.phg
+                            if (item.isFmo || !qrg.isNullOrEmpty() || !comment.isNullOrEmpty() || phg != null) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = MaterialTheme.colorScheme.outlineVariant
                                 )
 
-                                if (item.isFmo || !qrg.isNullOrEmpty()) {
+                                if (item.isFmo || !qrg.isNullOrEmpty() || phg != null) {
                                     StationTagRow(item)
                                 }
 
+                                if (phg != null) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "PHG: ${org.aprsdroid.app.aprs.AprsPhg.formatDescription(phg)}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+
                                 if (!comment.isNullOrEmpty()) {
-                                    if (item.isFmo || !qrg.isNullOrEmpty()) Spacer(modifier = Modifier.height(6.dp))
+                                    if (item.isFmo || !qrg.isNullOrEmpty() || phg != null) Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         text = comment,
                                         fontSize = 13.sp,

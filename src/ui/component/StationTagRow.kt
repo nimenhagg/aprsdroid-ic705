@@ -17,7 +17,8 @@ import org.aprsdroid.app.model.StationItem
 @Composable
 fun StationTagRow(station: StationItem, modifier: Modifier = Modifier) {
     val qrg = station.qrg
-    if (!station.isFmo && qrg.isNullOrEmpty()) return
+    val phg = station.phg
+    if (!station.isFmo && qrg.isNullOrEmpty() && phg == null) return
 
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (station.isFmo) {
@@ -45,6 +46,20 @@ fun StationTagRow(station: StationItem, modifier: Modifier = Modifier) {
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+        if (phg != null) {
+            Surface(
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                shape = RoundedCornerShape(7.dp)
+            ) {
+                Text(
+                    text = "${phg.powerWatts}W/${phg.heightMeters}m/${phg.gainDb}dB",
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
                 )
             }
         }

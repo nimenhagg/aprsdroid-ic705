@@ -588,7 +588,7 @@ fun StationCardItem(
                     }
                 }
 
-                if (item.isFmo || !item.qrg.isNullOrEmpty()) {
+                if (item.isFmo || !item.qrg.isNullOrEmpty() || item.phg != null) {
                     Spacer(modifier = Modifier.height(if (compact) 1.dp else 2.dp))
                     StationTagRow(item)
                 }

@@ -16,6 +16,13 @@ import org.aprsdroid.app.radio.RadioProfile
 
 class PrefsWrapper(@JvmField val context: Context) {
     companion object {
+        const val KEY_PHG_ENABLED = "phg_enabled"
+        const val KEY_PHG_POWER = "phg_power"
+        const val KEY_PHG_HEIGHT = "phg_height"
+        const val KEY_PHG_HEIGHT_UNIT = "phg_height_unit"
+        const val KEY_PHG_GAIN = "phg_gain"
+        const val KEY_PHG_DIR = "phg_dir"
+
         @JvmStatic
         fun defaultSharedPreferences(context: Context): SharedPreferences {
             return context.getSharedPreferences(
@@ -110,6 +117,24 @@ class PrefsWrapper(@JvmField val context: Context) {
     fun getShowSatellite(): Boolean = prefs.getBoolean("show_satellite", false)
     fun getSendBatteryAprsIs(): Boolean = prefs.getBoolean("send_battery_aprsis", false)
     fun getStationTapAction(): String = getString("station_tap_action", "message")
+
+    fun getPhgEnabled(): Boolean = prefs.getBoolean(KEY_PHG_ENABLED, false)
+    fun setPhgEnabled(enabled: Boolean): Boolean = setBoolean(KEY_PHG_ENABLED, enabled)
+
+    fun getPhgPower(): String = getString(KEY_PHG_POWER, "")
+    fun setPhgPower(power: String): String = set(KEY_PHG_POWER, power)
+
+    fun getPhgHeight(): String = getString(KEY_PHG_HEIGHT, "")
+    fun setPhgHeight(height: String): String = set(KEY_PHG_HEIGHT, height)
+
+    fun getPhgHeightUnit(): String = getString(KEY_PHG_HEIGHT_UNIT, "m")
+    fun setPhgHeightUnit(unit: String): String = set(KEY_PHG_HEIGHT_UNIT, unit)
+
+    fun getPhgGain(): String = getString(KEY_PHG_GAIN, "")
+    fun setPhgGain(gain: String): String = set(KEY_PHG_GAIN, gain)
+
+    fun getPhgDir(): String = getString(KEY_PHG_DIR, "0")
+    fun setPhgDir(dir: String): String = set(KEY_PHG_DIR, dir)
 
     fun getShowAge(): Long = getStringInt("show_age", 30) * 60L * 1000L
 

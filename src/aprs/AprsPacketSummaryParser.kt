@@ -35,6 +35,7 @@ data class ParsedAprsPacket(
     val frequency: String? = null,
     val comment: String? = null,
     val message: String? = null,
+    val phg: PhgData? = null,
 )
 
 object AprsPacketSummaryParser {
@@ -57,6 +58,7 @@ object AprsPacketSummaryParser {
         var speed: Int? = null
         var comment: String? = payload.drop(1).trim().takeIf { it.isNotEmpty() && kind == AprsPacketKind.STATUS }
         var message: String? = null
+        var phg: PhgData? = null
 
         runCatching { Parser.parse(raw) }.getOrNull()?.aprsInformation?.let { info ->
             when (info) {
@@ -67,6 +69,16 @@ object AprsPacketSummaryParser {
                     val cse = info.extension as? CourseAndSpeedExtension
                     course = cse?.course
                     speed = cse?.speed
+                    val phgExt = info.extension as? net.ab0oo.aprs.parser.PHGExtension
+                    if (phgExt != null) {
+                        phg = PhgData(
+                            powerWatts = phgExt.power,
+                            heightFeet = phgExt.height,
+                            gainDb = phgExt.gain,
+                            directivityDeg = phgExt.directivity,
+                            rawCode = "PHG${AprsPhg.powerToCode(phgExt.power.toDouble())}${AprsPhg.heightToCode(phgExt.height.toDouble())}${phgExt.gain}${AprsPhg.directivityToCode(phgExt.directivity)}",
+                        )
+                    }
                     comment = info.comment?.trim()?.takeIf { it.isNotEmpty() }
                 }
                 is ObjectPacket -> {
@@ -76,6 +88,16 @@ object AprsPacketSummaryParser {
                     val cse = info.extension as? CourseAndSpeedExtension
                     course = cse?.course
                     speed = cse?.speed
+                    val phgExt = info.extension as? net.ab0oo.aprs.parser.PHGExtension
+                    if (phgExt != null) {
+                        phg = PhgData(
+                            powerWatts = phgExt.power,
+                            heightFeet = phgExt.height,
+                            gainDb = phgExt.gain,
+                            directivityDeg = phgExt.directivity,
+                            rawCode = "PHG${AprsPhg.powerToCode(phgExt.power.toDouble())}${AprsPhg.heightToCode(phgExt.height.toDouble())}${phgExt.gain}${AprsPhg.directivityToCode(phgExt.directivity)}",
+                        )
+                    }
                     comment = info.comment?.trim()?.takeIf { it.isNotEmpty() }
                 }
                 is MessagePacket -> {
@@ -87,6 +109,7 @@ object AprsPacketSummaryParser {
 
         val altitude = altitudeRegex.find(payload)?.groupValues?.getOrNull(1)?.toIntOrNull()
         val frequency = AprsPacket.parseQrg(comment ?: payload)
+        val phgResult = phg ?: AprsPacket.parsePhg(comment ?: payload)
 
         return ParsedAprsPacket(
             raw = raw,
@@ -103,6 +126,7 @@ object AprsPacketSummaryParser {
             frequency = frequency,
             comment = comment,
             message = message,
+            phg = phgResult,
         )
     }
 

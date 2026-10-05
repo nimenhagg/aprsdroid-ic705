@@ -385,7 +385,9 @@ class AprsService : Service() {
     }
 
     private fun buildPositionComment(protocolFields: String, status: String): String {
-        val maxLength = 43
+        // APRS 101: comment field expanded to 62 chars so protocol extensions (PHG, speed,
+        // freq, altitude) leave ample room for user status without premature truncation.
+        val maxLength = 62
         val base = StringBuilder(protocolFields.take(maxLength))
         val userStatus = status.trim()
         if (userStatus.isNotEmpty() && base.length < maxLength) {
@@ -411,9 +413,19 @@ class AprsService : Service() {
             positionAmbiguity = serviceSettings.positionAmbiguity
         }
         val statusSpd = if (serviceSettings.includeSpeedAndBearing) AprsPacket.formatCourseSpeed(location) else ""
-        val statusFreq = AprsPacket.formatFreq(statusSpd, serviceSettings.frequencyMhz)
+        val statusPhg = if (serviceSettings.phgEnabled) serviceSettings.phgCode.orEmpty() else ""
+
+        // APRS 101 Chapter 9:
+        // A 7-character Data Extension immediately follows the symbol code.
+        // When stationary/manual, PHG occupies the primary 7-character extension slot.
+        // When moving, Course/Speed occupies the primary slot, followed immediately by PHG.
+        val primaryExt = if (statusSpd.isNotEmpty()) statusSpd else statusPhg
+        val secondaryExt = if (statusSpd.isNotEmpty() && statusPhg.isNotEmpty()) statusPhg else ""
+        val dataExtensions = primaryExt + secondaryExt
+
+        val statusFreq = AprsPacket.formatFreq(dataExtensions, serviceSettings.frequencyMhz)
         val statusAlt = if (serviceSettings.includeAltitude) AprsPacket.formatAltitude(location) else ""
-        val comment = buildPositionComment(statusSpd + statusFreq + statusAlt, status)
+        val comment = buildPositionComment(dataExtensions + statusFreq + statusAlt, status)
         return newPacket(PositionPacket(pos, comment, true))
     }
 

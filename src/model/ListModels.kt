@@ -16,6 +16,8 @@ data class StationItem(
 ) {
     val isFmo: Boolean
         get() = flags and StorageDatabase.Companion.Station.FLAG_FMO != 0
+    val phg: org.aprsdroid.app.aprs.PhgData?
+        get() = org.aprsdroid.app.AprsPacket.parsePhg(comment)
     companion object {
         fun fromCursor(cursor: Cursor): List<StationItem> {
             val list = ArrayList<StationItem>(cursor.count)

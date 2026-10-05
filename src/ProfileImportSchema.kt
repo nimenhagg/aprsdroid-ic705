@@ -25,12 +25,14 @@ internal object ProfileImportSchema {
             "tcp.sotimeout", "udp.server", "interval", "manual_lat", "manual_lon",
             "priv_ambiguity", "sb.fastrate", "sb.fastspeed", "sb.slowrate",
             "sb.slowspeed", "sb.turnmin", "sb.turnslope", "sb.turntime",
+            "phg_power", "phg_height", "phg_height_unit", "phg_gain", "phg_dir",
         )
 
         booleans(
             "show_objects", "show_satellite", "send_battery_aprsis", "periodicposition",
             "priv_spdbear", "priv_altitude", "afsk.btsco", "bt.client", "kenwood.gps",
             "kenwood.gps_debug", "keepscreen", "conn_log", "notification_live_updates",
+            "phg_enabled",
         )
 
         floats("map_lat", "map_lon", "map_zoom")

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.SettingsInputAntenna
 import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import org.aprsdroid.app.BuildConfig
 import org.aprsdroid.app.R
 import org.aprsdroid.app.ui.component.DigiPathDialogCompose
+import org.aprsdroid.app.ui.component.PhgDialogCompose
 import org.aprsdroid.app.ui.component.PreferenceCategoryHeader
 import org.aprsdroid.app.ui.component.PreferenceEditDialog
 import org.aprsdroid.app.ui.component.PreferenceGroupCard
@@ -77,6 +79,12 @@ fun SettingsScreen(
     showObjects: Boolean,
     sendBatteryInfo: Boolean,
     stationTapAction: String,
+    phgEnabled: Boolean,
+    phgPower: String,
+    phgHeight: String,
+    phgHeightUnit: String,
+    phgGain: String,
+    phgDir: String,
     onBack: () -> Unit,
     onOpenCallsignDialog: () -> Unit,
     onSaveSsid: (String) -> Unit,
@@ -86,6 +94,7 @@ fun SettingsScreen(
     onOpenSymbolPicker: () -> Unit,
     onSaveFrequency: (String) -> Unit,
     onSaveStatus: (String) -> Unit,
+    onSavePhg: (Boolean, String, String, String, String, String) -> Unit,
     onOpenConnectionSetup: () -> Unit,
     onOpenLocationSetup: () -> Unit,
     onSaveMapMode: (String) -> Unit,
@@ -108,6 +117,7 @@ fun SettingsScreen(
     var showDigiPathDialog by remember { mutableStateOf(false) }
     var showFrequencyDialog by remember { mutableStateOf(false) }
     var showStatusDialog by remember { mutableStateOf(false) }
+    var showPhgDialog by remember { mutableStateOf(false) }
     var showMapModeDialog by remember { mutableStateOf(false) }
     var showMapCustomUrlDialog by remember { mutableStateOf(false) }
     var showMapCustomSubdomainsDialog by remember { mutableStateOf(false) }
@@ -136,6 +146,16 @@ fun SettingsScreen(
     val digiPathDisplay = if (digiPath.isEmpty()) stringResource(R.string.setting_direct_path) else digiPath
     val frequencyDisplay = if (frequency.isEmpty()) stringResource(R.string.setting_not_set) else frequency
     val statusDisplay = if (status.isEmpty()) stringResource(R.string.setting_not_set) else status
+    val phgDisplay = if (phgEnabled) {
+        val hUnit = if (phgHeightUnit.equals("ft", ignoreCase = true)) "ft" else "m"
+        val pStr = if (phgPower.isNotEmpty()) "${phgPower}W" else ""
+        val hStr = if (phgHeight.isNotEmpty()) "$phgHeight$hUnit" else ""
+        val gStr = if (phgGain.isNotEmpty()) "${phgGain}dB" else ""
+        val parts = listOfNotNull(pStr.ifEmpty { null }, hStr.ifEmpty { null }, gStr.ifEmpty { null })
+        if (parts.isNotEmpty()) parts.joinToString(" / ") else stringResource(R.string.setting_phg_enabled)
+    } else {
+        stringResource(R.string.setting_disabled)
+    }
 
     Scaffold(
         topBar = {
@@ -253,6 +273,14 @@ fun SettingsScreen(
                     summary = stringResource(R.string.p_status_summary),
                     icon = Icons.Default.Info,
                     onClick = { showStatusDialog = true },
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceValueItem(
+                    title = stringResource(R.string.p_phg),
+                    value = phgDisplay,
+                    summary = stringResource(R.string.p_phg_summary),
+                    icon = Icons.Default.SettingsInputAntenna,
+                    onClick = { showPhgDialog = true },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceSwitchItem(
@@ -461,6 +489,22 @@ fun SettingsScreen(
             onAddPreset = onAddDigiPreset,
             onDeletePreset = onDeleteDigiPreset,
             onDismiss = { showDigiPathDialog = false },
+        )
+    }
+
+    if (showPhgDialog) {
+        PhgDialogCompose(
+            initialEnabled = phgEnabled,
+            initialPower = phgPower,
+            initialHeight = phgHeight,
+            initialHeightUnit = phgHeightUnit,
+            initialGain = phgGain,
+            initialDir = phgDir,
+            onDismiss = { showPhgDialog = false },
+            onSave = { enabled, power, height, heightUnit, gain, dir ->
+                onSavePhg(enabled, power, height, heightUnit, gain, dir)
+                showPhgDialog = false
+            },
         )
     }
 }

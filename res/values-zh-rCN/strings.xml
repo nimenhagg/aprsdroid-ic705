@@ -493,4 +493,32 @@
     <string name="station_search_placeholder">搜索呼号或备注…</string>
     <string name="station_search_empty">没有匹配的台站</string>
     <string name="station_search_close">关闭搜索</string>
+
+    <!-- PHG (APRS 101 第 9 章) -->
+    <string name="p_phg">电台参数 (PHG)</string>
+    <string name="p_phg_summary">发射功率、天线有效高度、增益与方向性</string>
+    <string name="setting_disabled">已停用</string>
+    <string name="setting_enabled">已启用</string>
+    <string name="setting_phg_enabled">已配置</string>
+    <string name="phg_dialog_title">电台参数 (PHG 扩展)</string>
+    <string name="phg_enable">启用 PHG 数据扩展</string>
+    <string name="phg_power_label">发射功率 (瓦特 W)</string>
+    <string name="phg_height_label">天线有效高度 (HAAT)</string>
+    <string name="phg_height_hint">地表平均高度 (HAAT)，非海拔高度</string>
+    <string name="phg_unit_m">米 (m)</string>
+    <string name="phg_unit_ft">英尺 (ft)</string>
+    <string name="phg_gain_label">天线增益 (dB / dBi)</string>
+    <string name="phg_dir_label">天线方向性</string>
+    <string name="phg_dir_omni">全向 Omni (0)</string>
+    <string name="phg_dir_45">45° 东北 NE (1)</string>
+    <string name="phg_dir_90">90° 正东 E (2)</string>
+    <string name="phg_dir_135">135° 东南 SE (3)</string>
+    <string name="phg_dir_180">180° 正南 S (4)</string>
+    <string name="phg_dir_225">225° 西南 SW (5)</string>
+    <string name="phg_dir_270">270° 正西 W (6)</string>
+    <string name="phg_dir_315">315° 西北 NW (7)</string>
+    <string name="phg_dir_360">360° 正北 N (8)</string>
+    <string name="phg_preview_label">协议扩展报文预览</string>
+    <string name="phg_preview_desc">功率与有效高度将按 APRS 101 规则向下取档。</string>
+    <string name="packet_phg">PHG 参数</string>
 </resources>

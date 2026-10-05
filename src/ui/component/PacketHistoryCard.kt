@@ -93,6 +93,7 @@ fun PacketHistoryCard(post: LogPostItem) {
             }
             parsed.altitudeFeet?.let { DetailLine(stringResource(R.string.packet_altitude), "$it ft") }
             parsed.frequency?.let { DetailLine(stringResource(R.string.packet_frequency), "$it MHz") }
+            parsed.phg?.let { DetailLine(stringResource(R.string.packet_phg), org.aprsdroid.app.aprs.AprsPhg.formatDescription(it)) }
             parsed.message?.let { DetailLine(stringResource(R.string.packet_message), it) }
             parsed.comment?.let { DetailLine(stringResource(R.string.packet_comment), it) }
             if (parsed.kind == AprsPacketKind.UNKNOWN && parsed.payload.isNotBlank()) {

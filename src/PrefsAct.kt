@@ -97,6 +97,12 @@ class PrefsAct : ComponentActivity() {
     private val showObjectsState = mutableStateOf(true)
     private val sendBatteryInfoState = mutableStateOf(false)
     private val stationTapActionState = mutableStateOf("message")
+    private val phgEnabledState = mutableStateOf(false)
+    private val phgPowerState = mutableStateOf("")
+    private val phgHeightState = mutableStateOf("")
+    private val phgHeightUnitState = mutableStateOf("m")
+    private val phgGainState = mutableStateOf("")
+    private val phgDirState = mutableStateOf("0")
     private val identityDialogVisible = mutableStateOf(false)
     private val aboutDialogVisible = mutableStateOf(false)
     private val updateAvailableState = mutableStateOf<UpdateCheckResult.UpdateAvailable?>(null)
@@ -140,6 +146,12 @@ class PrefsAct : ComponentActivity() {
                     showObjects = showObjectsState.value,
                     sendBatteryInfo = sendBatteryInfoState.value,
                     stationTapAction = stationTapActionState.value,
+                    phgEnabled = phgEnabledState.value,
+                    phgPower = phgPowerState.value,
+                    phgHeight = phgHeightState.value,
+                    phgHeightUnit = phgHeightUnitState.value,
+                    phgGain = phgGainState.value,
+                    phgDir = phgDirState.value,
                     onBack = { onBackPressedDispatcher.onBackPressed() },
                     onOpenCallsignDialog = {
                         identityDialogVisible.value = true
@@ -183,6 +195,15 @@ class PrefsAct : ComponentActivity() {
                     },
                     onSaveStatus = { value ->
                         prefs.set("status", value.take(42))
+                        refreshPrefsState()
+                    },
+                    onSavePhg = { enabled, power, height, unit, gain, dir ->
+                        prefs.setPhgEnabled(enabled)
+                        prefs.setPhgPower(power)
+                        prefs.setPhgHeight(height)
+                        prefs.setPhgHeightUnit(unit)
+                        prefs.setPhgGain(gain)
+                        prefs.setPhgDir(dir)
                         refreshPrefsState()
                     },
                     onOpenConnectionSetup = {
@@ -365,5 +386,11 @@ class PrefsAct : ComponentActivity() {
         showObjectsState.value = prefs.getShowObjects()
         sendBatteryInfoState.value = prefs.getSendBatteryAprsIs()
         stationTapActionState.value = prefs.getStationTapAction()
+        phgEnabledState.value = prefs.getPhgEnabled()
+        phgPowerState.value = prefs.getPhgPower()
+        phgHeightState.value = prefs.getPhgHeight()
+        phgHeightUnitState.value = prefs.getPhgHeightUnit()
+        phgGainState.value = prefs.getPhgGain()
+        phgDirState.value = prefs.getPhgDir()
     }
 }

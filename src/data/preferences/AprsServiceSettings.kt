@@ -57,6 +57,35 @@ class AprsServiceSettings(
     val connectionLoggingEnabled: Boolean
         get() = prefs.getBoolean(KEY_CONNECTION_LOG, false)
 
+    val phgEnabled: Boolean
+        get() = prefs.getPhgEnabled()
+
+    val phgPowerWatts: Double?
+        get() = prefs.getPhgPower().toDoubleOrNull()?.takeIf { it >= 0 }
+
+    val phgHeightFeet: Double?
+        get() {
+            val h = prefs.getPhgHeight().toDoubleOrNull()?.takeIf { it >= 0 } ?: return null
+            return if (prefs.getPhgHeightUnit() == "m") org.aprsdroid.app.aprs.AprsPhg.m2ft(h) else h
+        }
+
+    val phgGainDb: Double?
+        get() = prefs.getPhgGain().toDoubleOrNull()?.takeIf { it >= 0 }
+
+    val phgDirectivityCode: Int
+        get() = prefs.getPhgDir().toIntOrNull()?.coerceIn(0, 8) ?: 0
+
+    val phgCode: String?
+        get() = if (phgEnabled) {
+            org.aprsdroid.app.aprs.AprsPhg.encode(
+                powerWatts = phgPowerWatts,
+                heightFeet = phgHeightFeet,
+                gainDb = phgGainDb,
+                directivityDeg = org.aprsdroid.app.aprs.AprsPhg.DIRECTIVITY_ANGLES[phgDirectivityCode],
+                isOmni = (phgDirectivityCode == 0),
+            )
+        } else null
+
     fun symbol(defaultValue: String): String = prefs.getString(KEY_SYMBOL, defaultValue)
 
     fun status(defaultValue: String): String = prefs.getString(KEY_STATUS, defaultValue)

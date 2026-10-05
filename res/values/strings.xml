@@ -512,4 +512,32 @@
     <string name="map_offline_status_loading">Reading download status…</string>
     <string name="map_offline_status_complete">%1$d tiles · %2$s</string>
     <string name="map_offline_status_progress">%1$d / %2$d resources</string>
+
+    <!-- PHG (APRS 101 Chapter 9) -->
+    <string name="p_phg">Radio Parameters (PHG)</string>
+    <string name="p_phg_summary">Power, antenna height, gain, and directivity</string>
+    <string name="setting_disabled">Disabled</string>
+    <string name="setting_enabled">Enabled</string>
+    <string name="setting_phg_enabled">Configured</string>
+    <string name="phg_dialog_title">Radio Parameters (PHG)</string>
+    <string name="phg_enable">Enable PHG data extension</string>
+    <string name="phg_power_label">Transmitter power (Watts)</string>
+    <string name="phg_height_label">Antenna HAAT height</string>
+    <string name="phg_height_hint">Height above average terrain (HAAT), not altitude</string>
+    <string name="phg_unit_m">Meters (m)</string>
+    <string name="phg_unit_ft">Feet (ft)</string>
+    <string name="phg_gain_label">Antenna gain (dB / dBi)</string>
+    <string name="phg_dir_label">Antenna directivity</string>
+    <string name="phg_dir_omni">Omni (0)</string>
+    <string name="phg_dir_45">45° NE (1)</string>
+    <string name="phg_dir_90">90° E (2)</string>
+    <string name="phg_dir_135">135° SE (3)</string>
+    <string name="phg_dir_180">180° S (4)</string>
+    <string name="phg_dir_225">225° SW (5)</string>
+    <string name="phg_dir_270">270° W (6)</string>
+    <string name="phg_dir_315">315° NW (7)</string>
+    <string name="phg_dir_360">360° N (8)</string>
+    <string name="phg_preview_label">Protocol extension preview</string>
+    <string name="phg_preview_desc">Power and height are rounded down to standard APRS 101 steps.</string>
+    <string name="packet_phg">PHG</string>
 </resources>
