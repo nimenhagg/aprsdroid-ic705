@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="img/icon.png" alt="APRSdroid Mod" width="160" height="160" />
+<img src="img/ic_launcher.svg" alt="APRSdroid Mod" width="140" height="140" />
 
 # APRSdroid Mod
 
