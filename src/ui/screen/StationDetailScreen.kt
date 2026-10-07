@@ -166,9 +166,9 @@ fun StationDetailScreen(
 
                         stationItem?.let { item ->
                             val qrg = item.qrg
-                            val comment = item.comment
+                            val cleanComment = item.displayComment
                             val phg = item.phg
-                            if (item.isFmo || !qrg.isNullOrEmpty() || !comment.isNullOrEmpty() || phg != null) {
+                            if (item.isFmo || !qrg.isNullOrEmpty() || !cleanComment.isNullOrEmpty() || phg != null) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(vertical = 12.dp),
                                     color = MaterialTheme.colorScheme.outlineVariant
@@ -201,7 +201,7 @@ fun StationDetailScreen(
                                     )
                                 }
 
-                                val weather = comment?.let { org.aprsdroid.app.aprs.AprsWeather.parse(it) }
+                                val weather = item.comment?.let { org.aprsdroid.app.aprs.AprsWeather.parse(it) }
                                 if (weather != null) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
@@ -212,10 +212,10 @@ fun StationDetailScreen(
                                     )
                                 }
 
-                                if (!comment.isNullOrEmpty()) {
+                                if (!cleanComment.isNullOrEmpty()) {
                                     if (item.isFmo || !qrg.isNullOrEmpty() || phg != null) Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        text = comment,
+                                        text = cleanComment,
                                         fontSize = 13.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -318,7 +318,7 @@ fun StationDetailScreen(
                 } else {
                     items(ssidList, key = { it.call }) { ssidItem ->
                         val isCurrent = ssidItem.call.equals(targetCall, ignoreCase = true)
-                        val comment = ssidItem.comment
+                        val comment = ssidItem.displayComment
                         val age = DateUtils.getRelativeTimeSpanString(context, ssidItem.ts).toString()
                         Card(
                             modifier = Modifier

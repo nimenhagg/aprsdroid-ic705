@@ -60,6 +60,7 @@ class AprsPacketSummaryParserTest {
         assertEquals(160, parsed.phg?.heightFeet)
         assertEquals(3, parsed.phg?.gainDb)
         assertEquals(35.0, parsed.rngMiles!!, 0.1)
+        org.junit.Assert.assertNull("Protocol extensions should not remain in comment", parsed.comment)
     }
 
     @Test
@@ -73,5 +74,45 @@ class AprsPacketSummaryParserTest {
 
         val parsed = AprsPacketSummaryParser.parse(corrupted)
         assertEquals("北京业余无线电俱乐部", parsed.comment)
+    }
+
+    @Test
+    fun testPhgAndRngWithHumanRemark() {
+        val raw = "BI4XXX>APRS,TCPIP*:=3114.50N/12128.50E#PHG2430 RNG0035 438.500MHz Shanghai Repeater"
+        val parsed = AprsPacketSummaryParser.parse(raw)
+
+        assertEquals(AprsPacketKind.POSITION, parsed.kind)
+        assertNotNull(parsed.phg)
+        assertEquals(4, parsed.phg?.powerWatts)
+        assertEquals("Shanghai Repeater", parsed.comment)
+    }
+
+    @Test
+    fun testTelemetryPacketDeepDecoding() {
+        val raw = "HAB001>APRS,WIDE2-1:T#042,128,095,012,230,005,10100001 Balloon telemetry"
+        val parsed = AprsPacketSummaryParser.parse(raw)
+
+        assertEquals(AprsPacketKind.TELEMETRY, parsed.kind)
+        assertEquals("HAB001", parsed.source)
+        assertNotNull(parsed.telemetry)
+        val t = parsed.telemetry!!
+        assertEquals(42, t.sequenceNumber)
+        assertEquals(128, t.analogChannels[0])
+        assertEquals("10100001", t.digitalBits)
+        assertEquals("Balloon telemetry", parsed.comment)
+    }
+
+    @Test
+    fun testThirdPartyRecursiveUnwrapping() {
+        val raw = "IGATE>APRS,TCPIP*:}BG1ABC>APRS,WIDE2-1:!3954.20N/11623.50E#Beijing Relay"
+        val parsed = AprsPacketSummaryParser.parse(raw)
+
+        assertEquals(AprsPacketKind.POSITION, parsed.kind)
+        assertEquals("BG1ABC", parsed.source)
+        assertEquals("APRS", parsed.destination)
+        assertEquals(listOf("WIDE2-1"), parsed.path)
+        assertEquals("Beijing Relay", parsed.comment)
+        assertEquals(1, parsed.thirdPartyGateways.size)
+        assertEquals("IGATE", parsed.thirdPartyGateways[0].gatewaySource)
     }
 }

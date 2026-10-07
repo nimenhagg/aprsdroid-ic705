@@ -64,7 +64,14 @@ internal class PacketPersistenceCoordinator(
 
     fun parsePacket(ts: Long, message: String, source: Int) {
         try {
-            var packet = packetParser(message)
+            var rawToParse = message
+            val unwrapped = org.aprsdroid.app.aprs.AprsThirdParty.unwrapRecursively(message)
+            if (unwrapped.gateways.isNotEmpty()) {
+                onDebug("parsePacket: unwrapped ${unwrapped.gateways.size} third-party hop(s), originator: ${unwrapped.innermostSource}")
+                rawToParse = unwrapped.innermostRaw
+            }
+
+            var packet = packetParser(rawToParse)
             if (packet.type == APRSTypes.T_THIRDPARTY) {
                 onDebug("parsePacket: third-party packet from ${packet.sourceCall}")
                 val inner = packet.aprsInformation.toString()

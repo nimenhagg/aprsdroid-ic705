@@ -150,12 +150,13 @@ object AprsPhg {
 
     val RNG_REGEX = Regex("""\bRNG([0-9]{4})\b""")
 
-    fun parseRngMiles(text: String): Double? {
+    fun parseRngMiles(text: String?): Double? {
+        if (text == null) return null
         val match = RNG_REGEX.find(text) ?: return null
         return match.groupValues[1].toDoubleOrNull()
     }
 
-    fun parseRng(text: String): Double? = parseRngMiles(text)
+    fun parseRng(text: String?): Double? = parseRngMiles(text)
 
     /**
      * Estimate direct omni radio range in statute miles based on APRS 101 Chapter 10 formula:
@@ -175,4 +176,10 @@ object AprsPhg {
         if (miles <= 0.0) return null
         return miles * 1609.344
     }
+
+    fun stripPhg(text: String): String = text.replace(PHG_REGEX, " ").trim()
+    fun stripPhgNullable(text: String?): String? = text?.replace(PHG_REGEX, " ")?.trim()
+
+    fun stripRng(text: String): String = text.replace(RNG_REGEX, " ").trim()
+    fun stripRngNullable(text: String?): String? = text?.replace(RNG_REGEX, " ")?.trim()
 }

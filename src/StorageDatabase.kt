@@ -12,7 +12,9 @@ import net.ab0oo.aprs.parser.CourseAndSpeedExtension
 import net.ab0oo.aprs.parser.MessagePacket
 import net.ab0oo.aprs.parser.Position as AprsPosition
 import org.aprsdroid.app.aprs.AprsCharsetDecoder
+import org.aprsdroid.app.aprs.AprsCommentCleaner
 import org.aprsdroid.app.aprs.AprsDao
+import org.aprsdroid.app.aprs.AprsPhg
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
@@ -21,7 +23,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
 
     companion object {
         const val TAG = "APRSdroid.Storage"
-        const val DB_VERSION = 4
+        const val DB_VERSION = 5
         const val DB_NAME = "storage.db"
         const val MESSAGE_DUPLICATE_WINDOW_MS = 60L * 60L * 1000L
 
@@ -68,10 +70,12 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             const val ORIGIN = "origin"
             const val QRG = "qrg"
             const val FLAGS = "flags"
+            const val PHG = "phg"
+            const val RNG = "rng"
 
-            val TABLE_CREATE = "CREATE TABLE $TABLE ($_ID INTEGER PRIMARY KEY AUTOINCREMENT, $TS LONG, $CALL TEXT UNIQUE, $LAT INTEGER, $LON INTEGER, $SPEED INTEGER, $COURSE INTEGER, $ALT INTEGER, $SYMBOL TEXT, $COMMENT TEXT, $ORIGIN TEXT, $QRG TEXT, $FLAGS INTEGER)"
+            val TABLE_CREATE = "CREATE TABLE $TABLE ($_ID INTEGER PRIMARY KEY AUTOINCREMENT, $TS LONG, $CALL TEXT UNIQUE, $LAT INTEGER, $LON INTEGER, $SPEED INTEGER, $COURSE INTEGER, $ALT INTEGER, $SYMBOL TEXT, $COMMENT TEXT, $ORIGIN TEXT, $QRG TEXT, $FLAGS INTEGER, $PHG TEXT, $RNG REAL)"
             const val TABLE_DROP = "DROP TABLE stations"
-            val COLUMNS = arrayOf(_ID, TS, CALL, LAT, LON, SYMBOL, COMMENT, SPEED, COURSE, ALT, ORIGIN, QRG, FLAGS)
+            val COLUMNS = arrayOf(_ID, TS, CALL, LAT, LON, SYMBOL, COMMENT, SPEED, COURSE, ALT, ORIGIN, QRG, FLAGS, PHG, RNG)
             const val COL_DIST = "((lat - %d)*(lat - %d) + (lon - %d)*(lon - %d)*%d/100) as dist"
 
             const val COLUMN_TS = 1
@@ -86,8 +90,10 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             const val COLUMN_ORIGIN = 10
             const val COLUMN_QRG = 11
             const val COLUMN_FLAGS = 12
+            const val COLUMN_PHG = 13
+            const val COLUMN_RNG = 14
 
-            val COLUMNS_MAP = arrayOf(_ID, CALL, LAT, LON, SYMBOL, ORIGIN, QRG, COMMENT, SPEED, COURSE, TS, FLAGS)
+            val COLUMNS_MAP = arrayOf(_ID, CALL, LAT, LON, SYMBOL, ORIGIN, QRG, COMMENT, SPEED, COURSE, TS, FLAGS, PHG, RNG)
             const val COLUMN_MAP_CALL = 1
             const val COLUMN_MAP_LAT = 2
             const val COLUMN_MAP_LON = 3
@@ -98,6 +104,8 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             const val COLUMN_MAP_SPEED = 8
             const val COLUMN_MAP_CSE = 9
             const val COLUMN_MAP_FLAGS = 11
+            const val COLUMN_MAP_PHG = 12
+            const val COLUMN_MAP_RNG = 13
 
             const val FLAG_MSGCAPABLE = 1
             const val FLAG_OBJECT = 2
@@ -214,6 +222,54 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
                 db.execSQL(String.format(Locale.US, TABLE_INDEX, Message.TABLE, col, Message.TABLE, col))
             }
         }
+        if (from < 5 && to >= 5) {
+            upgradeToV5(db)
+        }
+    }
+
+    private fun upgradeToV5(db: SQLiteDatabase) {
+        try {
+            db.execSQL("ALTER TABLE ${Station.TABLE} ADD COLUMN ${Station.PHG} TEXT")
+        } catch (e: Exception) {
+            Log.w(TAG, "upgradeToV5: column phg already exists or failed", e)
+        }
+        try {
+            db.execSQL("ALTER TABLE ${Station.TABLE} ADD COLUMN ${Station.RNG} REAL")
+        } catch (e: Exception) {
+            Log.w(TAG, "upgradeToV5: column rng already exists or failed", e)
+        }
+
+        // Migrate and backfill existing station comments
+        try {
+            val cursor = db.query(Station.TABLE, arrayOf(Station._ID, Station.COMMENT), null, null, null, null, null)
+            val updates = mutableListOf<Triple<Long, String?, Pair<String?, Double?>>>()
+            cursor.use { c ->
+                val idIdx = c.getColumnIndex(Station._ID)
+                val commentIdx = c.getColumnIndex(Station.COMMENT)
+                while (c.moveToNext()) {
+                    val id = c.getLong(idIdx)
+                    val rawComment = if (commentIdx >= 0) c.getString(commentIdx) else null
+                    if (!rawComment.isNullOrBlank()) {
+                        val phg = AprsPacket.parsePhg(rawComment)?.rawCode
+                        val rng = AprsPhg.parseRng(rawComment)
+                        val clean = AprsCommentCleaner.clean(rawComment)
+                        if (phg != null || rng != null || clean != rawComment) {
+                            updates.add(Triple(id, clean, Pair(phg, rng)))
+                        }
+                    }
+                }
+            }
+            for ((id, clean, metadata) in updates) {
+                val cv = ContentValues().apply {
+                    put(Station.COMMENT, clean)
+                    if (metadata.first != null) put(Station.PHG, metadata.first)
+                    if (metadata.second != null) put(Station.RNG, metadata.second)
+                }
+                db.update(Station.TABLE, cv, "${Station._ID} = ?", arrayOf(id.toString()))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "upgradeToV5: error migrating comments", e)
+        }
     }
 
     @JvmOverloads
@@ -236,8 +292,13 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         val lat: Int = (latDeg * 1000000).toInt()
         val lon: Int = (lonDeg * 1000000).toInt()
         val sym = "${pos.symbolTable}${pos.symbolCode}"
-        val strippedComment = AprsDao.stripDaoNullable(cleanComment)
-        val qrg = AprsPacket.parseQrg(strippedComment)
+
+        // Extract metadata before stripping from comment
+        val phgData = AprsPacket.parsePhg(cleanComment)
+        val rngMiles = AprsPhg.parseRng(cleanComment) ?: phgData?.let { AprsPhg.estimateRadioRangeMiles(it) }
+        val qrg = AprsPacket.parseQrg(cleanComment)
+        val strippedComment = AprsCommentCleaner.clean(cleanComment)
+
         cv.put(Position.TS, ts)
         cv.put(Position.CALL, objectname ?: call)
         cv.put(Position.LAT, lat)
@@ -248,6 +309,12 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         cv.put(Station.SYMBOL, sym)
         cv.put(Station.COMMENT, strippedComment)
         cv.put(Station.QRG, qrg)
+        if (phgData != null) {
+            cv.put(Station.PHG, phgData.rawCode)
+        }
+        if (rngMiles != null) {
+            cv.put(Station.RNG, rngMiles)
+        }
         var flags = 0
         if (objectname != null) flags = flags or Station.FLAG_OBJECT
         if (cse != null && cse.speed > 0) flags = flags or Station.FLAG_MOVING
@@ -258,7 +325,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             cv.put(Station.SPEED, cse.speed)
             cv.put(Station.COURSE, cse.course)
         }
-        Log.d(TAG, String.format(Locale.US, "got %s(%d, %d)%s -> %s", call, lat, lon, sym, strippedComment))
+        Log.d(TAG, String.format(Locale.US, "got %s(%d, %d)%s -> %s [phg=%s, rng=%s]", call, lat, lon, sym, strippedComment, phgData?.rawCode, rngMiles))
         writableDatabase.replaceOrThrow(Station.TABLE, Station.CALL, cv)
     }
 

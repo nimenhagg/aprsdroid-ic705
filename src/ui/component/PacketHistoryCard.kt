@@ -91,6 +91,10 @@ fun PacketHistoryCard(post: LogPostItem) {
                 }.joinToString(" · ")
                 DetailLine(stringResource(R.string.packet_movement), movement)
             }
+            if (parsed.thirdPartyGateways.isNotEmpty()) {
+                val relayTrail = parsed.thirdPartyGateways.joinToString(" → ") { it.gatewaySource }
+                DetailLine(stringResource(R.string.packet_third_party_gateway), relayTrail)
+            }
             parsed.altitudeFeet?.let { DetailLine(stringResource(R.string.packet_altitude), "$it ft") }
             parsed.frequency?.let { DetailLine(stringResource(R.string.packet_frequency), "$it MHz") }
             parsed.phg?.let { DetailLine(stringResource(R.string.packet_phg), org.aprsdroid.app.aprs.AprsPhg.formatDescription(it)) }
@@ -100,8 +104,9 @@ fun PacketHistoryCard(post: LogPostItem) {
                 DetailLine(stringResource(R.string.packet_range), "$mi mi (~$km km)")
             }
             parsed.weather?.let { DetailLine(stringResource(R.string.packet_weather), org.aprsdroid.app.aprs.AprsWeather.formatWeatherSummary(it)) }
+            parsed.telemetry?.let { DetailLine(stringResource(R.string.packet_type_telemetry), it.formatSummaryZh()) }
             parsed.message?.let { DetailLine(stringResource(R.string.packet_message), it) }
-            parsed.comment?.let { DetailLine(stringResource(R.string.packet_comment), it) }
+            parsed.comment?.takeIf { it.isNotBlank() }?.let { DetailLine(stringResource(R.string.packet_comment), it) }
             if (parsed.kind == AprsPacketKind.UNKNOWN && parsed.payload.isNotBlank()) {
                 DetailLine(stringResource(R.string.packet_payload), parsed.payload)
             }

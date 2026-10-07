@@ -452,7 +452,7 @@ private fun GoogleEmbeddedRenderer(
                         MarkerOptions()
                             .position(GoogleLatLng(station.lat, station.lon))
                             .title(station.call)
-                            .snippet(station.comment)
+                            .snippet(org.aprsdroid.app.aprs.AprsCommentCleaner.clean(station.comment) ?: "")
                             .icon(icon)
                             .anchor(0.5f, 0.5f)
                     )?.let { added ->
@@ -469,7 +469,9 @@ private fun GoogleEmbeddedRenderer(
                             BitmapDescriptorFactory.fromBitmap(MapModes.symbol2bitmap(station.symbol, 48))
                         })
                     }
-                    if (previous?.comment != station.comment) marker.snippet = station.comment
+                    if (previous?.comment != station.comment) {
+                        marker.snippet = org.aprsdroid.app.aprs.AprsCommentCleaner.clean(station.comment) ?: ""
+                    }
                     renderedStations[station.call] = station
                 }
             }

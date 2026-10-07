@@ -593,7 +593,7 @@ fun StationCardItem(
                     StationTagRow(item)
                 }
 
-                val comment = item.comment
+                val comment = item.displayComment
                 if (!comment.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(if (compact) 2.dp else 3.dp))
                     Text(

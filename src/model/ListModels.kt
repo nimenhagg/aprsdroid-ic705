@@ -12,16 +12,22 @@ data class StationItem(
     val lat: Int,
     val lon: Int,
     val ts: Long,
-    val flags: Int = 0
+    val flags: Int = 0,
+    val phgRaw: String? = null,
+    val rngMilesVal: Double? = null,
 ) {
     val isFmo: Boolean
         get() = flags and StorageDatabase.Companion.Station.FLAG_FMO != 0
     val phg: org.aprsdroid.app.aprs.PhgData?
-        get() = org.aprsdroid.app.AprsPacket.parsePhg(comment)
+        get() = phgRaw?.let { org.aprsdroid.app.aprs.AprsPhg.decode(it) }
+            ?: org.aprsdroid.app.AprsPacket.parsePhg(comment)
     val rngMiles: Double?
-        get() = comment?.let { org.aprsdroid.app.aprs.AprsPhg.parseRngMiles(it) }
+        get() = rngMilesVal ?: comment?.let { org.aprsdroid.app.aprs.AprsPhg.parseRngMiles(it) }
     val coverageRadiusMeters: Double?
         get() = org.aprsdroid.app.aprs.AprsPhg.estimateRangeMeters(phg, rngMiles)
+    val displayComment: String?
+        get() = org.aprsdroid.app.aprs.AprsCommentCleaner.clean(comment)
+
     companion object {
         fun fromCursor(cursor: Cursor): List<StationItem> {
             val list = ArrayList<StationItem>(cursor.count)
@@ -34,6 +40,8 @@ data class StationItem(
             val lonIdx = cursor.getColumnIndex(StorageDatabase.Companion.Station.LON)
             val tsIdx = cursor.getColumnIndex(StorageDatabase.Companion.Station.TS)
             val flagsIdx = cursor.getColumnIndex(StorageDatabase.Companion.Station.FLAGS)
+            val phgIdx = cursor.getColumnIndex(StorageDatabase.Companion.Station.PHG)
+            val rngIdx = cursor.getColumnIndex(StorageDatabase.Companion.Station.RNG)
 
             while (cursor.moveToNext()) {
                 list.add(
@@ -46,7 +54,9 @@ data class StationItem(
                         lat = if (latIdx >= 0) cursor.getInt(latIdx) else 0,
                         lon = if (lonIdx >= 0) cursor.getInt(lonIdx) else 0,
                         ts = if (tsIdx >= 0) cursor.getLong(tsIdx) else 0L,
-                        flags = if (flagsIdx >= 0) cursor.getInt(flagsIdx) else 0
+                        flags = if (flagsIdx >= 0) cursor.getInt(flagsIdx) else 0,
+                        phgRaw = if (phgIdx >= 0) cursor.getString(phgIdx) else null,
+                        rngMilesVal = if (rngIdx >= 0 && !cursor.isNull(rngIdx)) cursor.getDouble(rngIdx) else null,
                     )
                 )
             }

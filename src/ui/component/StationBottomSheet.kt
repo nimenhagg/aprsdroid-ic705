@@ -143,7 +143,7 @@ fun StationBottomSheetContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    val comment = station.comment
+                    val comment = org.aprsdroid.app.aprs.AprsCommentCleaner.clean(station.comment)
                     if (!comment.isNullOrEmpty()) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(

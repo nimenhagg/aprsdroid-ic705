@@ -59,6 +59,11 @@ object AprsWeather {
     private val WX_RAIN_MIDNIGHT_REGEX = Regex("""P(\d{3})""")
     private val WX_HUMIDITY_REGEX = Regex("""h(\d{2})""")
     private val WX_PRESSURE_REGEX = Regex("""b(\d{5})""")
+    private val WX_BLOCK_REGEX = Regex("""_?\d{8}c\d{3}s\d{3}(?:g\d{3})?(?:t-?\d{2,3})?(?:r\d{3})?(?:p\d{3})?(?:P\d{3})?(?:h\d{2})?(?:b\d{5})?|c\d{3}s\d{3}(?:g\d{3})?(?:t-?\d{2,3})?(?:r\d{3})?(?:p\d{3})?(?:P\d{3})?(?:h\d{2})?(?:b\d{5})?""")
+
+    fun stripWeather(text: String): String {
+        return text.replace(WX_BLOCK_REGEX, " ")
+    }
 
     fun parse(text: String?): WeatherData? {
         if (text == null) return null
