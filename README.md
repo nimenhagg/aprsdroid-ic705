@@ -10,7 +10,7 @@
 
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPLv2-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/Platform-Android%209%2B-green.svg)
-[![Latest Release](https://img.shields.io/badge/Release-Mod--v2.6.0-orange.svg)](https://github.com/nimenhagg/aprsdroid-ic705/releases)
+[![Latest Release](https://img.shields.io/badge/Release-Mod--v2.7.0-orange.svg)](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 ![Target](https://img.shields.io/badge/Target-Android%2017%20(API%2037)-brightgreen.svg)
 ![UI](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-purple.svg)
 
@@ -18,7 +18,7 @@
 
 **🌐 语言 / Language：** [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md)
 
-**最新稳定版 / Latest release: `Mod-v2.6.0`**
+**最新稳定版 / Latest release: `Mod-v2.7.0`**
 
 </div>
 
@@ -167,7 +167,7 @@ Graywolf 的 `Cargo.lock` 已提交，native 构建使用 `--locked`。Windows �
 
 APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APRS support, modern Android UI, persistent diagnostics, and performance improvements.
 
-**Latest stable release: `Mod-v2.6.0`.**
+**Latest stable release: `Mod-v2.7.0`.**
 
 ### Highlights
 

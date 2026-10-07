@@ -1,6 +1,6 @@
 # APRSdroid Activities and UI Architecture
 
-Current baseline: `Mod-v2.6.0`. This file describes the current Android navigation/activity structure; release history belongs in [CHANGELOG.md](CHANGELOG.md), maintenance invariants in [AGENT.md](AGENT.md), and stable implementation constraints in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Current baseline: `Mod-v2.7.0`. This file describes the current Android navigation/activity structure; release history belongs in [CHANGELOG.md](CHANGELOG.md), maintenance invariants in [AGENT.md](AGENT.md), and stable implementation constraints in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Main navigation
 
