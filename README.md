@@ -9,10 +9,10 @@
 增加 Icom IC-705 等 WLAN / USB 直连 APRS 收发与 Hamlib 多电台控制，并持续维护现代 Android UI、诊断和性能改进。
 
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPLv2-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Android%209%2B-green.svg)]()
+![Platform](https://img.shields.io/badge/Platform-Android%209%2B-green.svg)
 [![Latest Release](https://img.shields.io/badge/Release-Mod--v2.6.0-orange.svg)](https://github.com/nimenhagg/aprsdroid-ic705/releases)
-[![Target](https://img.shields.io/badge/Target-Android%2017%20(API%2037)-brightgreen.svg)]()
-[![UI](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-purple.svg)]()
+![Target](https://img.shields.io/badge/Target-Android%2017%20(API%2037)-brightgreen.svg)
+![UI](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-purple.svg)
 
 官网：[GitHub Pages](https://nimenhagg.github.io/aprsdroid-ic705/) · 最新版发布：[GitHub Releases](https://github.com/nimenhagg/aprsdroid-ic705/releases) · 交流群：[QQ 群 1124716537](https://qun.qq.com/universal-share/share?ac=1&authKey=PjrBi5011R2U%2F1ExGjHnHycWPkdQUhKRJUbPyQltK6QFnujWWIouWDJGP2ZJ7%2BJ%2B&busi_data=eyJncm91cENvZGUiOiIxMTI0NzE2NTM3IiwidG9rZW4iOiJWK0xVZ0JGNVVNMEF3T2FYOEY2UjFWUnJla2dpZVdERWpwNERWS21VOUJNRWxYWXhPWjBlYVlYL1NQdXZ1NE1FIiwidWluIjoiMzIwMDQ1NjE3NCJ9&data=y4e4QQ6_nM_FMmqYhGCnyQtGt-qJn7kUuOWVY_ho9XyiHYs8vwZBnMAKdxOdDOpMUdNBpwK8B8H8F1_Z6wln7g&svctype=4&tempid=h5_group_info) · Telegram：[@APRSdroid_Mod](https://t.me/APRSdroid_Mod)
 
@@ -32,15 +32,18 @@
 
 - **WLAN 电台直连与 IC-705 深度联动**：支持 Icom IC-705、IC-9700、IC-7610、IC-905 及自定义型号；半双工 AX.25、AFSK1200、12 kHz 单声道 PCM、CI-V PTT；自定义 CI-V 地址配置与默认预置自动填充；**新增工作频率（Operating Frequency）自动同步与机载 GPS 经纬度/航向/速度联动**（连接设置中选择 IC-705 后动态展开联动开关，可优先使用电台 GPS 发送信标）。
 - **现代 APRS 协议全规格实现**：
-  - **APRS 1.2 DAO 亚米级高精度定位**：支持 Base91 及微度格式，经纬度分辨率由 ~18.5 米提升至分米/厘米级，发送自动追加、接收自动融入高精度浮点坐标。
-  - **APRS 101 第 9 章 PHG 数据扩展**：发射功率（0~81W）、天线高度（10~5120ft）、增益（0~9dB）与主波束指向性设置、发送及台站卡片直观展示。
+  - **APRS 1.2 DAO 亚米级高精度定位**：支持 Base91 及微度格式，经纬度分辨率由约 18.5 米提升至分米/厘米级，发送自动追加、接收自动融入高精度浮点坐标。
+  - **APRS 101 第 9 章 PHG 数据扩展**：发射功率（0～81W）、天线高度（10～5120ft）、增益（0～9dB）与主波束指向性设置、发送及台站卡片直观展示；数据库建立独立字段存储并支持旧版平滑升级。
   - **APRS 101 第 10 章 RNG / PHG 覆盖半径推算**：支持 `RNGxxxx` 直接覆盖报文解析，并依据严密经验物理公式智能推算直频覆盖半径（km）。
   - **APRS 101 第 12 章 WX 气象报文解析**：支持风向、风速、阵风、温度（°F / °C 双单位）、湿度、气压及多时段降雨量，并在台站卡片与详情页展示专属气象徽章与卡片。
+  - **APRS 101 第 13 章 遥测数据深度解析（Telemetry）**：支持 `T#seq,a1,a2,a3,a4,a5,digital` 遥测数据帧深度解析、5 路模拟量通道与 8 位数字量标志提取、参数/单位/校准方程（PARM/UNIT/EQNS/BITS）解析及可读化展示。
+  - **APRS 101 第 14 章 第三方封装报文递归解包（Third-Party `}`）**：支持网关与中继嵌套封装报文递归解包，智能追踪多跳网关链路（如 `TCPIP*` 网关链路）并提取底层真实数据包。
   - **APRS 1.01 第 15 章 Queries 指令自动应答**：自动响应 `?PING?`、`?APRST`、`?VER?` 查询，内置防刷流控与冷却保护。
+  - **协议字段清洗与备注净化**：自动剥离混入台站备注中的 PHG、RNG、DAO（`!w..!`）、海拔（`/A=...`）、频率与气象数据等协议碎片，保持人类可读备注纯净，消除协议残留污染。
 - **智能自适应多编码字符集解码（消除乱码）**：内置 GB2312 / GBK / GB18030 与 UTF-8 字符集智能评分探测模型，并实现 Latin-1 错误转码逆向还原修复算法，彻底解决中国及亚太地区台站中文备注与气象播报乱码问题。
 - **USB 电台（Hamlib）**：集成 Hamlib 4.7.2 原生库与 400+ 款常见电台（Icom、Yaesu、Kenwood、Elecraft 等），支持品牌字母排序与即时模糊搜索；内置免 root 本地 Android USB CAT 环回桥接与通用音频后端，提供专属 USB 声卡输入/输出选择与发射音量控制滑块。
 - **发射安全与物理排空计算**：依据音频采样率与缓冲区精确推算声卡物理排空延时，彻底杜绝 PTT 释放挂起与空载波长发；保留 PTT OFF ACK 与安全 watchdog 机制。
-- **体积与性能优化**：Hamlib 原生库深度优化（`-Os`、函数/数据分节、Dead Code 剪裁与符号剥离），结合 R8 优化，安装包体积由近 100 MB 缩减至 ~44 MB。
+- **体积与性能优化**：Hamlib 原生库深度优化（`-Os`、函数/数据分节、Dead Code 剪裁与符号剥离），结合 R8 优化，安装包体积由近 100 MB 缩减至约 44 MB。
 - **电台与网络隔离**：电台流量绑定选定 Wi-Fi Network，APRS-IS 等互联网流量仍可走手机默认蜂窝网络。
 - 本地 AFSK1200 RX 统一使用 Graywolf，支持 IC-705 12 kHz、AudioRecord 11.025 kHz、Bluetooth SCO 8 kHz；旧 Java modulator 仅用于 TX 音频生成。
 - 持久结构化诊断日志与可分享 ZIP，记录网络、电台 session、PTT、恢复和崩溃现场；敏感字段自动脱敏。
@@ -170,15 +173,18 @@ APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APR
 
 - **WLAN Radios & IC-705 Linkage**: Direct half-duplex WLAN APRS for Icom IC-705, IC-9700, IC-7610, IC-905, and custom models using AX.25, AFSK1200, 12 kHz mono PCM, and CI-V PTT with configurable CI-V hex addresses. **New operating frequency sync and internal IC-705 GPS linkage** (allows prioritizing radio GPS coordinates for position beacons).
 - **Modern APRS Protocol Specifications**:
-  - **APRS 1.2 DAO Sub-meter Precision**: Base91 `!w..!` and micro-degree positional resolution, reducing precision grid step from ~18.5 m down to centimeter level.
-  - **APRS 101 Chapter 9 PHG Extension**: Power (0~81W), Height (10~5120ft), Gain (0~9dB), and Directivity configuration and tag rendering.
+  - **APRS 1.2 DAO Sub-meter Precision**: Base91 `!w..!` and micro-degree positional resolution, reducing precision grid step from approx. 18.5 m down to centimeter level.
+  - **APRS 101 Chapter 9 PHG Extension**: Power (0-81W), Height (10-5120ft), Gain (0-9dB), and Directivity configuration and tag rendering; dedicated SQLite columns with lossless automatic upgrade.
   - **APRS 101 Chapter 10 RNG / PHG Radio Range**: Parsing `RNGxxxx` direct radio coverage range and physical propagation estimation for stations with PHG data.
   - **APRS 101 Chapter 12 Weather Reports**: Full weather parser for wind speed/direction/gusts, temperature (°F/°C), humidity, barometric pressure, and rainfall with dedicated UI cards.
+  - **APRS 101 Chapter 13 Telemetry Deep Decoding**: Full decoding of `T#seq,a1,a2,a3,a4,a5,digital` telemetry frames, 5 analog channels, 8 binary flags, and calibration definitions (PARM/UNIT/EQNS/BITS).
+  - **APRS 101 Chapter 14 Recursive Third-Party Packet Unwrapping (`}`)**: Multi-hop gateway unnesting, tracking relay paths while extracting the innermost payload.
   - **APRS 1.01 Chapter 15 Queries Auto-Reply**: Automatic rate-limited responses to `?PING?`, `?APRST`, and `?VER?` query frames.
+  - **Protocol Field Sanitization & Remark Cleansing**: Automatically strips raw PHG, RNG, DAO (`!w..!`), altitude (`/A=...`), frequency, and weather fragments from station comments, preserving clean human remarks.
 - **Adaptive Charset Decoding**: Multi-charset scoring model dynamically detecting GB2312 / GBK / GB18030 vs UTF-8, plus automated Latin-1 stream reverse byte recovery, completely resolving comment and weather character encoding issues in China and APAC.
 - **USB Radios (Hamlib)**: Integrated Hamlib 4.7.2 supporting 400+ radios (Icom, Yaesu, Kenwood, Elecraft, etc.), alphabetical brand sorting, instant search, root-free local USB CAT loopback bridge, dedicated USB soundcard I/O selection, and TX output volume control.
 - **PTT Timing & Audio Drain Safety**: Physical audio drain duration calculated from sample rate and buffer length to eliminate empty-carrier hanging issues upon PTT release.
-- **Size & Performance Optimization**: Native Hamlib build compiled with `-Os` and dead-code stripping, coupled with R8 optimizations, cutting APK size by >50% (down to ~44 MB).
+- **Size & Performance Optimization**: Native Hamlib build compiled with `-Os` and dead-code stripping, coupled with R8 optimizations, cutting APK size by >50% (down to approx. 44 MB).
 - **Network Isolation**: Selected Android Wi-Fi Network is used only for radio traffic, allowing APRS-IS to keep using the phone's default internet path.
 - Graywolf is the production local AFSK1200 RX engine; the legacy Java modulator remains for stable TX PCM generation.
 - ACK-aware PTT safety, watchdogs, channel-specific recovery, persistent structured diagnostics and exportable reports.
@@ -211,7 +217,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for implementation constraints 
 ## 致谢与许可证 / Credits and license
 
 - 基础项目 / Upstream: [ge0rg/APRSdroid](https://github.com/ge0rg/aprsdroid)
-- AFSK RX / modem lineage: [Graywolf](https://github.com/chrissnell/graywolf) (GPL-2.0), based on Dire Wolf AFSK demodulator work by John Langner WB2OSZ。
+- AFSK RX / modem lineage: [Graywolf](https://github.com/chrissnell/graywolf) (GPL-2.0), based on Dire Wolf AFSK demodulator work by John Langner WB2OSZ.
 - 协议与实现参考 / Protocol references: [N0BOY/FT8CN](https://github.com/N0BOY/FT8CN), [wfview](https://wfview.org/)
 - 地图引擎 / Map engine: [MapLibre Native](https://maplibre.org/maplibre-native/); OpenStreetMap data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)
 - 许可证 / License: [GNU General Public License v2.0](LICENSE)
