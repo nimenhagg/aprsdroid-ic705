@@ -29,6 +29,15 @@ class AprsCommentCleanerTest {
     }
 
     @Test
+    fun testStripKnownLegacyMicEDeviceSuffixesOnlyWhenMicE() {
+        assertEquals("Mobile", AprsCommentCleaner.clean("Mobile _1", stripMicEDeviceSuffix = true))
+        assertEquals("Mobile", AprsCommentCleaner.clean("Mobile _3", stripMicEDeviceSuffix = true))
+        assertEquals("Mobile", AprsCommentCleaner.clean("Mobile [1", stripMicEDeviceSuffix = true))
+        assertEquals("Mobile", AprsCommentCleaner.clean("Mobile [3", stripMicEDeviceSuffix = true))
+        assertEquals("Mobile _1", AprsCommentCleaner.clean("Mobile _1"))
+    }
+
+    @Test
     fun testChineseRemarksPreserved() {
         val comment = "PHG7462 438.500MHz 北京业余无线电俱乐部中继台"
         val clean = AprsCommentCleaner.clean(comment)
