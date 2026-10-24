@@ -18,7 +18,7 @@
 
 **🌐 语言 / Language：** [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md)
 
-**最新稳定版 / Latest release: `Mod-v2.7.0`**
+**最新稳定版 / Latest release: `Mod-v2.7.1`**
 
 </div>
 
@@ -167,7 +167,7 @@ Graywolf 的 `Cargo.lock` 已提交，native 构建使用 `--locked`。Windows �
 
 APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APRS support, modern Android UI, persistent diagnostics, and performance improvements.
 
-**Latest stable release: `Mod-v2.7.0`.**
+**Latest stable release: `Mod-v2.7.1`.**
 
 ### Highlights
 
