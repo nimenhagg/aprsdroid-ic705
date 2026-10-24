@@ -54,7 +54,19 @@ if [ ! -d "$NDK" ]; then
   # makes the install step fail even when sdkmanager itself succeeds.
   (
     set +o pipefail
-    yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null
+    # sdkmanager can exit as soon as installation/licenses are complete, closing the pipe
+  # before `yes` exits. With pipefail enabled, that harmless SIGPIPE makes this step fail.
+  set +o pipefail
+  if yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null; then
+    SDKMANAGER_STATUS=0
+  else
+    SDKMANAGER_STATUS=$?
+  fi
+  set -o pipefail
+  if [ "$SDKMANAGER_STATUS" -ne 0 ]; then
+    echo "Failed to install Android NDK $NDK_VERSION (sdkmanager exit $SDKMANAGER_STATUS)" >&2
+    exit "$SDKMANAGER_STATUS"
+  fi
   )
 fi
 
