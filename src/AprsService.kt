@@ -99,11 +99,9 @@ class AprsService : Service() {
 
     val TAG = "APRSdroid.Service"
 
-    val APP_VERSION: String by lazy {
-        val ver = packageManager.getPackageInfo(packageName, 0).versionName ?: "1.0"
-        val digits = ver.filter { it.isDigit() }.take(2)
-        "APDR$digits"
-    }
+    // Registered APRS-Device-ID TOCALL for APRSdroid Mod.
+    // Keep the application version in the APRS-IS login's separate "vers" field.
+    val APP_VERSION: String = "APDRMO"
 
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
     private val serviceSettings: AprsServiceSettings by lazy { AprsServiceSettings(prefs) }
