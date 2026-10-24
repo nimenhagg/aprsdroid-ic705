@@ -49,7 +49,13 @@ if [ ! -d "$NDK" ]; then
   if [ -z "$SDKMANAGER" ]; then
     SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
   fi
-  yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null
+  # sdkmanager exits after accepting the available license prompts, which can
+  # close the pipe before `yes` does. With pipefail enabled that expected SIGPIPE
+  # makes the install step fail even when sdkmanager itself succeeds.
+  (
+    set +o pipefail
+    yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null
+  )
 fi
 
 HOST_TAG="linux-x86_64"
