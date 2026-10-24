@@ -297,7 +297,8 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         val phgData = AprsPacket.parsePhg(cleanComment)
         val rngMiles = AprsPhg.parseRng(cleanComment) ?: phgData?.let { AprsPhg.estimateRadioRangeMiles(it) }
         val qrg = AprsPacket.parseQrg(cleanComment)
-        val strippedComment = AprsCommentCleaner.clean(cleanComment)
+        val isMicE = ap.toString().substringAfter(':', "").firstOrNull() in listOf('\'', '`')
+        val strippedComment = AprsCommentCleaner.clean(cleanComment, stripMicEDeviceSuffix = isMicE)
 
         cv.put(Position.TS, ts)
         cv.put(Position.CALL, objectname ?: call)
