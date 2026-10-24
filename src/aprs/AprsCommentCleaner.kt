@@ -14,11 +14,13 @@ object AprsCommentCleaner {
     private val ALTITUDE_REGEX = Regex("""(?:^|[\s/])A=(\d{6})(?!\d)""")
     private val FREQ_REGEX = Regex("""(?:^|[\s/])\d{2,4}\.\d{3,4}MHz\b""", RegexOption.IGNORE_CASE)
     private val MULTI_SPACE_REGEX = Regex("""\s+""")
+    // Legacy Mic-E device identifiers are meaningful only on Mic-E packets.
+    private val MICE_DEVICE_SUFFIX_REGEX = Regex("""(?:^|\s)(?:\[1|\[3|_1|_3)$""")
 
     /**
      * Strips all protocol tokens and returns only clean human remarks, or null if none remain.
      */
-    fun clean(comment: String?): String? {
+    fun clean(comment: String?, stripMicEDeviceSuffix: Boolean = false): String? {
         if (comment.isNullOrBlank()) return null
 
         var text = comment
@@ -28,6 +30,9 @@ object AprsCommentCleaner {
         text = text.replace(ALTITUDE_REGEX, " ")
         text = text.replace(FREQ_REGEX, " ")
         text = AprsWeather.stripWeather(text)
+        if (stripMicEDeviceSuffix) {
+            text = text.replace(MICE_DEVICE_SUFFIX_REGEX, "")
+        }
 
         // Normalize spaces
         text = MULTI_SPACE_REGEX.replace(text, " ").trim()
