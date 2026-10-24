@@ -10,6 +10,18 @@ import java.nio.charset.Charset
 
 class AprsPacketSummaryParserTest {
 
+
+    @Test
+    fun testMicEWireTypeIsPreservedWhenUnderlyingParserReturnsPosition() {
+        // The information-field identifier distinguishes Mic-E from ordinary position reports.
+        // Parser.parse may expose decoded Mic-E coordinates as a PositionPacket.
+        val raw = "N0CALL>\u0060APRS:"
+
+        val parsed = AprsPacketSummaryParser.parse(raw)
+
+        assertEquals(AprsPacketKind.MICE, parsed.kind)
+    }
+
     @Test
     fun testPositionWithDao() {
         // Standard APRS position with Base91 DAO !w^r!
