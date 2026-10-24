@@ -49,27 +49,20 @@ if [ ! -d "$NDK" ]; then
   if [ -z "$SDKMANAGER" ]; then
     SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
   fi
-  # sdkmanager exits after accepting the available license prompts, which can
-  # close the pipe before `yes` does. With pipefail enabled that expected SIGPIPE
-  # makes the install step fail even when sdkmanager itself succeeds.
-  (
+
+  # sdkmanager may exit before `yes`, causing SIGPIPE. Ignore the producer's
+  # exit status but preserve sdkmanager's status so real install failures surface.
+  if (
     set +o pipefail
-    # sdkmanager can exit as soon as installation/licenses are complete, closing the pipe
-  # before `yes` exits. With pipefail enabled, that harmless SIGPIPE makes this step fail.
-  set +o pipefail
-  if yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null; then
-    SDKMANAGER_STATUS=0
+    yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null
+  ); then
+    :
   else
     SDKMANAGER_STATUS=$?
-  fi
-  set -o pipefail
-  if [ "$SDKMANAGER_STATUS" -ne 0 ]; then
     echo "Failed to install Android NDK $NDK_VERSION (sdkmanager exit $SDKMANAGER_STATUS)" >&2
     exit "$SDKMANAGER_STATUS"
   fi
-  )
 fi
-
 HOST_TAG="linux-x86_64"
 case "$(uname -s)" in
   Darwin) HOST_TAG="darwin-x86_64" ;;
