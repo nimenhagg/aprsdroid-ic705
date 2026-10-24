@@ -1,5 +1,6 @@
 package org.aprsdroid.app
 
+import org.aprsdroid.app.aprs.AprsCommentCleaner
 import org.aprsdroid.app.aprs.AprsPacketKind
 import org.aprsdroid.app.aprs.AprsPacketSummaryParser
 import org.junit.Assert.assertEquals
@@ -127,4 +128,18 @@ class AprsPacketSummaryParserTest {
         assertEquals(1, parsed.thirdPartyGateways.size)
         assertEquals("IGATE", parsed.thirdPartyGateways[0].gatewaySource)
     }
+    @Test
+    fun testMicEDeviceSuffixIsStrippedOnlyForMicE() {
+        assertEquals("Mobile", AprsCommentCleaner.clean("Mobile _1", stripMicEDeviceSuffix = true))
+        assertEquals("Mobile", AprsCommentCleaner.clean("Mobile _3", stripMicEDeviceSuffix = true))
+        assertEquals("Mobile", AprsCommentCleaner.clean("Mobile _b", stripMicEDeviceSuffix = true))
+        assertEquals("Mobile", AprsCommentCleaner.clean("Mobile _%", stripMicEDeviceSuffix = true))
+
+        // Unknown suffixes remain visible for forward compatibility.
+        assertEquals("Mobile _x", AprsCommentCleaner.clean("Mobile _x", stripMicEDeviceSuffix = true))
+
+        // Do not reinterpret suffix-like text in ordinary APRS comments.
+        assertEquals("Mobile _1", AprsCommentCleaner.clean("Mobile _1"))
+    }
+
 }
