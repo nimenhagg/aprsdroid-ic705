@@ -19,7 +19,18 @@ if [ ! -d "$NDK" ]; then
   if [ -z "$SDKMANAGER" ]; then
     SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
   fi
-  yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null
+  # sdkmanager may exit before `yes`, causing SIGPIPE. Ignore the producer's
+  # exit status but preserve sdkmanager's status so real install failures surface.
+  if (
+    set +o pipefail
+    yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null
+  ); then
+    :
+  else
+    SDKMANAGER_STATUS=$?
+    echo "Failed to install Android NDK $NDK_VERSION (sdkmanager exit $SDKMANAGER_STATUS)" >&2
+    exit "$SDKMANAGER_STATUS"
+  fi
 fi
 
 CMAKE_BIN="$(command -v cmake)"
