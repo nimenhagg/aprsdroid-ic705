@@ -13,9 +13,9 @@ class AprsPacketSummaryParserTest {
 
 
     @Test
-    fun testMicEWireTypeIsPreservedWhenUnderlyingParserReturnsPosition() {
-        // The information-field identifier distinguishes Mic-E from ordinary position reports.
-        // Parser.parse may expose decoded Mic-E coordinates as a PositionPacket.
+    fun testMicEWireTypeIsDetectedFromInformationField() {
+        // The Mic-E information-field identifier is distinct from ordinary position reports.
+        // Even if this minimal sample cannot be fully decoded, it must not be mislabeled.
         val raw = "N0CALL>APRS:" + '`'
 
         val parsed = AprsPacketSummaryParser.parse(raw)
