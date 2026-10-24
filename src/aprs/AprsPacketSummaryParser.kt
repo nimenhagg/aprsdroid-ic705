@@ -76,7 +76,9 @@ object AprsPacketSummaryParser {
         runCatching { Parser.parse(effectiveRaw) }.getOrNull()?.aprsInformation?.let { info ->
             when (info) {
                 is PositionPacket -> {
-                    kind = AprsPacketKind.POSITION
+                    // Mic-E uses the ' or ` information-field identifier. Some parsers
+                    // expose decoded Mic-E data as PositionPacket; preserve the wire type.
+                    if (kind != AprsPacketKind.MICE) kind = AprsPacketKind.POSITION
                     latitude = info.position.latitude
                     longitude = info.position.longitude
                     val cse = info.extension as? CourseAndSpeedExtension
@@ -158,7 +160,7 @@ object AprsPacketSummaryParser {
             ?: phgResult?.let { AprsPhg.estimateRadioRangeMiles(it) }
 
         // 7. Clean comment/remarks: strip all protocol extensions (DAO, PHG, RNG, Alt, Freq, WX)
-        val cleanComment = AprsCommentCleaner.clean(commentCandidate)
+        val cleanComment = AprsCommentCleaner.clean(commentCandidate, stripMicEDeviceSuffix = kind == AprsPacketKind.MICE)
 
         return ParsedAprsPacket(
             raw = raw,
