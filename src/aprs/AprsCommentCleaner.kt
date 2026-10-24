@@ -15,7 +15,7 @@ object AprsCommentCleaner {
     private val FREQ_REGEX = Regex("""(?:^|[\s/])\d{2,4}\.\d{3,4}MHz\b""", RegexOption.IGNORE_CASE)
     private val MULTI_SPACE_REGEX = Regex("""\s+""")
     // Legacy Mic-E device identifiers are meaningful only on Mic-E packets.
-    private val MICE_DEVICE_SUFFIX_REGEX = Regex("""(?:^|\s)_(?:b|"|#|\$|%|\)|\(|0|1|3)$""")
+    private val MICE_DEVICE_SUFFIX_REGEX = Regex("""(?:^|\s)(?:\[(?:1|3)|_(?:b|"|#|\$|%|\)|\(|0|1|3))$""")
 
     /**
      * Strips all protocol tokens and returns only clean human remarks, or null if none remain.
