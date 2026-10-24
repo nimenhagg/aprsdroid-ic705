@@ -1,3 +1,15 @@
+## [Mod-v2.7.1] - 2026-10-24
+
+### Fixed
+
+- **Mic-E 接收兼容性**：
+  - 修复 Mic-E 报文在摘要解析中被误归类为普通位置报文的问题。
+  - 识别并清理常见及旧版 APRSdroid 的 Mic-E 设备后缀，避免协议后缀污染台站备注。
+- **APRS TOCALL 标识**：发送时使用已注册的 `APDRMO` TOCALL。
+- **Android NDK / Graywolf 构建稳定性**：
+  - 修复 NDK 通过 `sdkmanager` 安装时，在 `pipefail` 模式下因管道 SIGPIPE 提前失败的问题。
+  - 修复 Graywolf CI 中 `yes | sdkmanager` 触发 SIGPIPE、导致构建误报失败的问题。
+
 ## [Mod-v2.7.0] - 2026-10-07
 
 ### Added
