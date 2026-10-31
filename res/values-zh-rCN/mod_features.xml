@@ -17,6 +17,8 @@
     <string name="setting_support_about_category">支持与关于</string>
     <string name="setting_share_diagnostics">分享诊断日志</string>
     <string name="setting_share_diagnostics_summary">导出网络连接、射频链路和数据库运行信息</string>
+    <string name="setting_auto_check_updates">自动检查更新</string>
+    <string name="setting_auto_check_updates_summary">启动时自动检测 GitHub 最新发布版本</string>
     <string name="setting_check_updates">检查更新</string>
     <string name="setting_check_updates_summary">仅在点击时检查 GitHub Releases</string>
     <string name="setting_version_summary">版本 %1$s（%2$s）</string>
