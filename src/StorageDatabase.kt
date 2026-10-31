@@ -21,9 +21,18 @@ import kotlin.math.cos
 
 class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
 
+    override fun onConfigure(db: SQLiteDatabase) {
+        super.onConfigure(db)
+        try {
+            db.enableWriteAheadLogging()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to enable WAL mode", e)
+        }
+    }
+
     companion object {
         const val TAG = "APRSdroid.Storage"
-        const val DB_VERSION = 5
+        const val DB_VERSION = 6
         const val DB_NAME = "storage.db"
         const val MESSAGE_DUPLICATE_WINDOW_MS = 60L * 60L * 1000L
 
@@ -37,9 +46,10 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             const val TYPE = "type"
             const val STATUS = "status"
             const val MESSAGE = "message"
+            const val CALL = "call"
 
-            val TABLE_CREATE = "CREATE TABLE $TABLE ($_ID INTEGER PRIMARY KEY AUTOINCREMENT, $TS LONG, $TYPE INTEGER, $STATUS TEXT, $MESSAGE TEXT)"
-            val COLUMNS = arrayOf(_ID, TS, TSS_COL, TYPE, STATUS, MESSAGE)
+            val TABLE_CREATE = "CREATE TABLE $TABLE ($_ID INTEGER PRIMARY KEY AUTOINCREMENT, $TS LONG, $TYPE INTEGER, $STATUS TEXT, $MESSAGE TEXT, $CALL TEXT)"
+            val COLUMNS = arrayOf(_ID, TS, TSS_COL, TYPE, STATUS, MESSAGE, CALL)
 
             const val TYPE_POST = 0
             const val TYPE_INFO = 1
@@ -51,6 +61,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             const val COLUMN_TSS = 2
             const val COLUMN_TYPE = 3
             const val COLUMN_MESSAGE = 5
+            const val COLUMN_CALL = 6
 
             var trimCounter = 0
         }
@@ -191,12 +202,13 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         }
         db.execSQL(Position.TABLE_CREATE)
         db.execSQL(Message.TABLE_CREATE)
-        arrayOf(Position.TABLE, Station.TABLE).forEach { tab ->
+        arrayOf(Position.TABLE, Station.TABLE, Post.TABLE).forEach { tab ->
             db.execSQL(String.format(Locale.US, TABLE_INDEX, tab, "ts", tab, "ts"))
         }
         arrayOf("call", "type").forEach { col ->
             db.execSQL(String.format(Locale.US, TABLE_INDEX, Message.TABLE, col, Message.TABLE, col))
         }
+        db.execSQL(String.format(Locale.US, TABLE_INDEX, Post.TABLE, "call", Post.TABLE, "call"))
     }
 
     override fun onUpgrade(db: SQLiteDatabase, from: Int, to: Int) {
@@ -224,6 +236,9 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         }
         if (from < 5 && to >= 5) {
             upgradeToV5(db)
+        }
+        if (from < 6 && to >= 6) {
+            upgradeToV6(db)
         }
     }
 
@@ -269,6 +284,30 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             }
         } catch (e: Exception) {
             Log.e(TAG, "upgradeToV5: error migrating comments", e)
+        }
+    }
+
+    private fun upgradeToV6(db: SQLiteDatabase) {
+        try {
+            db.execSQL("ALTER TABLE ${Post.TABLE} ADD COLUMN ${Post.CALL} TEXT")
+        } catch (e: Exception) {
+            Log.w(TAG, "upgradeToV6: column call already exists or failed", e)
+        }
+        try {
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_${Post.TABLE}_call ON ${Post.TABLE} (${Post.CALL})")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_${Post.TABLE}_ts ON ${Post.TABLE} (${Post.TS})")
+        } catch (e: Exception) {
+            Log.w(TAG, "upgradeToV6: index creation failed", e)
+        }
+        try {
+            db.execSQL(
+                "UPDATE ${Post.TABLE} SET ${Post.CALL} = CASE " +
+                    "WHEN instr(${Post.MESSAGE}, '>') > 0 THEN substr(${Post.MESSAGE}, 1, instr(${Post.MESSAGE}, '>') - 1) " +
+                    "ELSE NULL END " +
+                    "WHERE ${Post.CALL} IS NULL AND (${Post.TYPE} = ${Post.TYPE_POST} OR ${Post.TYPE} = ${Post.TYPE_INCMG} OR ${Post.TYPE} = ${Post.TYPE_TX})"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "upgradeToV6: error backfilling post calls", e)
         }
     }
 
@@ -426,13 +465,22 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         return readableDatabase.query(Station.TABLE, newcols, "call like ?", arrayOf(call), null, null, "dist", limit)
     }
 
-    fun addPost(ts: Long, posttype: Int, status: String, message: String) {
+    fun addPost(ts: Long, posttype: Int, status: String, message: String, call: String? = null) {
         val cleanMessage = AprsCharsetDecoder.repairString(message)
+        val resolvedCall = call ?: run {
+            if (posttype == Post.TYPE_POST || posttype == Post.TYPE_INCMG || posttype == Post.TYPE_TX) {
+                val idx = cleanMessage.indexOf('>')
+                if (idx > 0) cleanMessage.substring(0, idx).trim() else null
+            } else null
+        }
         val cv = ContentValues().apply {
             put(Post.TS, ts)
             put(Post.TYPE, posttype)
             put(Post.STATUS, status)
             put(Post.MESSAGE, cleanMessage)
+            if (resolvedCall != null) {
+                put(Post.CALL, resolvedCall)
+            }
         }
         writableDatabase.insertOrThrow(Post.TABLE, Post.MESSAGE, cv)
         if (Post.trimCounter == 0) {
@@ -453,7 +501,11 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         val start = "$call%"
         val obj1 = "%;$call%"
         val obj2 = "%) $call%"
-        return getPosts("message LIKE ? OR message LIKE ? OR message LIKE ?", arrayOf(start, obj1, obj2), limit)
+        return getPosts(
+            "${Post.CALL} = ? COLLATE NOCASE OR (${Post.CALL} IS NULL AND (${Post.MESSAGE} LIKE ? OR ${Post.MESSAGE} LIKE ? OR ${Post.MESSAGE} LIKE ?))",
+            arrayOf(call, start, obj1, obj2),
+            limit
+        )
     }
 
     fun getExportPosts(call: String?): Cursor {
