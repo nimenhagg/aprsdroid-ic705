@@ -17,6 +17,8 @@
     <string name="setting_support_about_category">Support &amp; about</string>
     <string name="setting_share_diagnostics">Share diagnostics</string>
     <string name="setting_share_diagnostics_summary">Export network, radio-link, and database runtime diagnostics</string>
+    <string name="setting_auto_check_updates">Check updates automatically</string>
+    <string name="setting_auto_check_updates_summary">Automatically check for new GitHub releases on launch</string>
     <string name="setting_check_updates">Check for updates</string>
     <string name="setting_check_updates_summary">Check GitHub Releases only when tapped</string>
     <string name="setting_version_summary">Version %1$s (%2$s)</string>

@@ -16,6 +16,7 @@ import org.aprsdroid.app.radio.RadioProfile
 
 class PrefsWrapper(@JvmField val context: Context) {
     companion object {
+        const val KEY_AUTO_CHECK_UPDATES = "check_updates_automatically"
         const val KEY_PHG_ENABLED = "phg_enabled"
         const val KEY_PHG_POWER = "phg_power"
         const val KEY_PHG_HEIGHT = "phg_height"
@@ -115,6 +116,9 @@ class PrefsWrapper(@JvmField val context: Context) {
     fun set(name: String, newVal: Boolean): Boolean {
         return setBoolean(name, newVal)
     }
+
+    fun isAutoCheckUpdatesEnabled(): Boolean = prefs.getBoolean(KEY_AUTO_CHECK_UPDATES, true)
+    fun setAutoCheckUpdatesEnabled(enabled: Boolean): Boolean = setBoolean(KEY_AUTO_CHECK_UPDATES, enabled)
 
     fun getShowObjects(): Boolean = prefs.getBoolean("show_objects", true)
     fun getShowSatellite(): Boolean = prefs.getBoolean("show_satellite", false)

@@ -96,6 +96,7 @@ class PrefsAct : ComponentActivity() {
     private val mapCustomSubdomainsState = mutableStateOf("")
     private val showObjectsState = mutableStateOf(true)
     private val sendBatteryInfoState = mutableStateOf(false)
+    private val autoCheckUpdatesState = mutableStateOf(true)
     private val stationTapActionState = mutableStateOf("message")
     private val phgEnabledState = mutableStateOf(false)
     private val phgPowerState = mutableStateOf("")
@@ -145,6 +146,7 @@ class PrefsAct : ComponentActivity() {
                     mapCustomSubdomains = mapCustomSubdomainsState.value,
                     showObjects = showObjectsState.value,
                     sendBatteryInfo = sendBatteryInfoState.value,
+                    autoCheckUpdates = autoCheckUpdatesState.value,
                     stationTapAction = stationTapActionState.value,
                     phgEnabled = phgEnabledState.value,
                     phgPower = phgPowerState.value,
@@ -231,6 +233,10 @@ class PrefsAct : ComponentActivity() {
                     onToggleSendBatteryInfo = { enabled ->
                         prefs.setBoolean("send_battery_aprsis", enabled)
                         sendBatteryInfoState.value = enabled
+                    },
+                    onToggleAutoCheckUpdates = { enabled ->
+                        prefs.setAutoCheckUpdatesEnabled(enabled)
+                        autoCheckUpdatesState.value = enabled
                     },
                     onSaveStationTapAction = { action ->
                         prefs.set("station_tap_action", action)
@@ -385,6 +391,7 @@ class PrefsAct : ComponentActivity() {
         mapCustomSubdomainsState.value = prefs.getString("map_custom_subdomains", "")
         showObjectsState.value = prefs.getShowObjects()
         sendBatteryInfoState.value = prefs.getSendBatteryAprsIs()
+        autoCheckUpdatesState.value = prefs.isAutoCheckUpdatesEnabled()
         stationTapActionState.value = prefs.getStationTapAction()
         phgEnabledState.value = prefs.getPhgEnabled()
         phgPowerState.value = prefs.getPhgPower()

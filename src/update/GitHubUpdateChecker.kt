@@ -33,8 +33,31 @@ internal sealed interface UpdateCheckResult {
         val releaseUrl: String,
         val deviceArchitecture: String,
         val releaseNotes: String,
+        val isPromptSuppressed: Boolean = false,
     ) : UpdateCheckResult
     data class Failure(val message: String) : UpdateCheckResult
+}
+
+
+internal fun isUpdatePromptSuppressed(releaseNotes: String, releaseTitle: String = ""): Boolean {
+    val suppressedPatterns = listOf(
+        "[skip-update-prompt]",
+        "[no-update-prompt]",
+        "[skip-prompt]",
+        "[no-prompt]",
+        "[silent-update]",
+        "[silent]",
+        "[不提示更新]",
+        "[静默更新]",
+        "[忽略更新提示]",
+        "<!-- aprsdroid:skip-prompt -->",
+        "<!-- aprsdroid:no-prompt -->",
+        "<!-- aprsdroid:silent -->",
+        "<!-- skip-update -->",
+    )
+    return suppressedPatterns.any { pattern ->
+        releaseNotes.contains(pattern, ignoreCase = true) || releaseTitle.contains(pattern, ignoreCase = true)
+    }
 }
 
 internal fun formatDeviceArchitecture(abis: Array<String>): String {
@@ -66,7 +89,7 @@ internal object GitHubUpdateChecker {
     fun checkAutomatically(currentVersionName: String, callback: (UpdateCheckResult.UpdateAvailable) -> Unit) {
         if (!automaticCheckStarted.compareAndSet(false, true)) return
         check(currentVersionName) { result ->
-            if (result is UpdateCheckResult.UpdateAvailable) {
+            if (result is UpdateCheckResult.UpdateAvailable && !result.isPromptSuppressed) {
                 callback(result)
             }
         }
@@ -103,9 +126,11 @@ internal object GitHubUpdateChecker {
                         return
                     }
                     val tag = json.optString("tag_name")
+                    val title = json.optString("name")
                     val latest = parseAppVersion(tag)
                     val releaseUrl = json.optString("html_url")
                     val releaseNotes = json.optString("body").trim().ifBlank { "No release notes provided." }
+                    val isSuppressed = isUpdatePromptSuppressed(releaseNotes, title)
                     if (latest == null || releaseUrl.isBlank()) {
                         callback(UpdateCheckResult.Failure("GitHub Release 缺少有效版本信息"))
                         return
@@ -118,6 +143,7 @@ internal object GitHubUpdateChecker {
                                 releaseUrl = releaseUrl,
                                 deviceArchitecture = formatDeviceArchitecture(Build.SUPPORTED_ABIS),
                                 releaseNotes = releaseNotes,
+                                isPromptSuppressed = isSuppressed,
                             ),
                         )
                     } else {

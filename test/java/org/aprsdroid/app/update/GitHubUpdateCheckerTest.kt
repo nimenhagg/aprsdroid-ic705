@@ -36,4 +36,31 @@ class GitHubUpdateCheckerTest {
     fun rejectsStringsWithoutSemanticVersion() {
         assertNull(parseAppVersion("unknown"))
     }
+
+    @Test
+    fun detectsPromptSuppressionMarkersInReleaseNotesAndTitle() {
+        // Explicit tags in notes
+        assertTrue(isUpdatePromptSuppressed("Release v2.8.0\n[skip-update-prompt]\nBug fixes"))
+        assertTrue(isUpdatePromptSuppressed("Test release\n[no-prompt]"))
+        assertTrue(isUpdatePromptSuppressed("Minor patch [silent-update]"))
+        assertTrue(isUpdatePromptSuppressed("Hotfix [SILENT]"))
+
+        // HTML comment tags in notes
+        assertTrue(isUpdatePromptSuppressed("Release notes\n<!-- aprsdroid:skip-prompt -->\nChangelog"))
+        assertTrue(isUpdatePromptSuppressed("Release notes <!-- skip-update -->"))
+
+        // Chinese marker tags in notes
+        assertTrue(isUpdatePromptSuppressed("修复一些已知问题 [不提示更新]"))
+        assertTrue(isUpdatePromptSuppressed("内测版 [静默更新]"))
+        assertTrue(isUpdatePromptSuppressed("构建版本 [忽略更新提示]"))
+
+        // Title marker
+        assertTrue(isUpdatePromptSuppressed("Regular notes", "Mod-v2.8.0 [skip-update-prompt]"))
+        assertTrue(isUpdatePromptSuppressed("Regular notes", "Mod-v2.8.0 [静默更新]"))
+
+        // Normal releases should NOT be suppressed
+        org.junit.Assert.assertFalse(isUpdatePromptSuppressed("Normal release notes with great features!"))
+        org.junit.Assert.assertFalse(isUpdatePromptSuppressed("", "Mod-v2.8.0"))
+        org.junit.Assert.assertFalse(isUpdatePromptSuppressed("Fixed prompt issues for station dialog"))
+    }
 }

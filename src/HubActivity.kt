@@ -139,11 +139,13 @@ class HubActivity : BaseRecyclerActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         consumeNavigationIntent(intent)
-        GitHubUpdateChecker.checkAutomatically(BuildConfig.VERSION_NAME) { update ->
-            runOnUiThread {
-                if (!isFinishing && !isDestroyed) {
-                    AppLog.i("UPDATE", "automatic_check_update_available", mapOf("current" to update.current, "latest" to update.latest))
-                    updateAvailableState.value = update
+        if (prefs.isAutoCheckUpdatesEnabled()) {
+            GitHubUpdateChecker.checkAutomatically(BuildConfig.VERSION_NAME) { update ->
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) {
+                        AppLog.i("UPDATE", "automatic_check_update_available", mapOf("current" to update.current, "latest" to update.latest))
+                        updateAvailableState.value = update
+                    }
                 }
             }
         }

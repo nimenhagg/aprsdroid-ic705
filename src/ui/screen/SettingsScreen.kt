@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SettingsInputAntenna
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.SystemUpdateAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -78,6 +79,7 @@ fun SettingsScreen(
     mapCustomSubdomains: String,
     showObjects: Boolean,
     sendBatteryInfo: Boolean,
+    autoCheckUpdates: Boolean,
     stationTapAction: String,
     phgEnabled: Boolean,
     phgPower: String,
@@ -102,6 +104,7 @@ fun SettingsScreen(
     onSaveMapCustomSubdomains: (String) -> Unit,
     onToggleShowObjects: (Boolean) -> Unit,
     onToggleSendBatteryInfo: (Boolean) -> Unit,
+    onToggleAutoCheckUpdates: (Boolean) -> Unit,
     onSaveStationTapAction: (String) -> Unit,
     onOpenNotificationPrefs: () -> Unit,
     onExportProfile: () -> Unit,
@@ -372,6 +375,14 @@ fun SettingsScreen(
                     icon = Icons.Default.BugReport,
                     onClick = onShareDiagnostics,
                     showChevron = false,
+                )
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                PreferenceSwitchItem(
+                    title = stringResource(R.string.setting_auto_check_updates),
+                    summary = stringResource(R.string.setting_auto_check_updates_summary),
+                    icon = Icons.Default.Sync,
+                    checked = autoCheckUpdates,
+                    onCheckedChange = onToggleAutoCheckUpdates,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
