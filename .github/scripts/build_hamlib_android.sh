@@ -18,7 +18,22 @@ esac
 : "${ANDROID_HOME:?ANDROID_HOME must point to the Android SDK}"
 for cmd in git make autoconf automake libtoolize pkg-config patchelf python3; do command -v "$cmd" >/dev/null || { echo "$cmd is required" >&2; exit 2; }; done
 NDK="$ANDROID_HOME/ndk/$NDK_VERSION"
-if [ ! -d "$NDK" ]; then SDKMANAGER="$(command -v sdkmanager || true)"; [ -n "$SDKMANAGER" ] || SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null; fi
+if [ ! -d "$NDK" ]; then
+  SDKMANAGER="$(command -v sdkmanager || true)"
+  [ -n "$SDKMANAGER" ] || SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+  # sdkmanager may exit before `yes`, causing SIGPIPE. Disable pipefail only
+  # for this pipeline while preserving sdkmanager's exit status (the last command).
+  if (
+    set +o pipefail
+    yes | "$SDKMANAGER" "ndk;$NDK_VERSION" >/dev/null
+  ); then
+    :
+  else
+    SDKMANAGER_STATUS=$?
+    echo "Failed to install Android NDK $NDK_VERSION (sdkmanager exit $SDKMANAGER_STATUS)" >&2
+    exit "$SDKMANAGER_STATUS"
+  fi
+fi
 HOST_TAG="linux-x86_64"; [ "$(uname -s)" != "Darwin" ] || HOST_TAG="darwin-x86_64"
 TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/$HOST_TAG"
 AR="$TOOLCHAIN/bin/llvm-ar"; AS="$TOOLCHAIN/bin/llvm-as"; CC="$TOOLCHAIN/bin/${CLANG_TRIPLE}${ANDROID_API}-clang"; CXX="$TOOLCHAIN/bin/${CLANG_TRIPLE}${ANDROID_API}-clang++"; LD="$TOOLCHAIN/bin/ld"; RANLIB="$TOOLCHAIN/bin/llvm-ranlib"; STRIP="$TOOLCHAIN/bin/llvm-strip"; READELF="$TOOLCHAIN/bin/llvm-readelf"; NM="$TOOLCHAIN/bin/llvm-nm"

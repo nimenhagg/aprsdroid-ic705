@@ -229,6 +229,9 @@ dependencies {
 	x8664MultiImplementation "org.maplibre.gl:android-sdk-vulkan-opengl:${maplibre_version}"
 	implementation 'com.google.android.gms:play-services-maps:20.0.0'
 	implementation 'com.squareup.okhttp3:okhttp:5.3.0'
+	implementation 'org.commonmark:commonmark:0.31.0'
+	implementation 'org.commonmark:commonmark-ext-gfm-strikethrough:0.31.0'
+	implementation 'org.commonmark:commonmark-ext-gfm-tables:0.31.0'
 	implementation 'androidx.core:core-ktx:1.19.0'
 	implementation 'androidx.browser:browser:1.10.0'
 	implementation 'com.google.android.material:material:1.14.0'
