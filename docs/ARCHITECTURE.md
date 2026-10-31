@@ -13,7 +13,7 @@
 | `native/graywolf-jni/` | Rust JNI adapter 与 Graywolf AFSK1200 receive core |
 | `third_party/hamlib/` | Hamlib pinned revision、许可证与构建/再分发说明；native 产物只在 CI/build 目录生成 |
 | `src/diagnostic/` | 持久日志、网络事件、诊断快照与 ZIP 导出 |
-| `src/update/` | 手动 GitHub Release 检查 |
+| `src/update/` | GitHub Release 自动检查（支持静默标记与设置开关）、手动检查与 Markdown 渲染 |
 | `res/` | values、drawable、mipmap、menu 等；生产页面无 `res/layout` |
 | `test/java/` | JVM 单测 |
 | `androidTest/java/` | Android instrumentation 测试 |
@@ -58,6 +58,22 @@ Bluetooth SCO 8 kHz ───────────┘
 - Android ARM64/ARMv7 `.so` 必须由 CI 从源码生成到 `build/generated/rustJniLibs/<abi>/libaprs_graywolf.so`，不得把生成 `.so` 提交回源码 `libs/`。
 - Release 必须校验 JNI exports、单 ABI、16 KiB ELF/page alignment 与 APK 内 `.so` SHA-256，并随 tagged Release 提供 pinned Graywolf 对应源码归档。
 
+
+### 3.2 数据库高并发与高吞吐量报文架构（必须遵守）
+
+在 APRS-IS 连接或高频信标通联下，短时间内可能涌入数万条报文。系统必须遵守以下并发与查询架构：
+
+1. **SQLite WAL 读写高并发**：
+   - 数据库必须在 `StorageDatabase` 中开启 Write-Ahead Logging (`setWriteAheadLoggingEnabled(true)`)。
+   - 严禁退回 Rollback Journal 模式，确保后台报文持久化写入与前台 UI 并发读取完全解耦，杜绝 `waitForConnection` 互斥死锁导致的 ANR。
+2. **Schema 结构与索引（DB_VERSION 6）**：
+   - `posts` 报文表必须维护独立的 `call` (TEXT) 发送方呼号列，并在 `(call, timestamp DESC)` 及 `(timestamp DESC)` 上建立常驻索引。
+   - 严禁退回使用全表遍历与针对原始报文字符串的 `message LIKE ?` 模糊匹配。
+3. **协程节流与状态折叠 (`Channel.CONFLATED`)**：
+   - 台站详情页 (`StationActivity`) 与报文流刷新必须基于协程作用域调度，并通过 `Channel.CONFLATED` 进行并发查询节流。
+   - 严禁使用无界单线程池堆积无界任务队列。在高吞吐突发流量下，连续到达的事件必须被折叠，仅执行最近一次最新状态查询。
+4. **跨进程 IPC 限流保护**：
+   - 前台服务通知栏实时状态更新必须保持至少 1000ms 最小触发间隔节流，严禁每收一包即调用一次 `NotificationManager.notify()`。
 
 ## 4. UI、导航与动效设计规范（必须遵守）
 

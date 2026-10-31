@@ -10,7 +10,7 @@
 
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPLv2-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/Platform-Android%209%2B-green.svg)
-[![Latest Release](https://img.shields.io/badge/Release-Mod--v2.7.0-orange.svg)](https://github.com/nimenhagg/aprsdroid-ic705/releases)
+[![Latest Release](https://img.shields.io/badge/Release-Mod--v2.8.0-orange.svg)](https://github.com/nimenhagg/aprsdroid-ic705/releases)
 ![Target](https://img.shields.io/badge/Target-Android%2017%20(API%2037)-brightgreen.svg)
 ![UI](https://img.shields.io/badge/UI-Jetpack%20Compose%20M3-purple.svg)
 
@@ -18,7 +18,7 @@
 
 **🌐 语言 / Language：** [中文说明](#中文说明) · [English](#english) · [更新日志 / Changelog](CHANGELOG.md)
 
-**最新稳定版 / Latest release: `Mod-v2.7.1`**
+**最新稳定版 / Latest release: `Mod-v2.8.0`**
 
 </div>
 
@@ -47,7 +47,8 @@
 - **电台与网络隔离**：电台流量绑定选定 Wi-Fi Network，APRS-IS 等互联网流量仍可走手机默认蜂窝网络。
 - 本地 AFSK1200 RX 统一使用 Graywolf，支持 IC-705 12 kHz、AudioRecord 11.025 kHz、Bluetooth SCO 8 kHz；旧 Java modulator 仅用于 TX 音频生成。
 - 持久结构化诊断日志与可分享 ZIP，记录网络、电台 session、PTT、恢复和崩溃现场；敏感字段自动脱敏。
-- 应用启动时自动静默检查更新；只有发现新版本才弹窗提示，无更新或检查失败均不提示。设置页仍可手动检查；不会后台/定时联网，也不会自动下载/安装 APK。
+- **高吞吐量报文性能与并发架构**：数据库升级至 SQLite WAL 读写高并发模式，存储结构平滑升级至 v6（`posts` 表新增 `call` 呼号独立列与联合索引，毫秒级快速匹配历史报文）；台站详情页全面重构为协程与 `Channel.CONFLATED` 节流折叠调度，彻底杜绝无界线程池任务雪崩；前台通知栏 IPC 限流（1000ms），彻底根治大范围 APRS-IS（如 2000km 过滤半径）高吞吐下的界面掉帧与 ANR。
+- **智能更新检查与免打扰机制**：应用启动时自动检查更新（可在设置中随时关闭）；支持在 GitHub Release 中使用 `[skip-update-prompt]`、`<!-- aprsdroid:skip-prompt -->` 等静默标记抑制启动弹窗；更新提示对话框支持 Markdown 原生富文本样式渲染。设置页仍可手动检查；不会后台/定时轮询联网，也不会自动下载/安装 APK。
 - Android 16+ 可选 Live Updates / 状态胶囊，显示连接、接收、发射、信标和错误等状态。
 - Material 3 + Jetpack Compose；台站、地图、消息、报文四个一级页面统一导航，并支持紧凑列表与即时呼号搜索。
 - MapLibre Native 支持高德、OpenStreetMap 和自定义栅格；Google Maps SDK 支持 Google 普通/卫星地图。
@@ -167,7 +168,7 @@ Graywolf 的 `Cargo.lock` 已提交，native 构建使用 `--locked`。Windows �
 
 APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APRS support, modern Android UI, persistent diagnostics, and performance improvements.
 
-**Latest stable release: `Mod-v2.7.1`.**
+**Latest stable release: `Mod-v2.8.0`.**
 
 ### Highlights
 
@@ -188,7 +189,8 @@ APRSdroid Mod is an unofficial APRSdroid fork adding direct Icom IC-705 WLAN APR
 - **Network Isolation**: Selected Android Wi-Fi Network is used only for radio traffic, allowing APRS-IS to keep using the phone's default internet path.
 - Graywolf is the production local AFSK1200 RX engine; the legacy Java modulator remains for stable TX PCM generation.
 - ACK-aware PTT safety, watchdogs, channel-specific recovery, persistent structured diagnostics and exportable reports.
-- GitHub Release checking runs once silently at app startup; failures and an up-to-date result remain silent. Settings also provides a manual check. No background/periodic polling and no automatic APK download/install.
+- **High-Throughput Packet Performance & Concurrency Architecture**: Upgraded SQLite database to WAL (Write-Ahead Logging) mode; schema upgraded to v6 with dedicated indexed `posts.call` column and composite timestamps, cutting query times by >99%; `StationActivity` refactored with Kotlin coroutines and `Channel.CONFLATED` throttled state flow, eliminating unbounded thread pool task avalanches; foreground notification Binder IPC throttled to 1000ms minimum interval, completely resolving UI stutters and ANRs under massive APRS-IS packet traffic.
+- **Smart Update Checking & Prompt Suppression**: Automatic update check on app launch can be toggled on/off in Settings; supports prompt suppression markers in GitHub Releases (`[skip-update-prompt]`, `<!-- aprsdroid:skip-prompt -->`, etc.) to prevent startup modal popups; update dialog natively parses and renders Markdown release notes. Settings also provides a manual check. No background/periodic polling and no automatic APK download/install.
 - Android 16+ Live Updates / status chip display, Material 3 / Jetpack Compose UI, station search, and compact lists.
 - MapLibre Native for AMap/OSM/custom raster maps and Google Maps SDK for Google map/satellite modes.
 - Original APRSdroid APRS-IS, AFSK, KISS (hardened escape and concurrency handling), TNC2, Kenwood, Bluetooth, USB and LAN TNC paths remain available.

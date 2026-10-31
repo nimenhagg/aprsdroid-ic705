@@ -1,3 +1,39 @@
+## [Mod-v2.8.0] - 2026-11-01
+
+### Added
+
+- **Release 静默/免打扰更新记号检测**：
+  - 在发布 GitHub Release 时，若在正文（Body）或标题（Title）中加入静默标记（不区分大小写），客户端启动时的自动更新检测将不再弹出更新提示对话框：
+    - 显式标记：`[skip-update-prompt]`、`[no-prompt]`、`[skip-prompt]`、`[no-update-prompt]`、`[silent-update]`、`[silent]`、`[不提示更新]`、`[静默更新]`、`[忽略更新提示]`
+    - HTML 隐藏注释（推荐，页面排版完全隐形）：`<!-- aprsdroid:skip-prompt -->`、`<!-- aprsdroid:silent -->`、`<!-- aprsdroid:no-prompt -->`、`<!-- skip-update -->`
+  - 用户在应用内手动进入设置点击「检查更新」时，仍可正常获取版本信息并弹窗，仅抑制应用启动时的自动弹窗打扰。
+- **设置项新增「自动检查更新」开关**：
+  - 在「设置」->「支持与关于」卡片中添加「自动检查更新」Switch 开关（默认开启）。
+  - 关闭后，应用启动时不会发起任何 GitHub Release API 网络请求。
+  - 完整适配配置文件的导出/导入 Schema 白名单与中英双语国际化。
+- **更新提示对话框 Markdown 样式解析与渲染**：
+  - 采用 CommonMark 解析器，将 GitHub Release Notes 中的 Markdown 标题、加粗、斜体、列表、代码块及链接渲染为原生富文本样式，大幅提升可读性。
+
+### Performance
+
+- **高吞吐量 APRS 报文性能飞跃（彻底消除大过滤范围下的界面卡顿与 ANR）**：
+  - **SQLite WAL 读写高并发架构**：数据库连接升级至 WAL（Write-Ahead Logging）模式，实现后台写入与前台并发读取互不阻塞，彻底解决大表扫描持有共享读锁导致主线程写事务挂死 `waitForConnection` 的致命卡顿。
+  - **数据库存储升级 (DB_VERSION 5 -> 6)**：
+    - `posts` 表新增 `call` (TEXT) 独立呼号列，实现 `upgradeToV6` 平滑安全迁移：根据历史报文的发送方呼号安全回填；
+    - 建立 `(call, timestamp DESC)` 联合索引及 `(timestamp DESC)` 时间戳索引，消除原先通过 3 个 `message LIKE ?` 模糊匹配对数万条历史报文进行全表扫描的严重瓶颈，单次台站报文查询耗时由 60~120ms 直降至 0.2~0.5ms。
+  - **台站详情页 (`StationActivity`) 协程并发与节流重构**：
+    - 废弃裸单线程池无界队列，基于 Kotlin 协程与 `Channel.CONFLATED` 实现查询与 UI 刷新任务的节流与状态折叠；
+    - 在 10~15 报文/秒的高吞吐突发流量下，将原本堆积成百上千次的无效冗余数据库查询与列表全量刷新折叠为最后一次最新状态更新，主线程 CPU 占用大幅降低，滑动极度丝滑。
+  - **前台服务通知栏 IPC 节流保护**：
+    - 对 `notification_live_updates` 实时状态通知实施 1000ms 最小触发间隔限流，杜绝每秒十余次跨进程 Binder IPC 轰炸 Android 系统 `system_server` 导致的系统级界面掉帧。
+
+### Changed
+
+- **关于（About）界面全面更新与免责声明完善**：
+  - 项目名称由旧版标题修正统一为 `APRSdroid Mod`，精炼提炼整个项目的四大核心支柱（电台直连与硬件联动、现代 APRS 协议规格、智能无乱码编码与纯净体验、现代 UI 与多源地图）；
+  - 明确增加“本软件是自由软件，不提供任何担保”法定免责声明，并致谢 Georg Lukas 原创 APRSdroid 项目及开源贡献者。
+- **版本基线升级为 `Mod-v2.8.0`**（`versionCode 2026110101`），同步更新全部工程文档、架构规范与官方网站。
+
 ## [Mod-v2.7.1] - 2026-10-24
 
 ### Fixed

@@ -1,6 +1,6 @@
 # APRSdroid Activities and UI Architecture
 
-Current baseline: `Mod-v2.7.0`. This file describes the current Android navigation/activity structure; release history belongs in [CHANGELOG.md](CHANGELOG.md), maintenance invariants in [AGENT.md](AGENT.md), and stable implementation constraints in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Current baseline: `Mod-v2.8.0`. This file describes the current Android navigation/activity structure; release history belongs in [CHANGELOG.md](CHANGELOG.md), maintenance invariants in [AGENT.md](AGENT.md), and stable implementation constraints in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Main navigation
 
@@ -38,7 +38,7 @@ These remain explicit Android activity boundaries where platform Back / predicti
 
 ## Performance ownership
 
-- Database refreshes use the current ViewModel/repository boundaries and conflated query queues.
+- Database refreshes use SQLite WAL mode, indexed posts queries (call + timestamp), the current ViewModel/repository boundaries and conflated query queues (Channel.CONFLATED).
 - Map rendering keeps immutable station snapshots and reuses marker/icon resources.
 - MapLibre/Google Maps lifecycle follows the host destination/activity lifecycle.
 - Visual navigation and predictive-back behavior require real-device verification; CI alone does not prove animation correctness.

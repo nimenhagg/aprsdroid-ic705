@@ -103,10 +103,17 @@ fun AboutDialogContent(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
+                Text(
+                    text = stringResource(R.string.about_subtitle),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+
                 Surface(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 6.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.build_revision),
@@ -118,7 +125,7 @@ fun AboutDialogContent(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Features Card
                 Card(
@@ -141,18 +148,23 @@ fun AboutDialogContent(
 
                         FeatureItem(
                             "📻",
-                            stringResource(R.string.about_feature_ic705_title),
-                            stringResource(R.string.about_feature_ic705_desc),
+                            stringResource(R.string.about_feature_radio_title),
+                            stringResource(R.string.about_feature_radio_desc),
                         )
                         FeatureItem(
-                            "🎨",
-                            stringResource(R.string.about_feature_ui_title),
-                            stringResource(R.string.about_feature_ui_desc),
+                            "🛰️",
+                            stringResource(R.string.about_feature_protocol_title),
+                            stringResource(R.string.about_feature_protocol_desc),
+                        )
+                        FeatureItem(
+                            "🀄",
+                            stringResource(R.string.about_feature_clean_title),
+                            stringResource(R.string.about_feature_clean_desc),
                         )
                         FeatureItem(
                             "🗺️",
-                            stringResource(R.string.about_feature_maps_title),
-                            stringResource(R.string.about_feature_maps_desc),
+                            stringResource(R.string.about_feature_ui_maps_title),
+                            stringResource(R.string.about_feature_ui_maps_desc),
                         )
                     }
                 }

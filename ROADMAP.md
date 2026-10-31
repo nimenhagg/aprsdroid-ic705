@@ -4,13 +4,16 @@
 
 ## 1. 当前基线
 
-截至 `Mod-v2.7.0`：
+截至 `Mod-v2.8.0`：
 
 - Hamlib Android 构建、JNI、USB CAT loopback bridge、通用 RadioControl、USB Audio 路由和 TX drain 已进入主线。
 - USB 电台设置、400+ Hamlib 电台型号选择、品牌排序、自定义 CI-V 地址已经进入主线。
 - IC-705 WLAN 支持 IC-705、IC-9700、IC-7610、IC-905 预置以及 CUSTOM CI-V 地址；支持 CI-V 工作频率自动同步与内部 GPS 联动。
 - APRS 现代协议全面实现：APRS 1.2 DAO 亚米级高精度位置扩展、APRS 101 第 9 章 PHG / 第 10 章 RNG 覆盖半径估算、第 12 章 WX 气象解析、第 13 章遥测报文深度解析与校准方程、第 14 章第三方嵌套报文递归解包与网关中继追踪、第 15 章 Queries 协议指令自动应答。
 - 协议字段清洗与备注净化：剥离 PHG、RNG、DAO、海拔、频率与气象碎片，存储与 UI 界面备注全面净化。
+- 数据库结构升级至 v6：开启 SQLite WAL 读写并发；posts 表新增 call 呼号列与联合索引，解决大表全表扫描。
+- 高吞吐量并发性能飞跃：StationActivity 协程并发与 Channel.CONFLATED 节流折叠调度、通知栏 IPC 节流保护，彻底根治大范围 APRS-IS 吞吐下的界面掉帧与 ANR。
+- Release 静默/免打扰更新标记与自动检查更新偏好设置，更新弹窗支持 Markdown 样式渲染。
 - 数据库结构升级至 v5：stations 表新增 phg 与 rng 独立列，实现平滑升级与存量备注回填清洗。
 - 智能自适应多编码字符集解码器（GB2312/GBK/GB18030/UTF-8 与 Latin-1 恢复），彻底消除国内台站备注与气象乱码。
 - 本地 AFSK1200 RX 使用 Graywolf；TX 继续使用稳定的 APRSdroid PCM 生成链。
