@@ -64,6 +64,30 @@ class PacketPersistenceCoordinatorTest {
         )
     }
 
+
+    @Test
+    fun parsedPostExtractsCallSignForDirectIndexing() {
+        val events = mutableListOf<String>()
+        val repository = RecordingRepository(events)
+        val failure = IllegalStateException("parse")
+        val coordinator = coordinator(
+            repository = repository,
+            events = events,
+            parser = { throw failure },
+        )
+
+        coordinator.addPost(StorageDatabase.Companion.Post.TYPE_INCMG, "recv", "BH7HPW-1>APRS4G,TCPIP*:/test")
+
+        assertEquals(
+            listOf(
+                "store:123:3:recv:BH7HPW-1>APRS4G,TCPIP*:/test:call=BH7HPW-1",
+                "parseFailure:BH7HPW-1>APRS4G,TCPIP*:/test:java.lang.IllegalStateException: parse",
+                "update:3:BH7HPW-1>APRS4G,TCPIP*:/test:call=BH7HPW-1",
+            ),
+            events,
+        )
+    }
+
     private fun coordinator(
         repository: PacketPostRepository,
         events: MutableList<String>,
@@ -74,7 +98,7 @@ class PacketPersistenceCoordinatorTest {
         onOwnDigipeat = { digi, info -> events += "digipeat:$digi:$info" },
         onMessage = { _, _, _ -> events += "message" },
         onPositionPersisted = { _, _, _, _, _ -> events += "position" },
-        onPostUpdated = { type, message -> events += "update:$type:$message" },
+        onPostUpdated = { type, message, call -> events += "update:$type:$message" + if (call != null) ":call=$call" else "" },
         onLogOnly = { status, message -> events += "log:$status:$message" },
         onDebug = { message -> events += "debug:$message" },
         onParseFailure = { message, error -> events += "parseFailure:$message:$error" },
@@ -85,8 +109,8 @@ class PacketPersistenceCoordinatorTest {
     private class RecordingRepository(
         private val events: MutableList<String>,
     ) : PacketPostRepository {
-        override fun addPost(ts: Long, postType: Int, status: String, message: String) {
-            events += "store:$ts:$postType:$status:$message"
+        override fun addPost(ts: Long, postType: Int, status: String, message: String, call: String?) {
+            events += "store:$ts:$postType:$status:$message" + if (call != null) ":call=$call" else ""
         }
 
         override fun addPosition(

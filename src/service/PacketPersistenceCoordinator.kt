@@ -43,7 +43,7 @@ internal class PacketPersistenceCoordinator(
         courseAndSpeed: CourseAndSpeedExtension?,
         objectName: String?,
     ) -> Unit,
-    private val onPostUpdated: (postType: Int, message: String) -> Unit,
+    private val onPostUpdated: (postType: Int, message: String, call: String?) -> Unit,
     private val onLogOnly: (status: String?, message: String) -> Unit,
     private val onDebug: (message: String) -> Unit,
     private val onParseFailure: (message: String, error: Exception) -> Unit,
@@ -52,14 +52,21 @@ internal class PacketPersistenceCoordinator(
 ) {
     fun addPost(postType: Int, status: String?, message: String) {
         val ts = clock()
-        repository.addPost(ts, postType, status ?: "", message)
+        val extractedCall = if (postType == StorageDatabase.Companion.Post.TYPE_POST ||
+            postType == StorageDatabase.Companion.Post.TYPE_INCMG ||
+            postType == StorageDatabase.Companion.Post.TYPE_TX) {
+            val idx = message.indexOf('>')
+            if (idx > 0) message.substring(0, idx).trim() else null
+        } else null
+
+        repository.addPost(ts, postType, status ?: "", message, extractedCall)
 
         when (postRoute(postType)) {
             PostRoute.PARSE -> parsePacket(ts, message, postType)
             PostRoute.LOG_ONLY -> onLogOnly(status, message)
         }
 
-        onPostUpdated(postType, message)
+        onPostUpdated(postType, message, extractedCall)
     }
 
     fun parsePacket(ts: Long, message: String, source: Int) {

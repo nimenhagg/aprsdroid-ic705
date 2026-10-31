@@ -13,7 +13,7 @@ import org.aprsdroid.app.StorageDatabase
  * SQLite details.
  */
 internal interface PacketPostRepository {
-    fun addPost(ts: Long, postType: Int, status: String, message: String)
+    fun addPost(ts: Long, postType: Int, status: String, message: String, call: String? = null)
 
     fun addPosition(
         ts: Long,
@@ -27,8 +27,8 @@ internal interface PacketPostRepository {
 internal class StorageDatabasePacketPostRepository(
     private val database: StorageDatabase,
 ) : PacketPostRepository {
-    override fun addPost(ts: Long, postType: Int, status: String, message: String) {
-        database.addPost(ts, postType, status, message)
+    override fun addPost(ts: Long, postType: Int, status: String, message: String, call: String?) {
+        database.addPost(ts, postType, status, message, call)
     }
 
     override fun addPosition(

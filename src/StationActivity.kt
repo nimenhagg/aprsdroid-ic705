@@ -18,14 +18,19 @@ import org.aprsdroid.app.model.LogPostItem
 import org.aprsdroid.app.model.StationItem
 import org.aprsdroid.app.ui.screen.StationDetailScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
-import java.util.concurrent.Executors
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class StationActivity : ComponentActivity() {
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     private val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
     private val mycall: String by lazy { prefs.getCallSsid() }
-    private val executor = Executors.newSingleThreadExecutor()
+    private val refreshChannel = Channel<Unit>(Channel.CONFLATED)
 
     private val targetcall: String? by lazy {
         intent.dataString?.removePrefix("call:")?.removePrefix("sms:")?.takeIf { it.isNotEmpty() }
@@ -41,13 +46,29 @@ class StationActivity : ComponentActivity() {
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            loadData()
+            val updatedCall = intent?.getStringExtra(StorageDatabase.Companion.Post.CALL)
+                ?: intent?.getStringExtra("call")
+            val target = targetcall
+            if (updatedCall == null || target == null ||
+                updatedCall.equals(target, ignoreCase = true) ||
+                updatedCall.startsWith(target.split("-")[0], ignoreCase = true)
+            ) {
+                loadData()
+            }
         }
     }
 
     @SuppressLint("WrongConstant")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch(Dispatchers.Default) {
+            for (signal in refreshChannel) {
+                delay(250L) // 250ms batching window: fold bursts into a single query
+                while (refreshChannel.tryReceive().isSuccess) { /* fold concurrent bursts */ }
+                executeLoadData()
+            }
+        }
 
         setContent {
             AprsTheme {
@@ -104,16 +125,22 @@ class StationActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        executor.shutdownNow()
     }
 
     private fun loadData() {
+        if (targetcall != null) {
+            refreshChannel.trySend(Unit)
+        }
+    }
+
+    private suspend fun executeLoadData() {
         val target = targetcall ?: return
-        executor.submit {
+        val currentMyCall = mycall
+        withContext(Dispatchers.IO) {
             var myLat = 0
             var myLon = 0
 
-            val posCursor = storage.getStaPosition(mycall)
+            val posCursor = storage.getStaPosition(currentMyCall)
             if (posCursor.count > 0 && posCursor.moveToFirst()) {
                 val latIdx = posCursor.getColumnIndex(StorageDatabase.Companion.Station.LAT)
                 val lonIdx = posCursor.getColumnIndex(StorageDatabase.Companion.Station.LON)
@@ -131,7 +158,7 @@ class StationActivity : ComponentActivity() {
             val targetItem = ssidItems.find { it.call.equals(target, ignoreCase = true) }
                 ?: ssidItems.firstOrNull()
 
-            runOnUiThread {
+            withContext(Dispatchers.Main) {
                 myLatState = myLat
                 myLonState = myLon
                 currentStationItem = targetItem

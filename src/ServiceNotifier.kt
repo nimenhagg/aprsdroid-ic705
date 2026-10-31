@@ -35,6 +35,9 @@ class ServiceNotifier {
     private var lastStatus: String? = null
     @Volatile
     private var lastLiveStatus: ServiceLiveStatus? = null
+    @Volatile
+    private var lastLiveStatusNotifyTime = 0L
+    private val LIVE_STATUS_MIN_INTERVAL_MS = 1000L
 
     internal fun currentLiveStatus(): ServiceLiveStatus? = lastLiveStatus
 
@@ -171,6 +174,12 @@ class ServiceNotifier {
     internal fun updateLiveStatus(ctx: Context, liveStatus: ServiceLiveStatus) {
         lastLiveStatus = liveStatus
         if (!AprsService.running) return
+        val now = System.currentTimeMillis()
+        val isCritical = liveStatus.activity == org.aprsdroid.app.notification.LiveActivity.ERROR
+        if (!isCritical && now - lastLiveStatusNotifyTime < LIVE_STATUS_MIN_INTERVAL_MS) {
+            return
+        }
+        lastLiveStatusNotifyTime = now
         val status = lastStatus ?: ctx.getString(R.string.app_name)
         try {
             setupChannels(ctx)

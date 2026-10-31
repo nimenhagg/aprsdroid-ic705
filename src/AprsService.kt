@@ -214,11 +214,12 @@ class AprsService : Service() {
                         .putExtra(PACKET, packet.toString())
                 )
             },
-            onPostUpdated = { postType, message ->
+            onPostUpdated = { postType, message, call ->
                 sendBroadcast(
                     privateIntent(this, UPDATE)
                         .putExtra(TYPE, postType)
                         .putExtra(STATUS, message)
+                        .apply { if (call != null) putExtra(StorageDatabase.Companion.Post.CALL, call) }
                 )
             },
             onLogOnly = { status, message ->
