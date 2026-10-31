@@ -47,7 +47,7 @@ class ReleaseNotesMarkdownTest {
 
         assertTrue(html.contains("<codeblock>"))
         assertTrue(html.contains("<br>"))
-        assertTrue(html.contains("val callsign = &quot;BD3QID&quot;"))
+        assertTrue(html.contains("<br>val enabled = true"))
     }
 
     @Test
