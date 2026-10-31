@@ -6,17 +6,21 @@ import org.junit.Test
 
 class ReleaseNotesMarkdownTest {
     @Test
-    fun rendersCommonMarkAndGitHubStrikethrough() {
+    fun rendersCommonMarkAndGitHubExtensions() {
         val html = renderReleaseNotesHtml(
             """
             ## What's new
 
-            **Bold**, *italic*, and ~~removed~~.
+            **Bold**, *italic*, ~~removed~~, and `APDRMO`.
 
             - First item
             - Second item
 
             [Release page](https://example.com/releases)
+
+            | Feature | Status |
+            | --- | --- |
+            | Markdown | Supported |
             """.trimIndent(),
         )
 
@@ -24,8 +28,26 @@ class ReleaseNotesMarkdownTest {
         assertTrue(html.contains("<strong>Bold</strong>"))
         assertTrue(html.contains("<em>italic</em>"))
         assertTrue(html.contains("<del>removed</del>"))
+        assertTrue(html.contains("<code>APDRMO</code>"))
         assertTrue(html.contains("<ul>"))
         assertTrue(html.contains("href=\"https://example.com/releases\""))
+        assertTrue(html.contains("<table>"))
+    }
+
+    @Test
+    fun preservesFencedCodeBlockLineBreaksForAndroid() {
+        val html = renderReleaseNotesHtml(
+            """
+            ```kotlin
+            val callsign = "BD3QID"
+            val enabled = true
+            ```
+            """.trimIndent(),
+        )
+
+        assertTrue(html.contains("<codeblock>"))
+        assertTrue(html.contains("<br>"))
+        assertTrue(html.contains("val callsign = &quot;BD3QID&quot;"))
     }
 
     @Test
