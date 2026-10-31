@@ -15,10 +15,14 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
@@ -43,6 +47,7 @@ import org.aprsdroid.app.data.repository.LogRepository
 import org.aprsdroid.app.data.repository.MapStationRepository
 import org.aprsdroid.app.data.repository.MessageRepository
 import org.aprsdroid.app.data.repository.StationRepository
+import org.aprsdroid.app.ui.component.MarkdownText
 import org.aprsdroid.app.ui.component.PasscodeDialogCompose
 import org.aprsdroid.app.ui.component.StationBottomSheetHelper
 import org.aprsdroid.app.ui.navigation.MainNavigationBar
@@ -322,17 +327,26 @@ class HubActivity : BaseRecyclerActivity() {
                             Text(stringResource(R.string.update_available_title, update.latest))
                         },
                         text = {
-                            Text(
-                            stringResource(
-                                R.string.update_available_message,
-                                update.current,
-                                update.deviceArchitecture,
-                                update.releaseNotes,
-                            ),
-                            modifier = Modifier
-                                .heightIn(max = 400.dp)
-                                .verticalScroll(rememberScrollState()),
-                        )
+                            Column(
+                                modifier = Modifier
+                                    .heightIn(max = 400.dp)
+                                    .verticalScroll(rememberScrollState()),
+                            ) {
+                                Text(
+                                    stringResource(
+                                        R.string.update_available_message,
+                                        update.current,
+                                        update.deviceArchitecture,
+                                        "",
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                MarkdownText(
+                                    markdown = update.releaseNotes,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
                         },
                         confirmButton = {
                             TextButton(
