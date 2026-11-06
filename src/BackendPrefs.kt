@@ -4,65 +4,26 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import android.media.AudioManager
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Bluetooth
-import androidx.compose.material.icons.filled.CellTower
-import androidx.compose.material.icons.filled.FilterAlt
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Password
-import androidx.compose.material.icons.filled.Radio
-import androidx.compose.material.icons.filled.Router
-import androidx.compose.material.icons.filled.SettingsEthernet
-import androidx.compose.material.icons.filled.Usb
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringArrayResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
-import org.aprsdroid.app.radio.RadioAudioDevice
-import org.aprsdroid.app.radio.RadioProfile
-import org.aprsdroid.app.radio.WlanRadioModel
-import org.aprsdroid.app.ui.component.RadioSelectDialog
-import org.aprsdroid.app.ui.component.PasscodeDialogCompose
-import org.aprsdroid.app.ui.component.PreferenceCategoryHeader
-import org.aprsdroid.app.ui.component.PreferenceEditDialog
-import org.aprsdroid.app.ui.component.PreferenceGroupCard
-import org.aprsdroid.app.ui.component.PreferenceItem
-import org.aprsdroid.app.ui.component.PreferenceSelectDialog
-import org.aprsdroid.app.ui.component.PreferenceSwitchItem
-import org.aprsdroid.app.ui.component.PreferenceValueItem
+import org.aprsdroid.app.ui.screen.BackendPrefsScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
+import org.aprsdroid.app.ui.viewmodel.BackendPrefsEffect
+import org.aprsdroid.app.ui.viewmodel.BackendPrefsIntent
+import org.aprsdroid.app.ui.viewmodel.BackendPrefsViewModel
 
 class BackendPrefs : ComponentActivity(), PermissionHelper {
 
@@ -74,109 +35,18 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
     override var pendingPermissionAction: Int? = null
     override var pendingPermissions: Set<String> = emptySet()
     override val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
+        ActivityResultContracts.RequestMultiplePermissions(),
     ) { grants -> handlePermissionResult(grants) }
 
-    private val protoState = mutableStateOf("aprsis")
-    private val aprsisLinkState = mutableStateOf("tcp")
-    private val tncLinkState = mutableStateOf("bluetooth")
-
-    private val tcpServerState = mutableStateOf("china.aprs2.net")
-    private val tcpFilterState = mutableStateOf("")
-    private val tcpFilterDistState = mutableStateOf("50")
-    private val tcpSoTimeoutState = mutableStateOf("120")
-    private val udpServerState = mutableStateOf("srvr.aprs-is.net")
-    private val httpServerState = mutableStateOf("srvr.aprs-is.net")
-
-    private val ic705ModelState = mutableStateOf("IC-705")
-    private val ic705CivAddressState = mutableStateOf("A4")
-    private val ic705AddressState = mutableStateOf("192.168.59.1")
-    private val ic705PortState = mutableStateOf("50001")
-    private val ic705UsernameState = mutableStateOf("")
-    private val ic705PasswordState = mutableStateOf("")
-    private val ic705SyncFreqState = mutableStateOf(false)
-    private val ic705UseGpsState = mutableStateOf(false)
-
-    private val afskBtScoState = mutableStateOf(false)
-    private val afskOutputState = mutableStateOf("0")
-    private val afskPrefixState = mutableStateOf("200")
-
-    private val btClientState = mutableStateOf(true)
-    private val btMacState = mutableStateOf("")
-    private val btChannelState = mutableStateOf("-1")
-    private val baudRateState = mutableStateOf("115200")
-
-    private val kissInitState = mutableStateOf("")
-    private val kissDelayState = mutableStateOf("300")
-    private val kenwoodGpsState = mutableStateOf(false)
-    private val kenwoodGpsDebugState = mutableStateOf(false)
-
-    private val radioModelIdState = mutableStateOf(RadioProfile.IC705_USB.hamlibModelId)
-    private val radioBaudRateState = mutableStateOf("19200")
-    private val radioCivAddressState = mutableStateOf("A4")
-    private val radioAudioDeviceOutState = mutableStateOf("-1")
-    private val radioTxVolumeState = mutableStateOf("100")
-
-    private val editDialogKey = mutableStateOf<String?>(null)
-    private val showProtoDialog = mutableStateOf(false)
-    private val showWlanModelDialog = mutableStateOf(false)
-    private val showAprsIsLinkDialog = mutableStateOf(false)
-    private val showTncLinkDialog = mutableStateOf(false)
-    private val showBluetoothDeviceDialog = mutableStateOf(false)
-    private val showBaudRateDialog = mutableStateOf(false)
-    private val showAfskOutputDialog = mutableStateOf(false)
-    private val showPasscodeDialog = mutableStateOf(false)
-    private val showRadioModelDialog = mutableStateOf(false)
-    private val showRadioBaudRateDialog = mutableStateOf(false)
-    private val showRadioAudioDeviceDialog = mutableStateOf(false)
-    private val showRadioTxVolumeDialog = mutableStateOf(false)
-
-    private fun refreshState() {
-        protoState.value = prefs.getString("proto", "aprsis")
-        aprsisLinkState.value = prefs.getString("aprsis", "tcp")
-        tncLinkState.value = prefs.getString("link", "bluetooth")
-
-        tcpServerState.value = prefs.getString("tcp.server", "china.aprs2.net")
-        tcpFilterState.value = prefs.getString("tcp.filter", "")
-        tcpFilterDistState.value = prefs.getString("tcp.filterdist", "50")
-        tcpSoTimeoutState.value = prefs.getString("tcp.sotimeout", "120")
-        udpServerState.value = prefs.getString("udp.server", "srvr.aprs-is.net")
-        httpServerState.value = prefs.getString("http.server", "srvr.aprs-is.net")
-
-        ic705ModelState.value = prefs.getString("ic705.model", "IC-705")
-        val wlanModel = WlanRadioModel.findById(ic705ModelState.value)
-        val savedCiv = prefs.getString("ic705.civ_address", "")
-        ic705CivAddressState.value = savedCiv.ifBlank { wlanModel.defaultCivHex }
-        ic705AddressState.value = prefs.getString("ic705.address", "192.168.59.1")
-        ic705PortState.value = prefs.getString("ic705.control_port", "50001")
-        ic705UsernameState.value = prefs.getString("ic705.username", "")
-        ic705PasswordState.value = prefs.getString("ic705.password", "")
-        ic705SyncFreqState.value = prefs.getBoolean("ic705.sync_freq", false)
-        ic705UseGpsState.value = prefs.getBoolean("ic705.use_gps", false)
-
-        afskBtScoState.value = prefs.getBoolean("afsk.btsco", false)
-        afskOutputState.value = prefs.getString("afsk.output", "0")
-        afskPrefixState.value = prefs.getString("afsk.prefix", "200")
-
-        btClientState.value = prefs.getBoolean("bt.client", true)
-        btMacState.value = prefs.getString("bt.mac", "")
-        btChannelState.value = prefs.getString("bt.channel", "-1")
-        baudRateState.value = prefs.getString("baudrate", "115200")
-
-        kissInitState.value = prefs.getString("kiss.init", "")
-        kissDelayState.value = prefs.getString("kiss.delay", "300")
-        kenwoodGpsState.value = prefs.getBoolean("kenwood.gps", false)
-        kenwoodGpsDebugState.value = prefs.getBoolean("kenwood.gps_debug", false)
-
-        radioModelIdState.value = prefs.getStringInt("radio.model_id", RadioProfile.IC705_USB.hamlibModelId)
-        val currentProfile = RadioProfile.findByModelId(radioModelIdState.value) ?: RadioProfile.IC705_USB
-        radioBaudRateState.value = prefs.getString("radio.baudrate", currentProfile.defaultBaudRate.toString())
-        radioCivAddressState.value = prefs.getString(
-            "radio.civ_address",
-            currentProfile.defaultCivAddress?.let { Integer.toHexString(it).uppercase() } ?: ""
-        )
-        radioAudioDeviceOutState.value = prefs.getString("radio.audio_device_out", "-1")
-        radioTxVolumeState.value = prefs.getString("radio.tx_volume", "100")
+    private val viewModel: BackendPrefsViewModel by lazy {
+        ViewModelProvider(
+            this,
+            viewModelFactory {
+                initializer {
+                    BackendPrefsViewModel(PrefsWrapper(applicationContext))
+                }
+            },
+        )[BackendPrefsViewModel::class.java]
     }
 
     private fun hasBluetoothPermission(): Boolean {
@@ -206,813 +76,65 @@ class BackendPrefs : ComponentActivity(), PermissionHelper {
         }
     }
 
-    private fun requestCurrentBackendPermissions() {
-        val permissions = AprsBackend.defaultBackendPermissions(prefs)
-        if (permissions.isNotEmpty()) {
-            checkPermissions(permissions.toTypedArray(), BACKEND_PERMISSION)
-        }
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         restorePermissionState(savedInstanceState)
-        refreshState()
 
         setContent {
             AprsTheme {
-                val protoOptions = listOf(
-                    "aprsis" to stringResource(R.string.setting_proto_aprsis),
-                    "ic705" to stringResource(R.string.setting_proto_ic705),
-                    "usbradio" to stringResource(R.string.setting_proto_usbradio),
-                    "afsk" to stringResource(R.string.setting_proto_afsk),
-                    "kiss" to stringResource(R.string.setting_proto_kiss),
-                    "kenwood" to stringResource(R.string.setting_proto_kenwood),
-                    "tnc2" to stringResource(R.string.setting_proto_tnc2),
-                )
-                val aprsIsLinkOptions = listOf(
-                    "tcp" to stringResource(R.string.setting_aprsis_tcp),
-                    "udp" to stringResource(R.string.setting_aprsis_udp),
-                    "http" to stringResource(R.string.setting_aprsis_http),
-                )
-                val tncLinkOptions = listOf(
-                    "bluetooth" to stringResource(R.string.setting_tnc_bluetooth),
-                    "tcpip" to stringResource(R.string.setting_tnc_tcp),
-                    "usb" to stringResource(R.string.setting_tnc_usb),
-                )
-                val baudRates = stringArrayResource(R.array.p_serial_baudrates)
-                val baudRateOptions = baudRates.map { it to it }
-                val afskOutputValues = stringArrayResource(R.array.p_afsk_out_ev)
-                val afskOutputLabels = stringArrayResource(R.array.p_afsk_out_e)
-                val afskOutputOptions = afskOutputValues.zip(afskOutputLabels)
-                val bluetoothDevices = bondedBluetoothDevices()
+                val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Text(
-                                    text = stringResource(R.string.p__connection),
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = { finish() }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(android.R.string.cancel),
-                                    )
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                            ),
-                        )
-                    },
-                ) { paddingValues ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues)
-                            .verticalScroll(rememberScrollState()),
-                    ) {
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        PreferenceCategoryHeader(title = stringResource(R.string.setting_connection_mode))
-                        PreferenceGroupCard {
-                            val protoTitle = protoOptions.firstOrNull { it.first == protoState.value }
-                                ?.second ?: protoState.value
-                            PreferenceValueItem(
-                                title = stringResource(R.string.setting_connection_mode),
-                                value = protoTitle,
-                                summary = stringResource(R.string.setting_connection_mode_summary),
-                                icon = Icons.Default.CellTower,
-                                onClick = { showProtoDialog.value = true },
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        when (protoState.value) {
-                            "aprsis" -> {
-                                PreferenceCategoryHeader(title = stringResource(R.string.setting_aprsis_category))
-                                PreferenceGroupCard {
-                                    val linkTitle = aprsIsLinkOptions
-                                        .firstOrNull { it.first == aprsisLinkState.value }
-                                        ?.second ?: aprsisLinkState.value
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_aprsis_transport),
-                                        value = linkTitle,
-                                        summary = stringResource(R.string.setting_aprsis_transport_summary),
-                                        icon = Icons.Default.SettingsEthernet,
-                                        onClick = { showAprsIsLinkDialog.value = true },
-                                    )
-
-                                    when (aprsisLinkState.value) {
-                                        "tcp" -> {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceValueItem(
-                                                title = stringResource(R.string.setting_server),
-                                                value = tcpServerState.value,
-                                                summary = stringResource(R.string.p_tcp_server_summary),
-                                                icon = Icons.Default.Router,
-                                                onClick = { editDialogKey.value = "tcp.server" },
-                                            )
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceValueItem(
-                                                title = stringResource(R.string.p_sotimeout),
-                                                value = "${tcpSoTimeoutState.value} s",
-                                                summary = stringResource(R.string.p_sotimeout_summary),
-                                                icon = Icons.Default.Router,
-                                                onClick = { editDialogKey.value = "tcp.sotimeout" },
-                                            )
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceValueItem(
-                                                title = stringResource(R.string.setting_filter),
-                                                value = tcpFilterState.value.ifEmpty {
-                                                    stringResource(R.string.setting_filter_none)
-                                                },
-                                                summary = stringResource(R.string.setting_filter_summary),
-                                                icon = Icons.Default.FilterAlt,
-                                                onClick = { editDialogKey.value = "tcp.filter" },
-                                            )
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceValueItem(
-                                                title = stringResource(R.string.setting_filter_radius),
-                                                value = "${tcpFilterDistState.value} km",
-                                                summary = stringResource(R.string.setting_filter_radius_summary),
-                                                icon = Icons.Default.FilterAlt,
-                                                onClick = { editDialogKey.value = "tcp.filterdist" },
-                                            )
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceItem(
-                                                title = stringResource(R.string.p_filterhelp),
-                                                summary = stringResource(R.string.p_filterhelp_summary),
-                                                icon = Icons.Default.FilterAlt,
-                                                onClick = {
-                                                    UrlOpener.open(this@BackendPrefs, "https://www.aprs-is.net/javAPRSFilter.aspx")
-                                                },
-                                            )
-                                        }
-
-                                        "udp" -> {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceValueItem(
-                                                title = stringResource(R.string.setting_server),
-                                                value = udpServerState.value,
-                                                summary = stringResource(R.string.p_host_summary),
-                                                icon = Icons.Default.Router,
-                                                onClick = { editDialogKey.value = "udp.server" },
-                                            )
-                                        }
-
-                                        "http" -> {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceValueItem(
-                                                title = stringResource(R.string.setting_server),
-                                                value = httpServerState.value,
-                                                summary = stringResource(R.string.p_host_summary),
-                                                icon = Icons.Default.Router,
-                                                onClick = { editDialogKey.value = "http.server" },
-                                            )
-                                        }
-                                    }
-
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceItem(
-                                        title = stringResource(R.string.setting_passcode),
-                                        summary = if (prefs.getString("passcode", "").isEmpty()) {
-                                            stringResource(R.string.setting_passcode_missing)
-                                        } else {
-                                            stringResource(R.string.setting_passcode_configured)
-                                        },
-                                        icon = Icons.Default.Password,
-                                        onClick = { showPasscodeDialog.value = true },
-                                    )
-                                }
+                LaunchedEffect(viewModel.effect) {
+                    viewModel.effect.collect { effect ->
+                        when (effect) {
+                            is BackendPrefsEffect.RequestPermissions -> {
+                                checkPermissions(effect.permissions.toTypedArray(), BACKEND_PERMISSION)
                             }
 
-                            "ic705" -> {
-                                PreferenceCategoryHeader(title = stringResource(R.string.setting_ic705_category))
-                                PreferenceGroupCard {
-                                    val selectedModel = WlanRadioModel.findById(ic705ModelState.value)
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_wlan_radio_model),
-                                        value = selectedModel.modelName,
-                                        summary = stringResource(R.string.setting_wlan_radio_model_summary),
-                                        icon = Icons.Default.Radio,
-                                        onClick = { showWlanModelDialog.value = true },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    val displayCiv = ic705CivAddressState.value.ifBlank {
-                                        selectedModel.defaultCivHex
-                                    }
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_wlan_civ_address),
-                                        value = "${displayCiv}h",
-                                        summary = stringResource(R.string.setting_wlan_civ_address_summary),
-                                        icon = Icons.Default.Router,
-                                        onClick = { editDialogKey.value = "ic705.civ_address" },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.ic705_rx_address),
-                                        value = ic705AddressState.value,
-                                        summary = stringResource(R.string.setting_ic705_address_summary),
-                                        icon = Icons.Default.Wifi,
-                                        onClick = { editDialogKey.value = "ic705.address" },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.ic705_rx_port),
-                                        value = ic705PortState.value,
-                                        summary = stringResource(R.string.setting_ic705_port_summary),
-                                        icon = Icons.Default.Router,
-                                        onClick = { editDialogKey.value = "ic705.control_port" },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.ic705_rx_username),
-                                        value = ic705UsernameState.value.ifEmpty {
-                                            stringResource(R.string.setting_not_set)
-                                        },
-                                        summary = stringResource(R.string.setting_ic705_username_summary),
-                                        icon = Icons.Default.Radio,
-                                        onClick = { editDialogKey.value = "ic705.username" },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.ic705_rx_password),
-                                        value = if (ic705PasswordState.value.isEmpty()) {
-                                            stringResource(R.string.setting_not_set)
-                                        } else {
-                                            "••••••"
-                                        },
-                                        summary = stringResource(R.string.setting_ic705_password_summary),
-                                        icon = Icons.Default.Password,
-                                        onClick = { editDialogKey.value = "ic705.password" },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceSwitchItem(
-                                        title = stringResource(R.string.setting_ic705_sync_freq),
-                                        summary = stringResource(R.string.setting_ic705_sync_freq_summary),
-                                        icon = Icons.Default.Radio,
-                                        checked = ic705SyncFreqState.value,
-                                        onCheckedChange = { checked ->
-                                            ic705SyncFreqState.value = checked
-                                            prefs.setBoolean("ic705.sync_freq", checked)
-                                        },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceSwitchItem(
-                                        title = stringResource(R.string.setting_ic705_use_gps),
-                                        summary = stringResource(R.string.setting_ic705_use_gps_summary),
-                                        icon = Icons.Default.LocationOn,
-                                        checked = ic705UseGpsState.value,
-                                        onCheckedChange = { checked ->
-                                            ic705UseGpsState.value = checked
-                                            prefs.setBoolean("ic705.use_gps", checked)
-                                        },
-                                    )
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceItem(
-                                        title = stringResource(R.string.setting_ic705_diagnostics),
-                                        summary = stringResource(R.string.setting_ic705_diagnostics_summary),
-                                        icon = Icons.Default.Wifi,
-                                        onClick = {
-                                            startActivity(
-                                                Intent(
-                                                    this@BackendPrefs,
-                                                    Ic705RxDiagnosticActivity::class.java,
-                                                ),
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-
-                            "usbradio" -> {
-                                PreferenceCategoryHeader(title = stringResource(R.string.setting_usbradio_category))
-                                PreferenceGroupCard {
-                                    val currentProfile = RadioProfile.findByModelId(radioModelIdState.value) ?: RadioProfile.IC705_USB
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_usbradio_model),
-                                        value = currentProfile.name,
-                                        summary = stringResource(R.string.setting_usbradio_model_summary),
-                                        icon = Icons.Default.Radio,
-                                        onClick = { showRadioModelDialog.value = true },
-                                    )
-
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_usbradio_baudrate),
-                                        value = "${radioBaudRateState.value} bd",
-                                        summary = stringResource(R.string.setting_usbradio_baudrate_summary),
-                                        icon = Icons.Default.Usb,
-                                        onClick = { showRadioBaudRateDialog.value = true },
-                                    )
-
-                                    if (currentProfile.isIcom) {
-                                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                        val displayCiv = radioCivAddressState.value.ifBlank {
-                                            currentProfile.defaultCivAddress?.let { Integer.toHexString(it).uppercase() } ?: "A4"
-                                        }
-                                        PreferenceValueItem(
-                                            title = stringResource(R.string.setting_usbradio_civ_address),
-                                            value = "${displayCiv}h",
-                                            summary = stringResource(R.string.setting_usbradio_civ_summary),
-                                            icon = Icons.Default.Router,
-                                            onClick = { editDialogKey.value = "radio.civ_address" },
-                                        )
-                                    }
-
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    val audioManager = getSystemService(AUDIO_SERVICE) as? AudioManager
-                                    val usbOutputs = audioManager?.let { RadioAudioDevice.listUsbDevices(it, isInput = false) }.orEmpty()
-                                    val selectedOutId = radioAudioDeviceOutState.value.toIntOrNull() ?: -1
-                                    val audioDeviceDisplay = if (selectedOutId == -1) {
-                                        if (usbOutputs.isNotEmpty()) {
-                                            "${stringResource(R.string.setting_usbradio_audio_auto)} (${usbOutputs.first().productName.ifEmpty { "USB Audio" }})"
-                                        } else {
-                                            "${stringResource(R.string.setting_usbradio_audio_auto)} (${stringResource(R.string.setting_usbradio_audio_none)})"
-                                        }
-                                    } else {
-                                        usbOutputs.firstOrNull { it.id == selectedOutId }?.productName?.ifEmpty { "USB Audio (ID: $selectedOutId)" }
-                                            ?: "ID: $selectedOutId"
-                                    }
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_usbradio_audio_device),
-                                        value = audioDeviceDisplay,
-                                        summary = stringResource(R.string.setting_usbradio_audio_device_summary),
-                                        icon = Icons.Default.Headphones,
-                                        onClick = { showRadioAudioDeviceDialog.value = true },
-                                    )
-
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_usbradio_tx_volume),
-                                        value = "${radioTxVolumeState.value}%",
-                                        summary = stringResource(R.string.setting_usbradio_tx_volume_summary),
-                                        icon = Icons.Default.VolumeUp,
-                                        onClick = { showRadioTxVolumeDialog.value = true },
-                                    )
-                                }
-                            }
-
-                            "afsk" -> {
-                                PreferenceCategoryHeader(title = stringResource(R.string.p_conn_afsk))
-                                PreferenceGroupCard {
-                                    PreferenceSwitchItem(
-                                        title = stringResource(R.string.p_afsk_btsco),
-                                        summary = stringResource(R.string.p_afsk_btsco_summary),
-                                        icon = Icons.Default.Bluetooth,
-                                        checked = afskBtScoState.value,
-                                        onCheckedChange = { checked ->
-                                            afskBtScoState.value = checked
-                                            prefs.set("afsk.btsco", checked)
-                                        },
-                                    )
-                                    if (!afskBtScoState.value) {
-                                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                        PreferenceValueItem(
-                                            title = stringResource(R.string.p_afsk_output),
-                                            value = afskOutputOptions
-                                                .firstOrNull { it.first == afskOutputState.value }
-                                                ?.second ?: afskOutputState.value,
-                                            icon = Icons.Default.Radio,
-                                            onClick = { showAfskOutputDialog.value = true },
-                                        )
-                                    }
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.p_afsk_prefix),
-                                        value = "${afskPrefixState.value} ms",
-                                        summary = stringResource(R.string.p_afsk_prefix_summary),
-                                        icon = Icons.Default.Radio,
-                                        onClick = { editDialogKey.value = "afsk.prefix" },
-                                    )
-                                }
-                            }
-
-                            "kiss", "kenwood", "tnc2" -> {
-                                if (protoState.value == "kiss") {
-                                    PreferenceCategoryHeader(title = stringResource(R.string.p_conn_kiss))
-                                    PreferenceGroupCard {
-                                        PreferenceValueItem(
-                                            title = stringResource(R.string.p_tnc_init),
-                                            value = kissInitState.value.ifEmpty { stringResource(R.string.setting_not_set) },
-                                            summary = stringResource(R.string.p_tnc_init_summary),
-                                            icon = Icons.Default.Radio,
-                                            onClick = { editDialogKey.value = "kiss.init" },
-                                        )
-                                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                        PreferenceValueItem(
-                                            title = stringResource(R.string.p_tnc_delay),
-                                            value = "${kissDelayState.value} ms",
-                                            summary = stringResource(R.string.p_tnc_delay_summary),
-                                            icon = Icons.Default.Radio,
-                                            onClick = { editDialogKey.value = "kiss.delay" },
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
-
-                                if (protoState.value == "kenwood") {
-                                    PreferenceCategoryHeader(title = stringResource(R.string.p_conn_kwd))
-                                    PreferenceGroupCard {
-                                        PreferenceItem(
-                                            title = stringResource(R.string.p_conn_kwd_info),
-                                            icon = Icons.Default.Radio,
-                                            onClick = {
-                                                UrlOpener.open(this@BackendPrefs, getString(R.string.kwd_help_url))
-                                            },
-                                        )
-                                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                        PreferenceSwitchItem(
-                                            title = stringResource(R.string.p_conn_kwd_gps),
-                                            summary = stringResource(R.string.p_conn_kwd_gps_summary),
-                                            icon = Icons.Default.Radio,
-                                            checked = kenwoodGpsState.value,
-                                            onCheckedChange = { checked ->
-                                                kenwoodGpsState.value = checked
-                                                prefs.set("kenwood.gps", checked)
-                                                if (checked) requestCurrentBackendPermissions()
-                                            },
-                                        )
-                                        if (kenwoodGpsState.value) {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceSwitchItem(
-                                                title = stringResource(R.string.p_conn_kwd_gps_debug),
-                                                summary = stringResource(R.string.p_conn_kwd_gps_debug_summary),
-                                                icon = Icons.Default.Radio,
-                                                checked = kenwoodGpsDebugState.value,
-                                                onCheckedChange = { checked ->
-                                                    kenwoodGpsDebugState.value = checked
-                                                    prefs.set("kenwood.gps_debug", checked)
-                                                },
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
-
-                                PreferenceCategoryHeader(title = stringResource(R.string.setting_tnc_category))
-                                PreferenceGroupCard {
-                                    val tncTitle = tncLinkOptions.firstOrNull { it.first == tncLinkState.value }
-                                        ?.second ?: tncLinkState.value
-                                    PreferenceValueItem(
-                                        title = stringResource(R.string.setting_tnc_transport),
-                                        value = tncTitle,
-                                        summary = stringResource(R.string.setting_tnc_transport_summary),
-                                        icon = when (tncLinkState.value) {
-                                            "bluetooth" -> Icons.Default.Bluetooth
-                                            "usb" -> Icons.Default.Usb
-                                            else -> Icons.Default.SettingsEthernet
-                                        },
-                                        onClick = { showTncLinkDialog.value = true },
-                                    )
-
-                                    when (tncLinkState.value) {
-                                        "tcpip" -> {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceValueItem(
-                                                title = stringResource(R.string.setting_server),
-                                                value = tcpServerState.value,
-                                                summary = stringResource(R.string.p_tcptnc_server_summary),
-                                                icon = Icons.Default.Router,
-                                                onClick = { editDialogKey.value = "tcp.server" },
-                                            )
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceValueItem(
-                                                title = stringResource(R.string.p_sotimeout),
-                                                value = "${tcpSoTimeoutState.value} s",
-                                                summary = stringResource(R.string.p_sotimeout_summary),
-                                                icon = Icons.Default.Router,
-                                                onClick = { editDialogKey.value = "tcp.sotimeout" },
-                                            )
-                                        }
-
-                                        "bluetooth" -> {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceSwitchItem(
-                                                title = stringResource(R.string.p_bt_client),
-                                                summary = stringResource(R.string.p_bt_client_summary),
-                                                icon = Icons.Default.Bluetooth,
-                                                checked = btClientState.value,
-                                                onCheckedChange = { checked ->
-                                                    btClientState.value = checked
-                                                    prefs.set("bt.client", checked)
-                                                },
-                                            )
-                                            if (btClientState.value) {
-                                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                                PreferenceValueItem(
-                                                    title = stringResource(R.string.p_bt_tnc_device),
-                                                    value = bluetoothDevices
-                                                        .firstOrNull { it.first == btMacState.value }
-                                                        ?.second
-                                                        ?: btMacState.value.ifEmpty {
-                                                            stringResource(R.string.setting_not_set)
-                                                        },
-                                                    summary = stringResource(R.string.p_bt_tnc_device_summary),
-                                                    icon = Icons.Default.Bluetooth,
-                                                    onClick = {
-                                                        when {
-                                                            !hasBluetoothPermission() -> {
-                                                                checkPermissions(
-                                                                    arrayOf(AprsBackend.BLUETOOTH_PERMISSION),
-                                                                    BACKEND_PERMISSION,
-                                                                )
-                                                            }
-                                                            bluetoothDevices.isNotEmpty() -> {
-                                                                showBluetoothDeviceDialog.value = true
-                                                            }
-                                                            else -> {
-                                                                startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
-                                                            }
-                                                        }
-                                                    },
-                                                )
-                                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                                PreferenceValueItem(
-                                                    title = stringResource(R.string.p_bt_channel),
-                                                    value = btChannelState.value,
-                                                    summary = stringResource(R.string.p_bt_channel_summary),
-                                                    icon = Icons.Default.Bluetooth,
-                                                    onClick = { editDialogKey.value = "bt.channel" },
-                                                )
-                                            }
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceItem(
-                                                title = stringResource(R.string.p_bt_prefs),
-                                                summary = stringResource(R.string.p_bt_prefs_summary),
-                                                icon = Icons.Default.Bluetooth,
-                                                onClick = {
-                                                    startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
-                                                },
-                                            )
-                                        }
-
-                                        "usb" -> {
-                                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                                            PreferenceValueItem(
-                                                title = stringResource(R.string.p_serial_baudrate),
-                                                value = baudRateState.value,
-                                                summary = stringResource(R.string.p_serial_baudrate_summary),
-                                                icon = Icons.Default.Usb,
-                                                onClick = { showBaudRateDialog.value = true },
-                                            )
-                                        }
-                                    }
-                                }
+                            BackendPrefsEffect.OpenBluetoothSettings -> {
+                                startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(32.dp))
-                    }
-
-                    if (showProtoDialog.value) {
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.setting_connection_mode),
-                            options = protoOptions,
-                            selected = protoState.value,
-                            onDismiss = { showProtoDialog.value = false },
-                            onSelect = { selected ->
-                                protoState.value = selected
-                                prefs.set("proto", selected)
-                                requestCurrentBackendPermissions()
-                            },
-                        )
-                    }
-
-                    if (showAprsIsLinkDialog.value) {
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.setting_aprsis_transport),
-                            options = aprsIsLinkOptions,
-                            selected = aprsisLinkState.value,
-                            onDismiss = { showAprsIsLinkDialog.value = false },
-                            onSelect = { selected ->
-                                aprsisLinkState.value = selected
-                                prefs.set("aprsis", selected)
-                                refreshState()
-                            },
-                        )
-                    }
-
-                    if (showTncLinkDialog.value) {
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.setting_tnc_transport),
-                            options = tncLinkOptions,
-                            selected = tncLinkState.value,
-                            onDismiss = { showTncLinkDialog.value = false },
-                            onSelect = { selected ->
-                                tncLinkState.value = selected
-                                prefs.set("link", selected)
-                                requestCurrentBackendPermissions()
-                            },
-                        )
-                    }
-
-                    if (showBluetoothDeviceDialog.value) {
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.p_bt_tnc_device_entry),
-                            options = bluetoothDevices,
-                            selected = btMacState.value,
-                            onDismiss = { showBluetoothDeviceDialog.value = false },
-                            onSelect = { address ->
-                                btMacState.value = address
-                                prefs.set("bt.mac", address)
-                            },
-                        )
-                    }
-
-                    if (showBaudRateDialog.value) {
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.p_serial_baudrate),
-                            options = baudRateOptions,
-                            selected = baudRateState.value,
-                            onDismiss = { showBaudRateDialog.value = false },
-                            onSelect = { baud ->
-                                baudRateState.value = baud
-                                prefs.set("baudrate", baud)
-                            },
-                        )
-                    }
-
-                    if (showAfskOutputDialog.value) {
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.p_afsk_output),
-                            options = afskOutputOptions,
-                            selected = afskOutputState.value,
-                            onDismiss = { showAfskOutputDialog.value = false },
-                            onSelect = { output ->
-                                afskOutputState.value = output
-                                prefs.set("afsk.output", output)
-                            },
-                        )
-                    }
-
-                    if (showPasscodeDialog.value) {
-                        PasscodeDialogCompose(
-                            initialCallsign = prefs.getCallsign(),
-                            initialPasscode = prefs.getString("passcode", ""),
-                            firstRun = false,
-                            onDismiss = { showPasscodeDialog.value = false },
-                            onSave = { call, pass ->
-                                prefs.prefs.edit {
-                                    putString("callsign", call)
-                                    putString("passcode", pass)
-                                    putBoolean("firstrun", false)
-                                }
-                                showPasscodeDialog.value = false
-                                refreshState()
-                            },
-                        )
-                    }
-
-                    if (showRadioModelDialog.value) {
-                        RadioSelectDialog(
-                            selectedModelId = radioModelIdState.value,
-                            onDismiss = { showRadioModelDialog.value = false },
-                            onSelect = { profile ->
-                                radioModelIdState.value = profile.hamlibModelId
-                                prefs.set("radio.model_id", profile.hamlibModelId.toString())
-                                radioBaudRateState.value = profile.defaultBaudRate.toString()
-                                prefs.set("radio.baudrate", profile.defaultBaudRate.toString())
-                                profile.defaultCivAddress?.let { civ ->
-                                    val civHex = Integer.toHexString(civ).uppercase()
-                                    radioCivAddressState.value = civHex
-                                    prefs.set("radio.civ_address", civHex)
-                                } ?: run {
-                                    radioCivAddressState.value = ""
-                                    prefs.set("radio.civ_address", "")
-                                }
-                                showRadioModelDialog.value = false
-                                refreshState()
-                            },
-                        )
-                    }
-
-                    if (showRadioBaudRateDialog.value) {
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.setting_usbradio_baudrate),
-                            options = baudRateOptions,
-                            selected = radioBaudRateState.value,
-                            onDismiss = { showRadioBaudRateDialog.value = false },
-                            onSelect = { baud ->
-                                radioBaudRateState.value = baud
-                                prefs.set("radio.baudrate", baud)
-                                showRadioBaudRateDialog.value = false
-                                refreshState()
-                            },
-                        )
-                    }
-
-                    if (showRadioAudioDeviceDialog.value) {
-                        val audioManager = getSystemService(AUDIO_SERVICE) as? AudioManager
-                        val usbOutputs = audioManager?.let { RadioAudioDevice.listUsbDevices(it, isInput = false) }.orEmpty()
-                        val audioOptions = buildList {
-                            add("-1" to stringResource(R.string.setting_usbradio_audio_auto))
-                            usbOutputs.forEach { dev ->
-                                add(dev.id.toString() to (dev.productName.ifEmpty { "USB Audio" } + " (ID: ${dev.id})"))
-                            }
-                        }
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.setting_usbradio_audio_device),
-                            options = audioOptions,
-                            selected = radioAudioDeviceOutState.value,
-                            onDismiss = { showRadioAudioDeviceDialog.value = false },
-                            onSelect = { devId ->
-                                radioAudioDeviceOutState.value = devId
-                                prefs.set("radio.audio_device_out", devId)
-                                showRadioAudioDeviceDialog.value = false
-                                refreshState()
-                            },
-                        )
-                    }
-
-                    if (showRadioTxVolumeDialog.value) {
-                        val volumeOptions = listOf(
-                            "100" to "100%",
-                            "90" to "90%",
-                            "80" to "80%",
-                            "70" to "70%",
-                            "60" to "60%",
-                            "50" to "50%",
-                        )
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.setting_usbradio_tx_volume),
-                            options = volumeOptions,
-                            selected = radioTxVolumeState.value,
-                            onDismiss = { showRadioTxVolumeDialog.value = false },
-                            onSelect = { vol ->
-                                radioTxVolumeState.value = vol
-                                prefs.set("radio.tx_volume", vol)
-                                showRadioTxVolumeDialog.value = false
-                                refreshState()
-                            },
-                        )
-                    }
-
-                    if (showWlanModelDialog.value) {
-                        val modelOptions = WlanRadioModel.ALL.map { model ->
-                            model.id to "${model.modelName} (CI-V: ${model.defaultCivHex}h)"
-                        }
-                        PreferenceSelectDialog(
-                            title = stringResource(R.string.setting_wlan_radio_model),
-                            options = modelOptions,
-                            selected = ic705ModelState.value,
-                            onDismiss = { showWlanModelDialog.value = false },
-                            onSelect = { selectedId ->
-                                val model = WlanRadioModel.findById(selectedId)
-                                ic705ModelState.value = model.id
-                                prefs.set("ic705.model", model.id)
-                                ic705CivAddressState.value = model.defaultCivHex
-                                prefs.set("ic705.civ_address", model.defaultCivHex)
-                                showWlanModelDialog.value = false
-                                refreshState()
-                            },
-                        )
-                    }
-
-                    editDialogKey.value?.let { key ->
-                        val initialVal = if (key == "ic705.civ_address") {
-                            val model = WlanRadioModel.findById(ic705ModelState.value)
-                            prefs.getString(key, model.defaultCivHex).ifBlank { model.defaultCivHex }
-                        } else {
-                            prefs.getString(key, "")
-                        }
-                        PreferenceEditDialog(
-                            title = stringResource(R.string.setting_edit_value),
-                            initialValue = initialVal,
-                            onDismiss = { editDialogKey.value = null },
-                            onSave = { newValue ->
-                                if (key == "ic705.civ_address" || key == "radio.civ_address") {
-                                    val clean = newValue.trim()
-                                        .removePrefix("0x").removePrefix("0X")
-                                        .removeSuffix("h").removeSuffix("H")
-                                        .trim().uppercase()
-                                    prefs.set(key, clean)
-                                } else {
-                                    prefs.set(key, newValue)
-                                }
-                                refreshState()
-                            },
-                        )
                     }
                 }
+
+                BackendPrefsScreen(
+                    state = state,
+                    onIntent = viewModel::dispatch,
+                    onNavigateBack = { finish() },
+                    bondedBluetoothDevices = bondedBluetoothDevices(),
+                    hasBluetoothPermission = hasBluetoothPermission(),
+                    onRequestBluetoothPermission = {
+                        checkPermissions(
+                            arrayOf(AprsBackend.BLUETOOTH_PERMISSION),
+                            BACKEND_PERMISSION,
+                        )
+                    },
+                    onOpenBluetoothSettings = {
+                        startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+                    },
+                    onOpenDiagnostic = {
+                        startActivity(Intent(this@BackendPrefs, Ic705RxDiagnosticActivity::class.java))
+                    },
+                    onOpenHelpUrl = { url ->
+                        UrlOpener.open(this@BackendPrefs, url)
+                    },
+                    audioManager = getSystemService(AUDIO_SERVICE) as? AudioManager,
+                    initialCallsign = prefs.getCallsign(),
+                    initialPasscode = prefs.getString("passcode", ""),
+                )
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        refreshState()
+        viewModel.dispatch(BackendPrefsIntent.Refresh)
     }
 
     override fun getActionName(action: Int): Int = R.string.p__connection
     override fun onAllPermissionsGranted(action: Int) {
-        refreshState()
+        viewModel.dispatch(BackendPrefsIntent.Refresh)
     }
     override fun onPermissionsFailedCancel(action: Int) {}
 }

@@ -14,7 +14,7 @@ import org.aprsdroid.app.location.LocationSource
 import org.aprsdroid.app.location.PeriodicGPS
 import org.aprsdroid.app.radio.RadioProfile
 
-class PrefsWrapper(@JvmField val context: Context) {
+class PrefsWrapper(@JvmField val context: Context) : org.aprsdroid.app.data.preferences.AppPreferenceStore {
     companion object {
         const val KEY_AUTO_CHECK_UPDATES = "check_updates_automatically"
         const val KEY_PHG_ENABLED = "phg_enabled"
@@ -60,15 +60,15 @@ class PrefsWrapper(@JvmField val context: Context) {
         }
     }
 
-    fun getString(key: String, defValue: String?): String {
+    override fun getString(key: String, defValue: String?): String {
         return prefs.getString(key, defValue) ?: (defValue ?: "")
     }
 
-    fun getBoolean(key: String, defValue: Boolean): Boolean {
+    override fun getBoolean(key: String, defValue: Boolean): Boolean {
         return prefs.getBoolean(key, defValue)
     }
 
-    fun getStringInt(key: String, defValue: Int): Int {
+    override fun getStringInt(key: String, defValue: Int): Int {
         return try {
             prefs.getString(key, null)?.trim()?.toInt() ?: defValue
         } catch (_: Throwable) {
@@ -108,12 +108,12 @@ class PrefsWrapper(@JvmField val context: Context) {
         return newVal
     }
 
-    fun set(name: String, newVal: String): String {
+    override fun set(name: String, newVal: String): String {
         prefs.edit { putString(name, newVal) }
         return newVal
     }
 
-    fun set(name: String, newVal: Boolean): Boolean {
+    override fun set(name: String, newVal: Boolean): Boolean {
         return setBoolean(name, newVal)
     }
 
@@ -280,5 +280,13 @@ class PrefsWrapper(@JvmField val context: Context) {
 
     fun saveDigiPathPresets(presets: Set<String>) {
         prefs.edit { putStringSet("digi_path_user_presets", presets) }
+    }
+
+    override fun saveCredentials(callsign: String, passcode: String) {
+        prefs.edit {
+            putString("callsign", callsign)
+            putString("passcode", passcode)
+            putBoolean("firstrun", false)
+        }
     }
 }
