@@ -2,7 +2,7 @@ package org.aprsdroid.app.service
 
 /**
  * Centralizes AprsService runtime-state mutations while preserving the legacy
- * static compatibility fields as the backing storage.
+ * static compatibility fields as the backing storage and emitting reactive Flow updates.
  *
  * Reads are delegated as well as writes, so external legacy callers that still
  * observe or mutate AprsService.running / AprsService.link_error remain visible
@@ -22,18 +22,24 @@ internal class ServiceRuntimeState(
 
     fun markStarted() {
         writeRunning(true)
+        ServiceEventBus.updateServiceRunning(true)
     }
 
     fun markStopped() {
         writeRunning(false)
         writeLinkError(0)
+        ServiceEventBus.updateServiceRunning(false)
+        ServiceEventBus.updateLinkStatus(0)
+        ServiceEventBus.updateLiveStatus(null)
     }
 
     fun markLinkOn() {
         writeLinkError(0)
+        ServiceEventBus.updateLinkStatus(0)
     }
 
     fun markLinkOff(link: Int) {
         writeLinkError(link)
+        ServiceEventBus.updateLinkStatus(link)
     }
 }

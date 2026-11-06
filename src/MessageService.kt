@@ -9,6 +9,8 @@ import net.ab0oo.aprs.parser.APRSPacket
 import net.ab0oo.aprs.parser.MessagePacket
 import java.util.Locale
 import kotlin.math.min
+import org.aprsdroid.app.service.AprsMessageEvent
+import org.aprsdroid.app.service.ServiceEventBus
 
 internal enum class PendingMessageAction {
     SEND,
@@ -44,6 +46,15 @@ class MessageService(val s: AprsService) {
         if (isNew) {
             ServiceNotifier.instance.notifyMessage(s, srccall, msg.messageBody)
         }
+
+        ServiceEventBus.postMessageEvent(
+            AprsMessageEvent(
+                destination = msg.targetCallsign,
+                body = msg.messageBody,
+                isOutgoing = false,
+                timestamp = ts,
+            )
+        )
 
         s.sendBroadcast(
             AprsService.privateIntent(s, AprsService.MESSAGE)
@@ -138,6 +149,14 @@ class MessageService(val s: AprsService) {
                         put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
                     }
                     s.db.updateMessage(c.getLong(0), cv)
+                    ServiceEventBus.postMessageEvent(
+                        AprsMessageEvent(
+                            destination = call,
+                            body = text,
+                            isOutgoing = true,
+                            timestamp = System.currentTimeMillis(),
+                        )
+                    )
                     s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                     nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
                 }

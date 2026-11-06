@@ -3,7 +3,7 @@ package org.aprsdroid.app.notification
 import android.content.Context
 import org.aprsdroid.app.R
 
-internal enum class LiveBackendMode(
+enum class LiveBackendMode(
     val shortLabel: String,
 ) {
     IC705("705"),
@@ -34,13 +34,13 @@ internal enum class LiveBackendMode(
         }
 }
 
-internal enum class ReadyKind {
+enum class ReadyKind {
     IDLE,
     ONLINE,
     LISTENING,
 }
 
-internal enum class LiveActivity {
+enum class LiveActivity {
     CONNECTING,
     READY,
     RECEIVING,
@@ -51,7 +51,7 @@ internal enum class LiveActivity {
     ERROR,
 }
 
-internal data class ServiceLiveStatus(
+data class ServiceLiveStatus(
     val mode: LiveBackendMode,
     val backendName: String,
     val activity: LiveActivity,
