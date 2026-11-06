@@ -94,7 +94,12 @@ object AprsPacketSummaryParser {
                             rawCode = "PHG${AprsPhg.powerToCode(phgExt.power.toDouble())}${AprsPhg.heightToCode(phgExt.height.toDouble())}${phgExt.gain}${AprsPhg.directivityToCode(phgExt.directivity)}",
                         )
                     }
-                    commentCandidate = AprsCharsetDecoder.repairNullable(info.comment?.trim())?.takeIf { it.isNotEmpty() }
+                    val parsedComment = AprsCharsetDecoder.repairNullable(info.comment?.trim())?.takeIf { it.isNotEmpty() }
+                    commentCandidate = if (parsedComment != null && parsedComment.contains('\uFFFD')) {
+                        extractCommentFromPositionPayload(payload, info) ?: parsedComment
+                    } else {
+                        parsedComment
+                    }
                 }
                 is ObjectPacket -> {
                     kind = AprsPacketKind.OBJECT
@@ -113,11 +118,21 @@ object AprsPacketSummaryParser {
                             rawCode = "PHG${AprsPhg.powerToCode(phgExt.power.toDouble())}${AprsPhg.heightToCode(phgExt.height.toDouble())}${phgExt.gain}${AprsPhg.directivityToCode(phgExt.directivity)}",
                         )
                     }
-                    commentCandidate = AprsCharsetDecoder.repairNullable(info.comment?.trim())?.takeIf { it.isNotEmpty() }
+                    val parsedComment = AprsCharsetDecoder.repairNullable(info.comment?.trim())?.takeIf { it.isNotEmpty() }
+                    commentCandidate = if (parsedComment != null && parsedComment.contains('\uFFFD')) {
+                        extractCommentFromObjectPayload(payload, info) ?: parsedComment
+                    } else {
+                        parsedComment
+                    }
                 }
                 is MessagePacket -> {
                     kind = AprsPacketKind.MESSAGE
-                    message = AprsCharsetDecoder.repairNullable(info.messageBody?.trim())?.takeIf { it.isNotEmpty() }
+                    val parsedMsg = AprsCharsetDecoder.repairNullable(info.messageBody?.trim())?.takeIf { it.isNotEmpty() }
+                    message = if (parsedMsg != null && parsedMsg.contains('\uFFFD') && payload.length > 11 && payload.startsWith(":")) {
+                        payload.substring(11).substringBeforeLast('{').trim().takeIf { it.isNotEmpty() } ?: parsedMsg
+                    } else {
+                        parsedMsg
+                    }
                 }
             }
         }
@@ -198,5 +213,22 @@ object AprsPacketSummaryParser {
         payload[0] == '\'' || payload[0] == '`' -> AprsPacketKind.MICE
         payload[0] == '}' -> AprsPacketKind.THIRD_PARTY
         else -> AprsPacketKind.UNKNOWN
+    }
+    private fun extractCommentFromPositionPayload(payload: String, info: PositionPacket): String? {
+        if (payload.length < 14) return null
+        var offset = when (payload[0]) {
+            '/', '@' -> 27
+            else -> if (info.compressedFormat) 14 else 20
+        }
+        if (info.extension != null) {
+            offset += 7
+        }
+        return if (payload.length > offset) payload.substring(offset).trim().takeIf { it.isNotEmpty() } else null
+    }
+
+    private fun extractCommentFromObjectPayload(payload: String, info: ObjectPacket): String? {
+        if (payload.length < 30) return null
+        val offset = if (payload.length >= 37 && (payload[17] == 'z' || payload[17] == '/' || payload[17] == 'h')) 37 else 30
+        return if (payload.length > offset) payload.substring(offset).trim().takeIf { it.isNotEmpty() } else null
     }
 }
