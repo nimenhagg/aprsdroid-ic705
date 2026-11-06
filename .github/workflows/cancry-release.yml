@@ -1,0 +1,156 @@
+name: Build and Publish Cancry Debug Release
+
+on:
+  push:
+    tags:
+      - 'Cancry-*'
+      - 'Canary-*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (leave blank to auto-generate Cancry-YYYYMMDDHHMM)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build_cancry:
+    name: Build, Sign & Publish Cancry Debug APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Install Graywolf and Hamlib build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler pkg-config libasound2-dev autoconf automake libtool patchelf
+          cargo --version
+          rustc --version
+          protoc --version
+
+      - name: Restore Cargo cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/graywolf-jni/target
+          key: cancry-graywolf-rust-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
+
+      - name: Restore MinSizeRel MapLibre caches
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            .cache/maplibre-minsizerel/13.5.1/arm64-v8a
+            .cache/maplibre-minsizerel/13.5.1/armeabi-v7a
+          key: cancry-maplibre-${{ runner.os }}-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
+
+      - name: Determine Release Tag
+        id: tag_info
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG="$GITHUB_REF_NAME"
+          elif [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          else
+            TAG="Cancry-$(date -u +'%Y%m%d%H%M')"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Selected release tag: $TAG"
+
+      - name: Build native and assemble ARM64 debug APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          RELEASE_TAG: ${{ steps.tag_info.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS_VERSION=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)
+          APKSIGNER="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner"
+          ZIPALIGN="$ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/zipalign"
+
+          mkdir -p release-apks "$RUNNER_TEMP/maplibre-patched"
+
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > release.jks
+          fi
+
+          echo "Building native dependencies for arm64-v8a..."
+          bash .github/scripts/test_graywolf_loopback.sh
+          bash .github/scripts/build_maplibre_minsizerel.sh 13.5.1 arm64-v8a ".cache/maplibre-minsizerel/13.5.1/arm64-v8a/libmaplibre.so"
+          bash .github/scripts/build_graywolf_android.sh arm64-v8a
+          bash .github/scripts/build_hamlib_android.sh arm64-v8a
+          bash .github/scripts/build_hamlib_jni_android.sh arm64-v8a
+
+          echo "Running unit tests..."
+          export RELEASE_TAG_OVERRIDE="$RELEASE_TAG"
+          ./gradlew testArm64OpenglDebugUnitTest --no-daemon --stacktrace
+
+          echo "Building arm64OpenglDebug APK..."
+          ./gradlew assembleArm64OpenglDebug --no-daemon --stacktrace
+
+          source_apk=$(find "build/outputs/apk/arm64Opengl/debug" -name '*.apk' -print -quit)
+          test -n "$source_apk"
+
+          so=".cache/maplibre-minsizerel/13.5.1/arm64-v8a/libmaplibre.so"
+          patched="$RUNNER_TEMP/maplibre-patched/arm64-patched.apk"
+          aligned="$RUNNER_TEMP/maplibre-patched/arm64-aligned.apk"
+          dest="release-apks/APRSdroid-${RELEASE_TAG}-arm64-v8a-opengl-debug.apk"
+
+          python3 .github/scripts/replace_apk_maplibre.py "$source_apk" "arm64-v8a" "$so" "$patched"
+          "$ZIPALIGN" -P 16 -f 4 "$patched" "$aligned"
+
+          if [ -f release.jks ]; then
+            echo "Signing with official release keystore..."
+            "$APKSIGNER" sign --v1-signing-enabled false --v2-signing-enabled true --v3-signing-enabled true --v4-signing-enabled true \
+              --ks release.jks --ks-pass pass:"$KEYSTORE_PASSWORD" --ks-key-alias "$KEY_ALIAS" --key-pass pass:"$KEY_PASSWORD" \
+              --out "$dest" "$aligned"
+            "$APKSIGNER" verify --verbose "$dest"
+            rm -f release.jks
+          else
+            echo "Warning: Official signing secrets not found, packaging unsigned/aligned APK."
+            cp "$aligned" "$dest"
+          fi
+
+          "$ZIPALIGN" -P 16 -c 4 "$dest"
+
+          (cd release-apks && sha256sum *.apk > SHA256SUMS.txt)
+
+          cat << 'EOF' > RELEASE_NOTES.md
+          ### APRSdroid Mod Debug (Canary Dual-Track)
+
+          * **Track**: Debug Canary (`Cancry-*`)
+          * **Application ID**: `me.nimenhagg.aprsdroidic705mod.debug` (Coexists with official release)
+          * **App Name**: `APRSdroid Mod Debug`
+          * **Signing**: Signed with official release certificate
+          * **Memory Page Alignment**: 16 KiB aligned (Android 15 compatible)
+          * **Update Isolation**: Completely isolated from the stable track.
+          EOF
+
+          echo "Publishing GitHub Prerelease for $RELEASE_TAG..."
+          gh release create "$RELEASE_TAG" \
+            "$dest" \
+            release-apks/SHA256SUMS.txt \
+            --title "$RELEASE_TAG (Debug Canary)" \
+            --notes-file RELEASE_NOTES.md \
+            --prerelease

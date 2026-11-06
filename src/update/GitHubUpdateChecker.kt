@@ -7,16 +7,37 @@ import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import org.aprsdroid.app.BuildConfig
+import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class AppVersion(val major: Int, val minor: Int, val patch: Int) : Comparable<AppVersion> {
-    override fun compareTo(other: AppVersion): Int =
-        compareValuesBy(this, other, AppVersion::major, AppVersion::minor, AppVersion::patch)
+internal data class AppVersion(
+    val major: Int,
+    val minor: Int,
+    val patch: Int,
+    val canaryTimestamp: Long = 0L,
+) : Comparable<AppVersion> {
+    override fun compareTo(other: AppVersion): Int {
+        if (canaryTimestamp > 0L || other.canaryTimestamp > 0L) {
+            return canaryTimestamp.compareTo(other.canaryTimestamp)
+        }
+        return compareValuesBy(this, other, AppVersion::major, AppVersion::minor, AppVersion::patch)
+    }
 
-    override fun toString(): String = "$major.$minor.$patch"
+    override fun toString(): String =
+        if (canaryTimestamp > 0L) "Cancry-$canaryTimestamp" else "$major.$minor.$patch"
+}
+
+internal fun parseCancryTimestamp(value: String): Long? {
+    val match = CANCRY_REGEX.find(value) ?: return null
+    return match.groupValues[1].toLongOrNull()
 }
 
 internal fun parseAppVersion(value: String): AppVersion? {
+    val canaryTs = parseCancryTimestamp(value)
+    if (canaryTs != null) {
+        return AppVersion(0, 0, 0, canaryTimestamp = canaryTs)
+    }
     val match = VERSION_REGEX.find(value) ?: return null
     return AppVersion(
         major = match.groupValues[1].toIntOrNull() ?: return null,
@@ -37,7 +58,6 @@ internal sealed interface UpdateCheckResult {
     ) : UpdateCheckResult
     data class Failure(val message: String) : UpdateCheckResult
 }
-
 
 internal fun isUpdatePromptSuppressed(releaseNotes: String, releaseTitle: String = ""): Boolean {
     val suppressedPatterns = listOf(
@@ -72,12 +92,27 @@ internal fun formatDeviceArchitecture(abis: Array<String>): String {
     return "$label ($abi)"
 }
 
+internal fun findLatestCancryRelease(releasesJson: String): JSONObject? {
+    val array = runCatching { JSONArray(releasesJson) }.getOrNull() ?: return null
+    for (i in 0 until array.length()) {
+        val obj = array.optJSONObject(i) ?: continue
+        val tag = obj.optString("tag_name")
+        if (parseCancryTimestamp(tag) != null) {
+            return obj
+        }
+    }
+    return null
+}
+
 /**
  * One-shot update checker. It never schedules work and never runs unless [check] is called.
+ * Isolates official releases and debug canary releases into separate channels.
  */
 internal object GitHubUpdateChecker {
     private const val LATEST_RELEASE_URL =
         "https://api.github.com/repos/nimenhagg/aprsdroid-ic705/releases/latest"
+    private const val ALL_RELEASES_URL =
+        "https://api.github.com/repos/nimenhagg/aprsdroid-ic705/releases"
 
     private val client by lazy { OkHttpClient() }
     private val automaticCheckStarted = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -96,14 +131,13 @@ internal object GitHubUpdateChecker {
     }
 
     fun check(currentVersionName: String, callback: (UpdateCheckResult) -> Unit) {
-        val current = parseAppVersion(currentVersionName)
-        if (current == null) {
-            callback(UpdateCheckResult.Failure("无法识别当前版本：$currentVersionName"))
-            return
-        }
+        val isDebugTrack = runCatching { BuildConfig.IS_DEBUG_TRACK }.getOrDefault(false)
+        val current = parseAppVersion(currentVersionName) ?: AppVersion(0, 0, 0, 0L)
+
+        val targetUrl = if (isDebugTrack) ALL_RELEASES_URL else LATEST_RELEASE_URL
 
         val request = Request.Builder()
-            .url(LATEST_RELEASE_URL)
+            .url(targetUrl)
             .header("Accept", "application/vnd.github+json")
             .header("User-Agent", "APRSdroid-Mod/${current}")
             .build()
@@ -120,21 +154,35 @@ internal object GitHubUpdateChecker {
                         return
                     }
                     val body = it.body.string()
-                    val json = runCatching { JSONObject(body) }.getOrNull()
-                    if (json == null) {
-                        callback(UpdateCheckResult.Failure("无法解析 GitHub 更新信息"))
+
+                    val targetRelease = if (isDebugTrack) {
+                        findLatestCancryRelease(body)
+                    } else {
+                        runCatching { JSONObject(body) }.getOrNull()
+                    }
+
+                    if (targetRelease == null) {
+                        if (isDebugTrack) {
+                            // In debug track, if no Cancry release has been published yet, consider it up-to-date
+                            callback(UpdateCheckResult.UpToDate(current = current, latest = current))
+                        } else {
+                            callback(UpdateCheckResult.Failure("无法解析 GitHub 更新信息"))
+                        }
                         return
                     }
-                    val tag = json.optString("tag_name")
-                    val title = json.optString("name")
+
+                    val tag = targetRelease.optString("tag_name")
+                    val title = targetRelease.optString("name")
                     val latest = parseAppVersion(tag)
-                    val releaseUrl = json.optString("html_url")
-                    val releaseNotes = json.optString("body").trim().ifBlank { "No release notes provided." }
+                    val releaseUrl = targetRelease.optString("html_url")
+                    val releaseNotes = targetRelease.optString("body").trim().ifBlank { "No release notes provided." }
                     val isSuppressed = isUpdatePromptSuppressed(releaseNotes, title)
+
                     if (latest == null || releaseUrl.isBlank()) {
                         callback(UpdateCheckResult.Failure("GitHub Release 缺少有效版本信息"))
                         return
                     }
+
                     if (latest > current) {
                         callback(
                             UpdateCheckResult.UpdateAvailable(
@@ -156,3 +204,4 @@ internal object GitHubUpdateChecker {
 }
 
 private val VERSION_REGEX = Regex("(?:^|[^0-9])(\\d+)\\.(\\d+)\\.(\\d+)(?:-ic705)?")
+private val CANCRY_REGEX = Regex("Can[ca]ry-(\\d{12})", RegexOption.IGNORE_CASE)

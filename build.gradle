@@ -52,7 +52,7 @@ ext {
 	base_version = "APRSdroid v1.7.0"
 	source_revision = sourceRevisionProvider.get().toString()
 	build_revision = "Mod-v${mod_version}"
-	build_version = "APRSdroid Mod ${mod_version} (based on ${base_version}) ${build_date}"
+	build_version = "APRSdroid Mod Debug ${mod_version} (based on ${base_version}) ${build_date}"
 }
 
 if (!(mod_version ==~ /\d+\.\d+\.\d+/)) {
@@ -80,7 +80,8 @@ android {
 	namespace = 'org.aprsdroid.app'
 	compileSdk = 37
 	defaultConfig {
-		applicationId = "me.nimenhagg.aprsdroidic705mod"
+		applicationId = "me.nimenhagg.aprsdroidic705mod.debug"
+		manifestPlaceholders = [appName: "APRSdroid Mod Debug"]
 		minSdk = 28
 		targetSdk = 37
 		versionName "$build_revision"
@@ -91,6 +92,8 @@ android {
 		buildConfigField "boolean", "GOOGLE_MAPS_ENABLED", (!configuredMapsApiKey.isEmpty()).toString()
 		buildConfigField "String", "MAPLIBRE_VERSION", "\"${maplibre_version}\""
 		buildConfigField "String", "SOURCE_REVISION", "\"${source_revision}\""
+		buildConfigField "boolean", "IS_DEBUG_TRACK", "true"
+		buildConfigField "String", "UPDATE_TRACK_TAG_PREFIX", "\"Cancry-\""
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
@@ -209,7 +212,7 @@ tasks.register('verifyReleaseVersion') {
 		def actualTag = System.getenv('GITHUB_REF_TYPE') == 'tag'
 			? System.getenv('GITHUB_REF_NAME')
 			: System.getenv('RELEASE_TAG_OVERRIDE')
-		if (actualTag && actualTag != expectedReleaseTag) {
+		if (actualTag && !actualTag.startsWith("Cancry-") && !actualTag.startsWith("Canary-") && actualTag != expectedReleaseTag) {
 			throw new GradleException("Release tag ${actualTag} does not match ${expectedReleaseTag}")
 		}
 	}
@@ -251,4 +254,5 @@ dependencies {
 	androidTestImplementation 'androidx.test.ext:junit:1.3.0'
 	androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
 	testImplementation 'junit:junit:4.13.2'
+	testImplementation 'org.json:json:20240303'
 }
