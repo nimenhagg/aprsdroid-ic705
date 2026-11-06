@@ -52,10 +52,12 @@ import org.aprsdroid.app.ic705.transport.Ic705ReceivedDatagram
 import org.aprsdroid.app.ic705.transport.Ic705UdpChannel
 
 /**
- * Runtime coordinator for an IC-705 receive-only LAN session.
+ * Runtime coordinator for an IC-705 LAN session, managing both RX audio streaming
+ * and TX modulation via CI-V and PTT control.
  *
- * It sends only the control traffic required to authenticate and open receive
- * streams. There is intentionally no PTT, CI-V business-command, or audio-TX API.
+ * Handles UDP control handshake/ping maintenance, CI-V commands and responses,
+ * audio RX demodulation stream ingestion, and PTT state machine transitions with
+ * TX audio packetization for packet transmission.
  */
 class Ic705RxSession internal constructor(
     private val config: Ic705RxSessionConfig,

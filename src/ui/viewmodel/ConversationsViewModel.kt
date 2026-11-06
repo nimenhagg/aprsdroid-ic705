@@ -9,17 +9,27 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.aprsdroid.app.data.repository.MessageRepository
 import org.aprsdroid.app.model.ConversationItem
+import org.aprsdroid.app.service.ServiceEventBus
 
 data class ConversationsUiState(
     val conversations: List<ConversationItem> = emptyList()
 )
 
 class ConversationsViewModel(
-    private val repository: MessageRepository
+    private val repository: MessageRepository,
+    private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ConversationsUiState())
     val uiState: StateFlow<ConversationsUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            eventBus.messageEvents.collect {
+                refresh()
+            }
+        }
+    }
 
     fun refresh() {
         viewModelScope.launch {

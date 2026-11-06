@@ -1,5 +1,9 @@
 package org.aprsdroid.app.service
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -66,5 +70,30 @@ class ServiceEventBusTest {
             isOutgoing = true,
         )
         ServiceEventBus.postMessageEvent(messageEvent)
+    }
+
+    @Test
+    fun packetEventsCanBeCollectedViaFlow() = runBlocking {
+        val event = AprsPacketEvent(
+            callsign = "BI1AXX",
+            type = 0,
+            source = "IC-705",
+            packet = "BI1AXX>APRS:>Flow test",
+        )
+        ServiceEventBus.postPacketEvent(event)
+
+        assertEquals(listOf(event), ServiceEventBus.packetEvents.replayCache)
+    }
+
+    @Test
+    fun messageEventsCanBeCollectedViaFlow() = runBlocking {
+        val msg = AprsMessageEvent(
+            destination = "BI1AXX",
+            body = "Message flow test",
+            isOutgoing = true,
+        )
+        ServiceEventBus.postMessageEvent(msg)
+
+        assertEquals(listOf(msg), ServiceEventBus.messageEvents.replayCache)
     }
 }

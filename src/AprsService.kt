@@ -34,9 +34,11 @@ import org.aprsdroid.app.service.BackendLifecycleCoordinator
 import org.aprsdroid.app.service.ImmediateLocationCoordinator
 import org.aprsdroid.app.service.PacketPersistenceCoordinator
 import org.aprsdroid.app.service.PacketSendCoordinator
+import org.aprsdroid.app.service.ServiceEventBus
 import org.aprsdroid.app.service.ServicePostCoordinator
 import org.aprsdroid.app.service.ServiceRuntimeState
 import java.util.Locale
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLong
 
 class AprsService : Service() {
@@ -137,6 +139,7 @@ class AprsService : Service() {
     }
 
     private fun notifyLiveStatusChanged() {
+        ServiceEventBus.updateLiveStatus(ServiceNotifier.instance.currentLiveStatus())
         sendBroadcast(privateIntent(this, LIVE_STATUS))
     }
 
@@ -231,8 +234,13 @@ class AprsService : Service() {
         )
     }
 
+    private val dbExecutor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "aprs-db-worker").apply { isDaemon = true }
+    }
+
     private val servicePostCoordinator: ServicePostCoordinator by lazy {
         ServicePostCoordinator(
+            postToBackground = { task -> dbExecutor.execute(task) },
             postToMain = { task -> handler.post { task() } },
             connectionLoggingEnabled = { serviceSettings.connectionLoggingEnabled },
             addPost = { postType, statusId, message -> addPost(postType, statusId, message) },
@@ -371,6 +379,7 @@ class AprsService : Service() {
         ServiceNotifier.instance.stop(this)
         notifyLiveStatusChanged()
         packetSendCoordinator.shutdownNow()
+        dbExecutor.shutdown()
     }
 
     fun newPacket(payload: InformationField): APRSPacket {

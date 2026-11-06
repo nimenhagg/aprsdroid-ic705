@@ -35,12 +35,13 @@ class ServicePostCoordinatorTest {
     }
 
     @Test
-    fun infoLoggingDecisionIsTakenBeforeMainThreadExecution() {
+    fun infoLoggingDecisionIsTakenBeforeBackgroundExecution() {
         val events = mutableListOf<String>()
         var loggingEnabled = true
         var queuedTask: (() -> Unit)? = null
         val coordinator = ServicePostCoordinator(
-            postToMain = { task -> queuedTask = task },
+            postToBackground = { task -> queuedTask = task },
+            postToMain = { task -> task() },
             connectionLoggingEnabled = { loggingEnabled },
             addPost = { type, statusId, message ->
                 events += "add:$type:$statusId:$message"
@@ -58,7 +59,7 @@ class ServicePostCoordinatorTest {
     }
 
     @Test
-    fun incomingPostPersistsBeforePendingMessageKick() {
+    fun incomingPostPersistsInBackgroundBeforePendingMessageKickOnMain() {
         val events = mutableListOf<String>()
         val coordinator = coordinator(events, loggingEnabled = true)
 
@@ -66,8 +67,9 @@ class ServicePostCoordinatorTest {
 
         assertEquals(
             listOf(
-                "queue",
+                "bg",
                 "add:3:20:rx",
+                "main",
                 "pending",
             ),
             events,
@@ -75,7 +77,7 @@ class ServicePostCoordinatorTest {
     }
 
     @Test
-    fun errorPostPersistsBeforeServiceStop() {
+    fun errorPostPersistsInBackgroundBeforeServiceStopOnMain() {
         val events = mutableListOf<String>()
         val coordinator = coordinator(events, loggingEnabled = true)
 
@@ -83,8 +85,9 @@ class ServicePostCoordinatorTest {
 
         assertEquals(
             listOf(
-                "queue",
+                "bg",
                 "add:2:30:error",
+                "main",
                 "stop",
             ),
             events,
@@ -104,8 +107,12 @@ class ServicePostCoordinatorTest {
         loggingEnabled: Boolean,
     ): ServicePostCoordinator {
         return ServicePostCoordinator(
+            postToBackground = { task ->
+                events += "bg"
+                task()
+            },
             postToMain = { task ->
-                events += "queue"
+                events += "main"
                 task()
             },
             connectionLoggingEnabled = { loggingEnabled },

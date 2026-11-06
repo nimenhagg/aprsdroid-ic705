@@ -33,10 +33,11 @@ class ServiceOrchestrationIntegrationTest {
         )
 
         val postCoordinator = ServicePostCoordinator(
-            postToMain = { task ->
+            postToBackground = { task ->
                 events += "queue"
                 task()
             },
+            postToMain = { task -> task() },
             connectionLoggingEnabled = { true },
             addPost = { type, statusId, message ->
                 events += "add:$type:$statusId:$message"
@@ -86,10 +87,11 @@ class ServiceOrchestrationIntegrationTest {
         )
 
         val postCoordinator = ServicePostCoordinator(
-            postToMain = { task ->
+            postToBackground = { task ->
                 events += "queue"
                 task()
             },
+            postToMain = { task -> task() },
             connectionLoggingEnabled = { true },
             addPost = { type, statusId, message ->
                 events += "add:$type:$statusId:$message"

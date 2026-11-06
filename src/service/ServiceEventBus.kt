@@ -37,10 +37,10 @@ object ServiceEventBus {
     private val _liveStatus = MutableStateFlow<ServiceLiveStatus?>(null)
     val liveStatus: StateFlow<ServiceLiveStatus?> = _liveStatus.asStateFlow()
 
-    private val _packetEvents = MutableSharedFlow<AprsPacketEvent>(extraBufferCapacity = 64)
+    private val _packetEvents = MutableSharedFlow<AprsPacketEvent>(replay = 1, extraBufferCapacity = 64)
     val packetEvents: SharedFlow<AprsPacketEvent> = _packetEvents.asSharedFlow()
 
-    private val _messageEvents = MutableSharedFlow<AprsMessageEvent>(extraBufferCapacity = 64)
+    private val _messageEvents = MutableSharedFlow<AprsMessageEvent>(replay = 1, extraBufferCapacity = 64)
     val messageEvents: SharedFlow<AprsMessageEvent> = _messageEvents.asSharedFlow()
 
     fun updateServiceRunning(running: Boolean) {

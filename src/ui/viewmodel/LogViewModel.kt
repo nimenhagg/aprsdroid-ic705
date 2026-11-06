@@ -7,10 +7,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.aprsdroid.app.data.repository.LatestQuery
-import org.aprsdroid.app.AprsService
 import org.aprsdroid.app.data.repository.LogRepository
 import org.aprsdroid.app.model.LogPostItem
+import org.aprsdroid.app.service.ServiceEventBus
 
 data class LogUiState(
     val items: List<LogPostItem> = emptyList(),
@@ -18,11 +19,25 @@ data class LogUiState(
 )
 
 class LogViewModel(
-    private val repository: LogRepository
+    private val repository: LogRepository,
+    private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LogUiState())
     val uiState: StateFlow<LogUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            eventBus.isServiceRunning.collect { running ->
+                _uiState.update { it.copy(isRunning = running) }
+            }
+        }
+        viewModelScope.launch {
+            eventBus.packetEvents.collect {
+                refresh()
+            }
+        }
+    }
 
     private val refreshQueue = LatestQuery<String?, List<LogPostItem>>(
         scope = viewModelScope,
@@ -32,7 +47,7 @@ class LogViewModel(
             _uiState.update {
                 it.copy(
                     items = logs,
-                    isRunning = AprsService.running
+                    isRunning = eventBus.isServiceRunning.value
                 )
             }
         },
@@ -44,6 +59,6 @@ class LogViewModel(
     }
 
     fun updateServiceState() {
-        _uiState.update { it.copy(isRunning = AprsService.running) }
+        _uiState.update { it.copy(isRunning = eventBus.isServiceRunning.value) }
     }
 }

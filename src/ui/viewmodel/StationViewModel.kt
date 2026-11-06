@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import org.aprsdroid.app.data.repository.StationDetailsSource
 import org.aprsdroid.app.model.LogPostItem
 import org.aprsdroid.app.model.StationItem
+import org.aprsdroid.app.service.ServiceEventBus
 
 /**
  * Immutable UI state for Station details screen.
@@ -34,6 +35,7 @@ data class StationUiState(
 class StationViewModel(
     private val repository: StationDetailsSource,
     externalScope: CoroutineScope? = null,
+    private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StationUiState())
@@ -53,6 +55,21 @@ class StationViewModel(
                     latest = next
                 }
                 executeQuery(latest.first, latest.second)
+            }
+        }
+        scope.launch(Dispatchers.Default) {
+            eventBus.packetEvents.collect { event ->
+                val current = _uiState.value
+                val target = current.targetCall
+                if (target.isNotEmpty()) {
+                    val baseTarget = target.split("-")[0]
+                    if (event.callsign.isEmpty() ||
+                        event.callsign.equals(target, ignoreCase = true) ||
+                        event.callsign.startsWith(baseTarget, ignoreCase = true)
+                    ) {
+                        requestRefresh(target, "")
+                    }
+                }
             }
         }
     }

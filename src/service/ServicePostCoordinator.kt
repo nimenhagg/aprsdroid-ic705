@@ -22,12 +22,14 @@ internal fun postFollowUp(postType: Int): PostFollowUp = when (postType) {
 }
 
 /**
- * Owns the main-thread post-event policy previously embedded in AprsService.postAddPost().
+ * Owns post-event persistence and follow-up dispatching.
  *
- * Android effects remain callbacks so this class only decides whether an event is queued,
- * preserves addPost-before-follow-up ordering, and selects the legacy follow-up action.
+ * Ensures database insertion and log/position trimming run on a background
+ * executor (postToBackground) instead of blocking the Android UI thread,
+ * while sequencing service and UI lifecycle actions back to the main thread (postToMain).
  */
 internal class ServicePostCoordinator(
+    private val postToBackground: ((() -> Unit) -> Unit) = { task -> task() },
     private val postToMain: ((() -> Unit) -> Unit),
     private val connectionLoggingEnabled: () -> Boolean,
     private val addPost: (postType: Int, statusId: Int, message: String) -> Unit,
@@ -39,11 +41,11 @@ internal class ServicePostCoordinator(
             return
         }
 
-        postToMain {
+        postToBackground {
             addPost(postType, statusId, message)
             when (postFollowUp(postType)) {
-                PostFollowUp.SEND_PENDING_MESSAGES -> sendPendingMessages()
-                PostFollowUp.STOP_SERVICE -> stopService()
+                PostFollowUp.SEND_PENDING_MESSAGES -> postToMain { sendPendingMessages() }
+                PostFollowUp.STOP_SERVICE -> postToMain { stopService() }
                 PostFollowUp.NONE -> Unit
             }
         }

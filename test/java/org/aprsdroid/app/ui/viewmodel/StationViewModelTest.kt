@@ -6,6 +6,8 @@ import kotlinx.coroutines.runBlocking
 import org.aprsdroid.app.data.repository.StationDetailsData
 import org.aprsdroid.app.data.repository.StationDetailsSource
 import org.aprsdroid.app.model.StationItem
+import org.aprsdroid.app.service.AprsPacketEvent
+import org.aprsdroid.app.service.ServiceEventBus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -85,5 +87,27 @@ class StationViewModelTest {
         // Only the latest query should be executed due to Conflated Channel
         assertEquals(1, fakeSource.queryCount)
         assertEquals("BG1ABC-9", viewModel.uiState.value.targetCall)
+    }
+
+    @Test
+    fun serviceEventBusPacketEventTriggersAutomaticRefresh() = runBlocking {
+        val fakeSource = FakeStationDetailsSource()
+        val viewModel = StationViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+
+        viewModel.requestRefresh("BG1ABC-9", "N0CALL")
+        Thread.sleep(400L)
+        assertEquals(1, fakeSource.queryCount)
+
+        ServiceEventBus.postPacketEvent(
+            AprsPacketEvent(
+                callsign = "BG1ABC-9",
+                type = 3,
+                source = "IC-705",
+                packet = "BG1ABC-9>APRS:>Hello",
+            )
+        )
+
+        Thread.sleep(400L)
+        assertEquals(2, fakeSource.queryCount)
     }
 }

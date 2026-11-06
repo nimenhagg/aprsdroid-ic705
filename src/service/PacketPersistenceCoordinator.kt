@@ -66,6 +66,16 @@ internal class PacketPersistenceCoordinator(
             PostRoute.LOG_ONLY -> onLogOnly(status, message)
         }
 
+        ServiceEventBus.postPacketEvent(
+            AprsPacketEvent(
+                callsign = extractedCall.orEmpty(),
+                type = postType,
+                source = "",
+                packet = message,
+                timestamp = ts,
+            )
+        )
+
         onPostUpdated(postType, message, extractedCall)
     }
 

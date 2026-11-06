@@ -7,12 +7,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.aprsdroid.app.data.repository.LatestQuery
 import org.aprsdroid.app.AprsService
 import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.ServiceNotifier
 import org.aprsdroid.app.data.repository.StationRepository
 import org.aprsdroid.app.model.StationItem
+import org.aprsdroid.app.service.ServiceEventBus
 
 data class HubUiState(
     val stations: List<StationItem> = emptyList(),
@@ -27,11 +29,39 @@ data class HubUiState(
 
 class HubViewModel(
     private val repository: StationRepository,
-    private val prefs: PrefsWrapper
+    private val prefs: PrefsWrapper,
+    private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HubUiState())
     val uiState: StateFlow<HubUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            eventBus.isServiceRunning.collect { running ->
+                _uiState.update {
+                    it.copy(
+                        isRunning = running,
+                        serviceStatus = currentServiceStatus(running)
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
+            eventBus.liveStatus.collect {
+                _uiState.update {
+                    it.copy(
+                        serviceStatus = currentServiceStatus(_uiState.value.isRunning)
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
+            eventBus.packetEvents.collect {
+                refresh()
+            }
+        }
+    }
 
     private fun currentServiceStatus(running: Boolean): String {
         if (!running) return ""
@@ -55,9 +85,9 @@ class HubViewModel(
                     isSearching = if (request.includeStations) false else it.isSearching,
                     myLat = data.myLat,
                     myLon = data.myLon,
-                    isRunning = AprsService.running,
+                    isRunning = eventBus.isServiceRunning.value,
                     myCall = myCall,
-                    serviceStatus = currentServiceStatus(AprsService.running)
+                    serviceStatus = currentServiceStatus(eventBus.isServiceRunning.value)
                 )
             }
         },
@@ -82,7 +112,7 @@ class HubViewModel(
     }
 
     fun updateServiceState() {
-        val running = AprsService.running
+        val running = eventBus.isServiceRunning.value
         _uiState.update {
             it.copy(
                 isRunning = running,
