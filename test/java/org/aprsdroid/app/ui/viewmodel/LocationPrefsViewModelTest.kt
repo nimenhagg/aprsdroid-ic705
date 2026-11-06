@@ -14,6 +14,7 @@ class LocationPrefsViewModelTest {
     private class FakePreferenceStore : AppPreferenceStore {
         private val stringMap = mutableMapOf<String, String>()
         private val boolMap = mutableMapOf<String, Boolean>()
+        private val setMap = mutableMapOf<String, Set<String>>()
 
         override fun getString(key: String, defValue: String?): String {
             return stringMap[key] ?: (defValue ?: "")
@@ -27,6 +28,10 @@ class LocationPrefsViewModelTest {
             return stringMap[key]?.toIntOrNull() ?: defValue
         }
 
+        override fun getStringSet(key: String, defValue: Set<String>): Set<String> {
+            return setMap[key] ?: defValue
+        }
+
         override fun set(name: String, newVal: String): String {
             stringMap[name] = newVal
             return newVal
@@ -35,6 +40,10 @@ class LocationPrefsViewModelTest {
         override fun set(name: String, newVal: Boolean): Boolean {
             boolMap[name] = newVal
             return newVal
+        }
+
+        override fun setStringSet(name: String, values: Set<String>) {
+            setMap[name] = values
         }
 
         override fun saveCredentials(callsign: String, passcode: String) {

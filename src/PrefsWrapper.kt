@@ -76,6 +76,14 @@ class PrefsWrapper(@JvmField val context: Context) : org.aprsdroid.app.data.pref
         }
     }
 
+    override fun getStringSet(key: String, defValue: Set<String>): Set<String> {
+        return prefs.getStringSet(key, defValue)?.toSet() ?: defValue
+    }
+
+    override fun setStringSet(name: String, values: Set<String>) {
+        prefs.edit { putStringSet(name, values) }
+    }
+
     fun getStringFloat(key: String, defValue: Float): Float {
         return try {
             prefs.getString(key, null)?.trim()?.toFloat() ?: defValue
@@ -275,11 +283,11 @@ class PrefsWrapper(@JvmField val context: Context) : org.aprsdroid.app.data.pref
     }
 
     fun getDigiPathPresets(): Set<String> {
-        return prefs.getStringSet("digi_path_user_presets", emptySet())?.toSet() ?: emptySet()
+        return getStringSet("digi_path_user_presets", emptySet())
     }
 
     fun saveDigiPathPresets(presets: Set<String>) {
-        prefs.edit { putStringSet("digi_path_user_presets", presets) }
+        setStringSet("digi_path_user_presets", presets)
     }
 
     override fun saveCredentials(callsign: String, passcode: String) {

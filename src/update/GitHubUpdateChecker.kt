@@ -11,7 +11,7 @@ import org.aprsdroid.app.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class AppVersion(
+data class AppVersion(
     val major: Int,
     val minor: Int,
     val patch: Int,
@@ -46,7 +46,7 @@ internal fun parseAppVersion(value: String): AppVersion? {
     )
 }
 
-internal sealed interface UpdateCheckResult {
+sealed interface UpdateCheckResult {
     data class UpToDate(val current: AppVersion, val latest: AppVersion) : UpdateCheckResult
     data class UpdateAvailable(
         val current: AppVersion,
@@ -108,7 +108,7 @@ internal fun findLatestCancryRelease(releasesJson: String): JSONObject? {
  * One-shot update checker. It never schedules work and never runs unless [check] is called.
  * Isolates official releases and debug canary releases into separate channels.
  */
-internal object GitHubUpdateChecker {
+object GitHubUpdateChecker {
     private const val LATEST_RELEASE_URL =
         "https://api.github.com/repos/nimenhagg/aprsdroid-ic705/releases/latest"
     private const val ALL_RELEASES_URL =

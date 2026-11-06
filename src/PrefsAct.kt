@@ -9,15 +9,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.core.content.edit
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -28,6 +32,10 @@ import org.aprsdroid.app.ui.component.AboutDialogContent
 import org.aprsdroid.app.ui.component.PasscodeDialogCompose
 import org.aprsdroid.app.ui.screen.SettingsScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
+import org.aprsdroid.app.ui.viewmodel.SettingsDialog
+import org.aprsdroid.app.ui.viewmodel.SettingsEffect
+import org.aprsdroid.app.ui.viewmodel.SettingsIntent
+import org.aprsdroid.app.ui.viewmodel.SettingsViewModel
 import org.aprsdroid.app.update.GitHubUpdateChecker
 import org.aprsdroid.app.update.UpdateCheckResult
 import org.json.JSONArray
@@ -81,32 +89,21 @@ class PrefsAct : ComponentActivity() {
 
     val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
 
-    private val callsignState = mutableStateOf("")
-    private val ssidState = mutableStateOf("10")
-    private val digiPathState = mutableStateOf("WIDE1-1")
-    private val userDigiPresetsState = mutableStateOf<Set<String>>(emptySet())
-    private val symbolState = mutableStateOf("/$")
-    private val frequencyState = mutableStateOf("")
-    private val statusState = mutableStateOf("")
-    private val backendNameState = mutableStateOf("")
-    private val locationSourceNameState = mutableStateOf("")
-    private val mapModeTagState = mutableStateOf("amap")
-    private val mapModeTitleState = mutableStateOf("")
-    private val mapCustomUrlState = mutableStateOf("")
-    private val mapCustomSubdomainsState = mutableStateOf("")
-    private val showObjectsState = mutableStateOf(true)
-    private val sendBatteryInfoState = mutableStateOf(false)
-    private val autoCheckUpdatesState = mutableStateOf(true)
-    private val stationTapActionState = mutableStateOf("message")
-    private val phgEnabledState = mutableStateOf(false)
-    private val phgPowerState = mutableStateOf("")
-    private val phgHeightState = mutableStateOf("")
-    private val phgHeightUnitState = mutableStateOf("m")
-    private val phgGainState = mutableStateOf("")
-    private val phgDirState = mutableStateOf("0")
-    private val identityDialogVisible = mutableStateOf(false)
-    private val aboutDialogVisible = mutableStateOf(false)
-    private val updateAvailableState = mutableStateOf<UpdateCheckResult.UpdateAvailable?>(null)
+    private val viewModel: SettingsViewModel by lazy {
+        ViewModelProvider(
+            this,
+            viewModelFactory {
+                initializer {
+                    SettingsViewModel(
+                        store = prefs,
+                        defaultStatus = getString(R.string.default_status),
+                        defaultMapTitle = getString(R.string.app_map),
+                    )
+                }
+            },
+        )[SettingsViewModel::class.java]
+    }
+
     private var updateCheckInFlight = false
 
     fun exportPrefs() {
@@ -123,6 +120,32 @@ class PrefsAct : ComponentActivity() {
 
         setContent {
             AprsTheme {
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                LaunchedEffect(viewModel) {
+                    viewModel.effect.collect { effect ->
+                        when (effect) {
+                            is SettingsEffect.DigiPresetAdded -> {
+                                Toast.makeText(
+                                    this@PrefsAct,
+                                    getString(R.string.digi_path_preset_saved, effect.preset),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                            is SettingsEffect.DigiPresetDeleted -> {
+                                Toast.makeText(
+                                    this@PrefsAct,
+                                    getString(R.string.digi_path_preset_deleted, effect.preset),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                            is SettingsEffect.TriggerManualUpdateCheck -> {
+                                checkForUpdatesManually()
+                            }
+                        }
+                    }
+                }
+
                 val availableMapModes = remember {
                     MapModes.all_mapmodes
                         .filter { it.isAvailable(this@PrefsAct) }
@@ -130,83 +153,61 @@ class PrefsAct : ComponentActivity() {
                 }
 
                 SettingsScreen(
-                    callsign = callsignState.value,
-                    ssid = ssidState.value,
-                    digiPath = digiPathState.value,
-                    userDigiPresets = userDigiPresetsState.value,
-                    symbol = symbolState.value,
-                    frequency = frequencyState.value,
-                    status = statusState.value,
-                    backendName = backendNameState.value,
-                    locationSourceName = locationSourceNameState.value,
-                    mapModeTag = mapModeTagState.value,
-                    mapModeTitle = mapModeTitleState.value,
+                    callsign = uiState.callsign,
+                    ssid = uiState.ssid,
+                    digiPath = uiState.digiPath,
+                    userDigiPresets = uiState.userDigiPresets,
+                    symbol = uiState.symbol,
+                    frequency = uiState.frequency,
+                    status = uiState.status,
+                    backendName = prefs.getBackendName(),
+                    locationSourceName = prefs.getLocationSourceName(),
+                    mapModeTag = uiState.mapModeTag,
+                    mapModeTitle = uiState.mapModeTitle.ifEmpty {
+                        MapModes.defaultMapMode(this, prefs).title ?: getString(R.string.app_map)
+                    },
                     mapModeOptions = availableMapModes,
-                    mapCustomUrl = mapCustomUrlState.value,
-                    mapCustomSubdomains = mapCustomSubdomainsState.value,
-                    showObjects = showObjectsState.value,
-                    sendBatteryInfo = sendBatteryInfoState.value,
-                    autoCheckUpdates = autoCheckUpdatesState.value,
-                    stationTapAction = stationTapActionState.value,
-                    phgEnabled = phgEnabledState.value,
-                    phgPower = phgPowerState.value,
-                    phgHeight = phgHeightState.value,
-                    phgHeightUnit = phgHeightUnitState.value,
-                    phgGain = phgGainState.value,
-                    phgDir = phgDirState.value,
+                    mapCustomUrl = uiState.mapCustomUrl,
+                    mapCustomSubdomains = uiState.mapCustomSubdomains,
+                    showObjects = uiState.showObjects,
+                    sendBatteryInfo = uiState.sendBatteryInfo,
+                    autoCheckUpdates = uiState.autoCheckUpdates,
+                    stationTapAction = uiState.stationTapAction,
+                    phgEnabled = uiState.phgEnabled,
+                    phgPower = uiState.phgPower,
+                    phgHeight = uiState.phgHeight,
+                    phgHeightUnit = uiState.phgHeightUnit,
+                    phgGain = uiState.phgGain,
+                    phgDir = uiState.phgDir,
                     onBack = { onBackPressedDispatcher.onBackPressed() },
                     onOpenCallsignDialog = {
-                        identityDialogVisible.value = true
+                        viewModel.onIntent(SettingsIntent.OpenIdentityDialog)
                     },
                     onSaveSsid = { newSsid ->
-                        prefs.set("ssid", newSsid)
-                        refreshPrefsState()
+                        viewModel.onIntent(SettingsIntent.SaveSsid(newSsid))
                     },
                     onSaveDigiPath = { newPath ->
-                        prefs.set("digi_path", newPath)
-                        refreshPrefsState()
+                        viewModel.onIntent(SettingsIntent.SaveDigiPath(newPath))
                     },
                     onAddDigiPreset = { preset ->
-                        val current = HashSet(prefs.getDigiPathPresets())
-                        current.add(preset)
-                        prefs.saveDigiPathPresets(current)
-                        userDigiPresetsState.value = current
-                        Toast.makeText(
-                            this@PrefsAct,
-                            getString(R.string.digi_path_preset_saved, preset),
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                        viewModel.onIntent(SettingsIntent.AddDigiPreset(preset))
                     },
                     onDeleteDigiPreset = { preset ->
-                        val current = HashSet(prefs.getDigiPathPresets())
-                        current.remove(preset)
-                        prefs.saveDigiPathPresets(current)
-                        userDigiPresetsState.value = current
-                        Toast.makeText(
-                            this@PrefsAct,
-                            getString(R.string.digi_path_preset_deleted, preset),
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                        viewModel.onIntent(SettingsIntent.DeleteDigiPreset(preset))
                     },
                     onOpenSymbolPicker = {
                         startActivity(Intent(this@PrefsAct, PrefSymbolAct::class.java))
                     },
                     onSaveFrequency = { value ->
-                        prefs.set("frequency", value.trim())
-                        refreshPrefsState()
+                        viewModel.onIntent(SettingsIntent.SaveFrequency(value))
                     },
                     onSaveStatus = { value ->
-                        prefs.set("status", value.take(42))
-                        refreshPrefsState()
+                        viewModel.onIntent(SettingsIntent.SaveStatus(value))
                     },
                     onSavePhg = { enabled, power, height, unit, gain, dir ->
-                        prefs.setPhgEnabled(enabled)
-                        prefs.setPhgPower(power)
-                        prefs.setPhgHeight(height)
-                        prefs.setPhgHeightUnit(unit)
-                        prefs.setPhgGain(gain)
-                        prefs.setPhgDir(dir)
-                        refreshPrefsState()
+                        viewModel.onIntent(
+                            SettingsIntent.SavePhg(enabled, power, height, unit, gain, dir)
+                        )
                     },
                     onOpenConnectionSetup = {
                         startActivity(Intent(this@PrefsAct, BackendPrefs::class.java))
@@ -216,31 +217,26 @@ class PrefsAct : ComponentActivity() {
                     },
                     onSaveMapMode = { tag ->
                         MapModes.setDefault(prefs, tag)
-                        refreshPrefsState()
+                        val title = MapModes.defaultMapMode(this, prefs).title ?: getString(R.string.app_map)
+                        viewModel.onIntent(SettingsIntent.SaveMapMode(tag, title))
                     },
                     onSaveMapCustomUrl = { value ->
-                        prefs.set("map_custom_url", value.trim())
-                        refreshPrefsState()
+                        viewModel.onIntent(SettingsIntent.SaveMapCustomUrl(value))
                     },
                     onSaveMapCustomSubdomains = { value ->
-                        prefs.set("map_custom_subdomains", value.trim())
-                        refreshPrefsState()
+                        viewModel.onIntent(SettingsIntent.SaveMapCustomSubdomains(value))
                     },
                     onToggleShowObjects = { enabled ->
-                        prefs.setBoolean("show_objects", enabled)
-                        showObjectsState.value = enabled
+                        viewModel.onIntent(SettingsIntent.ToggleShowObjects(enabled))
                     },
                     onToggleSendBatteryInfo = { enabled ->
-                        prefs.setBoolean("send_battery_aprsis", enabled)
-                        sendBatteryInfoState.value = enabled
+                        viewModel.onIntent(SettingsIntent.ToggleSendBatteryInfo(enabled))
                     },
                     onToggleAutoCheckUpdates = { enabled ->
-                        prefs.setAutoCheckUpdatesEnabled(enabled)
-                        autoCheckUpdatesState.value = enabled
+                        viewModel.onIntent(SettingsIntent.ToggleAutoCheckUpdates(enabled))
                     },
                     onSaveStationTapAction = { action ->
-                        prefs.set("station_tap_action", action)
-                        stationTapActionState.value = action
+                        viewModel.onIntent(SettingsIntent.SaveStationTapAction(action))
                     },
                     onOpenNotificationPrefs = {
                         startActivity(Intent(this@PrefsAct, NotificationSettingsActivity::class.java))
@@ -255,78 +251,73 @@ class PrefsAct : ComponentActivity() {
                         startActivity(Intent(this@PrefsAct, CreditsAndLinksActivity::class.java))
                     },
                     onOpenAbout = {
-                        aboutDialogVisible.value = true
+                        viewModel.onIntent(SettingsIntent.OpenAboutDialog)
                     },
                 )
 
-                if (identityDialogVisible.value) {
-                    PasscodeDialogCompose(
-                        initialCallsign = prefs.getCallsign(),
-                        initialPasscode = prefs.getString("passcode", ""),
-                        firstRun = false,
-                        onDismiss = {
-                            identityDialogVisible.value = false
-                            refreshPrefsState()
-                        },
-                        onSave = { call, pass ->
-                            prefs.prefs.edit {
-                                putString("callsign", call)
-                                putString("passcode", pass)
-                                putBoolean("firstrun", false)
-                            }
-                            identityDialogVisible.value = false
-                            refreshPrefsState()
-                        },
-                    )
-                }
-
-                if (aboutDialogVisible.value) {
-                    AboutDialogContent(
-                        onDismiss = { aboutDialogVisible.value = false },
-                        onOpenGithub = {
-                            UrlOpener.open(
-                                this@PrefsAct,
-                                "https://github.com/nimenhagg/aprsdroid-ic705",
-                            )
-                        },
-                    )
-                }
-
-                updateAvailableState.value?.let { update ->
-                    AlertDialog(
-                        onDismissRequest = { updateAvailableState.value = null },
-                        title = {
-                            Text(stringResource(R.string.update_available_title, update.latest))
-                        },
-                        text = {
-                            Text(
-                            stringResource(
-                                R.string.update_available_message,
-                                update.current,
-                                update.deviceArchitecture,
-                                update.releaseNotes,
-                            ),
-                            modifier = Modifier
-                                .heightIn(max = 400.dp)
-                                .verticalScroll(rememberScrollState()),
+                when (val dialog = uiState.activeDialog) {
+                    is SettingsDialog.Identity -> {
+                        PasscodeDialogCompose(
+                            initialCallsign = prefs.getCallsign(),
+                            initialPasscode = prefs.getString("passcode", ""),
+                            firstRun = false,
+                            onDismiss = {
+                                viewModel.onIntent(SettingsIntent.DismissDialog)
+                            },
+                            onSave = { call, pass ->
+                                viewModel.onIntent(SettingsIntent.SaveCredentials(call, pass))
+                            },
                         )
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    updateAvailableState.value = null
-                                    UrlOpener.open(this@PrefsAct, update.releaseUrl)
-                                },
-                            ) {
-                                Text(stringResource(R.string.update_open_release))
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { updateAvailableState.value = null }) {
-                                Text(stringResource(android.R.string.cancel))
-                            }
-                        },
-                    )
+                    }
+                    is SettingsDialog.About -> {
+                        AboutDialogContent(
+                            onDismiss = { viewModel.onIntent(SettingsIntent.DismissDialog) },
+                            onOpenGithub = {
+                                UrlOpener.open(
+                                    this@PrefsAct,
+                                    "https://github.com/nimenhagg/aprsdroid-ic705",
+                                )
+                            },
+                        )
+                    }
+                    is SettingsDialog.Update -> {
+                        val update = dialog.update
+                        AlertDialog(
+                            onDismissRequest = { viewModel.onIntent(SettingsIntent.DismissDialog) },
+                            title = {
+                                Text(stringResource(R.string.update_available_title, update.latest))
+                            },
+                            text = {
+                                Text(
+                                    stringResource(
+                                        R.string.update_available_message,
+                                        update.current,
+                                        update.deviceArchitecture,
+                                        update.releaseNotes,
+                                    ),
+                                    modifier = Modifier
+                                        .heightIn(max = 400.dp)
+                                        .verticalScroll(rememberScrollState()),
+                                )
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        viewModel.onIntent(SettingsIntent.DismissDialog)
+                                        UrlOpener.open(this@PrefsAct, update.releaseUrl)
+                                    },
+                                ) {
+                                    Text(stringResource(R.string.update_open_release))
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { viewModel.onIntent(SettingsIntent.DismissDialog) }) {
+                                    Text(stringResource(android.R.string.cancel))
+                                }
+                            },
+                        )
+                    }
+                    null -> Unit
                 }
             }
         }
@@ -334,7 +325,7 @@ class PrefsAct : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        refreshPrefsState()
+        viewModel.onIntent(SettingsIntent.RefreshState)
     }
 
     private fun checkForUpdatesManually() {
@@ -360,7 +351,7 @@ class PrefsAct : ComponentActivity() {
                             "manual_check_update_available",
                             mapOf("current" to result.current, "latest" to result.latest),
                         )
-                        updateAvailableState.value = result
+                        viewModel.onIntent(SettingsIntent.SetUpdateAvailable(result))
                     }
                     is UpdateCheckResult.Failure -> {
                         AppLog.w(
@@ -372,32 +363,5 @@ class PrefsAct : ComponentActivity() {
                 }
             }
         }
-    }
-
-    private fun refreshPrefsState() {
-        callsignState.value = prefs.getCallsign()
-        ssidState.value = prefs.getSsid()
-        digiPathState.value = prefs.getString("digi_path", "WIDE1-1")
-        userDigiPresetsState.value = prefs.getDigiPathPresets()
-        symbolState.value = prefs.getString("symbol", "/$")
-        frequencyState.value = prefs.getString("frequency", "")
-        statusState.value = prefs.getString("status", getString(R.string.default_status))
-        backendNameState.value = prefs.getBackendName()
-        locationSourceNameState.value = prefs.getLocationSourceName()
-        val mapMode = MapModes.defaultMapMode(this, prefs)
-        mapModeTagState.value = mapMode.tag
-        mapModeTitleState.value = mapMode.title ?: getString(R.string.app_map)
-        mapCustomUrlState.value = prefs.getString("map_custom_url", "")
-        mapCustomSubdomainsState.value = prefs.getString("map_custom_subdomains", "")
-        showObjectsState.value = prefs.getShowObjects()
-        sendBatteryInfoState.value = prefs.getSendBatteryAprsIs()
-        autoCheckUpdatesState.value = prefs.isAutoCheckUpdatesEnabled()
-        stationTapActionState.value = prefs.getStationTapAction()
-        phgEnabledState.value = prefs.getPhgEnabled()
-        phgPowerState.value = prefs.getPhgPower()
-        phgHeightState.value = prefs.getPhgHeight()
-        phgHeightUnitState.value = prefs.getPhgHeightUnit()
-        phgGainState.value = prefs.getPhgGain()
-        phgDirState.value = prefs.getPhgDir()
     }
 }
