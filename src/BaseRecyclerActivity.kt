@@ -52,13 +52,6 @@ abstract class BaseRecyclerActivity : ComponentActivity(), LoadingIndicator, Per
         ContextCompat.startForegroundService(this, AprsService.intent(this, action))
     }
 
-    fun replaceAct(act: Class<*>) {
-        val i = Intent(this, act)
-        i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        startActivity(i)
-        finish()
-    }
-
     override fun onStartLoading() {}
     override fun onStopLoading() {}
 
