@@ -9,46 +9,45 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import org.aprsdroid.app.model.LogPostItem
-import org.aprsdroid.app.model.StationItem
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import org.aprsdroid.app.data.repository.StationRepository
 import org.aprsdroid.app.ui.screen.StationDetailScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import org.aprsdroid.app.ui.viewmodel.StationViewModel
 
 class StationActivity : ComponentActivity() {
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     private val prefs: PrefsWrapper by lazy { PrefsWrapper(this) }
-    private val mycall: String by lazy { prefs.getCallSsid() }
-    private val refreshChannel = Channel<Unit>(Channel.CONFLATED)
+    private val myCall: String by lazy { prefs.getCallSsid() }
 
-    private val targetcall: String? by lazy {
+    private val targetCall: String? by lazy {
         intent.dataString?.removePrefix("call:")?.removePrefix("sms:")?.takeIf { it.isNotEmpty() }
             ?: intent.getStringExtra("call")
             ?: intent.getStringExtra("targetcall")
     }
 
-    private var currentStationItem by mutableStateOf<StationItem?>(null)
-    private var currentSsidList by mutableStateOf<List<StationItem>>(emptyList())
-    private var currentPostList by mutableStateOf<List<LogPostItem>>(emptyList())
-    private var myLatState by mutableIntStateOf(0)
-    private var myLonState by mutableIntStateOf(0)
+    private val viewModel: StationViewModel by lazy {
+        ViewModelProvider(
+            this,
+            viewModelFactory {
+                initializer {
+                    StationViewModel(StationRepository(storage))
+                }
+            },
+        )[StationViewModel::class.java]
+    }
 
     private val updateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val updatedCall = intent?.getStringExtra(StorageDatabase.Companion.Post.CALL)
                 ?: intent?.getStringExtra("call")
-            val target = targetcall
+            val target = targetCall
             if (updatedCall == null || target == null ||
                 updatedCall.equals(target, ignoreCase = true) ||
                 updatedCall.startsWith(target.split("-")[0], ignoreCase = true)
@@ -62,23 +61,17 @@ class StationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        lifecycleScope.launch(Dispatchers.Default) {
-            for (signal in refreshChannel) {
-                delay(250L) // 250ms batching window: fold bursts into a single query
-                while (refreshChannel.tryReceive().isSuccess) { /* fold concurrent bursts */ }
-                executeLoadData()
-            }
-        }
-
         setContent {
             AprsTheme {
+                val state by viewModel.uiState.collectAsStateWithLifecycle()
+
                 StationDetailScreen(
-                    targetCall = targetcall ?: getString(R.string.unknown_station),
-                    stationItem = currentStationItem,
-                    ssidList = currentSsidList,
-                    postList = currentPostList,
-                    myLat = myLatState,
-                    myLon = myLonState,
+                    targetCall = targetCall ?: getString(R.string.unknown_station),
+                    stationItem = state.stationItem,
+                    ssidList = state.ssidList,
+                    postList = state.postList,
+                    myLat = state.myLat,
+                    myLon = state.myLon,
                     onBack = { onBackPressedDispatcher.onBackPressed() },
                     onSendMessage = { call ->
                         UIHelper.openMessageChat(this, call)
@@ -99,11 +92,11 @@ class StationActivity : ComponentActivity() {
                         startActivity(intent)
                     },
                     onSelectSsid = { call ->
-                        if (!call.equals(targetcall, ignoreCase = true)) {
+                        if (!call.equals(targetCall, ignoreCase = true)) {
                             UIHelper.openCallsignDetails(this, call)
                             finish()
                         }
-                    }
+                    },
                 )
             }
         }
@@ -114,7 +107,12 @@ class StationActivity : ComponentActivity() {
     @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
-        ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_NOT_EXPORTED)
+        ContextCompat.registerReceiver(
+            this,
+            updateReceiver,
+            IntentFilter(AprsService.UPDATE),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         loadData()
     }
 
@@ -123,48 +121,8 @@ class StationActivity : ComponentActivity() {
         try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
     private fun loadData() {
-        if (targetcall != null) {
-            refreshChannel.trySend(Unit)
-        }
-    }
-
-    private suspend fun executeLoadData() {
-        val target = targetcall ?: return
-        val currentMyCall = mycall
-        withContext(Dispatchers.IO) {
-            var myLat = 0
-            var myLon = 0
-
-            val posCursor = storage.getStaPosition(currentMyCall)
-            if (posCursor.count > 0 && posCursor.moveToFirst()) {
-                val latIdx = posCursor.getColumnIndex(StorageDatabase.Companion.Station.LAT)
-                val lonIdx = posCursor.getColumnIndex(StorageDatabase.Companion.Station.LON)
-                if (latIdx >= 0) myLat = posCursor.getInt(latIdx)
-                if (lonIdx >= 0) myLon = posCursor.getInt(lonIdx)
-            }
-            posCursor.close()
-
-            val ssidCursor = storage.getAllSsids(target)
-            val ssidItems = StationItem.fromCursor(ssidCursor)
-
-            val postCursor = storage.getStaPosts(target, "300")
-            val postItems = LogPostItem.fromCursor(postCursor)
-
-            val targetItem = ssidItems.find { it.call.equals(target, ignoreCase = true) }
-                ?: ssidItems.firstOrNull()
-
-            withContext(Dispatchers.Main) {
-                myLatState = myLat
-                myLonState = myLon
-                currentStationItem = targetItem
-                currentSsidList = ssidItems
-                currentPostList = postItems
-            }
-        }
+        val target = targetCall ?: return
+        viewModel.requestRefresh(target, myCall)
     }
 }
