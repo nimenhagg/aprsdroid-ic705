@@ -29,10 +29,10 @@ internal fun postFollowUp(postType: Int): PostFollowUp = when (postType) {
  * while sequencing service and UI lifecycle actions back to the main thread (postToMain).
  */
 internal class ServicePostCoordinator(
-    val postToBackground: ((() -> Unit) -> Unit) = { task -> task() },
+    private val postToBackground: ((() -> Unit) -> Unit) = { task -> task() },
     private val postToMain: ((() -> Unit) -> Unit),
     private val connectionLoggingEnabled: () -> Boolean,
-    private val addPost: (postType: Int, statusId: Int, message: String) -> Unit,
+    private val addPost: (postType: Int, statusId: Int?, message: String) -> Unit,
     private val sendPendingMessages: () -> Unit,
     private val stopService: () -> Unit,
 ) {
@@ -48,6 +48,12 @@ internal class ServicePostCoordinator(
                 PostFollowUp.STOP_SERVICE -> postToMain { stopService() }
                 PostFollowUp.NONE -> Unit
             }
+        }
+    }
+
+    fun postInfo(message: String) {
+        postToBackground {
+            addPost(StorageDatabase.Companion.Post.TYPE_INFO, null, message)
         }
     }
 }

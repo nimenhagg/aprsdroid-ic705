@@ -243,7 +243,10 @@ class AprsService : Service() {
             postToBackground = { task -> dbExecutor.execute(task) },
             postToMain = { task -> handler.post { task() } },
             connectionLoggingEnabled = { serviceSettings.connectionLoggingEnabled },
-            addPost = { postType, statusId, message -> addPost(postType, statusId, message) },
+            addPost = { postType, statusId, message ->
+                if (statusId != null) addPost(postType, statusId, message)
+                else addPost(postType, null as String?, message)
+            },
             sendPendingMessages = { msgService.sendPendingMessages() },
             stopService = { stopSelf() },
         )
@@ -364,9 +367,7 @@ class AprsService : Service() {
 
     fun showToast(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        servicePostCoordinator.postToBackground {
-            addPost(StorageDatabase.Companion.Post.TYPE_INFO, null, msg)
-        }
+        servicePostCoordinator.postInfo(msg)
     }
 
     override fun onDestroy() {

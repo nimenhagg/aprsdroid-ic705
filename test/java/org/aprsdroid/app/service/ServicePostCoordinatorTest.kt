@@ -102,6 +102,22 @@ class ServicePostCoordinatorTest {
         )
     }
 
+    @Test
+    fun postInfoDispatchesBackgroundDirectly() {
+        val events = mutableListOf<String>()
+        val coordinator = coordinator(events, loggingEnabled = false)
+
+        coordinator.postInfo("direct-info")
+
+        assertEquals(
+            listOf(
+                "bg",
+                "add:1:null:direct-info",
+            ),
+            events,
+        )
+    }
+
     private fun coordinator(
         events: MutableList<String>,
         loggingEnabled: Boolean,
