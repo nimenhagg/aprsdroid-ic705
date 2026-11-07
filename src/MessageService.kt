@@ -66,12 +66,6 @@ class MessageService(val s: AprsService) {
             )
         )
 
-        s.sendBroadcast(
-            AprsService.privateIntent(s, AprsService.MESSAGE)
-                .putExtra(AprsService.SOURCE, srccall)
-                .putExtra(AprsService.DEST, msg.targetCallsign)
-                .putExtra(AprsService.BODY, msg.messageBody)
-        )
     }
 
     fun handleMessage(ts: Long, ap: APRSPacket, parsedMsg: MessagePacket) {
@@ -95,7 +89,6 @@ class MessageService(val s: AprsService) {
                         timestamp = ts,
                     )
                 )
-                s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
             } else {
                 parsed.replyAck?.let { replyAck ->
                     if (replyAck.isNotEmpty()) {
@@ -113,7 +106,6 @@ class MessageService(val s: AprsService) {
                                 timestamp = ts,
                             )
                         )
-                        s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                     }
                 }
 
@@ -180,7 +172,6 @@ class MessageService(val s: AprsService) {
                                     timestamp = System.currentTimeMillis(),
                                 )
                             )
-                            s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                         }
                     }
                     PendingMessageAction.SEND -> {
@@ -203,7 +194,6 @@ class MessageService(val s: AprsService) {
                                     timestamp = System.currentTimeMillis(),
                                 )
                             )
-                            s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                         }
                         nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
                     }

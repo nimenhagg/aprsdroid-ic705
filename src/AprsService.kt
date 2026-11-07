@@ -140,7 +140,7 @@ class AprsService : Service() {
 
     private fun notifyLiveStatusChanged() {
         ServiceEventBus.updateLiveStatus(ServiceNotifier.instance.currentLiveStatus())
-        sendBroadcast(privateIntent(this, LIVE_STATUS))
+
     }
 
     private fun startNotifier(status: String, activity: LiveActivity) {
@@ -203,26 +203,8 @@ class AprsService : Service() {
             onMessage = { ts, packet, message ->
                 msgService.handleMessage(ts, packet, message)
             },
-            onPositionPersisted = { ts, packet, position, courseAndSpeed, objectName ->
-                sendBroadcast(
-                    privateIntent(this, POSITION)
-                        .putExtra(SOURCE, packet.sourceCall)
-                        .putExtra(
-                            LOCATION,
-                            AprsPacket.position2location(ts, position, courseAndSpeed) as android.os.Parcelable
-                        )
-                        .putExtra(CALLSIGN, objectName ?: packet.sourceCall)
-                        .putExtra(PACKET, packet.toString())
-                )
-            },
-            onPostUpdated = { postType, message, call ->
-                sendBroadcast(
-                    privateIntent(this, UPDATE)
-                        .putExtra(TYPE, postType)
-                        .putExtra(STATUS, message)
-                        .apply { if (call != null) putExtra(StorageDatabase.Companion.Post.CALL, call) }
-                )
-            },
+            onPositionPersisted = { _, _, _, _, _ -> },
+            onPostUpdated = { _, _, _ -> },
             onLogOnly = { status, message ->
                 Log.d(TAG, "addPost: $status - $message")
             },
@@ -533,14 +515,14 @@ class AprsService : Service() {
 
     fun postLinkOn(link: Int) {
         serviceRuntimeState.markLinkOn()
-        sendBroadcast(privateIntent(this, LINK_ON).putExtra(LINK_INFO, link))
+
         val message = getString(R.string.status_linkon, getString(link))
         startNotifier(message, LiveActivity.READY)
     }
 
     fun postLinkOff(link: Int) {
         serviceRuntimeState.markLinkOff(link)
-        sendBroadcast(privateIntent(this, LINK_OFF).putExtra(LINK_INFO, link))
+
         val message = getString(R.string.status_linkoff, getString(link))
         startNotifier(message, LiveActivity.RECONNECTING)
     }
