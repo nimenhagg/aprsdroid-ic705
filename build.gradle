@@ -257,6 +257,68 @@ tasks.register('verifyArchitecture') {
 					}
 				}
 			}
+
+			// Rule 4 (Strict): src/ui/** must not contain string-based Activity lookups or navigation
+			if (uiDir.exists()) {
+				uiDir.eachFileRecurse(groovy.io.FileType.FILES) { file ->
+					if (file.name.endsWith('.kt')) {
+						file.eachLine { line, lineNum ->
+							if (line =~ /simpleName\s*==\s*["'][A-Za-z0-9]*(?:Activity|Act)["']|setClassName\s*\(|Class\.forName\s*\(/) {
+								violations << "Rule 4 (String-based Activity check/navigation in UI): ${file.name}:${lineNum} -> ${line.trim()}"
+							}
+						}
+					}
+				}
+			}
+
+			// Rule 5 (Strict): src/** must not contain test hook method definitions
+			if (srcDir.exists()) {
+				srcDir.eachFileRecurse(groovy.io.FileType.FILES) { file ->
+					if (file.name.endsWith('.kt')) {
+						file.eachLine { line, lineNum ->
+							if (line =~ /fun\s+(?:[A-Za-z0-9]*ForTest[A-Za-z0-9]*|resetState|resetCache|clearAllState)\s*\(/) {
+								violations << "Rule 5 (Test hook in production API): ${file.name}:${lineNum} -> ${line.trim()}"
+							}
+						}
+					}
+				}
+			}
+
+			// Rule 6 (Strict): src/**/ui/viewmodel/*.kt constructors must not contain CoroutineScope
+			def vmDir = new File("src/ui/viewmodel")
+			if (vmDir.exists()) {
+				vmDir.eachFileRecurse(groovy.io.FileType.FILES) { file ->
+					if (file.name.endsWith('.kt')) {
+						def text = file.text
+						def matcher = text =~ /(?:class\s+[A-Za-z0-9]+[^(]*\(([^)]*)\)|constructor\s*\(([^)]*)\))/
+						while (matcher.find()) {
+							def params = (matcher.group(1) ?: "") + (matcher.group(2) ?: "")
+							if (params =~ /\bCoroutineScope\b/) {
+								def foundLine = 1
+								file.eachLine { l, num ->
+									if (l =~ /\bCoroutineScope\b/ && !l.trim().startsWith("import")) {
+										foundLine = num
+									}
+								}
+								violations << "Rule 6 (CoroutineScope in ViewModel constructor): ${file.name}:${foundLine} -> ${file.name}"
+							}
+						}
+					}
+				}
+			}
+
+			// Rule 7 (Strict): test/** must not contain Thread.sleep, parkNanos, Thread.onSpinWait, or LockSupport
+			if (testDir.exists()) {
+				testDir.eachFileRecurse(groovy.io.FileType.FILES) { file ->
+					if (file.name.endsWith('.kt')) {
+						file.eachLine { line, lineNum ->
+							if (line =~ /(Thread\.sleep|parkNanos|Thread\.onSpinWait|LockSupport)/) {
+								violations << "Rule 7 (Forbidden thread blocking/spinning in test): ${file.name}:${lineNum} -> ${line.trim()}"
+							}
+						}
+					}
+				}
+			}
 		}
 
 		if (!violations.isEmpty()) {

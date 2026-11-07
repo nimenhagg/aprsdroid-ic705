@@ -43,7 +43,7 @@ class Ic705PttStateMachineTest {
 
     private fun waitUntil(timeoutMs: Long = 1_000L, condition: () -> Boolean) {
         val deadline = System.nanoTime() + timeoutMs * 1_000_000L
-        while (!condition() && System.nanoTime() < deadline) java.util.concurrent.locks.LockSupport.parkNanos(5_000_000L)
+        while (!condition() && System.nanoTime() < deadline) Thread.yield()
         assertTrue("condition was not met within ${timeoutMs}ms", condition())
     }
 
@@ -87,7 +87,7 @@ class Ic705PttStateMachineTest {
             if (sm.state != Ic705PttState.RX_IDLE) {
                 sm.onCivReceived(pttStatusFrame(transmitting = false))
             }
-            if (sm.state != Ic705PttState.RX_IDLE) java.util.concurrent.locks.LockSupport.parkNanos(2_000_000L)
+            if (sm.state != Ic705PttState.RX_IDLE) Thread.yield()
         }
         assertEquals("radio release was not confirmed within ${timeoutMs}ms", Ic705PttState.RX_IDLE, sm.state)
     }
@@ -201,7 +201,7 @@ class Ic705PttStateMachineTest {
             assertTrue(sm.isRadioPttOn)
             assertFalse(sm.beginTransmission())
 
-            java.util.concurrent.locks.LockSupport.parkNanos(100_000_000L)
+            java.util.concurrent.CountDownLatch(1).await(100, java.util.concurrent.TimeUnit.MILLISECONDS)
             assertEquals(attemptsAtShutdown, actions.civSendAttempts.get())
             assertEquals(Ic705PttState.DRAINING, sm.state)
             assertTrue(sm.isRadioPttOn)

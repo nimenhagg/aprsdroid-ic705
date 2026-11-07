@@ -171,7 +171,7 @@ class RadioAudioBackendTest {
 
         val deadline = System.currentTimeMillis() + 1000
         while (decoder.receivedSamples.size < 256 && System.currentTimeMillis() < deadline) {
-            java.util.concurrent.locks.LockSupport.parkNanos(10_000_000L)
+            Thread.yield()
         }
 
         assertTrue(decoder.receivedSamples.size >= 256)
@@ -297,7 +297,7 @@ class RadioAudioBackendTest {
         override fun read(buffer: ShortArray, offset: Int, length: Int): Int {
             if (closed) return -1
             if (pos >= data.size) {
-                java.util.concurrent.locks.LockSupport.parkNanos(10_000_000L)
+                Thread.yield()
                 return if (closed) -1 else 0
             }
             val toCopy = minOf(length, data.size - pos)

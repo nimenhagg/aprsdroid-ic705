@@ -29,19 +29,19 @@ data class AprsMessageEvent(
  * Eliminates reliance on untyped Android BroadcastReceivers for intra-app communication.
  */
 open class ServiceEventBus {
-    private val _isServiceRunning = MutableStateFlow(false)
+    internal val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
 
-    private val _linkError = MutableStateFlow(0)
+    internal val _linkError = MutableStateFlow(0)
     val linkError: StateFlow<Int> = _linkError.asStateFlow()
 
-    private val _liveStatus = MutableStateFlow<ServiceLiveStatus?>(null)
+    internal val _liveStatus = MutableStateFlow<ServiceLiveStatus?>(null)
     val liveStatus: StateFlow<ServiceLiveStatus?> = _liveStatus.asStateFlow()
 
-    private val _packetEvents = MutableSharedFlow<AprsPacketEvent>(replay = 1, extraBufferCapacity = 64)
+    internal val _packetEvents = MutableSharedFlow<AprsPacketEvent>(replay = 1, extraBufferCapacity = 64)
     val packetEvents: SharedFlow<AprsPacketEvent> = _packetEvents.asSharedFlow()
 
-    private val _messageEvents = MutableSharedFlow<AprsMessageEvent>(replay = 1, extraBufferCapacity = 64)
+    internal val _messageEvents = MutableSharedFlow<AprsMessageEvent>(replay = 1, extraBufferCapacity = 64)
     val messageEvents: SharedFlow<AprsMessageEvent> = _messageEvents.asSharedFlow()
 
     fun updateServiceRunning(running: Boolean) {
@@ -64,14 +64,7 @@ open class ServiceEventBus {
         _messageEvents.tryEmit(event)
     }
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    internal fun resetState() {
-        _isServiceRunning.value = false
-        _linkError.value = 0
-        _liveStatus.value = null
-        _packetEvents.resetReplayCache()
-        _messageEvents.resetReplayCache()
-    }
+
 
     companion object : ServiceEventBus()
 }

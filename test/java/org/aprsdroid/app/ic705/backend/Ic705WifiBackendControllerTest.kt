@@ -396,7 +396,7 @@ class Ic705WifiBackendControllerTest {
         session.closeHandler = { onClosed ->
             Thread {
                 try {
-                    java.util.concurrent.locks.LockSupport.parkNanos(25_000_000L)
+                    CountDownLatch(1).await(25, TimeUnit.MILLISECONDS)
                 } catch (_: InterruptedException) {
                     Thread.currentThread().interrupt()
                 }
