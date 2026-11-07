@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
@@ -55,6 +56,11 @@ import org.aprsdroid.app.ui.navigation.MainRoutes
 import org.aprsdroid.app.ui.navigation.navigateTopLevel
 import org.aprsdroid.app.ui.screen.ConversationsScreen
 import org.aprsdroid.app.ui.screen.EmbeddedMapScreen
+import org.aprsdroid.app.ui.screen.EmbeddedMapUiState
+import org.aprsdroid.app.ui.screen.EmbeddedMapIntent
+import org.aprsdroid.app.ui.screen.OfflineMapDownloadArea
+import org.aprsdroid.app.map.OnlineTileSources
+import androidx.core.net.toUri
 import org.aprsdroid.app.ui.screen.HubStationScreen
 import org.aprsdroid.app.ui.screen.LogScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
@@ -141,6 +147,20 @@ class HubActivity : BaseRecyclerActivity() {
                 val conversationsState = conversationsViewModel.uiState.collectAsStateWithLifecycle().value
                 val logState = logViewModel.uiState.collectAsStateWithLifecycle().value
                 val mapState = mapViewModel.uiState.collectAsStateWithLifecycle().value
+                val embeddedMapState = remember {
+                    MapModes.initialize(this@HubActivity)
+                    mutableStateOf(
+                        EmbeddedMapUiState(
+                            mapModes = MapModes.all_mapmodes.filter { it.isAvailable(this@HubActivity) },
+                            currentMode = MapModes.defaultMapMode(this@HubActivity, prefs),
+                            latitude = prefs.prefs.getFloat("map_lat", 0f),
+                            longitude = prefs.prefs.getFloat("map_lon", 0f),
+                            zoom = prefs.prefs.getFloat("map_zoom", 12f),
+                            customTileUrl = prefs.getString("map_custom_url", OnlineTileSources.AMAP_TILE_URL),
+                            customTileSubdomains = prefs.getString("map_custom_subdomains", OnlineTileSources.AMAP_SUBDOMAINS),
+                        )
+                    )
+                }
                 val navController = rememberNavController()
                 val currentBackStackEntry by navController.currentBackStackEntryAsState()
                 val selectedRoute = currentBackStackEntry?.destination?.route
@@ -215,14 +235,37 @@ class HubActivity : BaseRecyclerActivity() {
 
                             composable(MainRoutes.MAP) {
                                 EmbeddedMapScreen(
-                                    prefs = prefs,
+                                    state = embeddedMapState.value,
+                                    onIntent = { intent ->
+                                        when (intent) {
+                                            is EmbeddedMapIntent.SelectMapMode -> {
+                                                MapModes.setDefault(prefs, intent.mode.tag)
+                                                embeddedMapState.value = embeddedMapState.value.copy(currentMode = intent.mode)
+                                            }
+                                            is EmbeddedMapIntent.ToggleShowObjects -> {
+                                                prefs.setBoolean("show_objects", intent.enabled)
+                                                mapViewModel.refresh(intent.enabled)
+                                            }
+                                            is EmbeddedMapIntent.SaveMapPosition -> {
+                                                prefs.prefs.edit {
+                                                    putFloat("map_lat", intent.latitude.toFloat())
+                                                    putFloat("map_lon", intent.longitude.toFloat())
+                                                    putFloat("map_zoom", intent.zoom)
+                                                }
+                                                embeddedMapState.value = embeddedMapState.value.copy(
+                                                    latitude = intent.latitude.toFloat(),
+                                                    longitude = intent.longitude.toFloat(),
+                                                    zoom = intent.zoom,
+                                                )
+                                            }
+                                        }
+                                    },
                                     stations = mapState.stations,
                                     dataLoading = mapState.isLoading,
                                     showObjects = mapState.showObjects,
                                     myLat = hubState.myLat,
                                     myLon = hubState.myLon,
                                     currentLocation = mapCurrentLocation.value,
-                                    onShowObjectsChanged = { showObjects -> mapViewModel.refresh(showObjects) },
                                     onStationClick = { call ->
                                         showMapStation(call) { target -> openMessaging(target) }
                                     },
@@ -239,6 +282,12 @@ class HubActivity : BaseRecyclerActivity() {
                                         }.execute()
                                     },
                                     onRequestCurrentLocation = { requestMapCurrentLocation() },
+                                    onOpenGithub = {
+                                        startActivity(Intent(Intent.ACTION_VIEW, "https://github.com/nimenhagg/aprsdroid-ic705".toUri()))
+                                    },
+                                    onOpenOsmAttribution = {
+                                        UrlOpener.open(this@HubActivity, getString(R.string.map_osm_copyright_url))
+                                    },
                                     onOpenOfflineMaps = { area ->
                                         startActivity(
                                             Intent(this@HubActivity, MapOfflineActivity::class.java).apply {

@@ -1,7 +1,6 @@
 package org.aprsdroid.app.ui.screen
 
 import android.content.Context
-import android.content.Intent
 import android.location.Location
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -22,11 +21,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.edit
 import androidx.core.graphics.createBitmap
-import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -43,14 +41,12 @@ import com.google.gson.JsonObject
 import org.aprsdroid.app.MapMode
 import org.aprsdroid.app.MapModes
 import org.aprsdroid.app.MapTileType
-import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.R
 import org.aprsdroid.app.map.MapStation
 import org.aprsdroid.app.map.StationFeature
 import org.aprsdroid.app.map.StationMapIconRenderer
 import org.aprsdroid.app.map.StationImage
 import org.aprsdroid.app.map.stationImages
-import org.aprsdroid.app.UrlOpener
 import org.aprsdroid.app.map.OnlineTileSources
 import org.aprsdroid.app.map.TileUrlTemplate
 import org.aprsdroid.app.ui.component.AboutDialogContent
@@ -96,52 +92,62 @@ data class OfflineMapDownloadArea(
     val name: String,
 )
 
+data class EmbeddedMapUiState(
+    val mapModes: List<MapMode>,
+    val currentMode: MapMode,
+    val latitude: Float,
+    val longitude: Float,
+    val zoom: Float,
+    val customTileUrl: String,
+    val customTileSubdomains: String,
+)
+
+sealed interface EmbeddedMapIntent {
+    data class SelectMapMode(val mode: MapMode) : EmbeddedMapIntent
+    data class ToggleShowObjects(val enabled: Boolean) : EmbeddedMapIntent
+    data class SaveMapPosition(val latitude: Double, val longitude: Double, val zoom: Float) : EmbeddedMapIntent
+}
+
 @Composable
 fun EmbeddedMapScreen(
-    prefs: PrefsWrapper,
+    state: EmbeddedMapUiState,
+    onIntent: (EmbeddedMapIntent) -> Unit,
     stations: List<MapStation>,
     dataLoading: Boolean,
     showObjects: Boolean,
     myLat: Int,
     myLon: Int,
     currentLocation: Location?,
-    onShowObjectsChanged: (Boolean) -> Unit,
     onStationClick: (String) -> Unit,
     onBack: () -> Unit,
     onOpenPackets: () -> Unit,
     onOpenSettings: () -> Unit,
     onClearLogs: () -> Unit,
     onRequestCurrentLocation: () -> Unit,
-    onOpenOfflineMaps: (OfflineMapDownloadArea) -> Unit
+    onOpenOfflineMaps: (OfflineMapDownloadArea) -> Unit,
+    onOpenGithub: () -> Unit,
+    onOpenOsmAttribution: () -> Unit,
 ) {
-    val context = LocalContext.current
-    MapModes.initialize(context)
-
-    var currentMode by remember { mutableStateOf(MapModes.defaultMapMode(context, prefs)) }
-    val availableMapModes = remember(context) { MapModes.all_mapmodes.filter { it.isAvailable(context) } }
+    var currentMode by remember(state.currentMode) { mutableStateOf(state.currentMode) }
+    val availableMapModes = state.mapModes
     var rendererLoading by remember(currentMode.tag) { mutableStateOf(true) }
     var showAboutDialog by remember { mutableStateOf(false) }
     val actions = remember { EmbeddedMapActions() }
 
     MapScreen(
-        title = currentMode.title ?: context.getString(R.string.app_map),
+        title = currentMode.title ?: stringResource(R.string.app_map),
         embeddedTopLevel = true,
         isLoading = dataLoading || rendererLoading,
         showOsmAttribution = currentMode.tileType == MapTileType.OSM,
-        onOsmAttributionClick = {
-            UrlOpener.open(context, context.getString(R.string.map_osm_copyright_url))
-        },
+        onOsmAttributionClick = onOpenOsmAttribution,
         availableMapModes = availableMapModes,
         currentMapMode = currentMode,
         showObjects = showObjects,
-        onToggleShowObjects = {
-            val newValue = prefs.toggleBoolean("show_objects", true)
-            onShowObjectsChanged(newValue)
-        },
+        onToggleShowObjects = { onIntent(EmbeddedMapIntent.ToggleShowObjects(!showObjects)) },
         onSelectMapMode = { mode ->
             if (mode.tag != currentMode.tag) {
                 actions.savePosition()
-                MapModes.setDefault(prefs, mode.tag)
+                onIntent(EmbeddedMapIntent.SelectMapMode(mode))
                 rendererLoading = true
                 currentMode = mode
             }
@@ -161,7 +167,7 @@ fun EmbeddedMapScreen(
                 MapTileType.OSM,
                 MapTileType.CUSTOM -> MapLibreEmbeddedRenderer(
                     mode = currentMode,
-                    prefs = prefs,
+                    state = state,
                     stations = stations,
                     myLat = myLat,
                     myLon = myLon,
@@ -169,13 +175,13 @@ fun EmbeddedMapScreen(
                     actions = actions,
                     onStationClick = onStationClick,
                     onLoadingChanged = { rendererLoading = it },
-                    onOpenOfflineMaps = onOpenOfflineMaps
+                    onOpenOfflineMaps = onOpenOfflineMaps,
+                    onSavePosition = { lat, lon, zoom -> onIntent(EmbeddedMapIntent.SaveMapPosition(lat, lon, zoom)) }
                 )
 
                 MapTileType.GOOGLE_NORMAL,
                 MapTileType.GOOGLE_HYBRID -> GoogleEmbeddedRenderer(
-                    mode = currentMode,
-                    prefs = prefs,
+                    state = state,
                     stations = stations,
                     myLat = myLat,
                     myLon = myLon,
@@ -183,7 +189,8 @@ fun EmbeddedMapScreen(
                     actions = actions,
                     onStationClick = onStationClick,
                     onLoadingChanged = { rendererLoading = it },
-                    onOpenOfflineMaps = onOpenOfflineMaps
+                    onOpenOfflineMaps = onOpenOfflineMaps,
+                    onSavePosition = { lat, lon, zoom -> onIntent(EmbeddedMapIntent.SaveMapPosition(lat, lon, zoom)) }
                 )
             }
         }
@@ -192,14 +199,7 @@ fun EmbeddedMapScreen(
     if (showAboutDialog) {
         AboutDialogContent(
             onDismiss = { showAboutDialog = false },
-            onOpenGithub = {
-                context.startActivity(
-                    android.content.Intent(
-                        android.content.Intent.ACTION_VIEW,
-                        "https://github.com/nimenhagg/aprsdroid-ic705".toUri()
-                    )
-                )
-            }
+            onOpenGithub = onOpenGithub
         )
     }
 }
@@ -214,7 +214,7 @@ private class EmbeddedMapActions {
 @Composable
 private fun MapLibreEmbeddedRenderer(
     mode: MapMode,
-    prefs: PrefsWrapper,
+    state: EmbeddedMapUiState,
     stations: List<MapStation>,
     myLat: Int,
     myLon: Int,
@@ -222,7 +222,8 @@ private fun MapLibreEmbeddedRenderer(
     actions: EmbeddedMapActions,
     onStationClick: (String) -> Unit,
     onLoadingChanged: (Boolean) -> Unit,
-    onOpenOfflineMaps: (OfflineMapDownloadArea) -> Unit
+    onOpenOfflineMaps: (OfflineMapDownloadArea) -> Unit,
+    onSavePosition: (Double, Double, Float) -> Unit,
 ) {
     val context = LocalContext.current
     val latestStationClick = rememberUpdatedState(onStationClick)
@@ -268,7 +269,7 @@ private fun MapLibreEmbeddedRenderer(
     LaunchedEffect(map, stations) {
         val mapLibreMap = map ?: return@LaunchedEffect
         if (!cameraInitialized) {
-            val initial = initialPosition(prefs, stations)
+            val initial = initialPosition(state, stations)
             mapLibreMap.moveCamera(
                 MapLibreCameraUpdateFactory.newLatLngZoom(
                     MapLibreLatLng(initial.lat, initial.lon),
@@ -284,7 +285,7 @@ private fun MapLibreEmbeddedRenderer(
         readyStyle = null
         map?.let { mapLibreMap ->
             onLoadingChanged(true)
-            applyMapLibreRasterStyle(context, mapLibreMap, mode, prefs) { style ->
+            applyMapLibreRasterStyle(context, mapLibreMap, mode, state) { style ->
                 if (active) {
                     readyStyle = style
                     onLoadingChanged(false)
@@ -322,7 +323,7 @@ private fun MapLibreEmbeddedRenderer(
         val camera = map?.cameraPosition
         val target = camera?.target
         if (camera != null && target != null) {
-            savePosition(prefs, target.latitude, target.longitude, camera.zoom.toFloat())
+            onSavePosition(target.latitude, target.longitude, camera.zoom.toFloat())
         }
     }
     actions.openOffline = {
@@ -332,9 +333,8 @@ private fun MapLibreEmbeddedRenderer(
         if (mapLibreMap != null && bounds != null && zoom != null) {
             val tileUrls = if (mode.tileType == MapTileType.CUSTOM) {
                 TileUrlTemplate.expand(
-                    prefs.getString("map_custom_url", OnlineTileSources.AMAP_TILE_URL).trim()
-                        .ifEmpty { OnlineTileSources.AMAP_TILE_URL },
-                    prefs.getString("map_custom_subdomains", OnlineTileSources.AMAP_SUBDOMAINS).trim()
+                    state.customTileUrl.trim().ifEmpty { OnlineTileSources.AMAP_TILE_URL },
+                    state.customTileSubdomains.trim()
                 )
             } else {
                 emptyArray()
@@ -366,8 +366,7 @@ private fun MapLibreEmbeddedRenderer(
 
 @Composable
 private fun GoogleEmbeddedRenderer(
-    mode: MapMode,
-    prefs: PrefsWrapper,
+    state: EmbeddedMapUiState,
     stations: List<MapStation>,
     myLat: Int,
     myLon: Int,
@@ -375,7 +374,8 @@ private fun GoogleEmbeddedRenderer(
     actions: EmbeddedMapActions,
     onStationClick: (String) -> Unit,
     onLoadingChanged: (Boolean) -> Unit,
-    onOpenOfflineMaps: (OfflineMapDownloadArea) -> Unit
+    onOpenOfflineMaps: (OfflineMapDownloadArea) -> Unit,
+    onSavePosition: (Double, Double, Float) -> Unit,
 ) {
     val context = LocalContext.current
     val latestStationClick = rememberUpdatedState(onStationClick)
@@ -415,12 +415,7 @@ private fun GoogleEmbeddedRenderer(
             }
             googleMap.setOnCameraIdleListener {
                 val camera = googleMap.cameraPosition
-                savePosition(
-                    prefs,
-                    camera.target.latitude,
-                    camera.target.longitude,
-                    camera.zoom
-                )
+                onSavePosition(camera.target.latitude, camera.target.longitude, camera.zoom)
             }
             map = googleMap
         }
@@ -429,7 +424,7 @@ private fun GoogleEmbeddedRenderer(
     LaunchedEffect(map, stations) {
         val googleMap = map ?: return@LaunchedEffect
         if (!cameraInitialized) {
-            val initial = initialPosition(prefs, stations)
+            val initial = initialPosition(state, stations)
             googleMap.moveCamera(
                 GoogleCameraUpdateFactory.newLatLngZoom(
                     GoogleLatLng(initial.lat, initial.lon),
@@ -440,10 +435,10 @@ private fun GoogleEmbeddedRenderer(
         }
     }
 
-    LaunchedEffect(map, mode.tag) {
+    LaunchedEffect(map, state.currentMode.tag) {
         val googleMap = map ?: return@LaunchedEffect
         onLoadingChanged(true)
-        googleMap.mapType = when (mode.tileType) {
+        googleMap.mapType = when (state.currentMode.tileType) {
             MapTileType.GOOGLE_HYBRID -> GoogleMap.MAP_TYPE_HYBRID
             else -> GoogleMap.MAP_TYPE_NORMAL
         }
@@ -510,7 +505,7 @@ private fun GoogleEmbeddedRenderer(
 
     actions.savePosition = {
         map?.cameraPosition?.let { camera ->
-            savePosition(prefs, camera.target.latitude, camera.target.longitude, camera.zoom)
+            onSavePosition(camera.target.latitude, camera.target.longitude, camera.zoom)
         }
     }
 
@@ -588,7 +583,7 @@ private fun applyMapLibreRasterStyle(
     context: Context,
     map: MapLibreMap,
     mode: MapMode,
-    prefs: PrefsWrapper,
+    state: EmbeddedMapUiState,
     onStyleReady: (Style) -> Unit
 ) {
     val config = when (mode.tileType) {
@@ -605,9 +600,8 @@ private fun applyMapLibreRasterStyle(
             context.getString(R.string.map_osm_attribution)
         )
         MapTileType.CUSTOM -> TileConfiguration(
-            prefs.getString("map_custom_url", OnlineTileSources.AMAP_TILE_URL).trim()
-                .ifEmpty { OnlineTileSources.AMAP_TILE_URL },
-            prefs.getString("map_custom_subdomains", OnlineTileSources.AMAP_SUBDOMAINS).trim(),
+            state.customTileUrl.trim().ifEmpty { OnlineTileSources.AMAP_TILE_URL },
+            state.customTileSubdomains.trim(),
             19f,
             null
         )
@@ -748,10 +742,10 @@ private fun handleMapLibreTap(
 
 private data class InitialPosition(val lat: Double, val lon: Double, val zoom: Float)
 
-private fun initialPosition(prefs: PrefsWrapper, stations: List<MapStation>): InitialPosition {
-    val savedLat = prefs.prefs.getFloat("map_lat", 0f)
-    val savedLon = prefs.prefs.getFloat("map_lon", 0f)
-    val zoom = prefs.prefs.getFloat("map_zoom", 12f)
+private fun initialPosition(state: EmbeddedMapUiState, stations: List<MapStation>): InitialPosition {
+    val savedLat = state.latitude
+    val savedLon = state.longitude
+    val zoom = state.zoom
     if (savedLat != 0f || savedLon != 0f) {
         return InitialPosition(savedLat.toDouble(), savedLon.toDouble(), zoom)
     }
@@ -760,14 +754,6 @@ private fun initialPosition(prefs: PrefsWrapper, stations: List<MapStation>): In
         InitialPosition(first.lat, first.lon, zoom)
     } else {
         InitialPosition(39.9042, 116.4074, zoom)
-    }
-}
-
-private fun savePosition(prefs: PrefsWrapper, lat: Double, lon: Double, zoom: Float) {
-    prefs.prefs.edit {
-        putFloat("map_lat", lat.toFloat())
-        putFloat("map_lon", lon.toFloat())
-        putFloat("map_zoom", zoom)
     }
 }
 
