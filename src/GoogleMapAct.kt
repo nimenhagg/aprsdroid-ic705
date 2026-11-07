@@ -256,7 +256,16 @@ class GoogleMapAct : MapLoaderBase(),
                 }
             }
             pos.close()
-            org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(this, call, storage, myLat, myLon)
+            org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(
+                context = this,
+                call = call,
+                db = storage,
+                myLat = myLat,
+                myLon = myLon,
+                onSendMessageRequested = { target ->
+                    startActivity(Intent(this, MessageActivity::class.java).putExtra("call", target))
+                }
+            )
             return true
         }
         return false

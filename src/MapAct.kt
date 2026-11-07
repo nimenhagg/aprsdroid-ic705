@@ -395,7 +395,16 @@ class MapAct : MapLoaderBase() {
             }
         }
         position.close()
-        org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(this, call, db, myLat, myLon)
+        org.aprsdroid.app.ui.component.StationBottomSheetHelper.show(
+            context = this,
+            call = call,
+            db = db,
+            myLat = myLat,
+            myLon = myLon,
+            onSendMessageRequested = { target ->
+                startActivity(Intent(this, MessageActivity::class.java).putExtra("call", target))
+            }
+        )
     }
 
     private fun moveToMyLocation() {

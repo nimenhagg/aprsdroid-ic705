@@ -310,16 +310,10 @@ object StationBottomSheetHelper {
                         station = station,
                         myLat = myLat,
                         myLon = myLon,
-                        onSendMessage = if (showMessageAction) {
+                        onSendMessage = if (showMessageAction && onSendMessageRequested != null) {
                             {
                                 dialog.dismiss()
-                                if (onSendMessageRequested != null) {
-                                    onSendMessageRequested(station.call)
-                                } else {
-                                    context.startActivity(
-                                        Intent().setClassName(context, "org.aprsdroid.app.MessageActivity").putExtra("call", station.call)
-                                    )
-                                }
+                                onSendMessageRequested(station.call)
                             }
                         } else {
                             null

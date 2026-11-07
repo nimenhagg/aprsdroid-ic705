@@ -84,6 +84,18 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import kotlin.coroutines.coroutineContext
 
+data class OfflineMapDownloadArea(
+    val west: Double,
+    val south: Double,
+    val east: Double,
+    val north: Double,
+    val minZoom: Double,
+    val maxZoom: Double,
+    val tileUrls: Array<String>,
+    val sourceMaxZoom: Float = 19f,
+    val name: String,
+)
+
 @Composable
 fun EmbeddedMapScreen(
     prefs: PrefsWrapper,
@@ -99,7 +111,8 @@ fun EmbeddedMapScreen(
     onOpenPackets: () -> Unit,
     onOpenSettings: () -> Unit,
     onClearLogs: () -> Unit,
-    onRequestCurrentLocation: () -> Unit
+    onRequestCurrentLocation: () -> Unit,
+    onOpenOfflineMaps: ((OfflineMapDownloadArea) -> Unit)? = null
 ) {
     val context = LocalContext.current
     MapModes.initialize(context)
@@ -155,7 +168,8 @@ fun EmbeddedMapScreen(
                     currentLocation = currentLocation,
                     actions = actions,
                     onStationClick = onStationClick,
-                    onLoadingChanged = { rendererLoading = it }
+                    onLoadingChanged = { rendererLoading = it },
+                    onOpenOfflineMaps = onOpenOfflineMaps
                 )
 
                 MapTileType.GOOGLE_NORMAL,
@@ -168,7 +182,8 @@ fun EmbeddedMapScreen(
                     currentLocation = currentLocation,
                     actions = actions,
                     onStationClick = onStationClick,
-                    onLoadingChanged = { rendererLoading = it }
+                    onLoadingChanged = { rendererLoading = it },
+                    onOpenOfflineMaps = onOpenOfflineMaps
                 )
             }
         }
@@ -206,7 +221,8 @@ private fun MapLibreEmbeddedRenderer(
     currentLocation: Location?,
     actions: EmbeddedMapActions,
     onStationClick: (String) -> Unit,
-    onLoadingChanged: (Boolean) -> Unit
+    onLoadingChanged: (Boolean) -> Unit,
+    onOpenOfflineMaps: ((OfflineMapDownloadArea) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val latestStationClick = rememberUpdatedState(onStationClick)
@@ -323,19 +339,18 @@ private fun MapLibreEmbeddedRenderer(
             } else {
                 emptyArray()
             }
-            context.startActivity(
-                Intent().setClassName(context, "org.aprsdroid.app.MapOfflineActivity").apply {
-                    putExtra("offline_west", bounds.longitudeWest)
-                    putExtra("offline_south", bounds.latitudeSouth)
-                    putExtra("offline_east", bounds.longitudeEast)
-                    putExtra("offline_north", bounds.latitudeNorth)
-                    putExtra("offline_min_zoom", (zoom - 2.0).coerceAtLeast(8.0))
-                    putExtra("offline_max_zoom", (zoom + 2.0).coerceAtMost(16.0))
-                    putExtra("offline_tile_urls", tileUrls)
-                    putExtra("offline_source_max_zoom", 19f)
-                    putExtra("offline_name", context.getString(R.string.map_offline_current_area))
-                }
+            val area = OfflineMapDownloadArea(
+                west = bounds.longitudeWest,
+                south = bounds.latitudeSouth,
+                east = bounds.longitudeEast,
+                north = bounds.latitudeNorth,
+                minZoom = (zoom - 2.0).coerceAtLeast(8.0),
+                maxZoom = (zoom + 2.0).coerceAtMost(16.0),
+                tileUrls = tileUrls,
+                sourceMaxZoom = 19f,
+                name = context.getString(R.string.map_offline_current_area)
             )
+            onOpenOfflineMaps?.invoke(area)
         }
     }
 
@@ -359,7 +374,8 @@ private fun GoogleEmbeddedRenderer(
     currentLocation: Location?,
     actions: EmbeddedMapActions,
     onStationClick: (String) -> Unit,
-    onLoadingChanged: (Boolean) -> Unit
+    onLoadingChanged: (Boolean) -> Unit,
+    onOpenOfflineMaps: ((OfflineMapDownloadArea) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val latestStationClick = rememberUpdatedState(onStationClick)
