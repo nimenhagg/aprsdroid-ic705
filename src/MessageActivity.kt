@@ -3,11 +3,9 @@ package org.aprsdroid.app
 import org.aprsdroid.app.service.ServiceEventBus
 
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -46,12 +44,6 @@ class MessageActivity : StationHelper() {
         )[MessageChatViewModel::class.java]
     }
     private val mycall: String by lazy { prefs.getCallSsid() }
-
-    private val messageReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            targetcall?.let { viewModel.refresh(it) }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,12 +103,10 @@ class MessageActivity : StationHelper() {
             ServiceNotifier.instance.cancelMessage(this, it)
             viewModel.refresh(it)
         }
-        ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     override fun onPause() {
         super.onPause()
-        try { unregisterReceiver(messageReceiver) } catch (_: Exception) {}
     }
 
     private fun showTargetStation(call: String) {

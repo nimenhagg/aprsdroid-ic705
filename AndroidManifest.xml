@@ -55,18 +55,8 @@
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter" />
         </activity>
-	<activity android:name=".LogActivity" android:label="@string/app_log"
-		android:launchMode="singleTop"
-		android:parentActivityName=".HubActivity"
-		android:configChanges="orientation|keyboardHidden|screenSize"
-		/>
 	<activity android:name=".HubActivity" android:label="@string/app_hub"
 		android:launchMode="singleTop"
-		android:configChanges="orientation|keyboardHidden|screenSize"
-		/>
-	<activity android:name=".ConversationsActivity" android:label="@string/app_messages"
-		android:launchMode="singleTop"
-		android:parentActivityName=".HubActivity"
 		android:configChanges="orientation|keyboardHidden|screenSize"
 		/>
 	<activity android:name=".StationActivity" android:label="@string/app_sta"

@@ -3,10 +3,9 @@ package org.aprsdroid.app
 import org.aprsdroid.app.service.ServiceEventBus
 
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -45,21 +44,6 @@ class StationActivity : ComponentActivity() {
         )[StationViewModel::class.java]
     }
 
-    private val updateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val updatedCall = intent?.getStringExtra(StorageDatabase.Companion.Post.CALL)
-                ?: intent?.getStringExtra("call")
-            val target = targetCall
-            if (updatedCall == null || target == null ||
-                updatedCall.equals(target, ignoreCase = true) ||
-                updatedCall.startsWith(target.split("-")[0], ignoreCase = true)
-            ) {
-                loadData()
-            }
-        }
-    }
-
-    @SuppressLint("WrongConstant")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -109,18 +93,11 @@ class StationActivity : ComponentActivity() {
     @SuppressLint("WrongConstant")
     override fun onResume() {
         super.onResume()
-        ContextCompat.registerReceiver(
-            this,
-            updateReceiver,
-            IntentFilter(AprsService.UPDATE),
-            ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
         loadData()
     }
 
     override fun onPause() {
         super.onPause()
-        try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
     }
 
     private fun loadData() {

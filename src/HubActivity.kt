@@ -3,10 +3,8 @@ package org.aprsdroid.app
 import org.aprsdroid.app.service.ServiceEventBus
 
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.Manifest
 import android.location.Location
 import android.os.Bundle
@@ -121,25 +119,6 @@ class HubActivity : BaseRecyclerActivity() {
             },
             logTag = "APRSdroid.MapLocation",
         )
-    }
-
-    private val updateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            refreshVisibleState()
-        }
-    }
-
-    private val messageReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            conversationsViewModel.refresh()
-        }
-    }
-
-    private val serviceStateReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            viewModel.updateServiceState()
-            logViewModel.updateServiceState()
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -538,12 +517,6 @@ class HubActivity : BaseRecyclerActivity() {
         super.onResume()
         viewModel.updateServiceState()
         logViewModel.updateServiceState()
-        ContextCompat.registerReceiver(this, updateReceiver, IntentFilter(AprsService.UPDATE), ContextCompat.RECEIVER_NOT_EXPORTED)
-        ContextCompat.registerReceiver(this, messageReceiver, IntentFilter(AprsService.MESSAGE), ContextCompat.RECEIVER_NOT_EXPORTED)
-        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.SERVICE_STOPPED), ContextCompat.RECEIVER_NOT_EXPORTED)
-        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
-        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LINK_ON), ContextCompat.RECEIVER_NOT_EXPORTED)
-        ContextCompat.registerReceiver(this, serviceStateReceiver, IntentFilter(AprsService.LIVE_STATUS), ContextCompat.RECEIVER_NOT_EXPORTED)
         refreshTopLevelState()
 
         if (prefs.getBoolean("firstrun", true) || prefs.getCallsign().isEmpty()) firstRunDialogVisible.value = true
@@ -551,9 +524,6 @@ class HubActivity : BaseRecyclerActivity() {
 
     override fun onPause() {
         super.onPause()
-        try { unregisterReceiver(updateReceiver) } catch (_: Exception) {}
-        try { unregisterReceiver(messageReceiver) } catch (_: Exception) {}
-        try { unregisterReceiver(serviceStateReceiver) } catch (_: Exception) {}
     }
 }
 
@@ -572,3 +542,5 @@ internal fun resolveRouteRefreshTarget(activeRoute: String): HubRefreshTarget = 
     MainRoutes.PACKETS -> HubRefreshTarget.PACKETS
     else -> error("unhandled route: $activeRoute")
 }
+
+typealias LogActivity = HubActivity
