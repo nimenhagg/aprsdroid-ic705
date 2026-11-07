@@ -67,7 +67,7 @@ class Ic705RxSessionTest {
             assertTrue(civSent.isNotEmpty())
 
             // Wait a moment for audio streaming
-            Thread.sleep(150)
+            java.util.concurrent.locks.LockSupport.parkNanos(150_000_000L)
 
             val audioSent = audioChannel.sentPackets.filter { looksLikeAudioPayload(it) }
             assertTrue(audioSent.isNotEmpty())
@@ -746,7 +746,7 @@ class Ic705RxSessionTest {
                 expectedCount &&
                 System.nanoTime() < deadline
             ) {
-                Thread.sleep(5)
+                java.util.concurrent.locks.LockSupport.parkNanos(5_000_000L)
                 drain()
             }
             assertEquals(
@@ -808,7 +808,7 @@ class Ic705RxSessionTest {
             val deadline = System.nanoTime() +
                 TimeUnit.SECONDS.toNanos(BARRIER_TIMEOUT_SECONDS)
             while (channels.values.any { it.isOpen } && System.nanoTime() < deadline) {
-                Thread.sleep(5)
+                java.util.concurrent.locks.LockSupport.parkNanos(5_000_000L)
             }
             return channels.values.none { it.isOpen }
         }

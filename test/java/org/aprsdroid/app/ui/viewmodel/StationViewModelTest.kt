@@ -10,6 +10,7 @@ import org.aprsdroid.app.service.AprsPacketEvent
 import org.aprsdroid.app.service.ServiceEventBus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.aprsdroid.app.awaitUntil
 import org.junit.Test
 
 class StationViewModelTest {
@@ -61,8 +62,7 @@ class StationViewModelTest {
 
         viewModel.requestRefresh("BG1ABC", "N0CALL")
 
-        // Wait past 250ms batching window
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.targetCall == "BG1ABC" && viewModel.uiState.value.stationItem != null }
 
         val state = viewModel.uiState.value
         assertEquals("BG1ABC", state.targetCall)
@@ -82,7 +82,7 @@ class StationViewModelTest {
         viewModel.requestRefresh("BG1ABC-2", "N0CALL")
         viewModel.requestRefresh("BG1ABC-9", "N0CALL")
 
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.targetCall == "BG1ABC-9" && fakeSource.queryCount == 1 }
 
         // Only the latest query should be executed due to Conflated Channel
         assertEquals(1, fakeSource.queryCount)
@@ -95,7 +95,7 @@ class StationViewModelTest {
         val viewModel = StationViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.requestRefresh("BG1ABC-9", "N0CALL")
-        Thread.sleep(400L)
+        awaitUntil { fakeSource.queryCount == 1 }
         assertEquals(1, fakeSource.queryCount)
 
         ServiceEventBus.postPacketEvent(
@@ -107,7 +107,7 @@ class StationViewModelTest {
             )
         )
 
-        Thread.sleep(400L)
+        awaitUntil { fakeSource.queryCount == 2 }
         assertEquals(2, fakeSource.queryCount)
     }
 }

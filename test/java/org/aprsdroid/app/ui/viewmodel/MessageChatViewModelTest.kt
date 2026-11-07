@@ -14,6 +14,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.aprsdroid.app.awaitUntil
+import org.aprsdroid.app.pauseMillis
 import org.junit.Test
 
 class MessageChatViewModelTest {
@@ -96,7 +98,7 @@ class MessageChatViewModelTest {
         val viewModel = MessageChatViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh("BG1ABC")
-        Thread.sleep(150L)
+        awaitUntil { viewModel.uiState.value.messages.size == 1 && fakeSource.queryCount == 1 }
 
         val state = viewModel.uiState.value
         assertEquals("BG1ABC", state.targetCall)
@@ -111,11 +113,11 @@ class MessageChatViewModelTest {
         val viewModel = MessageChatViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh("BG1ABC")
-        Thread.sleep(100L)
+        awaitUntil { viewModel.uiState.value.messages.size == 1 }
         assertEquals(1, viewModel.uiState.value.messages.size)
 
         viewModel.deleteMessage(1L, "BG1ABC")
-        Thread.sleep(150L)
+        awaitUntil { viewModel.uiState.value.messages.isEmpty() && fakeSource.deletedId == 1L }
 
         assertEquals(1L, fakeSource.deletedId)
         assertTrue(viewModel.uiState.value.messages.isEmpty())
@@ -131,7 +133,7 @@ class MessageChatViewModelTest {
         viewModel.restartMessage(target, "BG1ABC") {
             callbackCalled = true
         }
-        Thread.sleep(150L)
+        awaitUntil { callbackCalled && fakeSource.updatedId == 1L }
 
         assertTrue(callbackCalled)
         assertEquals(1L, fakeSource.updatedId)
@@ -148,7 +150,7 @@ class MessageChatViewModelTest {
         viewModel.abortMessage(target, "BG1ABC") {
             callbackCalled = true
         }
-        Thread.sleep(150L)
+        awaitUntil { callbackCalled && fakeSource.updatedId == 1L }
 
         assertTrue(callbackCalled)
         assertEquals(1L, fakeSource.updatedId)
@@ -161,7 +163,7 @@ class MessageChatViewModelTest {
         val viewModel = MessageChatViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh("BG1ABC")
-        Thread.sleep(100L)
+        awaitUntil { fakeSource.queryCount == 1 }
         assertEquals(1, fakeSource.queryCount)
 
         // Event for unrelated callsign does not refresh
@@ -173,7 +175,7 @@ class MessageChatViewModelTest {
                 isOutgoing = false,
             )
         )
-        Thread.sleep(150L)
+        pauseMillis(50L)
         assertEquals(1, fakeSource.queryCount)
 
         // Event where destination is targetCall triggers refresh
@@ -185,7 +187,7 @@ class MessageChatViewModelTest {
                 isOutgoing = true,
             )
         )
-        Thread.sleep(150L)
+        awaitUntil { fakeSource.queryCount == 2 }
         assertEquals(2, fakeSource.queryCount)
 
         // Event where sender is targetCall triggers refresh
@@ -197,7 +199,7 @@ class MessageChatViewModelTest {
                 isOutgoing = false,
             )
         )
-        Thread.sleep(150L)
+        awaitUntil { fakeSource.queryCount == 3 }
         assertEquals(3, fakeSource.queryCount)
     }
 }

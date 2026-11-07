@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.aprsdroid.app.StorageDatabase
+import org.aprsdroid.app.awaitUntil
 import org.aprsdroid.app.data.repository.LogSource
 import org.aprsdroid.app.model.LogPostItem
 import org.aprsdroid.app.service.AprsPacketEvent
@@ -71,7 +72,7 @@ class LogViewModelTest {
         val viewModel = LogViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.items.size == 2 && fakeSource.queryCount == 1 }
 
         val state = viewModel.uiState.value
         assertEquals(2, state.items.size)
@@ -85,7 +86,7 @@ class LogViewModelTest {
         val viewModel = LogViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh("BG1ABC")
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.items.size == 1 && fakeSource.lastFilter == "BG1ABC" }
 
         val state = viewModel.uiState.value
         assertEquals(1, state.items.size)
@@ -101,11 +102,11 @@ class LogViewModelTest {
         assertFalse(viewModel.uiState.value.isRunning)
 
         ServiceEventBus.updateServiceRunning(true)
-        Thread.sleep(100L)
+        awaitUntil { viewModel.uiState.value.isRunning }
         assertTrue(viewModel.uiState.value.isRunning)
 
         ServiceEventBus.updateServiceRunning(false)
-        Thread.sleep(100L)
+        awaitUntil { !viewModel.uiState.value.isRunning }
         assertFalse(viewModel.uiState.value.isRunning)
     }
 
@@ -115,7 +116,7 @@ class LogViewModelTest {
         val viewModel = LogViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(400L)
+        awaitUntil { fakeSource.queryCount == 1 }
         assertEquals(1, fakeSource.queryCount)
 
         ServiceEventBus.postPacketEvent(
@@ -126,8 +127,7 @@ class LogViewModelTest {
                 packet = "BI1NEW>APRS:New Packet",
             )
         )
-        Thread.sleep(400L)
-
+        awaitUntil { fakeSource.queryCount == 2 }
         assertEquals(2, fakeSource.queryCount)
     }
 }

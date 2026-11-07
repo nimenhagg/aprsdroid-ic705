@@ -13,6 +13,7 @@ import org.aprsdroid.app.service.ServiceEventBus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.aprsdroid.app.awaitUntil
 import org.junit.Test
 
 class ConversationsViewModelTest {
@@ -79,7 +80,7 @@ class ConversationsViewModelTest {
         val viewModel = ConversationsViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(150L)
+        awaitUntil { viewModel.uiState.value.conversations.size == 2 && fakeSource.queryCount == 1 }
 
         val state = viewModel.uiState.value
         assertEquals(2, state.conversations.size)
@@ -94,11 +95,11 @@ class ConversationsViewModelTest {
         val viewModel = ConversationsViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(100L)
+        awaitUntil { viewModel.uiState.value.conversations.size == 2 }
         assertEquals(2, viewModel.uiState.value.conversations.size)
 
         viewModel.deleteConversation("BG1ABC")
-        Thread.sleep(150L)
+        awaitUntil { viewModel.uiState.value.conversations.size == 1 && fakeSource.deletedCall == "BG1ABC" }
 
         assertEquals("BG1ABC", fakeSource.deletedCall)
         assertEquals(1, viewModel.uiState.value.conversations.size)
@@ -111,11 +112,11 @@ class ConversationsViewModelTest {
         val viewModel = ConversationsViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(100L)
+        awaitUntil { viewModel.uiState.value.conversations.size == 2 }
         assertEquals(2, viewModel.uiState.value.conversations.size)
 
         viewModel.clearAllConversations()
-        Thread.sleep(150L)
+        awaitUntil { viewModel.uiState.value.conversations.isEmpty() && fakeSource.clearedAll }
 
         assertTrue(fakeSource.clearedAll)
         assertTrue(viewModel.uiState.value.conversations.isEmpty())
@@ -127,7 +128,7 @@ class ConversationsViewModelTest {
         val viewModel = ConversationsViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(100L)
+        awaitUntil { fakeSource.queryCount == 1 }
         assertEquals(1, fakeSource.queryCount)
 
         ServiceEventBus.postMessageEvent(
@@ -138,7 +139,7 @@ class ConversationsViewModelTest {
                 isOutgoing = false,
             )
         )
-        Thread.sleep(150L)
+        awaitUntil { fakeSource.queryCount == 2 }
 
         assertEquals(2, fakeSource.queryCount)
     }

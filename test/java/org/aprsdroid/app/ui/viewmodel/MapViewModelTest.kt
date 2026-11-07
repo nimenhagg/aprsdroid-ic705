@@ -3,6 +3,7 @@ package org.aprsdroid.app.ui.viewmodel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import org.aprsdroid.app.awaitUntil
 import org.aprsdroid.app.data.repository.MapStationSource
 import org.aprsdroid.app.map.MapStation
 import org.junit.Assert.assertEquals
@@ -66,7 +67,7 @@ class MapViewModelTest {
         val viewModel = MapViewModel(fakeSource, initialShowObjects = true, scope = CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.stations.size == 2 && fakeSource.queryCount == 1 }
 
         val state = viewModel.uiState.value
         assertEquals(2, state.stations.size)
@@ -82,11 +83,11 @@ class MapViewModelTest {
         val viewModel = MapViewModel(fakeSource, initialShowObjects = true, scope = CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.stations.size == 2 }
         assertEquals(2, viewModel.uiState.value.stations.size)
 
         viewModel.refresh(showObjects = false)
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.stations.size == 1 && !viewModel.uiState.value.showObjects }
 
         val state = viewModel.uiState.value
         assertEquals(1, state.stations.size)
@@ -101,7 +102,7 @@ class MapViewModelTest {
         val viewModel = MapViewModel(fakeSource, initialShowObjects = false, scope = CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.stations.size == 1 }
         assertEquals(1, viewModel.uiState.value.stations.size)
 
         fakeSource.stations.add(
@@ -115,7 +116,7 @@ class MapViewModelTest {
         )
 
         viewModel.refresh()
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.stations.size == 2 }
 
         val state = viewModel.uiState.value
         assertEquals(2, state.stations.size)
@@ -128,7 +129,7 @@ class MapViewModelTest {
         val viewModel = MapViewModel(fakeSource, initialShowObjects = true, scope = CoroutineScope(Dispatchers.Default))
 
         viewModel.refresh()
-        Thread.sleep(400L)
+        awaitUntil { !viewModel.uiState.value.isLoading && fakeSource.queryCount == 1 }
 
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)

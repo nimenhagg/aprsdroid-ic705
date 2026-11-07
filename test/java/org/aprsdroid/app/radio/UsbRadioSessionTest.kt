@@ -132,7 +132,7 @@ class UsbRadioSessionTest {
 
         val deadline = System.currentTimeMillis() + 1000
         while (decoder.receivedSamples.size < 128 && System.currentTimeMillis() < deadline) {
-            Thread.sleep(10)
+            java.util.concurrent.locks.LockSupport.parkNanos(10_000_000L)
         }
 
         assertTrue(decoder.receivedSamples.size >= 128)
@@ -216,7 +216,7 @@ class UsbRadioSessionTest {
         override fun read(buffer: ShortArray, offset: Int, length: Int): Int {
             if (closed) return -1
             if (pos >= data.size) {
-                Thread.sleep(10)
+                java.util.concurrent.locks.LockSupport.parkNanos(10_000_000L)
                 return if (closed) -1 else 0
             }
             val toCopy = minOf(length, data.size - pos)

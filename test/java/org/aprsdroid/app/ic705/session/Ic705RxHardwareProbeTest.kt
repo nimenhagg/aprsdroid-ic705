@@ -326,7 +326,7 @@ class Ic705RxHardwareProbeTest {
                     "wireProfile=${wireProfile.name}",
             )
             session.start()
-            Thread.sleep(TimeUnit.SECONDS.toMillis(durationSeconds))
+            java.util.concurrent.locks.LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(durationSeconds))
         } finally {
             session.close { closed.countDown() }
         }

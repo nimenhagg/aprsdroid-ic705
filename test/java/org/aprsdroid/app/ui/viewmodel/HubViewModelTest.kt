@@ -13,6 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.aprsdroid.app.awaitUntil
 import org.junit.Test
 
 class HubViewModelTest {
@@ -123,7 +124,7 @@ class HubViewModelTest {
         )
 
         viewModel.refresh()
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.stations.size == 2 && fakeSource.queryCount == 1 }
 
         val state = viewModel.uiState.value
         assertEquals("BG1ABC-9", state.myCall)
@@ -146,7 +147,7 @@ class HubViewModelTest {
         )
 
         viewModel.setSearchQuery("BI1XYZ")
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.stations.size == 1 && fakeSource.lastSearchQuery == "BI1XYZ" }
 
         val state = viewModel.uiState.value
         assertEquals("BI1XYZ", state.searchQuery)
@@ -169,13 +170,13 @@ class HubViewModelTest {
         assertFalse(viewModel.uiState.value.isRunning)
 
         ServiceEventBus.updateServiceRunning(true)
-        Thread.sleep(100L)
+        awaitUntil { viewModel.uiState.value.isRunning }
 
         assertTrue(viewModel.uiState.value.isRunning)
         assertEquals("CONNECTED", viewModel.uiState.value.serviceStatus)
 
         ServiceEventBus.updateServiceRunning(false)
-        Thread.sleep(100L)
+        awaitUntil { !viewModel.uiState.value.isRunning }
         assertFalse(viewModel.uiState.value.isRunning)
     }
 
@@ -191,7 +192,7 @@ class HubViewModelTest {
         )
 
         viewModel.refresh()
-        Thread.sleep(400L)
+        awaitUntil { viewModel.uiState.value.stations.size == 2 && fakeSource.queryCount == 1 }
         assertEquals(1, fakeSource.queryCount)
 
         ServiceEventBus.postPacketEvent(
@@ -202,7 +203,7 @@ class HubViewModelTest {
                 packet = "BI1NEW>APRS:New Packet",
             )
         )
-        Thread.sleep(400L)
+        awaitUntil { fakeSource.queryCount == 2 }
 
         assertEquals(2, fakeSource.queryCount)
     }

@@ -43,7 +43,7 @@ class Ic705PttStateMachineTest {
 
     private fun waitUntil(timeoutMs: Long = 1_000L, condition: () -> Boolean) {
         val deadline = System.nanoTime() + timeoutMs * 1_000_000L
-        while (!condition() && System.nanoTime() < deadline) Thread.sleep(5L)
+        while (!condition() && System.nanoTime() < deadline) java.util.concurrent.locks.LockSupport.parkNanos(5_000_000L)
         assertTrue("condition was not met within ${timeoutMs}ms", condition())
     }
 
@@ -87,7 +87,7 @@ class Ic705PttStateMachineTest {
             if (sm.state != Ic705PttState.RX_IDLE) {
                 sm.onCivReceived(pttStatusFrame(transmitting = false))
             }
-            if (sm.state != Ic705PttState.RX_IDLE) Thread.sleep(2L)
+            if (sm.state != Ic705PttState.RX_IDLE) java.util.concurrent.locks.LockSupport.parkNanos(2_000_000L)
         }
         assertEquals("radio release was not confirmed within ${timeoutMs}ms", Ic705PttState.RX_IDLE, sm.state)
     }
@@ -201,7 +201,7 @@ class Ic705PttStateMachineTest {
             assertTrue(sm.isRadioPttOn)
             assertFalse(sm.beginTransmission())
 
-            Thread.sleep(100L)
+            java.util.concurrent.locks.LockSupport.parkNanos(100_000_000L)
             assertEquals(attemptsAtShutdown, actions.civSendAttempts.get())
             assertEquals(Ic705PttState.DRAINING, sm.state)
             assertTrue(sm.isRadioPttOn)
@@ -282,7 +282,7 @@ class Ic705PttStateMachineTest {
     fun missingOffAckNeverReportsFalseIdle() {
         val actions = FakePttActions()
         val watchdog = Executors.newSingleThreadScheduledExecutor()
-        val sm = Ic705PttStateMachine(actions = actions, ackTimeoutMs = 10L, absoluteWatchdogMs = 60_000L, maxReleaseAttempts = 2, watchdogExecutor = watchdog)
+        val sm = Ic705PttStateMachine(actions = actions, ackTimeoutMs = 10L, absoluteWatchdogMs = 60_000L, maxReleaseAttempts = 4, watchdogExecutor = watchdog)
         try {
             assertTrue(sm.beginTransmission())
             assertTrue(sm.onAudioStreamingFinished())

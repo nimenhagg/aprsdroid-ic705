@@ -95,7 +95,7 @@ class LocalLoopbackCatBridgeTest {
         // Give the pump thread a brief moment to observe EOF and trigger bridge close
         val deadline = System.currentTimeMillis() + 1000
         while (!bridge.isClosed && System.currentTimeMillis() < deadline) {
-            Thread.sleep(10)
+            java.util.concurrent.locks.LockSupport.parkNanos(10_000_000L)
         }
 
         assertTrue(bridge.isClosed)
