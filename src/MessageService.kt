@@ -50,6 +50,7 @@ class MessageService(val s: AprsService) {
         ServiceEventBus.postMessageEvent(
             AprsMessageEvent(
                 destination = msg.targetCallsign,
+                sender = srccall,
                 body = msg.messageBody,
                 isOutgoing = false,
                 timestamp = ts,
@@ -76,6 +77,15 @@ class MessageService(val s: AprsService) {
                     StorageDatabase.Companion.Message.TYPE_OUT_REJECTED
                 }
                 s.db.updateMessageAcked(ap.sourceCall, msg.messageNumber, newType)
+                ServiceEventBus.postMessageEvent(
+                    AprsMessageEvent(
+                        destination = ap.sourceCall,
+                        sender = callssid,
+                        body = if (msg.isAck) "ack" else "rej",
+                        isOutgoing = false,
+                        timestamp = ts,
+                    )
+                )
                 s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
             } else {
                 parsed.replyAck?.let { replyAck ->
@@ -84,6 +94,15 @@ class MessageService(val s: AprsService) {
                             ap.sourceCall,
                             replyAck,
                             StorageDatabase.Companion.Message.TYPE_OUT_ACKED,
+                        )
+                        ServiceEventBus.postMessageEvent(
+                            AprsMessageEvent(
+                                destination = ap.sourceCall,
+                                sender = callssid,
+                                body = "ack",
+                                isOutgoing = false,
+                                timestamp = ts,
+                            )
                         )
                         s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                     }
@@ -138,6 +157,15 @@ class MessageService(val s: AprsService) {
             when (pendingMessageAction(retrycnt, NUM_OF_RETRIES, tSend)) {
                 PendingMessageAction.ABORT -> {
                     s.db.updateMessageType(c.getLong(0), StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
+                    ServiceEventBus.postMessageEvent(
+                        AprsMessageEvent(
+                            destination = call,
+                            sender = s.prefs.getCallSsid(),
+                            body = text,
+                            isOutgoing = true,
+                            timestamp = System.currentTimeMillis(),
+                        )
+                    )
                     s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
                 }
                 PendingMessageAction.SEND -> {
@@ -152,6 +180,7 @@ class MessageService(val s: AprsService) {
                     ServiceEventBus.postMessageEvent(
                         AprsMessageEvent(
                             destination = call,
+                            sender = s.prefs.getCallSsid(),
                             body = text,
                             isOutgoing = true,
                             timestamp = System.currentTimeMillis(),

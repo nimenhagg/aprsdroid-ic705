@@ -7,35 +7,45 @@ import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.model.ConversationItem
 import org.aprsdroid.app.model.MessageItem
 
-class MessageRepository(private val db: StorageDatabase) {
+interface MessageSource {
+    suspend fun getConversations(): List<ConversationItem>
+    suspend fun getMessages(call: String): List<MessageItem>
+    suspend fun deleteMessage(id: Long)
+    suspend fun deleteMessages(call: String)
+    suspend fun deleteAllMessages()
+    suspend fun updateMessage(id: Long, values: ContentValues): Int
+    suspend fun updateMessageType(id: Long, type: Int): Int
+}
 
-    suspend fun getConversations(): List<ConversationItem> = withContext(Dispatchers.IO) {
+class MessageRepository(private val db: StorageDatabase) : MessageSource {
+
+    override suspend fun getConversations(): List<ConversationItem> = withContext(Dispatchers.IO) {
         val cursor = db.getConversations()
         ConversationItem.fromCursor(cursor)
     }
 
-    suspend fun getMessages(call: String): List<MessageItem> = withContext(Dispatchers.IO) {
+    override suspend fun getMessages(call: String): List<MessageItem> = withContext(Dispatchers.IO) {
         val cursor = db.getMessages(call)
         MessageItem.fromCursor(cursor)
     }
 
-    suspend fun deleteMessage(id: Long) = withContext(Dispatchers.IO) {
+    override suspend fun deleteMessage(id: Long) = withContext(Dispatchers.IO) {
         db.deleteMessage(id)
     }
 
-    suspend fun deleteMessages(call: String) = withContext(Dispatchers.IO) {
+    override suspend fun deleteMessages(call: String) = withContext(Dispatchers.IO) {
         db.deleteMessages(call)
     }
 
-    suspend fun deleteAllMessages() = withContext(Dispatchers.IO) {
+    override suspend fun deleteAllMessages() = withContext(Dispatchers.IO) {
         db.deleteAllMessages()
     }
 
-    suspend fun updateMessage(id: Long, values: ContentValues) = withContext(Dispatchers.IO) {
+    override suspend fun updateMessage(id: Long, values: ContentValues): Int = withContext(Dispatchers.IO) {
         db.updateMessage(id, values)
     }
 
-    suspend fun updateMessageType(id: Long, type: Int) = withContext(Dispatchers.IO) {
+    override suspend fun updateMessageType(id: Long, type: Int): Int = withContext(Dispatchers.IO) {
         db.updateMessageType(id, type)
     }
 }

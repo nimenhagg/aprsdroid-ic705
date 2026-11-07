@@ -9,7 +9,10 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import org.aprsdroid.app.data.repository.MessageRepository
 import org.aprsdroid.app.ui.screen.ConversationsScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
@@ -23,7 +26,16 @@ class ConversationsActivity : BaseRecyclerActivity() {
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     private val repository: MessageRepository by lazy { MessageRepository(storage) }
-    private val viewModel: ConversationsViewModel by lazy { ConversationsViewModel(repository) }
+    private val viewModel: ConversationsViewModel by lazy {
+        ViewModelProvider(
+            this,
+            viewModelFactory {
+                initializer {
+                    ConversationsViewModel(repository)
+                }
+            },
+        )[ConversationsViewModel::class.java]
+    }
 
     private val messageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {

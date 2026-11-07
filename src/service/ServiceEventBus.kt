@@ -18,6 +18,7 @@ data class AprsPacketEvent(
 
 data class AprsMessageEvent(
     val destination: String,
+    val sender: String = "",
     val body: String,
     val isOutgoing: Boolean,
     val timestamp: Long = System.currentTimeMillis(),
@@ -61,5 +62,14 @@ object ServiceEventBus {
 
     fun postMessageEvent(event: AprsMessageEvent) {
         _messageEvents.tryEmit(event)
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun resetForTesting() {
+        _isServiceRunning.value = false
+        _linkError.value = 0
+        _liveStatus.value = null
+        _packetEvents.resetReplayCache()
+        _messageEvents.resetReplayCache()
     }
 }

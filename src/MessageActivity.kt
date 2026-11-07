@@ -11,7 +11,10 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import org.aprsdroid.app.data.repository.MessageRepository
 import org.aprsdroid.app.ui.component.StationBottomSheetHelper
 import org.aprsdroid.app.ui.screen.MessageChatScreen
@@ -26,7 +29,16 @@ class MessageActivity : StationHelper() {
 
     private val storage: StorageDatabase by lazy { StorageDatabase.open(this) }
     private val repository: MessageRepository by lazy { MessageRepository(storage) }
-    private val viewModel: MessageChatViewModel by lazy { MessageChatViewModel(repository) }
+    private val viewModel: MessageChatViewModel by lazy {
+        ViewModelProvider(
+            this,
+            viewModelFactory {
+                initializer {
+                    MessageChatViewModel(repository)
+                }
+            },
+        )[MessageChatViewModel::class.java]
+    }
     private val mycall: String by lazy { prefs.getCallSsid() }
 
     private val messageReceiver = object : BroadcastReceiver() {

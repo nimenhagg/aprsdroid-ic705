@@ -84,7 +84,11 @@ class HubActivity : BaseRecyclerActivity() {
             initializer { HubViewModel(stationRepository, PrefsWrapper(applicationContext)) }
         })[HubViewModel::class.java]
     }
-    private val conversationsViewModel: ConversationsViewModel by lazy { ConversationsViewModel(messageRepository) }
+    private val conversationsViewModel: ConversationsViewModel by lazy {
+        ViewModelProvider(this, viewModelFactory {
+            initializer { ConversationsViewModel(messageRepository) }
+        })[ConversationsViewModel::class.java]
+    }
     private val logViewModel: LogViewModel by lazy {
         ViewModelProvider(this, viewModelFactory {
             initializer { LogViewModel(logRepository) }
