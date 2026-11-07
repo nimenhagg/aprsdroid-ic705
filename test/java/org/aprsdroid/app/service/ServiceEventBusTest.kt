@@ -2,8 +2,11 @@ package org.aprsdroid.app.service
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -11,6 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ServiceEventBusTest {
 
     @Before
@@ -73,27 +77,37 @@ class ServiceEventBusTest {
     }
 
     @Test
-    fun packetEventsCanBeCollectedViaFlow() = runBlocking {
+    fun packetEventsCanBeCollectedViaFlow() = runTest {
+        val bus = ServiceEventBus()
+        val collected = mutableListOf<AprsPacketEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            bus.packetEvents.collect { collected.add(it) }
+        }
         val event = AprsPacketEvent(
             callsign = "BI1AXX",
             type = 0,
             source = "IC-705",
             packet = "BI1AXX>APRS:>Flow test",
         )
-        ServiceEventBus.postPacketEvent(event)
+        bus.postPacketEvent(event)
 
-        assertEquals(listOf(event), ServiceEventBus.packetEvents.replayCache)
+        assertEquals(listOf(event), collected)
     }
 
     @Test
-    fun messageEventsCanBeCollectedViaFlow() = runBlocking {
+    fun messageEventsCanBeCollectedViaFlow() = runTest {
+        val bus = ServiceEventBus()
+        val collected = mutableListOf<AprsMessageEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            bus.messageEvents.collect { collected.add(it) }
+        }
         val msg = AprsMessageEvent(
             destination = "BI1AXX",
             body = "Message flow test",
             isOutgoing = true,
         )
-        ServiceEventBus.postMessageEvent(msg)
+        bus.postMessageEvent(msg)
 
-        assertEquals(listOf(msg), ServiceEventBus.messageEvents.replayCache)
+        assertEquals(listOf(msg), collected)
     }
 }
