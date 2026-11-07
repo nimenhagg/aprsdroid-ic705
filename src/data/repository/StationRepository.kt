@@ -28,14 +28,24 @@ interface StationDetailsSource {
     ): StationDetailsData
 }
 
-class StationRepository(private val db: StorageDatabase) : StationDetailsSource {
-
+interface HubStationSource {
     suspend fun getHubData(
         myCall: String,
         maxAgeMs: Long,
         limit: String = "300",
         includeStations: Boolean = true,
         searchQuery: String = "",
+    ): HubData
+}
+
+class StationRepository(private val db: StorageDatabase) : StationDetailsSource, HubStationSource {
+
+    override suspend fun getHubData(
+        myCall: String,
+        maxAgeMs: Long,
+        limit: String,
+        includeStations: Boolean,
+        searchQuery: String,
     ): HubData = withContext(Dispatchers.IO) {
         var myLat = 0
         var myLon = 0

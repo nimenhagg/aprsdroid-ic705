@@ -3,18 +3,21 @@ package org.aprsdroid.app.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.aprsdroid.app.data.repository.LatestQuery
-import org.aprsdroid.app.AprsService
+import org.aprsdroid.app.AprsPacket
 import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.ServiceNotifier
-import org.aprsdroid.app.data.repository.StationRepository
+import org.aprsdroid.app.data.preferences.AppPreferenceStore
+import org.aprsdroid.app.data.repository.HubStationSource
+import org.aprsdroid.app.data.repository.LatestQuery
 import org.aprsdroid.app.model.StationItem
 import org.aprsdroid.app.service.ServiceEventBus
+import java.util.Locale
 
 data class HubUiState(
     val stations: List<StationItem> = emptyList(),
@@ -28,16 +31,20 @@ data class HubUiState(
 )
 
 class HubViewModel(
-    private val repository: StationRepository,
-    private val prefs: PrefsWrapper,
+    private val repository: HubStationSource,
+    private val prefs: AppPreferenceStore,
+    externalScope: CoroutineScope? = null,
     private val eventBus: ServiceEventBus = ServiceEventBus,
+    private val statusProvider: (() -> String)? = null,
 ) : ViewModel() {
+
+    private val scope = externalScope ?: viewModelScope
 
     private val _uiState = MutableStateFlow(HubUiState())
     val uiState: StateFlow<HubUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
+        scope.launch {
             eventBus.isServiceRunning.collect { running ->
                 _uiState.update {
                     it.copy(
@@ -47,7 +54,7 @@ class HubViewModel(
                 }
             }
         }
-        viewModelScope.launch {
+        scope.launch {
             eventBus.liveStatus.collect {
                 _uiState.update {
                     it.copy(
@@ -56,26 +63,41 @@ class HubViewModel(
                 }
             }
         }
-        viewModelScope.launch {
+        scope.launch {
             eventBus.packetEvents.collect {
                 refresh()
             }
         }
     }
 
+    private fun callSsid(): String {
+        return (prefs as? PrefsWrapper)?.getCallSsid() ?: run {
+            val call = prefs.getString("callsign", "").trim().uppercase(Locale.US)
+            val ssid = prefs.getString("ssid", "10")
+            AprsPacket.formatCallSsid(call, ssid)
+        }
+    }
+
+    private fun showAgeMs(): Long {
+        return (prefs as? PrefsWrapper)?.getShowAge()
+            ?: (prefs.getStringInt("show_age", 30) * 60L * 1000L)
+    }
+
     private fun currentServiceStatus(running: Boolean): String {
         if (!running) return ""
-        return ServiceNotifier.instance.currentLiveStatus()?.detailText(prefs.context).orEmpty()
+        if (statusProvider != null) return statusProvider.invoke()
+        val context = (prefs as? PrefsWrapper)?.context ?: return ""
+        return ServiceNotifier.instance.currentLiveStatus()?.detailText(context).orEmpty()
     }
 
     private data class Request(val includeStations: Boolean, val searchQuery: String)
 
     private val refreshQueue = LatestQuery(
-        scope = viewModelScope,
+        scope = scope,
         initialRequest = Request(true, ""),
         query = { request ->
-            val myCall = prefs.getCallSsid()
-            val data = repository.getHubData(myCall, prefs.getShowAge(), includeStations = request.includeStations, searchQuery = request.searchQuery)
+            val myCall = callSsid()
+            val data = repository.getHubData(myCall, showAgeMs(), includeStations = request.includeStations, searchQuery = request.searchQuery)
             myCall to data
         },
         onResult = { (myCall, data), request ->
