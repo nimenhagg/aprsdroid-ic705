@@ -7,11 +7,15 @@ import org.aprsdroid.app.map.MapStation
 import org.aprsdroid.app.StorageDatabase
 import java.util.ArrayList
 
+interface MapStationSource {
+    suspend fun getStations(showObjects: Boolean, targetCall: String = ""): List<MapStation>
+}
+
 class MapStationRepository(
     private val db: StorageDatabase,
     private val prefs: PrefsWrapper
-) {
-    suspend fun getStations(showObjects: Boolean, targetCall: String = ""): List<MapStation> = withContext(Dispatchers.IO) {
+) : MapStationSource {
+    override suspend fun getStations(showObjects: Boolean, targetCall: String): List<MapStation> = withContext(Dispatchers.IO) {
         val ageTs = (System.currentTimeMillis() - prefs.getShowAge()).toString()
         val filter = if (showObjects) {
             "TS > ? OR CALL=?"

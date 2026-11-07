@@ -3,11 +3,12 @@ package org.aprsdroid.app.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import org.aprsdroid.app.data.repository.MapStationRepository
+import org.aprsdroid.app.data.repository.MapStationSource
 import org.aprsdroid.app.data.repository.LatestQuery
 import org.aprsdroid.app.map.MapStation
 
@@ -18,14 +19,16 @@ data class MapUiState(
 )
 
 class MapViewModel(
-    private val repository: MapStationRepository,
-    initialShowObjects: Boolean
+    private val repository: MapStationSource,
+    initialShowObjects: Boolean,
+    scope: CoroutineScope? = null,
 ) : ViewModel() {
+    private val coroutineScope = scope ?: viewModelScope
     private val _uiState = MutableStateFlow(MapUiState(showObjects = initialShowObjects))
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
     private var loaded = false
     private val refreshQueue = LatestQuery(
-        scope = viewModelScope,
+        scope = coroutineScope,
         initialRequest = initialShowObjects,
         query = { repository.getStations(it) },
         onResult = { stations, showObjects ->
