@@ -43,7 +43,6 @@ import com.google.gson.JsonObject
 import org.aprsdroid.app.MapMode
 import org.aprsdroid.app.MapModes
 import org.aprsdroid.app.MapTileType
-import org.aprsdroid.app.MapOfflineActivity
 import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.R
 import org.aprsdroid.app.map.MapStation
@@ -324,16 +323,16 @@ private fun MapLibreEmbeddedRenderer(
                 emptyArray()
             }
             context.startActivity(
-                Intent(context, MapOfflineActivity::class.java).apply {
-                    putExtra(MapOfflineActivity.EXTRA_WEST, bounds.longitudeWest)
-                    putExtra(MapOfflineActivity.EXTRA_SOUTH, bounds.latitudeSouth)
-                    putExtra(MapOfflineActivity.EXTRA_EAST, bounds.longitudeEast)
-                    putExtra(MapOfflineActivity.EXTRA_NORTH, bounds.latitudeNorth)
-                    putExtra(MapOfflineActivity.EXTRA_MIN_ZOOM, (zoom - 2.0).coerceAtLeast(8.0))
-                    putExtra(MapOfflineActivity.EXTRA_MAX_ZOOM, (zoom + 2.0).coerceAtMost(16.0))
-                    putExtra(MapOfflineActivity.EXTRA_TILE_URLS, tileUrls)
-                    putExtra(MapOfflineActivity.EXTRA_SOURCE_MAX_ZOOM, 19f)
-                    putExtra(MapOfflineActivity.EXTRA_NAME, context.getString(R.string.map_offline_current_area))
+                Intent().setClassName(context, "org.aprsdroid.app.MapOfflineActivity").apply {
+                    putExtra("offline_west", bounds.longitudeWest)
+                    putExtra("offline_south", bounds.latitudeSouth)
+                    putExtra("offline_east", bounds.longitudeEast)
+                    putExtra("offline_north", bounds.latitudeNorth)
+                    putExtra("offline_min_zoom", (zoom - 2.0).coerceAtLeast(8.0))
+                    putExtra("offline_max_zoom", (zoom + 2.0).coerceAtMost(16.0))
+                    putExtra("offline_tile_urls", tileUrls)
+                    putExtra("offline_source_max_zoom", 19f)
+                    putExtra("offline_name", context.getString(R.string.map_offline_current_area))
                 }
             )
         }

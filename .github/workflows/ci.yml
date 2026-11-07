@@ -74,6 +74,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew \
+            verifyArchitecture \
             verifyReleaseVersion \
             testArm64OpenglDebugUnitTest \
             lintArm64OpenglDebug \

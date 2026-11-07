@@ -55,7 +55,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.aprsdroid.app.HubActivity
 import org.aprsdroid.app.R
 import org.aprsdroid.app.model.ConversationItem
 import org.aprsdroid.app.ui.components.SymbolBadge
@@ -70,7 +69,7 @@ fun ConversationsScreen(
     onClearAllConversations: () -> Unit,
     onStartNewConversation: (String) -> Unit
 ) {
-    val embeddedTopLevel = LocalContext.current is HubActivity
+    val embeddedTopLevel = LocalContext.current.javaClass.simpleName == "HubActivity"
     var showNewDialog by remember { mutableStateOf(false) }
     var targetCallInput by remember { mutableStateOf("") }
     var conversationToDelete by remember { mutableStateOf<String?>(null) }

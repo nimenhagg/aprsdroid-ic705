@@ -63,7 +63,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import org.aprsdroid.app.HubActivity
 import org.aprsdroid.app.MapMode
 import org.aprsdroid.app.R
 
@@ -93,7 +92,7 @@ fun MapScreen(
     onOpenAbout: () -> Unit = {},
     mapContent: @Composable () -> Unit
 ) {
-    val embeddedTopLevel = LocalContext.current is HubActivity
+    val embeddedTopLevel = LocalContext.current.javaClass.simpleName == "HubActivity"
     var showMenu by remember { mutableStateOf(false) }
     var showLayerSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()

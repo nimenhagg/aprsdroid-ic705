@@ -205,6 +205,66 @@ android {
 
 def expectedReleaseTag = "Mod-v${mod_version}"
 
+def verifyArchStrictProvider = providers.gradleProperty('verifyArch.strict').orElse('false')
+tasks.register('verifyArchitecture') {
+	group = 'verification'
+	description = 'Enforces architectural guardrails across UI dependencies, testing hooks, and tests.'
+	inputs.property('strict', verifyArchStrictProvider)
+	doLast {
+		def violations = []
+		def strict = Boolean.parseBoolean(verifyArchStrictProvider.get())
+
+		// Rule 1: src/ui/** must not import root package Activities
+		def uiDir = new File("src/ui")
+		if (uiDir.exists()) {
+			uiDir.eachFileRecurse(groovy.io.FileType.FILES) { file ->
+				if (file.name.endsWith('.kt')) {
+					file.eachLine { line, lineNum ->
+						if (line =~ /import\s+org\.aprsdroid\.app\.[A-Za-z0-9]*(?:Activity|Act)\b/) {
+							violations << "Rule 1 (Root Activity imported in UI): ${file.name}:${lineNum} -> ${line.trim()}"
+						}
+					}
+				}
+			}
+		}
+
+		// Rules 2 & 3: Strict checks (enabled when -PverifyArch.strict=true)
+		if (strict) {
+			// Rule 2: No *ForTesting in production code (src/)
+			def srcDir = new File("src")
+			if (srcDir.exists()) {
+				srcDir.eachFileRecurse(groovy.io.FileType.FILES) { file ->
+					if (file.name.endsWith('.kt')) {
+						file.eachLine { line, lineNum ->
+							if (line =~ /(interface\s+[A-Za-z0-9]*ForTesting|fun\s+[A-Za-z0-9]*ForTesting\s*\()/) {
+								violations << "Rule 2 (Test hook in production API): ${file.name}:${lineNum} -> ${line.trim()}"
+							}
+						}
+					}
+				}
+			}
+
+			// Rule 3: test/**.kt must not contain Thread.sleep
+			def testDir = new File("test")
+			if (testDir.exists()) {
+				testDir.eachFileRecurse(groovy.io.FileType.FILES) { file ->
+					if (file.name.endsWith('.kt')) {
+						file.eachLine { line, lineNum ->
+							if (line =~ /Thread\.sleep/) {
+								violations << "Rule 3 (Thread.sleep in test): ${file.name}:${lineNum} -> ${line.trim()}"
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (!violations.isEmpty()) {
+			throw new GradleException("Architecture verification failed (${violations.size()} violation(s)):\n" + violations.join("\n"))
+		}
+	}
+}
+
 tasks.register('verifyReleaseVersion') {
 	group = 'verification'
 	description = 'Checks that a CI release tag matches the APK version metadata.'

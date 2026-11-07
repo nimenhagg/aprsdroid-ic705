@@ -42,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.compose.ui.unit.sp
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import org.aprsdroid.app.MessageActivity
 import org.aprsdroid.app.R
 import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.UIHelper
@@ -293,7 +292,7 @@ object StationBottomSheetHelper {
                                     onSendMessageRequested(station.call)
                                 } else {
                                     context.startActivity(
-                                        Intent(context, MessageActivity::class.java).putExtra("call", station.call)
+                                        Intent().setClassName(context, "org.aprsdroid.app.MessageActivity").putExtra("call", station.call)
                                     )
                                 }
                             }

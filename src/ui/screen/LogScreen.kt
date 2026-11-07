@@ -82,7 +82,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.aprsdroid.app.HubActivity
 import org.aprsdroid.app.R
 import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.model.LogPostItem
@@ -105,7 +104,7 @@ fun LogScreen(
     onClearLogs: () -> Unit
 ) {
     val context = LocalContext.current
-    val embeddedTopLevel = context is HubActivity
+    val embeddedTopLevel = context.javaClass.simpleName == "HubActivity"
     val compactListMode by rememberCompactListMode()
     val largeFont = LocalDensity.current.fontScale >= 1.15f
     var showMenu by remember { mutableStateOf(false) }
