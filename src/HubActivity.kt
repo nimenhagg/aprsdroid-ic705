@@ -269,7 +269,7 @@ class HubActivity : BaseRecyclerActivity() {
                                                 putExtra(MapOfflineActivity.EXTRA_NORTH, area.north)
                                                 putExtra(MapOfflineActivity.EXTRA_MIN_ZOOM, area.minZoom)
                                                 putExtra(MapOfflineActivity.EXTRA_MAX_ZOOM, area.maxZoom)
-                                                putExtra(MapOfflineActivity.EXTRA_TILE_URLS, area.tileUrls)
+                                                putExtra(MapOfflineActivity.EXTRA_TILE_URLS, area.tileUrls.toTypedArray())
                                                 putExtra(MapOfflineActivity.EXTRA_SOURCE_MAX_ZOOM, area.sourceMaxZoom)
                                                 putExtra(MapOfflineActivity.EXTRA_NAME, area.name)
                                             }

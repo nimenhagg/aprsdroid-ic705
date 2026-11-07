@@ -88,7 +88,7 @@ fun MapScreen(
     onBackClick: () -> Unit = {},
     onOpenLogs: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
-    onOpenOfflineMaps: () -> Unit = {},
+    onOpenOfflineMaps: () -> Unit,
     onClearLogs: () -> Unit = {},
     onOpenAbout: () -> Unit = {},
     mapContent: @Composable () -> Unit

@@ -91,7 +91,7 @@ data class OfflineMapDownloadArea(
     val north: Double,
     val minZoom: Double,
     val maxZoom: Double,
-    val tileUrls: Array<String>,
+    val tileUrls: List<String>,
     val sourceMaxZoom: Float = 19f,
     val name: String,
 )
@@ -112,7 +112,7 @@ fun EmbeddedMapScreen(
     onOpenSettings: () -> Unit,
     onClearLogs: () -> Unit,
     onRequestCurrentLocation: () -> Unit,
-    onOpenOfflineMaps: ((OfflineMapDownloadArea) -> Unit)? = null
+    onOpenOfflineMaps: (OfflineMapDownloadArea) -> Unit
 ) {
     val context = LocalContext.current
     MapModes.initialize(context)
@@ -222,7 +222,7 @@ private fun MapLibreEmbeddedRenderer(
     actions: EmbeddedMapActions,
     onStationClick: (String) -> Unit,
     onLoadingChanged: (Boolean) -> Unit,
-    onOpenOfflineMaps: ((OfflineMapDownloadArea) -> Unit)? = null
+    onOpenOfflineMaps: (OfflineMapDownloadArea) -> Unit
 ) {
     val context = LocalContext.current
     val latestStationClick = rememberUpdatedState(onStationClick)
@@ -346,11 +346,11 @@ private fun MapLibreEmbeddedRenderer(
                 north = bounds.latitudeNorth,
                 minZoom = (zoom - 2.0).coerceAtLeast(8.0),
                 maxZoom = (zoom + 2.0).coerceAtMost(16.0),
-                tileUrls = tileUrls,
+                tileUrls = tileUrls.toList(),
                 sourceMaxZoom = 19f,
                 name = context.getString(R.string.map_offline_current_area)
             )
-            onOpenOfflineMaps?.invoke(area)
+            onOpenOfflineMaps(area)
         }
     }
 
@@ -375,7 +375,7 @@ private fun GoogleEmbeddedRenderer(
     actions: EmbeddedMapActions,
     onStationClick: (String) -> Unit,
     onLoadingChanged: (Boolean) -> Unit,
-    onOpenOfflineMaps: ((OfflineMapDownloadArea) -> Unit)? = null
+    onOpenOfflineMaps: (OfflineMapDownloadArea) -> Unit
 ) {
     val context = LocalContext.current
     val latestStationClick = rememberUpdatedState(onStationClick)

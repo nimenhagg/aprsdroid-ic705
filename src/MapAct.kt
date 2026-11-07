@@ -142,6 +142,7 @@ class MapAct : MapLoaderBase() {
                     onOpenLogs = {
                         startActivity(Intent(this, LogActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
                     },
+                    onOpenOfflineMaps = { startActivity(Intent(this, MapOfflineActivity::class.java)) },
                     onOpenSettings = {
                         startActivity(Intent(this, PrefsAct::class.java))
                     },
