@@ -502,14 +502,15 @@ class HubActivity : BaseRecyclerActivity() {
     }
 
     private fun refreshVisibleState() {
-        when (activeRoute) {
-            MainRoutes.STATIONS -> viewModel.refresh()
-            MainRoutes.MAP -> {
+        when (resolveRouteRefreshTarget(activeRoute)) {
+            HubRefreshTarget.STATIONS -> viewModel.refresh()
+            HubRefreshTarget.MAP -> {
                 // The map also uses the hub's own-position state for its locate button.
                 viewModel.refresh(includeStations = false)
                 mapViewModel.refresh()
             }
-            MainRoutes.PACKETS -> logViewModel.refresh()
+            HubRefreshTarget.MESSAGES -> conversationsViewModel.refresh()
+            HubRefreshTarget.PACKETS -> logViewModel.refresh()
         }
     }
 
@@ -535,4 +536,20 @@ class HubActivity : BaseRecyclerActivity() {
         try { unregisterReceiver(messageReceiver) } catch (_: Exception) {}
         try { unregisterReceiver(serviceStateReceiver) } catch (_: Exception) {}
     }
+}
+
+
+internal enum class HubRefreshTarget {
+    STATIONS,
+    MAP,
+    MESSAGES,
+    PACKETS,
+}
+
+internal fun resolveRouteRefreshTarget(activeRoute: String): HubRefreshTarget = when (activeRoute) {
+    MainRoutes.STATIONS -> HubRefreshTarget.STATIONS
+    MainRoutes.MAP -> HubRefreshTarget.MAP
+    MainRoutes.MESSAGES -> HubRefreshTarget.MESSAGES
+    MainRoutes.PACKETS -> HubRefreshTarget.PACKETS
+    else -> error("unhandled route: $activeRoute")
 }
