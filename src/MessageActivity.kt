@@ -12,6 +12,10 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -155,13 +159,17 @@ class MessageActivity : StationHelper() {
             put(StorageDatabase.Companion.Message.TYPE, StorageDatabase.Companion.Message.TYPE_OUT_NEW)
             put(StorageDatabase.Companion.Message.TEXT, msg)
         }
-        storage.addMessage(cv)
-        sendMessageBroadcast(target, msg)
-        sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGE))
-        viewModel.refresh(target)
+        lifecycleScope.launch(Dispatchers.IO) {
+            storage.addMessage(cv)
+            withContext(Dispatchers.Main) {
+                sendMessageBroadcast(target, msg)
+                sendBroadcast(AprsService.privateIntent(this@MessageActivity, AprsService.MESSAGE))
+                viewModel.refresh(target)
 
-        if (!AprsService.running) {
-            Toast.makeText(this, R.string.msg_stored_offline, Toast.LENGTH_SHORT).show()
+                if (!AprsService.running) {
+                    Toast.makeText(this@MessageActivity, R.string.msg_stored_offline, Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 }

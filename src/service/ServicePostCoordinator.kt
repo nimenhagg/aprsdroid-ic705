@@ -29,7 +29,7 @@ internal fun postFollowUp(postType: Int): PostFollowUp = when (postType) {
  * while sequencing service and UI lifecycle actions back to the main thread (postToMain).
  */
 internal class ServicePostCoordinator(
-    private val postToBackground: ((() -> Unit) -> Unit) = { task -> task() },
+    val postToBackground: ((() -> Unit) -> Unit) = { task -> task() },
     private val postToMain: ((() -> Unit) -> Unit),
     private val connectionLoggingEnabled: () -> Boolean,
     private val addPost: (postType: Int, statusId: Int, message: String) -> Unit,

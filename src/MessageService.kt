@@ -8,6 +8,7 @@ import android.util.Log
 import net.ab0oo.aprs.parser.APRSPacket
 import net.ab0oo.aprs.parser.MessagePacket
 import java.util.Locale
+import java.util.concurrent.Executors
 import kotlin.math.max
 import kotlin.math.min
 import org.aprsdroid.app.service.AprsMessageEvent
@@ -27,6 +28,11 @@ internal fun pendingMessageAction(retryCount: Int, maxRetries: Int, delayMillis:
     }
 
 class MessageService(val s: AprsService) {
+
+    private val ioExecutor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "aprs-msg-io").apply { isDaemon = true }
+    }
+
     private val replyAckState = ReplyAckState()
 
     companion object {
@@ -140,70 +146,83 @@ class MessageService(val s: AprsService) {
 
     fun stop() {
         s.handler.removeCallbacks(pendingSender)
+        ioExecutor.shutdown()
     }
 
     fun sendPendingMessages() {
         s.handler.removeCallbacks(pendingSender)
-        var nextRun = Long.MAX_VALUE
+        ioExecutor.execute {
+            var nextRun = Long.MAX_VALUE
 
-        val c = s.db.getPendingMessages(NUM_OF_RETRIES)
-        c.moveToFirst()
-        while (!c.isAfterLast) {
-            val ts = c.getLong(StorageDatabase.Companion.Message.COLUMN_TS)
-            val retrycnt = c.getInt(StorageDatabase.Companion.Message.COLUMN_RETRYCNT)
-            val call = c.getString(StorageDatabase.Companion.Message.COLUMN_CALL)
-            val msgid = c.getString(StorageDatabase.Companion.Message.COLUMN_MSGID)
-            val text = c.getString(StorageDatabase.Companion.Message.COLUMN_TEXT)
-            val tSend = ts + getRetryDelayMS(retrycnt) - System.currentTimeMillis()
+            val c = s.db.getPendingMessages(NUM_OF_RETRIES)
+            c.moveToFirst()
+            while (!c.isAfterLast) {
+                val id = c.getLong(0)
+                val ts = c.getLong(StorageDatabase.Companion.Message.COLUMN_TS)
+                val retrycnt = c.getInt(StorageDatabase.Companion.Message.COLUMN_RETRYCNT)
+                val call = c.getString(StorageDatabase.Companion.Message.COLUMN_CALL)
+                val msgid = c.getString(StorageDatabase.Companion.Message.COLUMN_MSGID)
+                val text = c.getString(StorageDatabase.Companion.Message.COLUMN_TEXT)
+                val tSend = ts + getRetryDelayMS(retrycnt) - System.currentTimeMillis()
 
-            Log.d(TAG, String.format(Locale.US, "pending message: %d/%d (%ds) ->%s '%s'", retrycnt, NUM_OF_RETRIES, tSend / 1000, call, text))
-            when (pendingMessageAction(retrycnt, NUM_OF_RETRIES, tSend)) {
-                PendingMessageAction.ABORT -> {
-                    s.db.updateMessageType(c.getLong(0), StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
-                    ServiceEventBus.postMessageEvent(
-                        AprsMessageEvent(
-                            destination = call,
-                            sender = s.prefs.getCallSsid(),
-                            body = text,
-                            isOutgoing = true,
-                            timestamp = System.currentTimeMillis(),
-                        )
-                    )
-                    s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
-                }
-                PendingMessageAction.SEND -> {
-                    val wireMsgId = replyAckState.decorateOutgoing(call, msgid)
-                    val msg = s.newPacket(MessagePacket(call, text, wireMsgId))
-                    s.sendPacket(msg)
-                    val cv = ContentValues().apply {
-                        put(StorageDatabase.Companion.Message.RETRYCNT, retrycnt + 1)
-                        put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+                Log.d(TAG, String.format(Locale.US, "pending message: %d/%d (%ds) ->%s '%s'", retrycnt, NUM_OF_RETRIES, tSend / 1000, call, text))
+                when (pendingMessageAction(retrycnt, NUM_OF_RETRIES, tSend)) {
+                    PendingMessageAction.ABORT -> {
+                        s.db.updateMessageType(id, StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
+                        val callSsid = s.prefs.getCallSsid()
+                        s.handler.post {
+                            ServiceEventBus.postMessageEvent(
+                                AprsMessageEvent(
+                                    destination = call,
+                                    sender = callSsid,
+                                    body = text,
+                                    isOutgoing = true,
+                                    timestamp = System.currentTimeMillis(),
+                                )
+                            )
+                            s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
+                        }
                     }
-                    s.db.updateMessage(c.getLong(0), cv)
-                    ServiceEventBus.postMessageEvent(
-                        AprsMessageEvent(
-                            destination = call,
-                            sender = s.prefs.getCallSsid(),
-                            body = text,
-                            isOutgoing = true,
-                            timestamp = System.currentTimeMillis(),
-                        )
-                    )
-                    s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
-                    nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
+                    PendingMessageAction.SEND -> {
+                        val wireMsgId = replyAckState.decorateOutgoing(call, msgid)
+                        val msg = s.newPacket(MessagePacket(call, text, wireMsgId))
+                        s.sendPacket(msg)
+                        val cv = ContentValues().apply {
+                            put(StorageDatabase.Companion.Message.RETRYCNT, retrycnt + 1)
+                            put(StorageDatabase.Companion.Message.TS, System.currentTimeMillis())
+                        }
+                        s.db.updateMessage(id, cv)
+                        val callSsid = s.prefs.getCallSsid()
+                        s.handler.post {
+                            ServiceEventBus.postMessageEvent(
+                                AprsMessageEvent(
+                                    destination = call,
+                                    sender = callSsid,
+                                    body = text,
+                                    isOutgoing = true,
+                                    timestamp = System.currentTimeMillis(),
+                                )
+                            )
+                            s.sendBroadcast(AprsService.privateIntent(s, AprsService.MESSAGE))
+                        }
+                        nextRun = min(nextRun, getRetryDelayMS(retrycnt + 1))
+                    }
+                    PendingMessageAction.WAIT -> {
+                        // Includes the final post-send timeout. Queue rescans must not
+                        // strand retrycnt == NUM_OF_RETRIES without a wake-up.
+                        nextRun = min(nextRun, tSend)
+                    }
                 }
-                PendingMessageAction.WAIT -> {
-                    // Includes the final post-send timeout. Queue rescans must not
-                    // strand retrycnt == NUM_OF_RETRIES without a wake-up.
-                    nextRun = min(nextRun, tSend)
+                c.moveToNext()
+            }
+            c.close()
+
+            if (nextRun != Long.MAX_VALUE) {
+                val delay = nextRun
+                s.handler.post {
+                    scheduleNextSend(delay)
                 }
             }
-            c.moveToNext()
-        }
-        c.close()
-
-        if (nextRun != Long.MAX_VALUE) {
-            scheduleNextSend(nextRun)
         }
     }
 

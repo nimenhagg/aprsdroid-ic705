@@ -1,6 +1,12 @@
 package org.aprsdroid.app.ui.component
 
 import android.content.Context
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.content.Intent
 import android.location.Location
 import android.net.Uri
@@ -268,14 +274,33 @@ object StationBottomSheetHelper {
         showMessageAction: Boolean = true,
         onSendMessageRequested: ((String) -> Unit)? = null
     ) {
-        val cursor = db.getStations("CALL = ?", arrayOf(call), "1")
-        val items = StationItem.fromCursor(cursor)
-        if (items.isEmpty()) {
-            UIHelper.openCallsignDetails(context, call)
-            return
+        val lifecycleOwner = context as? LifecycleOwner
+        val scope = lifecycleOwner?.lifecycleScope ?: CoroutineScope(Dispatchers.Main)
+        scope.launch(Dispatchers.IO) {
+            val cursor = db.getStations("CALL = ?", arrayOf(call), "1")
+            val items = StationItem.fromCursor(cursor)
+            withContext(Dispatchers.Main) {
+                if (context is android.app.Activity && (context.isFinishing || context.isDestroyed)) {
+                    return@withContext
+                }
+                if (items.isEmpty()) {
+                    UIHelper.openCallsignDetails(context, call)
+                    return@withContext
+                }
+                val station = items[0]
+                showDialog(context, station, myLat, myLon, showMessageAction, onSendMessageRequested)
+            }
         }
-        val station = items[0]
+    }
 
+    private fun showDialog(
+        context: Context,
+        station: StationItem,
+        myLat: Int,
+        myLon: Int,
+        showMessageAction: Boolean,
+        onSendMessageRequested: ((String) -> Unit)?
+    ) {
         val dialog = BottomSheetDialog(context)
         val composeView = ComposeView(context).apply {
             setViewCompositionStrategy(androidx.compose.ui.platform.ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)

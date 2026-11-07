@@ -364,7 +364,9 @@ class AprsService : Service() {
 
     fun showToast(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        addPost(StorageDatabase.Companion.Post.TYPE_INFO, null, msg)
+        servicePostCoordinator.postToBackground {
+            addPost(StorageDatabase.Companion.Post.TYPE_INFO, null, msg)
+        }
     }
 
     override fun onDestroy() {
