@@ -1,4 +1,4 @@
-name: Build and Publish Cancry Debug Release
+name: Build and Publish Canary Debug Release
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Release Tag (leave blank to auto-generate Cancry-YYYYMMDDHHMM)'
+        description: 'Release Tag (leave blank to auto-generate Canary-YYYYMMDDHHMM)'
         required: false
         default: ''
 
@@ -16,8 +16,8 @@ permissions:
   contents: write
 
 jobs:
-  build_cancry:
-    name: Build, Sign & Publish Cancry Debug APK
+  build_canary:
+    name: Build, Sign & Publish Canary Debug APK
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -50,7 +50,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             native/graywolf-jni/target
-          key: cancry-graywolf-rust-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
+          key: canary-graywolf-rust-${{ runner.os }}-${{ hashFiles('native/graywolf-jni/Cargo.toml', 'native/graywolf-jni/Cargo.lock', '.github/scripts/test_graywolf_loopback.sh') }}
 
       - name: Restore MinSizeRel MapLibre caches
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -58,7 +58,7 @@ jobs:
           path: |
             .cache/maplibre-minsizerel/13.5.1/arm64-v8a
             .cache/maplibre-minsizerel/13.5.1/armeabi-v7a
-          key: cancry-maplibre-${{ runner.os }}-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
+          key: canary-maplibre-${{ runner.os }}-${{ hashFiles('.github/scripts/build_maplibre_minsizerel.sh') }}
 
       - name: Determine Release Tag
         id: tag_info
@@ -69,7 +69,7 @@ jobs:
           elif [ -n "${{ github.event.inputs.tag_name }}" ]; then
             TAG="${{ github.event.inputs.tag_name }}"
           else
-            TAG="Cancry-$(date -u +'%Y%m%d%H%M')"
+            TAG="Canary-$(date -u +'%Y%m%d%H%M')"
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Selected release tag: $TAG"
@@ -139,7 +139,7 @@ jobs:
           cat << 'EOF' > RELEASE_NOTES.md
           ### APRSdroid Mod Debug (Canary Dual-Track)
 
-          * **Track**: Debug Canary (`Cancry-*`)
+          * **Track**: Debug Canary (`Canary-*`)
           * **Application ID**: `me.nimenhagg.aprsdroidic705mod.debug` (Coexists with official release)
           * **App Name**: `APRSdroid Mod Debug`
           * **Signing**: Signed with official release certificate

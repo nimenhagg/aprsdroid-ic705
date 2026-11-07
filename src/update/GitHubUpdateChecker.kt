@@ -25,16 +25,16 @@ data class AppVersion(
     }
 
     override fun toString(): String =
-        if (canaryTimestamp > 0L) "Cancry-$canaryTimestamp" else "$major.$minor.$patch"
+        if (canaryTimestamp > 0L) "Canary-$canaryTimestamp" else "$major.$minor.$patch"
 }
 
-internal fun parseCancryTimestamp(value: String): Long? {
-    val match = CANCRY_REGEX.find(value) ?: return null
+internal fun parseCanaryTimestamp(value: String): Long? {
+    val match = CANARY_REGEX.find(value) ?: return null
     return match.groupValues[1].toLongOrNull()
 }
 
 internal fun parseAppVersion(value: String): AppVersion? {
-    val canaryTs = parseCancryTimestamp(value)
+    val canaryTs = parseCanaryTimestamp(value)
     if (canaryTs != null) {
         return AppVersion(0, 0, 0, canaryTimestamp = canaryTs)
     }
@@ -92,12 +92,12 @@ internal fun formatDeviceArchitecture(abis: Array<String>): String {
     return "$label ($abi)"
 }
 
-internal fun findLatestCancryRelease(releasesJson: String): JSONObject? {
+internal fun findLatestCanaryRelease(releasesJson: String): JSONObject? {
     val array = runCatching { JSONArray(releasesJson) }.getOrNull() ?: return null
     for (i in 0 until array.length()) {
         val obj = array.optJSONObject(i) ?: continue
         val tag = obj.optString("tag_name")
-        if (parseCancryTimestamp(tag) != null) {
+        if (parseCanaryTimestamp(tag) != null) {
             return obj
         }
     }
@@ -156,14 +156,14 @@ object GitHubUpdateChecker {
                     val body = it.body.string()
 
                     val targetRelease = if (isDebugTrack) {
-                        findLatestCancryRelease(body)
+                        findLatestCanaryRelease(body)
                     } else {
                         runCatching { JSONObject(body) }.getOrNull()
                     }
 
                     if (targetRelease == null) {
                         if (isDebugTrack) {
-                            // In debug track, if no Cancry release has been published yet, consider it up-to-date
+                            // In debug track, if no Canary release has been published yet, consider it up-to-date
                             callback(UpdateCheckResult.UpToDate(current = current, latest = current))
                         } else {
                             callback(UpdateCheckResult.Failure("无法解析 GitHub 更新信息"))
@@ -204,4 +204,8 @@ object GitHubUpdateChecker {
 }
 
 private val VERSION_REGEX = Regex("(?:^|[^0-9])(\\d+)\\.(\\d+)\\.(\\d+)(?:-ic705)?")
-private val CANCRY_REGEX = Regex("Can[ca]ry-(\\d{12})", RegexOption.IGNORE_CASE)
+private val CANARY_REGEX = Regex("Can[ca]ry-(\\d{12})", RegexOption.IGNORE_CASE)
+
+// Backward compatibility aliases for parseCancryTimestamp and findLatestCancryRelease
+internal fun parseCancryTimestamp(value: String): Long? = parseCanaryTimestamp(value)
+internal fun findLatestCancryRelease(releasesJson: String): JSONObject? = findLatestCanaryRelease(releasesJson)

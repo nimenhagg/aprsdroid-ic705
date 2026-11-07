@@ -93,7 +93,7 @@ android {
 		buildConfigField "String", "MAPLIBRE_VERSION", "\"${maplibre_version}\""
 		buildConfigField "String", "SOURCE_REVISION", "\"${source_revision}\""
 		buildConfigField "boolean", "IS_DEBUG_TRACK", "true"
-		buildConfigField "String", "UPDATE_TRACK_TAG_PREFIX", "\"Cancry-\""
+		buildConfigField "String", "UPDATE_TRACK_TAG_PREFIX", "\"Canary-\""
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
@@ -272,7 +272,7 @@ tasks.register('verifyReleaseVersion') {
 		def actualTag = System.getenv('GITHUB_REF_TYPE') == 'tag'
 			? System.getenv('GITHUB_REF_NAME')
 			: System.getenv('RELEASE_TAG_OVERRIDE')
-		if (actualTag && !actualTag.startsWith("Cancry-") && !actualTag.startsWith("Canary-") && actualTag != expectedReleaseTag) {
+		if (actualTag && !actualTag.startsWith("Canary-") && !actualTag.startsWith("Cancry-") && actualTag != expectedReleaseTag) {
 			throw new GradleException("Release tag ${actualTag} does not match ${expectedReleaseTag}")
 		}
 	}

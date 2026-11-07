@@ -18,8 +18,9 @@ class GitHubUpdateCheckerTest {
     }
 
     @Test
-    fun parsesCancryTagTimestamps() {
-        assertEquals(202611070001L, parseCancryTimestamp("Cancry-202611070001"))
+    fun parsesCanaryTagTimestamps() {
+        assertEquals(202611070001L, parseCanaryTimestamp("Canary-202611070001"))
+        assertEquals(202611070001L, parseCanaryTimestamp("Cancry-202611070001"))
         assertEquals(202611070001L, parseCancryTimestamp("Canary-202611070001"))
         assertNull(parseCancryTimestamp("Mod-v2.8.0"))
         assertNull(parseCancryTimestamp("random-tag"))
@@ -55,7 +56,7 @@ class GitHubUpdateCheckerTest {
     }
 
     @Test
-    fun findsLatestCancryReleaseFromReleasesList() {
+    fun findsLatestCanaryReleaseFromReleasesList() {
         val json = """
             [
                 {
@@ -76,7 +77,7 @@ class GitHubUpdateCheckerTest {
             ]
         """.trimIndent()
 
-        val found = findLatestCancryRelease(json)
+        val found = findLatestCanaryRelease(json)
         assertNotNull(found)
         assertEquals("Cancry-202611070005", found?.optString("tag_name"))
     }
