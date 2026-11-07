@@ -70,6 +70,7 @@ import org.aprsdroid.app.R
 @Composable
 fun MapScreen(
     title: String,
+    embeddedTopLevel: Boolean,
     isLoading: Boolean = false,
     showOsmAttribution: Boolean = false,
     onOsmAttributionClick: () -> Unit = {},
@@ -92,7 +93,6 @@ fun MapScreen(
     onOpenAbout: () -> Unit = {},
     mapContent: @Composable () -> Unit
 ) {
-    val embeddedTopLevel = LocalContext.current.javaClass.simpleName == "HubActivity"
     var showMenu by remember { mutableStateOf(false) }
     var showLayerSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()

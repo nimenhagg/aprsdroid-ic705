@@ -264,6 +264,7 @@ class HubActivity : BaseRecyclerActivity() {
                             composable(MainRoutes.MESSAGES) {
                                 ConversationsScreen(
                                     conversations = conversationsState.conversations,
+                                    embeddedTopLevel = true,
                                     onBack = { navController.navigateTopLevel(MainRoutes.STATIONS) },
                                     onOpenConversation = { call -> openMessaging(call) },
                                     onDeleteConversation = { call ->
@@ -282,6 +283,7 @@ class HubActivity : BaseRecyclerActivity() {
                                 LogScreen(
                                     items = logState.items,
                                     isRunning = logState.isRunning,
+                                    embeddedTopLevel = true,
                                     onBack = { navController.navigateTopLevel(MainRoutes.STATIONS) },
                                     onOpenHub = { navController.navigateTopLevel(MainRoutes.STATIONS) },
                                     onOpenMap = { navController.navigateTopLevel(MainRoutes.MAP) },

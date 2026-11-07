@@ -51,6 +51,7 @@ class ConversationsActivity : BaseRecyclerActivity() {
                 val state = viewModel.uiState.collectAsStateWithLifecycle().value
                 ConversationsScreen(
                     conversations = state.conversations,
+                    embeddedTopLevel = false,
                     onBack = { finish() },
                     onOpenConversation = { call -> openMessaging(call) },
                     onDeleteConversation = { call ->

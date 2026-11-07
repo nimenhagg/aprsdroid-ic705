@@ -109,6 +109,7 @@ class MapAct : MapLoaderBase() {
                 val showAboutDialog = remember { mutableStateOf(false) }
                 MapScreen(
                     title = if (targetcall.isNotEmpty()) getString(R.string.map_track_call, targetcall) else getMapTitlePrefix(),
+                    embeddedTopLevel = false,
                     isLoading = isLoadingState.value,
                     showOsmAttribution = showOsmAttributionState.value,
                     onOsmAttributionClick = {

@@ -63,13 +63,13 @@ import org.aprsdroid.app.ui.components.SymbolBadge
 @Composable
 fun ConversationsScreen(
     conversations: List<ConversationItem>,
+    embeddedTopLevel: Boolean,
     onBack: () -> Unit,
     onOpenConversation: (String) -> Unit,
     onDeleteConversation: (String) -> Unit,
     onClearAllConversations: () -> Unit,
     onStartNewConversation: (String) -> Unit
 ) {
-    val embeddedTopLevel = LocalContext.current.javaClass.simpleName == "HubActivity"
     var showNewDialog by remember { mutableStateOf(false) }
     var targetCallInput by remember { mutableStateOf("") }
     var conversationToDelete by remember { mutableStateOf<String?>(null) }

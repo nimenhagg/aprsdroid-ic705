@@ -93,6 +93,7 @@ import org.aprsdroid.app.ui.prefs.setCompactListMode
 fun LogScreen(
     items: List<LogPostItem>,
     isRunning: Boolean,
+    embeddedTopLevel: Boolean,
     onBack: () -> Unit,
     onOpenHub: () -> Unit = {},
     onOpenMap: () -> Unit = {},
@@ -104,7 +105,6 @@ fun LogScreen(
     onClearLogs: () -> Unit
 ) {
     val context = LocalContext.current
-    val embeddedTopLevel = context.javaClass.simpleName == "HubActivity"
     val compactListMode by rememberCompactListMode()
     val largeFont = LocalDensity.current.fontScale >= 1.15f
     var showMenu by remember { mutableStateOf(false) }

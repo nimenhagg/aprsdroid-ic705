@@ -112,6 +112,7 @@ fun EmbeddedMapScreen(
 
     MapScreen(
         title = currentMode.title ?: context.getString(R.string.app_map),
+        embeddedTopLevel = true,
         isLoading = dataLoading || rendererLoading,
         showOsmAttribution = currentMode.tileType == MapTileType.OSM,
         onOsmAttributionClick = {

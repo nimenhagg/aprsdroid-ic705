@@ -52,6 +52,7 @@ class LogActivity : BaseRecyclerActivity() {
                 LogScreen(
                     items = state.items,
                     isRunning = state.isRunning,
+                    embeddedTopLevel = false,
                     onBack = {
                         startActivity(Intent(this, HubActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
                         finish()
