@@ -79,21 +79,14 @@ class Ic705RxSession internal constructor(
         config = config,
         audioSink = audioSink,
         callbacks = callbacks,
-        channelFactory = Ic705DatagramChannelFactory { role, localAddress, onDatagram, onError ->
-            Ic705UdpChannel(
-                role = role,
-                localAddress = localAddress,
-                socketFactory = socketFactory,
-                onDatagram = onDatagram,
-                onError = onError,
-            )
-        },
+        channelFactory = channelFactory(socketFactory),
         controlExecutor = Executors.newSingleThreadScheduledExecutor(
             namedDaemonThreadFactory("IC-705 RX session"),
         ),
         audioExecutor = newAudioExecutor(),
         randomInt = SecureRandom()::nextInt,
         monotonicMillis = { System.nanoTime() / 1_000_000L },
+        wireProfile = Ic705RxWireProfile.WFVIEW,
     )
 
     internal constructor(
@@ -106,15 +99,7 @@ class Ic705RxSession internal constructor(
         config = config,
         audioSink = audioSink,
         callbacks = callbacks,
-        channelFactory = Ic705DatagramChannelFactory { role, localAddress, onDatagram, onError ->
-            Ic705UdpChannel(
-                role = role,
-                localAddress = localAddress,
-                socketFactory = socketFactory,
-                onDatagram = onDatagram,
-                onError = onError,
-            )
-        },
+        channelFactory = channelFactory(socketFactory),
         controlExecutor = Executors.newSingleThreadScheduledExecutor(
             namedDaemonThreadFactory("IC-705 RX session"),
         ),
@@ -122,30 +107,6 @@ class Ic705RxSession internal constructor(
         randomInt = SecureRandom()::nextInt,
         monotonicMillis = { System.nanoTime() / 1_000_000L },
         wireProfile = wireProfile,
-    )
-
-    constructor(
-        config: Ic705RxSessionConfig,
-        audioSink: PcmSink,
-        callbacks: Ic705RxSessionCallbacks = Ic705RxSessionCallbacks(),
-    ) : this(
-        config = config,
-        audioSink = audioSink,
-        callbacks = callbacks,
-        channelFactory = Ic705DatagramChannelFactory { role, localAddress, onDatagram, onError ->
-            Ic705UdpChannel(
-                role = role,
-                localAddress = localAddress,
-                onDatagram = onDatagram,
-                onError = onError,
-            )
-        },
-        controlExecutor = Executors.newSingleThreadScheduledExecutor(
-            namedDaemonThreadFactory("IC-705 RX session"),
-        ),
-        audioExecutor = newAudioExecutor(),
-        randomInt = SecureRandom()::nextInt,
-        monotonicMillis = { System.nanoTime() / 1_000_000L },
     )
 
     private data class ChannelRuntime(
@@ -1681,6 +1642,17 @@ class Ic705RxSession internal constructor(
         )
     }
 }
+
+private fun channelFactory(socketFactory: Ic705DatagramSocketFactory): Ic705DatagramChannelFactory =
+    Ic705DatagramChannelFactory { role, localAddress, onDatagram, onError ->
+        Ic705UdpChannel(
+            role = role,
+            localAddress = localAddress,
+            socketFactory = socketFactory,
+            onDatagram = onDatagram,
+            onError = onError,
+        )
+    }
 
 private fun namedDaemonThreadFactory(name: String): ThreadFactory = ThreadFactory { runnable ->
     Thread(runnable, name).apply { isDaemon = true }
