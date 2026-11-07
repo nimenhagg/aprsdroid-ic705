@@ -20,24 +20,16 @@ data class MessageChatUiState(
     val messages: List<MessageItem> = emptyList(),
 )
 
-class MessageChatViewModel internal constructor(
+class MessageChatViewModel(
     private val repository: MessageSource,
-    externalScope: CoroutineScope?,
     private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
-
-    constructor(
-        repository: MessageSource,
-        eventBus: ServiceEventBus = ServiceEventBus,
-    ) : this(repository, null, eventBus)
-
-    private val scope = externalScope ?: viewModelScope
 
     private val _uiState = MutableStateFlow(MessageChatUiState())
     val uiState: StateFlow<MessageChatUiState> = _uiState.asStateFlow()
 
     init {
-        scope.launch {
+        viewModelScope.launch {
             eventBus.messageEvents.collect { event ->
                 val current = _uiState.value.targetCall
                 if (current.isNotEmpty() &&
@@ -52,21 +44,21 @@ class MessageChatViewModel internal constructor(
 
     fun refresh(call: String) {
         if (call.isEmpty()) return
-        scope.launch {
+        viewModelScope.launch {
             val list = repository.getMessages(call)
             _uiState.update { it.copy(targetCall = call, messages = list) }
         }
     }
 
     fun deleteMessage(id: Long, call: String) {
-        scope.launch {
+        viewModelScope.launch {
             repository.deleteMessage(id)
             refresh(call)
         }
     }
 
     fun restartMessage(item: MessageItem, call: String, onRestartTriggered: () -> Unit) {
-        scope.launch {
+        viewModelScope.launch {
             val cv = ContentValues().apply {
                 put(StorageDatabase.Companion.Message.TYPE, StorageDatabase.Companion.Message.TYPE_OUT_NEW)
                 put(StorageDatabase.Companion.Message.RETRYCNT, 0)
@@ -79,7 +71,7 @@ class MessageChatViewModel internal constructor(
     }
 
     fun abortMessage(item: MessageItem, call: String, onAbortTriggered: () -> Unit) {
-        scope.launch {
+        viewModelScope.launch {
             repository.updateMessageType(item.id, StorageDatabase.Companion.Message.TYPE_OUT_ABORTED)
             onAbortTriggered()
             refresh(call)
@@ -87,7 +79,7 @@ class MessageChatViewModel internal constructor(
     }
 
     fun clearAll(call: String) {
-        scope.launch {
+        viewModelScope.launch {
             repository.deleteMessages(call)
             refresh(call)
         }

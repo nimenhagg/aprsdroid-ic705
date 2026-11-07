@@ -15,6 +15,7 @@ import org.junit.Test
 
 class StationViewModelTest {
 
+
     private class FakeStationDetailsSource : StationDetailsSource {
         var queryCount = 0
 
@@ -46,7 +47,7 @@ class StationViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeStationDetailsSource()
-        val viewModel = StationViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = StationViewModel(fakeSource)
 
         val state = viewModel.uiState.value
         assertEquals("", state.targetCall)
@@ -58,7 +59,7 @@ class StationViewModelTest {
     @Test
     fun requestRefreshUpdatesStateAfterBatchingWindow() = runBlocking {
         val fakeSource = FakeStationDetailsSource()
-        val viewModel = StationViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = StationViewModel(fakeSource)
 
         viewModel.requestRefresh("BG1ABC", "N0CALL")
 
@@ -75,7 +76,7 @@ class StationViewModelTest {
     @Test
     fun rapidConsecutiveRequestsAreConflatedIntoSingleQuery() = runBlocking {
         val fakeSource = FakeStationDetailsSource()
-        val viewModel = StationViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = StationViewModel(fakeSource)
 
         // Dispatch multiple rapid bursts within batching window
         viewModel.requestRefresh("BG1ABC-1", "N0CALL")
@@ -92,10 +93,10 @@ class StationViewModelTest {
     @Test
     fun serviceEventBusPacketEventTriggersAutomaticRefresh() = runBlocking {
         val fakeSource = FakeStationDetailsSource()
-        val viewModel = StationViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = StationViewModel(fakeSource)
 
         viewModel.requestRefresh("BG1ABC-9", "N0CALL")
-        awaitUntil { fakeSource.queryCount == 1 }
+        awaitUntil { viewModel.uiState.value.targetCall == "BG1ABC-9" && fakeSource.queryCount == 1 }
         assertEquals(1, fakeSource.queryCount)
 
         ServiceEventBus.postPacketEvent(

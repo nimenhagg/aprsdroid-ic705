@@ -18,17 +18,14 @@ data class ConversationsUiState(
 
 class ConversationsViewModel(
     private val repository: MessageSource,
-    externalScope: CoroutineScope? = null,
     private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
-
-    private val scope = externalScope ?: viewModelScope
 
     private val _uiState = MutableStateFlow(ConversationsUiState())
     val uiState: StateFlow<ConversationsUiState> = _uiState.asStateFlow()
 
     init {
-        scope.launch {
+        viewModelScope.launch {
             eventBus.messageEvents.collect {
                 refresh()
             }
@@ -36,21 +33,21 @@ class ConversationsViewModel(
     }
 
     fun refresh() {
-        scope.launch {
+        viewModelScope.launch {
             val list = repository.getConversations()
             _uiState.update { it.copy(conversations = list) }
         }
     }
 
     fun deleteConversation(call: String) {
-        scope.launch {
+        viewModelScope.launch {
             repository.deleteMessages(call)
             refresh()
         }
     }
 
     fun clearAllConversations() {
-        scope.launch {
+        viewModelScope.launch {
             repository.deleteAllMessages()
             refresh()
         }

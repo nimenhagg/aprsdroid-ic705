@@ -17,6 +17,7 @@ import org.junit.Test
 
 class LogViewModelTest {
 
+
     private class FakeLogSource : LogSource {
         var queryCount = 0
         var lastFilter: String? = null
@@ -59,7 +60,7 @@ class LogViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeLogSource()
-        val viewModel = LogViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = LogViewModel(fakeSource)
 
         val state = viewModel.uiState.value
         assertTrue(state.items.isEmpty())
@@ -69,7 +70,7 @@ class LogViewModelTest {
     @Test
     fun refreshLoadsAllLogsWhenNoFilter() = runBlocking {
         val fakeSource = FakeLogSource()
-        val viewModel = LogViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = LogViewModel(fakeSource)
 
         viewModel.refresh()
         awaitUntil { viewModel.uiState.value.items.size == 2 && fakeSource.queryCount == 1 }
@@ -83,7 +84,7 @@ class LogViewModelTest {
     @Test
     fun refreshWithFilterAppliesQueryFilter() = runBlocking {
         val fakeSource = FakeLogSource()
-        val viewModel = LogViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = LogViewModel(fakeSource)
 
         viewModel.refresh("BG1ABC")
         awaitUntil { viewModel.uiState.value.items.size == 1 && fakeSource.lastFilter == "BG1ABC" }
@@ -97,7 +98,7 @@ class LogViewModelTest {
     @Test
     fun serviceRunningStateIsReflectedInUiState() = runBlocking {
         val fakeSource = FakeLogSource()
-        val viewModel = LogViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = LogViewModel(fakeSource)
 
         assertFalse(viewModel.uiState.value.isRunning)
 
@@ -113,7 +114,7 @@ class LogViewModelTest {
     @Test
     fun packetEventTriggersAutomaticRefresh() = runBlocking {
         val fakeSource = FakeLogSource()
-        val viewModel = LogViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = LogViewModel(fakeSource)
 
         viewModel.refresh()
         awaitUntil { fakeSource.queryCount == 1 }

@@ -21,14 +21,12 @@ data class MapUiState(
 class MapViewModel(
     private val repository: MapStationSource,
     initialShowObjects: Boolean,
-    scope: CoroutineScope? = null,
 ) : ViewModel() {
-    private val coroutineScope = scope ?: viewModelScope
-    private val _uiState = MutableStateFlow(MapUiState(showObjects = initialShowObjects))
+        private val _uiState = MutableStateFlow(MapUiState(showObjects = initialShowObjects))
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
     private var loaded = false
     private val refreshQueue = LatestQuery(
-        scope = coroutineScope,
+        scope = viewModelScope,
         initialRequest = initialShowObjects,
         query = { repository.getStations(it) },
         onResult = { stations, showObjects ->

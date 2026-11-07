@@ -15,10 +15,10 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.aprsdroid.app.awaitUntil
-import org.aprsdroid.app.pauseMillis
 import org.junit.Test
 
 class MessageChatViewModelTest {
+
 
     @Before
     fun setUp() {
@@ -85,7 +85,7 @@ class MessageChatViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = MessageChatViewModel(fakeSource)
 
         val state = viewModel.uiState.value
         assertEquals("", state.targetCall)
@@ -95,7 +95,7 @@ class MessageChatViewModelTest {
     @Test
     fun refreshLoadsMessagesForCall() = runBlocking {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = MessageChatViewModel(fakeSource)
 
         viewModel.refresh("BG1ABC")
         awaitUntil { viewModel.uiState.value.messages.size == 1 && fakeSource.queryCount == 1 }
@@ -110,7 +110,7 @@ class MessageChatViewModelTest {
     @Test
     fun deleteMessageRemovesItemAndRefreshes() = runBlocking {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = MessageChatViewModel(fakeSource)
 
         viewModel.refresh("BG1ABC")
         awaitUntil { viewModel.uiState.value.messages.size == 1 }
@@ -126,7 +126,7 @@ class MessageChatViewModelTest {
     @Test
     fun restartMessageUpdatesValuesAndInvokesCallback() = runBlocking {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = MessageChatViewModel(fakeSource)
         val target = fakeSource.messages[0]
 
         var callbackCalled = false
@@ -143,7 +143,7 @@ class MessageChatViewModelTest {
     @Test
     fun abortMessageUpdatesTypeAndInvokesCallback() = runBlocking {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = MessageChatViewModel(fakeSource)
         val target = fakeSource.messages[0]
 
         var callbackCalled = false
@@ -160,7 +160,7 @@ class MessageChatViewModelTest {
     @Test
     fun serviceEventBusMessageEventsTriggerAutomaticRefreshForTarget() = runBlocking {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = MessageChatViewModel(fakeSource)
 
         viewModel.refresh("BG1ABC")
         awaitUntil { fakeSource.queryCount == 1 }
@@ -175,7 +175,6 @@ class MessageChatViewModelTest {
                 isOutgoing = false,
             )
         )
-        pauseMillis(50L)
         assertEquals(1, fakeSource.queryCount)
 
         // Event where destination is targetCall triggers refresh

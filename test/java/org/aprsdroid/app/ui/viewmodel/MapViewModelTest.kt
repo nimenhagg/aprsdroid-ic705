@@ -13,6 +13,7 @@ import org.junit.Test
 
 class MapViewModelTest {
 
+
     private class FakeMapStationSource : MapStationSource {
         var queryCount = 0
         var lastShowObjects: Boolean? = null
@@ -52,7 +53,7 @@ class MapViewModelTest {
     @Test
     fun initialStateIsEmptyBeforeRefresh() {
         val fakeSource = FakeMapStationSource()
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = true, scope = CoroutineScope(Dispatchers.Default))
+        val viewModel = MapViewModel(fakeSource, initialShowObjects = true)
 
         val state = viewModel.uiState.value
         assertEquals(0, state.stations.size)
@@ -64,7 +65,7 @@ class MapViewModelTest {
     @Test
     fun refreshLoadsStations() = runBlocking {
         val fakeSource = FakeMapStationSource()
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = true, scope = CoroutineScope(Dispatchers.Default))
+        val viewModel = MapViewModel(fakeSource, initialShowObjects = true)
 
         viewModel.refresh()
         awaitUntil { viewModel.uiState.value.stations.size == 2 && fakeSource.queryCount == 1 }
@@ -80,7 +81,7 @@ class MapViewModelTest {
     @Test
     fun refreshWithShowObjectsToggled() = runBlocking {
         val fakeSource = FakeMapStationSource()
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = true, scope = CoroutineScope(Dispatchers.Default))
+        val viewModel = MapViewModel(fakeSource, initialShowObjects = true)
 
         viewModel.refresh()
         awaitUntil { viewModel.uiState.value.stations.size == 2 }
@@ -99,7 +100,7 @@ class MapViewModelTest {
     @Test
     fun refreshPreservesShowObjectsState() = runBlocking {
         val fakeSource = FakeMapStationSource()
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = false, scope = CoroutineScope(Dispatchers.Default))
+        val viewModel = MapViewModel(fakeSource, initialShowObjects = false)
 
         viewModel.refresh()
         awaitUntil { viewModel.uiState.value.stations.size == 1 }
@@ -126,7 +127,7 @@ class MapViewModelTest {
     @Test
     fun failureResetsLoading() = runBlocking {
         val fakeSource = FakeMapStationSource().apply { shouldThrow = true }
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = true, scope = CoroutineScope(Dispatchers.Default))
+        val viewModel = MapViewModel(fakeSource, initialShowObjects = true)
 
         viewModel.refresh()
         awaitUntil { !viewModel.uiState.value.isLoading && fakeSource.queryCount == 1 }

@@ -21,22 +21,19 @@ data class LogUiState(
 
 class LogViewModel(
     private val repository: LogSource,
-    externalScope: CoroutineScope? = null,
     private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
-
-    private val scope = externalScope ?: viewModelScope
 
     private val _uiState = MutableStateFlow(LogUiState())
     val uiState: StateFlow<LogUiState> = _uiState.asStateFlow()
 
     init {
-        scope.launch {
+        viewModelScope.launch {
             eventBus.isServiceRunning.collect { running ->
                 _uiState.update { it.copy(isRunning = running) }
             }
         }
-        scope.launch {
+        viewModelScope.launch {
             eventBus.packetEvents.collect {
                 refresh()
             }
@@ -44,7 +41,7 @@ class LogViewModel(
     }
 
     private val refreshQueue = LatestQuery<String?, List<LogPostItem>>(
-        scope = scope,
+        scope = viewModelScope,
         initialRequest = null,
         query = { filter -> repository.getLogs(filter) },
         onResult = { logs, _ ->

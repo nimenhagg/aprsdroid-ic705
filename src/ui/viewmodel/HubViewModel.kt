@@ -33,18 +33,15 @@ data class HubUiState(
 class HubViewModel(
     private val repository: HubStationSource,
     private val prefs: AppPreferenceStore,
-    externalScope: CoroutineScope? = null,
     private val eventBus: ServiceEventBus = ServiceEventBus,
     private val statusProvider: (() -> String)? = null,
 ) : ViewModel() {
-
-    private val scope = externalScope ?: viewModelScope
 
     private val _uiState = MutableStateFlow(HubUiState())
     val uiState: StateFlow<HubUiState> = _uiState.asStateFlow()
 
     init {
-        scope.launch {
+        viewModelScope.launch {
             eventBus.isServiceRunning.collect { running ->
                 _uiState.update {
                     it.copy(
@@ -54,7 +51,7 @@ class HubViewModel(
                 }
             }
         }
-        scope.launch {
+        viewModelScope.launch {
             eventBus.liveStatus.collect {
                 _uiState.update {
                     it.copy(
@@ -63,7 +60,7 @@ class HubViewModel(
                 }
             }
         }
-        scope.launch {
+        viewModelScope.launch {
             eventBus.packetEvents.collect {
                 refresh()
             }
@@ -93,7 +90,7 @@ class HubViewModel(
     private data class Request(val includeStations: Boolean, val searchQuery: String)
 
     private val refreshQueue = LatestQuery(
-        scope = scope,
+        scope = viewModelScope,
         initialRequest = Request(true, ""),
         query = { request ->
             val myCall = callSsid()

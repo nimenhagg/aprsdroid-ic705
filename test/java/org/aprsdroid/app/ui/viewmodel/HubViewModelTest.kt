@@ -18,6 +18,7 @@ import org.junit.Test
 
 class HubViewModelTest {
 
+
     private class FakePreferenceStore : AppPreferenceStore {
         val stringMap = mutableMapOf(
             "callsign" to "BG1ABC",
@@ -101,7 +102,6 @@ class HubViewModelTest {
         val viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
-            CoroutineScope(Dispatchers.Default),
             statusProvider = { "READY" },
         )
 
@@ -119,7 +119,6 @@ class HubViewModelTest {
         val viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
-            CoroutineScope(Dispatchers.Default),
             statusProvider = { "READY" },
         )
 
@@ -142,7 +141,6 @@ class HubViewModelTest {
         val viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
-            CoroutineScope(Dispatchers.Default),
             statusProvider = { "READY" },
         )
 
@@ -163,7 +161,6 @@ class HubViewModelTest {
         val viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
-            CoroutineScope(Dispatchers.Default),
             statusProvider = { "CONNECTED" },
         )
 
@@ -187,7 +184,6 @@ class HubViewModelTest {
         val viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
-            CoroutineScope(Dispatchers.Default),
             statusProvider = { "READY" },
         )
 

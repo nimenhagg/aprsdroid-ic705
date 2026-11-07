@@ -18,6 +18,7 @@ import org.junit.Test
 
 class ConversationsViewModelTest {
 
+
     @Before
     fun setUp() {
         ServiceEventBus.resetForTesting()
@@ -68,7 +69,7 @@ class ConversationsViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeMessageSource()
-        val viewModel = ConversationsViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = ConversationsViewModel(fakeSource)
 
         val state = viewModel.uiState.value
         assertTrue(state.conversations.isEmpty())
@@ -77,7 +78,7 @@ class ConversationsViewModelTest {
     @Test
     fun refreshLoadsConversations() = runBlocking {
         val fakeSource = FakeMessageSource()
-        val viewModel = ConversationsViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = ConversationsViewModel(fakeSource)
 
         viewModel.refresh()
         awaitUntil { viewModel.uiState.value.conversations.size == 2 && fakeSource.queryCount == 1 }
@@ -92,7 +93,7 @@ class ConversationsViewModelTest {
     @Test
     fun deleteConversationRemovesItemAndRefreshes() = runBlocking {
         val fakeSource = FakeMessageSource()
-        val viewModel = ConversationsViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = ConversationsViewModel(fakeSource)
 
         viewModel.refresh()
         awaitUntil { viewModel.uiState.value.conversations.size == 2 }
@@ -109,7 +110,7 @@ class ConversationsViewModelTest {
     @Test
     fun clearAllConversationsClearsListAndRefreshes() = runBlocking {
         val fakeSource = FakeMessageSource()
-        val viewModel = ConversationsViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = ConversationsViewModel(fakeSource)
 
         viewModel.refresh()
         awaitUntil { viewModel.uiState.value.conversations.size == 2 }
@@ -125,7 +126,7 @@ class ConversationsViewModelTest {
     @Test
     fun serviceEventBusMessageEventsTriggerAutomaticRefresh() = runBlocking {
         val fakeSource = FakeMessageSource()
-        val viewModel = ConversationsViewModel(fakeSource, CoroutineScope(Dispatchers.Default))
+        val viewModel = ConversationsViewModel(fakeSource)
 
         viewModel.refresh()
         awaitUntil { fakeSource.queryCount == 1 }

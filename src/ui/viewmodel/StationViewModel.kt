@@ -34,7 +34,6 @@ data class StationUiState(
  */
 class StationViewModel(
     private val repository: StationDetailsSource,
-    externalScope: CoroutineScope? = null,
     private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
 
@@ -44,8 +43,7 @@ class StationViewModel(
     private val refreshChannel = Channel<Pair<String, String>>(Channel.CONFLATED)
 
     init {
-        val scope = externalScope ?: viewModelScope
-        scope.launch(Dispatchers.Default) {
+        viewModelScope.launch(Dispatchers.Default) {
             for (query in refreshChannel) {
                 // 250ms batching window: fold bursts into a single query
                 delay(250L)
@@ -57,7 +55,7 @@ class StationViewModel(
                 executeQuery(latest.first, latest.second)
             }
         }
-        scope.launch(Dispatchers.Default) {
+        viewModelScope.launch(Dispatchers.Default) {
             eventBus.packetEvents.collect { event ->
                 val current = _uiState.value
                 val target = current.targetCall
