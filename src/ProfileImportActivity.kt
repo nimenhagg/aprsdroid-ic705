@@ -1,28 +1,68 @@
 package org.aprsdroid.app
 
-import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
+import org.aprsdroid.app.ui.navigation.MainRoutes
+import org.aprsdroid.app.ui.theme.AprsTheme
 import org.json.JSONArray
 import org.json.JSONObject
 
-class ProfileImportActivity : Activity() {
+class ProfileImportActivity : ComponentActivity() {
     private val TAG = "APRSdroid.ProfileImport"
     private val db: StorageDatabase by lazy { StorageDatabase.open(this) }
     private val importExecutor = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "profile-import").apply { isDaemon = true }
     }
+    private val confirmationProfile = mutableStateOf<ParsedProfile?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "created: $intent")
+
+        setContent {
+            AprsTheme {
+                confirmationProfile.value?.let { profile ->
+                    AlertDialog(
+                        onDismissRequest = { finish() },
+                        title = {
+                            Text(stringResource(R.string.profile_import_confirm_title))
+                        },
+                        text = {
+                            Text(formatConfirmationMessage(profile))
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    confirmationProfile.value = null
+                                    applyConfig(profile)
+                                },
+                            ) {
+                                Text(stringResource(android.R.string.ok))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { finish() }) {
+                                Text(stringResource(android.R.string.cancel))
+                            }
+                        },
+                    )
+                }
+            }
+        }
+
         loadConfigForConfirmation()
     }
 
@@ -126,14 +166,10 @@ class ProfileImportActivity : Activity() {
         return output.toString(Charsets.UTF_8.name())
     }
 
-    private fun showImportConfirmation(profile: ParsedProfile) {
+    private fun formatConfirmationMessage(profile: ParsedProfile): String {
         val location = profile.dataUri.path ?: profile.dataUri.toString()
-        // Name the consequential keys explicitly. Without this the dialog only
-        // reports a count, so a profile that repoints the APRS-IS server or
-        // rewrites the radio credentials looks identical to one that only
-        // changes display options.
         val sensitive = ProfileImportSchema.sensitiveKeysIn(profile.values.keys)
-        val message = buildString {
+        return buildString {
             append(
                 getString(
                     R.string.profile_import_confirm_message,
@@ -148,13 +184,10 @@ class ProfileImportActivity : Activity() {
                 append(sensitive.joinToString("\n") { "• $it" })
             }
         }
-        AlertDialog.Builder(this)
-            .setTitle(R.string.profile_import_confirm_title)
-            .setMessage(message)
-            .setNegativeButton(android.R.string.cancel) { _, _ -> finish() }
-            .setPositiveButton(android.R.string.ok) { _, _ -> applyConfig(profile) }
-            .setOnCancelListener { finish() }
-            .show()
+    }
+
+    private fun showImportConfirmation(profile: ParsedProfile) {
+        confirmationProfile.value = profile
     }
 
     private fun applyConfig(profile: ParsedProfile) {
@@ -186,7 +219,11 @@ class ProfileImportActivity : Activity() {
                 getString(R.string.profile_import_activity),
                 msg,
             )
-            startActivity(Intent(this, LogActivity::class.java))
+            val intent = Intent(this, HubActivity::class.java).apply {
+                putExtra(HubActivity.EXTRA_START_DESTINATION, MainRoutes.PACKETS)
+                addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            }
+            startActivity(intent)
             finish()
         } catch (error: Exception) {
             showImportError(error)
