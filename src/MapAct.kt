@@ -28,6 +28,7 @@ import org.aprsdroid.app.map.TileUrlTemplate
 import org.aprsdroid.app.ui.component.AboutDialogContent
 import org.aprsdroid.app.ui.screen.MapScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
+import org.aprsdroid.app.service.ServiceEventBus
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
@@ -55,7 +56,7 @@ import kotlin.math.roundToInt
 /**
  * GMS-independent map screen backed by MapLibre Native with Compose Material 3 UI overlay.
  */
-class MapAct : MapLoaderBase() {
+class MapAct : MapLoaderBase(ServiceEventBus) {
 
     override val TAG = "APRSdroid.MapLibre"
 
@@ -148,7 +149,7 @@ class MapAct : MapLoaderBase() {
                     },
                     onClearLogs = {
                         onStartLoading()
-                        StorageCleaner(this, db) { onStopLoading() }.execute()
+                        StorageCleaner(this, db) { reloadMap() }.execute()
                     },
                     onOpenAbout = {
                         showAboutDialog.value = true
@@ -214,8 +215,7 @@ class MapAct : MapLoaderBase() {
     }
 
     override fun reloadMap() {
-        onStartLoading()
-        locReceiver.startTask(Intent())
+        reloadStations()
     }
 
     override fun changeZoom(delta: Int) {

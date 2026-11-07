@@ -23,9 +23,10 @@ import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
 import org.aprsdroid.app.ui.component.AboutDialogContent
 import org.aprsdroid.app.ui.screen.MapScreen
 import org.aprsdroid.app.ui.theme.AprsTheme
+import org.aprsdroid.app.service.ServiceEventBus
 import java.util.ArrayList
 
-class GoogleMapAct : MapLoaderBase(),
+class GoogleMapAct : MapLoaderBase(ServiceEventBus),
     GoogleMap.OnMarkerClickListener,
     GoogleMap.OnInfoWindowClickListener,
     GoogleMap.OnCameraMoveListener {
@@ -181,7 +182,7 @@ class GoogleMapAct : MapLoaderBase(),
     }
 
     override fun reloadMap() {
-        locReceiver.startTask(Intent())
+        reloadStations()
     }
 
     override fun changeZoom(delta: Int) {

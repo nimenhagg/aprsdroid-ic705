@@ -125,8 +125,6 @@ class StorageCleaner(private val context: Context, private val storage: StorageD
             Log.d("StorageCleaner", "trimming...")
             storage.trimPosts(Long.MAX_VALUE)
             handler.post {
-                Log.d("StorageCleaner", "broadcasting...")
-                context.sendBroadcast(AprsService.privateIntent(context, AprsService.UPDATE))
                 onPost()
             }
         }

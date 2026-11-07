@@ -69,9 +69,7 @@ class MessageActivity : StationHelper() {
                         }
                     },
                     onAbortMessage = { item ->
-                        viewModel.abortMessage(item, target) {
-                            sendBroadcast(AprsService.privateIntent(this, AprsService.MESSAGE))
-                        }
+                        viewModel.abortMessage(item, target) {}
                     },
                     onClearAllMessages = {
                         viewModel.deleteAll(target)
@@ -155,7 +153,6 @@ class MessageActivity : StationHelper() {
             storage.addMessage(cv)
             withContext(Dispatchers.Main) {
                 sendMessageBroadcast(target, msg)
-                sendBroadcast(AprsService.privateIntent(this@MessageActivity, AprsService.MESSAGE))
                 viewModel.refresh(target)
 
                 if (!AprsService.running) {
