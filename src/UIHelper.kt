@@ -48,53 +48,6 @@ object UIHelper {
         ctx.startActivity(Intent.createChooser(intent, file.toString()))
     }
 
-    @JvmStatic
-    fun formatDistance(distM: Float, metric: Boolean): String {
-        return if (metric) {
-            if (distM < 1000) {
-                String.format(Locale.US, "%1.0fm", distM)
-            } else {
-                String.format(Locale.US, "%1.1fkm", distM / 1000f)
-            }
-        } else {
-            val distMiles = distM * 0.000621371192f
-            if (distMiles < 0.1f) {
-                String.format(Locale.US, "%1.0fft", distM * 3.2808399f)
-            } else {
-                String.format(Locale.US, "%1.1fmi", distMiles)
-            }
-        }
-    }
-
-    @JvmStatic
-    fun formatSpeed(speedMs: Float, metric: Boolean): String {
-        return if (metric) {
-            String.format(Locale.US, "%1.0fkm/h", speedMs * 3.6f)
-        } else {
-            String.format(Locale.US, "%1.0fmph", speedMs * 2.23693629f)
-        }
-    }
-
-    @JvmStatic
-    fun formatAltitude(altM: Float, metric: Boolean): String {
-        return if (metric) {
-            String.format(Locale.US, "%1.0fm", altM)
-        } else {
-            String.format(Locale.US, "%1.0fft", altM * 3.2808399f)
-        }
-    }
-
-    @JvmStatic
-    fun formatBearing(bearingDeg: Float): String {
-        val directions = arrayOf("N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW")
-        val index = (((bearingDeg + 11.25f) % 360f) / 22.5f).toInt()
-        return directions[index % 16]
-    }
-
-    @JvmStatic
-    fun formatRelativeTime(context: Context, timeMs: Long): String {
-        return android.text.format.DateUtils.getRelativeTimeSpanString(context, timeMs).toString()
-    }
 
     @JvmStatic
     fun openCallsignDetails(context: Context, callsign: String) {
@@ -162,11 +115,6 @@ object UrlOpener {
         }
 }
 
-class UrlOpenerClickListener(private val ctx: Context, private val url: String) : DialogInterface.OnClickListener {
-    override fun onClick(d: DialogInterface, which: Int) {
-        UrlOpener.open(ctx, url)
-    }
-}
 
 class StorageCleaner(private val context: Context, private val storage: StorageDatabase, private val onPost: () -> Unit) {
     private val executor = Executors.newSingleThreadExecutor()
@@ -185,21 +133,6 @@ class StorageCleaner(private val context: Context, private val storage: StorageD
     }
 }
 
-class MessageCleaner(private val context: Context, private val storage: StorageDatabase, private val call: String) {
-    private val executor = Executors.newSingleThreadExecutor()
-    private val handler = Handler(Looper.getMainLooper())
-
-    fun execute() {
-        executor.submit {
-            Log.d("MessageCleaner", "deleting...")
-            storage.deleteMessages(call)
-            handler.post {
-                Log.d("MessageCleaner", "broadcasting...")
-                context.sendBroadcast(AprsService.privateIntent(context, AprsService.MESSAGE))
-            }
-        }
-    }
-}
 
 class LogExporter(
     private val activity: Activity,

@@ -3,8 +3,6 @@ package org.aprsdroid.app
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.content.edit
@@ -24,7 +22,6 @@ abstract class MapMenuHelper : ComponentActivity(), LoadingIndicator {
     val currentMapModeState = mutableStateOf<MapMode?>(null)
     val showObjectsState = mutableStateOf(true)
 
-    val handler = Handler(Looper.getMainLooper())
     val resultIntent = Intent()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,13 +45,6 @@ abstract class MapMenuHelper : ComponentActivity(), LoadingIndicator {
         return mode.title ?: getString(R.string.app_map)
     }
 
-    fun startFollowStation(call: String) {
-        targetcall = call
-    }
-
-    fun stopFollowStation() {
-        targetcall = ""
-    }
 
     fun switchMapActivity(cls: Class<*>) {
         if (cls != this::class.java) {

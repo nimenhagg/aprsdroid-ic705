@@ -6,7 +6,6 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
-import android.widget.FilterQueryProvider
 import net.ab0oo.aprs.parser.APRSPacket
 import net.ab0oo.aprs.parser.CourseAndSpeedExtension
 import net.ab0oo.aprs.parser.MessagePacket
@@ -183,19 +182,6 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             }
         }
 
-        @JvmStatic
-        fun cursor2call(c: Cursor): String? {
-            val msgidx = c.getColumnIndex(Post.MESSAGE)
-            val callidx = c.getColumnIndex(Station.CALL)
-            return if (msgidx != -1 && callidx == -1) {
-                val t = c.getInt(Post.COLUMN_TYPE)
-                if (t == Post.TYPE_POST || t == Post.TYPE_INCMG) {
-                    c.getString(msgidx).split(">")[0]
-                } else null
-            } else {
-                if (callidx != -1) c.getString(callidx) else null
-            }
-        }
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -353,20 +339,11 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         return readableDatabase.query(Station.TABLE, Station.COLUMNS_MAP, sel, selArgs, null, null, orderBy, limit)
     }
 
-    fun getRectStations(lat1: Int, lon1: Int, lat2: Int, lon2: Int, limit: String?): Cursor {
-        Log.d(TAG, String.format(Locale.US, "StorageDatabase.getRectStations: %d,%d - %d,%d", lat1, lon1, lat2, lon2))
-        val query = if (lon1 <= lon2) "LAT >= ? AND LAT <= ? AND LON >= ? AND LON <= ?"
-        else "LAT >= ? AND LAT <= ? AND (LON <= ? OR LON >= ?)"
-        return getStations(query, arrayOf(lat1.toString(), lat2.toString(), lon1.toString(), lon2.toString()), limit)
-    }
 
     fun getStaPosition(call: String): Cursor {
         return readableDatabase.query(Station.TABLE, Station.COLUMNS, "call LIKE ?", arrayOf(call), null, null, "_ID DESC", "1")
     }
 
-    fun getAllStaPositions(limit: String?): Cursor {
-        return readableDatabase.query(Position.TABLE, Position.COLUMNS, "TS > ?", arrayOf(limit), null, null, "CALL, _ID", null)
-    }
 
     fun getAllSsids(call: String): Cursor {
         val barecall = call.split(Regex("[- _]+"))[0]
@@ -392,12 +369,6 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         return readableDatabase.query(Station.TABLE, newcols, selection, args, null, null, "dist", limit)
     }
 
-    fun getNeighborsLike(call: String, lat: Int, lon: Int, ts: Long, limit: String?): Cursor {
-        val corr = (cos(PI * lat / 180000000.0) * cos(PI * lat / 180000000.0) * 100).toInt()
-        val distCol = String.format(Locale.US, Station.COL_DIST, lat, lat, lon, lon, corr)
-        val newcols = Station.COLUMNS + distCol
-        return readableDatabase.query(Station.TABLE, newcols, "call like ?", arrayOf(call), null, null, "dist", limit)
-    }
 
     fun addPost(ts: Long, posttype: Int, status: String, message: String, call: String? = null) {
         val cleanMessage = AprsCharsetDecoder.repairString(message)
@@ -445,11 +416,6 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         }
     }
 
-    fun getPostFilter(limit: String?): FilterQueryProvider {
-        return FilterQueryProvider { constraint ->
-            getPosts("MESSAGE LIKE ?", arrayOf("%$constraint%"), limit)
-        }
-    }
 
     fun getMessages(call: String): Cursor {
         val (selection, args) = messageCallSelection(call)
