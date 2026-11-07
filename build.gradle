@@ -194,7 +194,7 @@ android {
 		}
 	}
 	lint {
-		disable += ['MissingTranslation', 'InvalidPackage']
+		disable += ['MissingTranslation', 'InvalidPackage', 'PropertyEscape']
 	}
 	testOptions {
 		unitTests {

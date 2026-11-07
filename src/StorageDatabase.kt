@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import androidx.core.database.sqlite.transaction
 import android.util.Log
 import net.ab0oo.aprs.parser.APRSPacket
 import net.ab0oo.aprs.parser.CourseAndSpeedExtension
@@ -205,30 +206,22 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     override fun onUpgrade(db: SQLiteDatabase, from: Int, to: Int) {
         val plan = migrationPlan(from, to)
         if (plan.isEmpty()) return
-        db.beginTransaction()
-        try {
+        db.transaction {
             for (step in plan) {
                 step.execute(db)
             }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
         }
     }
 
     @JvmOverloads
     fun trimPosts(ts: Long = System.currentTimeMillis() - 2L * 24 * 3600 * 1000) {
         val db = writableDatabase
-        db.beginTransaction()
-        try {
+        db.transaction {
             db.execSQL("DELETE FROM ${Post.TABLE} WHERE ${Post.TS} < ?", arrayOf(ts.toString()))
             db.execSQL("DELETE FROM ${Position.TABLE} WHERE ${Position.TS} < ?", arrayOf(ts.toString()))
             if (ts == Long.MAX_VALUE) {
                 db.execSQL("DELETE FROM ${Station.TABLE} WHERE ${Station.TS} < ?", arrayOf(ts.toString()))
             }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
         }
     }
 
@@ -257,8 +250,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         cv.put(Position.LON, lon)
 
         val db = writableDatabase
-        db.beginTransaction()
-        try {
+        db.transaction {
             db.insertOrThrow(Position.TABLE, Position.CALL, cv)
 
             if (objectname != null) cv.put(Station.ORIGIN, call)
@@ -283,9 +275,6 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             }
             Log.d(TAG, String.format(Locale.US, "got %s(%d, %d)%s -> %s [phg=%s, rng=%s]", call, lat, lon, sym, strippedComment, phgData?.rawCode, rngMiles))
             db.replaceOrThrow(Station.TABLE, Station.CALL, cv)
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
         }
     }
 
