@@ -20,7 +20,7 @@ data class LogUiState(
 
 class LogViewModel(
     private val repository: LogSource,
-    private val eventBus: ServiceEventBus = ServiceEventBus,
+    private val bus: ServiceEventBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LogUiState())
@@ -28,12 +28,12 @@ class LogViewModel(
 
     init {
         viewModelScope.launch {
-            eventBus.isServiceRunning.collect { running ->
+            bus.isServiceRunning.collect { running ->
                 _uiState.update { it.copy(isRunning = running) }
             }
         }
         viewModelScope.launch {
-            eventBus.packetEvents.collect {
+            bus.packetEvents.collect {
                 refresh()
             }
         }
@@ -47,7 +47,7 @@ class LogViewModel(
             _uiState.update {
                 it.copy(
                     items = logs,
-                    isRunning = eventBus.isServiceRunning.value
+                    isRunning = bus.isServiceRunning.value
                 )
             }
         },
@@ -59,6 +59,6 @@ class LogViewModel(
     }
 
     fun updateServiceState() {
-        _uiState.update { it.copy(isRunning = eventBus.isServiceRunning.value) }
+        _uiState.update { it.copy(isRunning = bus.isServiceRunning.value) }
     }
 }

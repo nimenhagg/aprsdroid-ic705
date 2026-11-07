@@ -27,12 +27,13 @@ import org.junit.Test
 class ConversationsViewModelTest {
 
     private val testScheduler = TestCoroutineScheduler()
+    private val bus = ServiceEventBus()
     private var viewModel: ConversationsViewModel? = null
 
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        ServiceEventBus.resetForTesting()
+        
     }
 
     @After
@@ -86,7 +87,7 @@ class ConversationsViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeMessageSource()
-        viewModel = ConversationsViewModel(fakeSource)
+        viewModel = ConversationsViewModel(fakeSource, bus)
 
         val state = viewModel!!.uiState.value
         assertTrue(state.conversations.isEmpty())
@@ -95,7 +96,7 @@ class ConversationsViewModelTest {
     @Test
     fun refreshLoadsConversations() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        viewModel = ConversationsViewModel(fakeSource)
+        viewModel = ConversationsViewModel(fakeSource, bus)
 
         viewModel!!.refresh()
         advanceUntilIdle()
@@ -110,7 +111,7 @@ class ConversationsViewModelTest {
     @Test
     fun deleteConversationRemovesItemAndRefreshes() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        viewModel = ConversationsViewModel(fakeSource)
+        viewModel = ConversationsViewModel(fakeSource, bus)
 
         viewModel!!.refresh()
         advanceUntilIdle()
@@ -125,15 +126,15 @@ class ConversationsViewModelTest {
     }
 
     @Test
-    fun clearAllConversationsClearsListAndRefreshes() = runTest(testScheduler) {
+    fun deleteAllConversationsClearsListAndRefreshes() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        viewModel = ConversationsViewModel(fakeSource)
+        viewModel = ConversationsViewModel(fakeSource, bus)
 
         viewModel!!.refresh()
         advanceUntilIdle()
         assertEquals(2, viewModel!!.uiState.value.conversations.size)
 
-        viewModel!!.clearAllConversations()
+        viewModel!!.deleteAllConversations()
         advanceUntilIdle()
 
         assertTrue(fakeSource.clearedAll)
@@ -143,13 +144,13 @@ class ConversationsViewModelTest {
     @Test
     fun serviceEventBusMessageEventsTriggerAutomaticRefresh() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        viewModel = ConversationsViewModel(fakeSource)
+        viewModel = ConversationsViewModel(fakeSource, bus)
 
         viewModel!!.refresh()
         advanceUntilIdle()
         assertEquals(1, fakeSource.queryCount)
 
-        ServiceEventBus.postMessageEvent(
+        bus.postMessageEvent(
             AprsMessageEvent(
                 destination = "N0CALL",
                 sender = "BG1ABC",

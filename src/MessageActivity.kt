@@ -1,5 +1,7 @@
 package org.aprsdroid.app
 
+import org.aprsdroid.app.service.ServiceEventBus
+
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.ContentValues
@@ -38,7 +40,7 @@ class MessageActivity : StationHelper() {
             this,
             viewModelFactory {
                 initializer {
-                    MessageChatViewModel(repository)
+                    MessageChatViewModel(repository, ServiceEventBus)
                 }
             },
         )[MessageChatViewModel::class.java]
@@ -80,7 +82,7 @@ class MessageActivity : StationHelper() {
                         }
                     },
                     onClearAllMessages = {
-                        viewModel.clearAll(target)
+                        viewModel.deleteAll(target)
                     },
                     onExportLogs = {
                         LogExporter(this, storage, "call = '$target'") {}.execute()

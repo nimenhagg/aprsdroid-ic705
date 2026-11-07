@@ -17,7 +17,7 @@ data class ConversationsUiState(
 
 class ConversationsViewModel(
     private val repository: MessageSource,
-    private val eventBus: ServiceEventBus = ServiceEventBus,
+    private val bus: ServiceEventBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ConversationsUiState())
@@ -25,7 +25,7 @@ class ConversationsViewModel(
 
     init {
         viewModelScope.launch {
-            eventBus.messageEvents.collect {
+            bus.messageEvents.collect {
                 refresh()
             }
         }
@@ -45,7 +45,7 @@ class ConversationsViewModel(
         }
     }
 
-    fun clearAllConversations() {
+    fun deleteAllConversations() {
         viewModelScope.launch {
             repository.deleteAllMessages()
             refresh()

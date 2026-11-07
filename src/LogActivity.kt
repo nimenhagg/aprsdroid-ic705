@@ -1,5 +1,7 @@
 package org.aprsdroid.app
 
+import org.aprsdroid.app.service.ServiceEventBus
+
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -27,7 +29,7 @@ class LogActivity : BaseRecyclerActivity() {
     private val repository: LogRepository by lazy { LogRepository(storage) }
     private val viewModel: LogViewModel by lazy {
         ViewModelProvider(this, viewModelFactory {
-            initializer { LogViewModel(repository) }
+            initializer { LogViewModel(repository, ServiceEventBus) }
         })[LogViewModel::class.java]
     }
 

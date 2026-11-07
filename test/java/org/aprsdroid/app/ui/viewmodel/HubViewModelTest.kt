@@ -27,12 +27,13 @@ import org.junit.Test
 class HubViewModelTest {
 
     private val testScheduler = TestCoroutineScheduler()
+    private val bus = ServiceEventBus()
     private var viewModel: HubViewModel? = null
 
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        ServiceEventBus.resetForTesting()
+        
     }
 
     @After
@@ -121,6 +122,7 @@ class HubViewModelTest {
         viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
+            bus,
             statusProvider = { "READY" },
         )
 
@@ -138,6 +140,7 @@ class HubViewModelTest {
         viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
+            bus,
             statusProvider = { "READY" },
         )
 
@@ -160,6 +163,7 @@ class HubViewModelTest {
         viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
+            bus,
             statusProvider = { "READY" },
         )
 
@@ -180,18 +184,19 @@ class HubViewModelTest {
         viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
+            bus,
             statusProvider = { "CONNECTED" },
         )
 
         assertFalse(viewModel!!.uiState.value.isRunning)
 
-        ServiceEventBus.updateServiceRunning(true)
+        bus.updateServiceRunning(true)
         advanceUntilIdle()
 
         assertTrue(viewModel!!.uiState.value.isRunning)
         assertEquals("CONNECTED", viewModel!!.uiState.value.serviceStatus)
 
-        ServiceEventBus.updateServiceRunning(false)
+        bus.updateServiceRunning(false)
         advanceUntilIdle()
         assertFalse(viewModel!!.uiState.value.isRunning)
     }
@@ -203,6 +208,7 @@ class HubViewModelTest {
         viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
+            bus,
             statusProvider = { "READY" },
         )
 
@@ -210,7 +216,7 @@ class HubViewModelTest {
         advanceUntilIdle()
         assertEquals(1, fakeSource.queryCount)
 
-        ServiceEventBus.postPacketEvent(
+        bus.postPacketEvent(
             AprsPacketEvent(
                 callsign = "BI1NEW",
                 type = 0,

@@ -29,19 +29,20 @@ data class AprsMessageEvent(
  * Eliminates reliance on untyped Android BroadcastReceivers for intra-app communication.
  */
 open class ServiceEventBus {
-    internal val _isServiceRunning = MutableStateFlow(false)
+    
+    private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
 
-    internal val _linkError = MutableStateFlow(0)
+    private val _linkError = MutableStateFlow(0)
     val linkError: StateFlow<Int> = _linkError.asStateFlow()
 
-    internal val _liveStatus = MutableStateFlow<ServiceLiveStatus?>(null)
+    private val _liveStatus = MutableStateFlow<ServiceLiveStatus?>(null)
     val liveStatus: StateFlow<ServiceLiveStatus?> = _liveStatus.asStateFlow()
 
-    internal val _packetEvents = MutableSharedFlow<AprsPacketEvent>(replay = 1, extraBufferCapacity = 64)
+    private val _packetEvents = MutableSharedFlow<AprsPacketEvent>(replay = 1, extraBufferCapacity = 64)
     val packetEvents: SharedFlow<AprsPacketEvent> = _packetEvents.asSharedFlow()
 
-    internal val _messageEvents = MutableSharedFlow<AprsMessageEvent>(replay = 1, extraBufferCapacity = 64)
+    private val _messageEvents = MutableSharedFlow<AprsMessageEvent>(replay = 1, extraBufferCapacity = 64)
     val messageEvents: SharedFlow<AprsMessageEvent> = _messageEvents.asSharedFlow()
 
     fun updateServiceRunning(running: Boolean) {

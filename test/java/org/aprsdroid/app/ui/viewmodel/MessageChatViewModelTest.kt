@@ -28,12 +28,13 @@ import org.junit.Test
 class MessageChatViewModelTest {
 
     private val testScheduler = TestCoroutineScheduler()
+    private val bus = ServiceEventBus()
     private var viewModel: MessageChatViewModel? = null
 
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        ServiceEventBus.resetForTesting()
+        
     }
 
     @After
@@ -102,7 +103,7 @@ class MessageChatViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeMessageSource()
-        viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource, bus)
 
         val state = viewModel!!.uiState.value
         assertEquals("", state.targetCall)
@@ -112,7 +113,7 @@ class MessageChatViewModelTest {
     @Test
     fun refreshLoadsMessagesForCall() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource, bus)
 
         viewModel!!.refresh("BG1ABC")
         advanceUntilIdle()
@@ -127,7 +128,7 @@ class MessageChatViewModelTest {
     @Test
     fun deleteMessageRemovesItemAndRefreshes() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource, bus)
 
         viewModel!!.refresh("BG1ABC")
         advanceUntilIdle()
@@ -143,7 +144,7 @@ class MessageChatViewModelTest {
     @Test
     fun restartMessageUpdatesValuesAndInvokesCallback() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource, bus)
         val target = fakeSource.messages[0]
 
         var callbackCalled = false
@@ -160,7 +161,7 @@ class MessageChatViewModelTest {
     @Test
     fun abortMessageUpdatesTypeAndInvokesCallback() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource, bus)
         val target = fakeSource.messages[0]
 
         var callbackCalled = false
@@ -177,14 +178,14 @@ class MessageChatViewModelTest {
     @Test
     fun serviceEventBusMessageEventsTriggerAutomaticRefreshForTarget() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource, bus)
 
         viewModel!!.refresh("BG1ABC")
         advanceUntilIdle()
         assertEquals(1, fakeSource.queryCount)
 
         // Event for unrelated callsign does not refresh
-        ServiceEventBus.postMessageEvent(
+        bus.postMessageEvent(
             AprsMessageEvent(
                 destination = "N0CALL",
                 sender = "BI1XYZ",
@@ -195,7 +196,7 @@ class MessageChatViewModelTest {
         assertEquals(1, fakeSource.queryCount)
 
         // Event where destination is targetCall triggers refresh
-        ServiceEventBus.postMessageEvent(
+        bus.postMessageEvent(
             AprsMessageEvent(
                 destination = "BG1ABC",
                 sender = "N0CALL",
@@ -207,7 +208,7 @@ class MessageChatViewModelTest {
         assertEquals(2, fakeSource.queryCount)
 
         // Event where sender is targetCall triggers refresh
-        ServiceEventBus.postMessageEvent(
+        bus.postMessageEvent(
             AprsMessageEvent(
                 destination = "N0CALL",
                 sender = "BG1ABC",

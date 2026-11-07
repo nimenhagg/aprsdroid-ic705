@@ -25,12 +25,13 @@ import org.junit.Test
 class StationViewModelTest {
 
     private val testScheduler = TestCoroutineScheduler()
+    private val bus = ServiceEventBus()
     private var viewModel: StationViewModel? = null
 
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        ServiceEventBus.resetForTesting()
+        
     }
 
     @After
@@ -70,7 +71,7 @@ class StationViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeStationDetailsSource()
-        viewModel = StationViewModel(fakeSource)
+        viewModel = StationViewModel(fakeSource, bus)
 
         val state = viewModel!!.uiState.value
         assertEquals("", state.targetCall)
@@ -82,7 +83,7 @@ class StationViewModelTest {
     @Test
     fun requestRefreshUpdatesStateAfterBatchingWindow() = runTest(testScheduler) {
         val fakeSource = FakeStationDetailsSource()
-        viewModel = StationViewModel(fakeSource)
+        viewModel = StationViewModel(fakeSource, bus)
 
         viewModel!!.requestRefresh("BG1ABC", "N0CALL")
 
@@ -99,7 +100,7 @@ class StationViewModelTest {
     @Test
     fun rapidConsecutiveRequestsAreConflatedIntoSingleQuery() = runTest(testScheduler) {
         val fakeSource = FakeStationDetailsSource()
-        viewModel = StationViewModel(fakeSource)
+        viewModel = StationViewModel(fakeSource, bus)
 
         // Dispatch multiple rapid bursts within batching window
         viewModel!!.requestRefresh("BG1ABC-1", "N0CALL")
@@ -116,13 +117,13 @@ class StationViewModelTest {
     @Test
     fun serviceEventBusPacketEventTriggersAutomaticRefresh() = runTest(testScheduler) {
         val fakeSource = FakeStationDetailsSource()
-        viewModel = StationViewModel(fakeSource)
+        viewModel = StationViewModel(fakeSource, bus)
 
         viewModel!!.requestRefresh("BG1ABC-9", "N0CALL")
         advanceUntilIdle()
         assertEquals(1, fakeSource.queryCount)
 
-        ServiceEventBus.postPacketEvent(
+        bus.postPacketEvent(
             AprsPacketEvent(
                 callsign = "BG1ABC-9",
                 type = 3,

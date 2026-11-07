@@ -33,7 +33,7 @@ data class StationUiState(
  */
 class StationViewModel(
     private val repository: StationDetailsSource,
-    private val eventBus: ServiceEventBus = ServiceEventBus,
+    private val bus: ServiceEventBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StationUiState())
@@ -55,7 +55,7 @@ class StationViewModel(
             }
         }
         viewModelScope.launch {
-            eventBus.packetEvents.collect { event ->
+            bus.packetEvents.collect { event ->
                 val current = _uiState.value
                 val target = current.targetCall
                 if (target.isNotEmpty()) {

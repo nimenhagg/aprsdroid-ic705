@@ -21,7 +21,7 @@ data class MessageChatUiState(
 
 class MessageChatViewModel(
     private val repository: MessageSource,
-    private val eventBus: ServiceEventBus = ServiceEventBus,
+    private val bus: ServiceEventBus,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MessageChatUiState())
@@ -29,7 +29,7 @@ class MessageChatViewModel(
 
     init {
         viewModelScope.launch {
-            eventBus.messageEvents.collect { event ->
+            bus.messageEvents.collect { event ->
                 val current = _uiState.value.targetCall
                 if (current.isNotEmpty() &&
                     (AprsPacket.sameMessageCallsign(event.destination, current) ||
@@ -77,7 +77,7 @@ class MessageChatViewModel(
         }
     }
 
-    fun clearAll(call: String) {
+    fun deleteAll(call: String) {
         viewModelScope.launch {
             repository.deleteMessages(call)
             refresh(call)

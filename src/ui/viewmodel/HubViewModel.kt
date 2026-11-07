@@ -32,7 +32,7 @@ data class HubUiState(
 class HubViewModel(
     private val repository: HubStationSource,
     private val prefs: AppPreferenceStore,
-    private val eventBus: ServiceEventBus = ServiceEventBus,
+    private val bus: ServiceEventBus,
     private val statusProvider: (() -> String)? = null,
 ) : ViewModel() {
 
@@ -41,7 +41,7 @@ class HubViewModel(
 
     init {
         viewModelScope.launch {
-            eventBus.isServiceRunning.collect { running ->
+            bus.isServiceRunning.collect { running ->
                 _uiState.update {
                     it.copy(
                         isRunning = running,
@@ -51,7 +51,7 @@ class HubViewModel(
             }
         }
         viewModelScope.launch {
-            eventBus.liveStatus.collect {
+            bus.liveStatus.collect {
                 _uiState.update {
                     it.copy(
                         serviceStatus = currentServiceStatus(_uiState.value.isRunning)
@@ -60,7 +60,7 @@ class HubViewModel(
             }
         }
         viewModelScope.launch {
-            eventBus.packetEvents.collect {
+            bus.packetEvents.collect {
                 refresh()
             }
         }
@@ -103,9 +103,9 @@ class HubViewModel(
                     isSearching = if (request.includeStations) false else it.isSearching,
                     myLat = data.myLat,
                     myLon = data.myLon,
-                    isRunning = eventBus.isServiceRunning.value,
+                    isRunning = bus.isServiceRunning.value,
                     myCall = myCall,
-                    serviceStatus = currentServiceStatus(eventBus.isServiceRunning.value)
+                    serviceStatus = currentServiceStatus(bus.isServiceRunning.value)
                 )
             }
         },
@@ -130,7 +130,7 @@ class HubViewModel(
     }
 
     fun updateServiceState() {
-        val running = eventBus.isServiceRunning.value
+        val running = bus.isServiceRunning.value
         _uiState.update {
             it.copy(
                 isRunning = running,

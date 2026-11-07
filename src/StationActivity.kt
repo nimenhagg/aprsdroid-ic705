@@ -1,5 +1,7 @@
 package org.aprsdroid.app
 
+import org.aprsdroid.app.service.ServiceEventBus
+
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -37,7 +39,7 @@ class StationActivity : ComponentActivity() {
             this,
             viewModelFactory {
                 initializer {
-                    StationViewModel(StationRepository(storage))
+                    StationViewModel(StationRepository(storage), ServiceEventBus)
                 }
             },
         )[StationViewModel::class.java]

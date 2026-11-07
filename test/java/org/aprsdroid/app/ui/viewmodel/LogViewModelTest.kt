@@ -26,12 +26,13 @@ import org.junit.Test
 class LogViewModelTest {
 
     private val testScheduler = TestCoroutineScheduler()
+    private val bus = ServiceEventBus()
     private var viewModel: LogViewModel? = null
 
     @Before
     fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        ServiceEventBus.resetForTesting()
+        
     }
 
     @After
@@ -79,7 +80,7 @@ class LogViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeLogSource()
-        viewModel = LogViewModel(fakeSource)
+        viewModel = LogViewModel(fakeSource, bus)
 
         val state = viewModel!!.uiState.value
         assertTrue(state.items.isEmpty())
@@ -89,7 +90,7 @@ class LogViewModelTest {
     @Test
     fun refreshLoadsAllLogsWhenNoFilter() = runTest(testScheduler) {
         val fakeSource = FakeLogSource()
-        viewModel = LogViewModel(fakeSource)
+        viewModel = LogViewModel(fakeSource, bus)
 
         viewModel!!.refresh()
         advanceUntilIdle()
@@ -103,7 +104,7 @@ class LogViewModelTest {
     @Test
     fun refreshWithFilterAppliesQueryFilter() = runTest(testScheduler) {
         val fakeSource = FakeLogSource()
-        viewModel = LogViewModel(fakeSource)
+        viewModel = LogViewModel(fakeSource, bus)
 
         viewModel!!.refresh("BG1ABC")
         advanceUntilIdle()
@@ -117,15 +118,15 @@ class LogViewModelTest {
     @Test
     fun serviceRunningStateIsReflectedInUiState() = runTest(testScheduler) {
         val fakeSource = FakeLogSource()
-        viewModel = LogViewModel(fakeSource)
+        viewModel = LogViewModel(fakeSource, bus)
 
         assertFalse(viewModel!!.uiState.value.isRunning)
 
-        ServiceEventBus.updateServiceRunning(true)
+        bus.updateServiceRunning(true)
         advanceUntilIdle()
         assertTrue(viewModel!!.uiState.value.isRunning)
 
-        ServiceEventBus.updateServiceRunning(false)
+        bus.updateServiceRunning(false)
         advanceUntilIdle()
         assertFalse(viewModel!!.uiState.value.isRunning)
     }
@@ -133,13 +134,13 @@ class LogViewModelTest {
     @Test
     fun packetEventTriggersAutomaticRefresh() = runTest(testScheduler) {
         val fakeSource = FakeLogSource()
-        viewModel = LogViewModel(fakeSource)
+        viewModel = LogViewModel(fakeSource, bus)
 
         viewModel!!.refresh()
         advanceUntilIdle()
         assertEquals(1, fakeSource.queryCount)
 
-        ServiceEventBus.postPacketEvent(
+        bus.postPacketEvent(
             AprsPacketEvent(
                 callsign = "BI1NEW",
                 type = 0,

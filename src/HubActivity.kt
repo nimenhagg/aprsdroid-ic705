@@ -1,5 +1,7 @@
 package org.aprsdroid.app
 
+import org.aprsdroid.app.service.ServiceEventBus
+
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -81,17 +83,17 @@ class HubActivity : BaseRecyclerActivity() {
     private val mapRepository: MapStationRepository by lazy { MapStationRepository(storage, PrefsWrapper(applicationContext)) }
     private val viewModel: HubViewModel by lazy {
         ViewModelProvider(this, viewModelFactory {
-            initializer { HubViewModel(stationRepository, PrefsWrapper(applicationContext)) }
+            initializer { HubViewModel(stationRepository, PrefsWrapper(applicationContext), ServiceEventBus) }
         })[HubViewModel::class.java]
     }
     private val conversationsViewModel: ConversationsViewModel by lazy {
         ViewModelProvider(this, viewModelFactory {
-            initializer { ConversationsViewModel(messageRepository) }
+            initializer { ConversationsViewModel(messageRepository, ServiceEventBus) }
         })[ConversationsViewModel::class.java]
     }
     private val logViewModel: LogViewModel by lazy {
         ViewModelProvider(this, viewModelFactory {
-            initializer { LogViewModel(logRepository) }
+            initializer { LogViewModel(logRepository, ServiceEventBus) }
         })[LogViewModel::class.java]
     }
     private val mapViewModel: MapViewModel by lazy {
@@ -287,7 +289,7 @@ class HubActivity : BaseRecyclerActivity() {
                                         Toast.makeText(this@HubActivity, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                                     },
                                     onClearAllConversations = {
-                                        conversationsViewModel.clearAllConversations()
+                                        conversationsViewModel.deleteAllConversations()
                                         Toast.makeText(this@HubActivity, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                                     },
                                     onStartNewConversation = { call -> openMessaging(call) }

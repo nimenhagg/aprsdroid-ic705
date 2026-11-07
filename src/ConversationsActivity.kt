@@ -1,5 +1,7 @@
 package org.aprsdroid.app
 
+import org.aprsdroid.app.service.ServiceEventBus
+
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -31,7 +33,7 @@ class ConversationsActivity : BaseRecyclerActivity() {
             this,
             viewModelFactory {
                 initializer {
-                    ConversationsViewModel(repository)
+                    ConversationsViewModel(repository, ServiceEventBus)
                 }
             },
         )[ConversationsViewModel::class.java]
@@ -59,7 +61,7 @@ class ConversationsActivity : BaseRecyclerActivity() {
                         Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                     },
                     onClearAllConversations = {
-                        viewModel.clearAllConversations()
+                        viewModel.deleteAllConversations()
                         Toast.makeText(this, R.string.messages_cleared, Toast.LENGTH_SHORT).show()
                     },
                     onStartNewConversation = { call -> openMessaging(call) }

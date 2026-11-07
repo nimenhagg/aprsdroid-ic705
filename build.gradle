@@ -271,13 +271,22 @@ tasks.register('verifyArchitecture') {
 				}
 			}
 
-			// Rule 5 (Strict): src/** must not contain test hook method definitions
+			// Rule 5 (Strict): src/** must not contain internal backing fields or test hook methods
 			if (srcDir.exists()) {
 				srcDir.eachFileRecurse(groovy.io.FileType.FILES) { file ->
 					if (file.name.endsWith('.kt')) {
+						def normalizedPath = file.path.replace('\\', '/')
 						file.eachLine { line, lineNum ->
-							if (line =~ /fun\s+(?:[A-Za-z0-9]*ForTest[A-Za-z0-9]*|resetState|resetCache|clearAllState)\s*\(/) {
-								violations << "Rule 5 (Test hook in production API): ${file.name}:${lineNum} -> ${line.trim()}"
+							if (line =~ /\binternal\s+val\s+_/) {
+								violations << "Rule 5 (Internal backing field): ${file.name}:${lineNum} -> ${line.trim()}"
+							}
+							if (line =~ /fun\s+[A-Za-z0-9]*ForTest[A-Za-z0-9]*\s*\(/) {
+								violations << "Rule 5 (ForTest hook in production API): ${file.name}:${lineNum} -> ${line.trim()}"
+							}
+							if (line =~ /fun\s+(?:reset|clear)[A-Za-z0-9]*\s*\(/ && !line.contains('override')) {
+								if (!normalizedPath.contains('/ic705/') && !normalizedPath.contains('/audio/') && !normalizedPath.contains('/diagnostic/')) {
+									violations << "Rule 5 (Test hook reset/clear in production API): ${file.name}:${lineNum} -> ${line.trim()}"
+								}
 							}
 						}
 					}
