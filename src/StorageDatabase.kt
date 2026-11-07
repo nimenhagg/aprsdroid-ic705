@@ -18,6 +18,11 @@ import org.aprsdroid.app.aprs.AprsPhg
 import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
+import org.aprsdroid.app.StorageDatabase.Companion.Message
+import org.aprsdroid.app.StorageDatabase.Companion.Station
+import org.aprsdroid.app.StorageDatabase.Companion.Position
+import org.aprsdroid.app.StorageDatabase.Companion.Post
+import org.aprsdroid.app.StorageDatabase.Companion.TABLE_INDEX
 
 class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, null, DB_VERSION) {
 
@@ -212,111 +217,32 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
     }
 
     override fun onUpgrade(db: SQLiteDatabase, from: Int, to: Int) {
-        // SQLiteOpenHelper can jump directly across multiple versions (for example
-        // 1 -> 4), so migrations must be selected by the source version rather
-        // than by assuming an intermediate target such as `to <= 3`.
-        if (from <= 1) {
-            db.execSQL(Message.TABLE_CREATE)
-        }
-        if (from == 2) {
-            db.execSQL("ALTER TABLE message RENAME TO messages")
-        }
-        if (from <= 2) {
-            db.execSQL("DROP TABLE position")
-            db.execSQL(Station.TABLE_CREATE)
-            db.execSQL(Position.TABLE_CREATE)
-        }
-        if (from <= 3 && to >= 4) {
-            arrayOf(Position.TABLE, Station.TABLE).forEach { tab ->
-                db.execSQL(String.format(Locale.US, TABLE_INDEX, tab, "ts", tab, "ts"))
+        val plan = migrationPlan(from, to)
+        if (plan.isEmpty()) return
+        db.beginTransaction()
+        try {
+            for (step in plan) {
+                step.execute(db)
             }
-            arrayOf("call", "type").forEach { col ->
-                db.execSQL(String.format(Locale.US, TABLE_INDEX, Message.TABLE, col, Message.TABLE, col))
-            }
-        }
-        if (from < 5 && to >= 5) {
-            upgradeToV5(db)
-        }
-        if (from < 6 && to >= 6) {
-            upgradeToV6(db)
-        }
-    }
-
-    private fun upgradeToV5(db: SQLiteDatabase) {
-        try {
-            db.execSQL("ALTER TABLE ${Station.TABLE} ADD COLUMN ${Station.PHG} TEXT")
-        } catch (e: Exception) {
-            Log.w(TAG, "upgradeToV5: column phg already exists or failed", e)
-        }
-        try {
-            db.execSQL("ALTER TABLE ${Station.TABLE} ADD COLUMN ${Station.RNG} REAL")
-        } catch (e: Exception) {
-            Log.w(TAG, "upgradeToV5: column rng already exists or failed", e)
-        }
-
-        // Migrate and backfill existing station comments
-        try {
-            val cursor = db.query(Station.TABLE, arrayOf(Station._ID, Station.COMMENT), null, null, null, null, null)
-            val updates = mutableListOf<Triple<Long, String?, Pair<String?, Double?>>>()
-            cursor.use { c ->
-                val idIdx = c.getColumnIndex(Station._ID)
-                val commentIdx = c.getColumnIndex(Station.COMMENT)
-                while (c.moveToNext()) {
-                    val id = c.getLong(idIdx)
-                    val rawComment = if (commentIdx >= 0) c.getString(commentIdx) else null
-                    if (!rawComment.isNullOrBlank()) {
-                        val phg = AprsPacket.parsePhg(rawComment)?.rawCode
-                        val rng = AprsPhg.parseRng(rawComment)
-                        val clean = AprsCommentCleaner.clean(rawComment)
-                        if (phg != null || rng != null || clean != rawComment) {
-                            updates.add(Triple(id, clean, Pair(phg, rng)))
-                        }
-                    }
-                }
-            }
-            for ((id, clean, metadata) in updates) {
-                val cv = ContentValues().apply {
-                    put(Station.COMMENT, clean)
-                    if (metadata.first != null) put(Station.PHG, metadata.first)
-                    if (metadata.second != null) put(Station.RNG, metadata.second)
-                }
-                db.update(Station.TABLE, cv, "${Station._ID} = ?", arrayOf(id.toString()))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "upgradeToV5: error migrating comments", e)
-        }
-    }
-
-    private fun upgradeToV6(db: SQLiteDatabase) {
-        try {
-            db.execSQL("ALTER TABLE ${Post.TABLE} ADD COLUMN ${Post.CALL} TEXT")
-        } catch (e: Exception) {
-            Log.w(TAG, "upgradeToV6: column call already exists or failed", e)
-        }
-        try {
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_${Post.TABLE}_call ON ${Post.TABLE} (${Post.CALL})")
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_${Post.TABLE}_ts ON ${Post.TABLE} (${Post.TS})")
-        } catch (e: Exception) {
-            Log.w(TAG, "upgradeToV6: index creation failed", e)
-        }
-        try {
-            db.execSQL(
-                "UPDATE ${Post.TABLE} SET ${Post.CALL} = CASE " +
-                    "WHEN instr(${Post.MESSAGE}, '>') > 0 THEN substr(${Post.MESSAGE}, 1, instr(${Post.MESSAGE}, '>') - 1) " +
-                    "ELSE NULL END " +
-                    "WHERE ${Post.CALL} IS NULL AND (${Post.TYPE} = ${Post.TYPE_POST} OR ${Post.TYPE} = ${Post.TYPE_INCMG} OR ${Post.TYPE} = ${Post.TYPE_TX})"
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "upgradeToV6: error backfilling post calls", e)
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
         }
     }
 
     @JvmOverloads
     fun trimPosts(ts: Long = System.currentTimeMillis() - 2L * 24 * 3600 * 1000) {
-        writableDatabase.execSQL("DELETE FROM ${Post.TABLE} WHERE ${Post.TS} < ?", arrayOf(ts.toString()))
-        writableDatabase.execSQL("DELETE FROM ${Position.TABLE} WHERE ${Position.TS} < ?", arrayOf(ts.toString()))
-        if (ts == Long.MAX_VALUE) {
-            writableDatabase.execSQL("DELETE FROM ${Station.TABLE} WHERE ${Station.TS} < ?", arrayOf(ts.toString()))
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.execSQL("DELETE FROM ${Post.TABLE} WHERE ${Post.TS} < ?", arrayOf(ts.toString()))
+            db.execSQL("DELETE FROM ${Position.TABLE} WHERE ${Position.TS} < ?", arrayOf(ts.toString()))
+            if (ts == Long.MAX_VALUE) {
+                db.execSQL("DELETE FROM ${Station.TABLE} WHERE ${Station.TS} < ?", arrayOf(ts.toString()))
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
         }
     }
 
@@ -343,30 +269,38 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
         cv.put(Position.CALL, objectname ?: call)
         cv.put(Position.LAT, lat)
         cv.put(Position.LON, lon)
-        writableDatabase.insertOrThrow(Position.TABLE, Position.CALL, cv)
 
-        if (objectname != null) cv.put(Station.ORIGIN, call)
-        cv.put(Station.SYMBOL, sym)
-        cv.put(Station.COMMENT, strippedComment)
-        cv.put(Station.QRG, qrg)
-        if (phgData != null) {
-            cv.put(Station.PHG, phgData.rawCode)
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.insertOrThrow(Position.TABLE, Position.CALL, cv)
+
+            if (objectname != null) cv.put(Station.ORIGIN, call)
+            cv.put(Station.SYMBOL, sym)
+            cv.put(Station.COMMENT, strippedComment)
+            cv.put(Station.QRG, qrg)
+            if (phgData != null) {
+                cv.put(Station.PHG, phgData.rawCode)
+            }
+            if (rngMiles != null) {
+                cv.put(Station.RNG, rngMiles)
+            }
+            var flags = 0
+            if (objectname != null) flags = flags or Station.FLAG_OBJECT
+            if (cse != null && cse.speed > 0) flags = flags or Station.FLAG_MOVING
+            val destination = ap.toString().substringBefore(':').substringAfter('>', "").substringBefore(',')
+            if (destination.startsWith("APFMO", ignoreCase = true)) flags = flags or Station.FLAG_FMO
+            cv.put(Station.FLAGS, flags)
+            if (cse != null) {
+                cv.put(Station.SPEED, cse.speed)
+                cv.put(Station.COURSE, cse.course)
+            }
+            Log.d(TAG, String.format(Locale.US, "got %s(%d, %d)%s -> %s [phg=%s, rng=%s]", call, lat, lon, sym, strippedComment, phgData?.rawCode, rngMiles))
+            db.replaceOrThrow(Station.TABLE, Station.CALL, cv)
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
         }
-        if (rngMiles != null) {
-            cv.put(Station.RNG, rngMiles)
-        }
-        var flags = 0
-        if (objectname != null) flags = flags or Station.FLAG_OBJECT
-        if (cse != null && cse.speed > 0) flags = flags or Station.FLAG_MOVING
-        val destination = ap.toString().substringBefore(':').substringAfter('>', "").substringBefore(',')
-        if (destination.startsWith("APFMO", ignoreCase = true)) flags = flags or Station.FLAG_FMO
-        cv.put(Station.FLAGS, flags)
-        if (cse != null) {
-            cv.put(Station.SPEED, cse.speed)
-            cv.put(Station.COURSE, cse.course)
-        }
-        Log.d(TAG, String.format(Locale.US, "got %s(%d, %d)%s -> %s [phg=%s, rng=%s]", call, lat, lon, sym, strippedComment, phgData?.rawCode, rngMiles))
-        writableDatabase.replaceOrThrow(Station.TABLE, Station.CALL, cv)
     }
 
     fun isMessageDuplicate(
@@ -621,4 +555,134 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
             )
         }
     }
+}
+
+
+internal fun hasColumn(db: SQLiteDatabase, tableName: String, columnName: String): Boolean {
+    val cursor = db.rawQuery("PRAGMA table_info($tableName)", null)
+    cursor.use { c ->
+        val nameColIdx = c.getColumnIndex("name")
+        while (c.moveToNext()) {
+            if (nameColIdx >= 0 && c.getString(nameColIdx).equals(columnName, ignoreCase = true)) {
+                return true
+            }
+        }
+    }
+    return false
+}
+
+internal sealed class MigrationStep(val description: String) {
+    abstract fun execute(db: SQLiteDatabase)
+
+    data object V1ToV2 : MigrationStep("Create messages, drop old position and create station/position") {
+        override fun execute(db: SQLiteDatabase) {
+            db.execSQL(Message.TABLE_CREATE)
+            db.execSQL("DROP TABLE IF EXISTS position")
+            db.execSQL(Station.TABLE_CREATE)
+            db.execSQL(Position.TABLE_CREATE)
+        }
+    }
+
+    data object V2ToV3 : MigrationStep("Rename message table to messages and recreate station/position") {
+        override fun execute(db: SQLiteDatabase) {
+            db.execSQL("ALTER TABLE message RENAME TO messages")
+            db.execSQL("DROP TABLE IF EXISTS position")
+            db.execSQL(Station.TABLE_CREATE)
+            db.execSQL(Position.TABLE_CREATE)
+        }
+    }
+
+    data object V3ToV4 : MigrationStep("Add indexes for position, station, and messages") {
+        override fun execute(db: SQLiteDatabase) {
+            arrayOf(Position.TABLE, Station.TABLE).forEach { tab ->
+                db.execSQL(String.format(Locale.US, TABLE_INDEX, tab, "ts", tab, "ts"))
+            }
+            arrayOf("call", "type").forEach { col ->
+                db.execSQL(String.format(Locale.US, TABLE_INDEX, Message.TABLE, col, Message.TABLE, col))
+            }
+        }
+    }
+
+    data object V4ToV5 : MigrationStep("Add phg and rng to stations and backfill comments") {
+        override fun execute(db: SQLiteDatabase) {
+            upgradeToV5(db)
+        }
+    }
+
+    data object V5ToV6 : MigrationStep("Add call to posts, create indexes and backfill post call") {
+        override fun execute(db: SQLiteDatabase) {
+            upgradeToV6(db)
+        }
+    }
+}
+
+internal fun migrationPlan(from: Int, to: Int): List<MigrationStep> {
+    if (from >= to) return emptyList()
+    val plan = mutableListOf<MigrationStep>()
+    if (from <= 1) {
+        plan.add(MigrationStep.V1ToV2)
+    } else if (from == 2) {
+        plan.add(MigrationStep.V2ToV3)
+    }
+    if (from <= 3 && to >= 4) {
+        plan.add(MigrationStep.V3ToV4)
+    }
+    if (from < 5 && to >= 5) {
+        plan.add(MigrationStep.V4ToV5)
+    }
+    if (from < 6 && to >= 6) {
+        plan.add(MigrationStep.V5ToV6)
+    }
+    return plan
+}
+
+internal fun upgradeToV5(db: SQLiteDatabase) {
+    if (!hasColumn(db, Station.TABLE, Station.PHG)) {
+        db.execSQL("ALTER TABLE ${Station.TABLE} ADD COLUMN ${Station.PHG} TEXT")
+    }
+    if (!hasColumn(db, Station.TABLE, Station.RNG)) {
+        db.execSQL("ALTER TABLE ${Station.TABLE} ADD COLUMN ${Station.RNG} REAL")
+    }
+
+    // Migrate and backfill existing station comments
+    val cursor = db.query(Station.TABLE, arrayOf(Station._ID, Station.COMMENT), null, null, null, null, null)
+    val updates = mutableListOf<Triple<Long, String?, Pair<String?, Double?>>>()
+    cursor.use { c ->
+        val idIdx = c.getColumnIndex(Station._ID)
+        val commentIdx = c.getColumnIndex(Station.COMMENT)
+        while (c.moveToNext()) {
+            val id = c.getLong(idIdx)
+            val rawComment = if (commentIdx >= 0) c.getString(commentIdx) else null
+            if (!rawComment.isNullOrBlank()) {
+                val phg = AprsPacket.parsePhg(rawComment)?.rawCode
+                val rng = AprsPhg.parseRng(rawComment)
+                val clean = AprsCommentCleaner.clean(rawComment)
+                if (phg != null || rng != null || clean != rawComment) {
+                    updates.add(Triple(id, clean, Pair(phg, rng)))
+                }
+            }
+        }
+    }
+    for ((id, clean, metadata) in updates) {
+        val cv = ContentValues().apply {
+            put(Station.COMMENT, clean)
+            if (metadata.first != null) put(Station.PHG, metadata.first)
+            if (metadata.second != null) put(Station.RNG, metadata.second)
+        }
+        db.update(Station.TABLE, cv, "${Station._ID} = ?", arrayOf(id.toString()))
+    }
+}
+
+internal fun upgradeToV6(db: SQLiteDatabase) {
+    if (!hasColumn(db, Post.TABLE, Post.CALL)) {
+        db.execSQL("ALTER TABLE ${Post.TABLE} ADD COLUMN ${Post.CALL} TEXT")
+    }
+    db.execSQL("CREATE INDEX IF NOT EXISTS idx_${Post.TABLE}_call ON ${Post.TABLE} (${Post.CALL})")
+    db.execSQL("CREATE INDEX IF NOT EXISTS idx_${Post.TABLE}_ts ON ${Post.TABLE} (${Post.TS})")
+    db.execSQL(
+        "UPDATE ${Post.TABLE} SET ${Post.CALL} = CASE " +
+            "WHEN instr(${Post.MESSAGE}, '>') > 0 THEN substr(${Post.MESSAGE}, 1, instr(${Post.MESSAGE}, '>') - 1) " +
+            "ELSE NULL END " +
+            "WHERE ${Post.CALL} IS NULL AND (${Post.TYPE} = ${Post.TYPE_POST} OR ${Post.TYPE} = ${Post.TYPE_INCMG} OR ${Post.TYPE} = ${Post.TYPE_TX})"
+    )
 }
