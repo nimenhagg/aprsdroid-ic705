@@ -467,12 +467,7 @@ class StorageDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, nul
 
     fun addPost(ts: Long, posttype: Int, status: String, message: String, call: String? = null) {
         val cleanMessage = AprsCharsetDecoder.repairString(message)
-        val resolvedCall = call ?: run {
-            if (posttype == Post.TYPE_POST || posttype == Post.TYPE_INCMG || posttype == Post.TYPE_TX) {
-                val idx = cleanMessage.indexOf('>')
-                if (idx > 0) cleanMessage.substring(0, idx).trim() else null
-            } else null
-        }
+        val resolvedCall = PostCallResolver.resolve(cleanMessage, posttype, call)
         val cv = ContentValues().apply {
             put(Post.TS, ts)
             put(Post.TYPE, posttype)

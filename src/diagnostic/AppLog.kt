@@ -90,7 +90,7 @@ object AppLog {
     }
 
     fun flush(timeoutMillis: Long = 750L) {
-        val marker = executor.submit { Unit }
+        val marker = executor.submit(Runnable {})
         runCatching { marker.get(timeoutMillis, TimeUnit.MILLISECONDS) }
     }
 
