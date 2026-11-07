@@ -1,23 +1,45 @@
 package org.aprsdroid.app.ui.viewmodel
 
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.aprsdroid.app.data.preferences.AppPreferenceStore
 import org.aprsdroid.app.data.repository.HubData
 import org.aprsdroid.app.data.repository.HubStationSource
 import org.aprsdroid.app.model.StationItem
 import org.aprsdroid.app.service.AprsPacketEvent
 import org.aprsdroid.app.service.ServiceEventBus
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.aprsdroid.app.awaitUntil
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HubViewModelTest {
 
+    private val testScheduler = TestCoroutineScheduler()
+    private var viewModel: HubViewModel? = null
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        ServiceEventBus.resetForTesting()
+    }
+
+    @After
+    fun tearDown() {
+        viewModel?.viewModelScope?.cancel()
+        Dispatchers.resetMain()
+    }
 
     private class FakePreferenceStore : AppPreferenceStore {
         val stringMap = mutableMapOf(
@@ -90,22 +112,19 @@ class HubViewModelTest {
         }
     }
 
-    @Before
-    fun setUp() {
-        ServiceEventBus.resetForTesting()
-    }
+
 
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeHubStationSource()
         val fakePrefs = FakePreferenceStore()
-        val viewModel = HubViewModel(
+        viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
             statusProvider = { "READY" },
         )
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertTrue(state.stations.isEmpty())
         assertEquals("", state.searchQuery)
         assertFalse(state.isSearching)
@@ -113,19 +132,19 @@ class HubViewModelTest {
     }
 
     @Test
-    fun refreshLoadsHubDataAfterBatchingWindow() = runBlocking {
+    fun refreshLoadsHubDataAfterBatchingWindow() = runTest(testScheduler) {
         val fakeSource = FakeHubStationSource()
         val fakePrefs = FakePreferenceStore()
-        val viewModel = HubViewModel(
+        viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
             statusProvider = { "READY" },
         )
 
-        viewModel.refresh()
-        awaitUntil { viewModel.uiState.value.stations.size == 2 && fakeSource.queryCount == 1 }
+        viewModel!!.refresh()
+        advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals("BG1ABC-9", state.myCall)
         assertEquals(39904200, state.myLat)
         assertEquals(116407400, state.myLon)
@@ -135,19 +154,19 @@ class HubViewModelTest {
     }
 
     @Test
-    fun setSearchQueryFiltersStations() = runBlocking {
+    fun setSearchQueryFiltersStations() = runTest(testScheduler) {
         val fakeSource = FakeHubStationSource()
         val fakePrefs = FakePreferenceStore()
-        val viewModel = HubViewModel(
+        viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
             statusProvider = { "READY" },
         )
 
-        viewModel.setSearchQuery("BI1XYZ")
-        awaitUntil { viewModel.uiState.value.stations.size == 1 && fakeSource.lastSearchQuery == "BI1XYZ" }
+        viewModel!!.setSearchQuery("BI1XYZ")
+        advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals("BI1XYZ", state.searchQuery)
         assertEquals(1, state.stations.size)
         assertEquals("BI1XYZ-7", state.stations[0].call)
@@ -155,40 +174,40 @@ class HubViewModelTest {
     }
 
     @Test
-    fun serviceRunningStateIsReflected() = runBlocking {
+    fun serviceRunningStateIsReflected() = runTest(testScheduler) {
         val fakeSource = FakeHubStationSource()
         val fakePrefs = FakePreferenceStore()
-        val viewModel = HubViewModel(
+        viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
             statusProvider = { "CONNECTED" },
         )
 
-        assertFalse(viewModel.uiState.value.isRunning)
+        assertFalse(viewModel!!.uiState.value.isRunning)
 
         ServiceEventBus.updateServiceRunning(true)
-        awaitUntil { viewModel.uiState.value.isRunning }
+        advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.isRunning)
-        assertEquals("CONNECTED", viewModel.uiState.value.serviceStatus)
+        assertTrue(viewModel!!.uiState.value.isRunning)
+        assertEquals("CONNECTED", viewModel!!.uiState.value.serviceStatus)
 
         ServiceEventBus.updateServiceRunning(false)
-        awaitUntil { !viewModel.uiState.value.isRunning }
-        assertFalse(viewModel.uiState.value.isRunning)
+        advanceUntilIdle()
+        assertFalse(viewModel!!.uiState.value.isRunning)
     }
 
     @Test
-    fun packetEventTriggersAutomaticRefresh() = runBlocking {
+    fun packetEventTriggersAutomaticRefresh() = runTest(testScheduler) {
         val fakeSource = FakeHubStationSource()
         val fakePrefs = FakePreferenceStore()
-        val viewModel = HubViewModel(
+        viewModel = HubViewModel(
             fakeSource,
             fakePrefs,
             statusProvider = { "READY" },
         )
 
-        viewModel.refresh()
-        awaitUntil { viewModel.uiState.value.stations.size == 2 && fakeSource.queryCount == 1 }
+        viewModel!!.refresh()
+        advanceUntilIdle()
         assertEquals(1, fakeSource.queryCount)
 
         ServiceEventBus.postPacketEvent(
@@ -199,7 +218,7 @@ class HubViewModelTest {
                 packet = "BI1NEW>APRS:New Packet",
             )
         )
-        awaitUntil { fakeSource.queryCount == 2 }
+        advanceUntilIdle()
 
         assertEquals(2, fakeSource.queryCount)
     }

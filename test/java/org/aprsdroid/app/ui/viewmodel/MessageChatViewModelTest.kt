@@ -1,28 +1,45 @@
 package org.aprsdroid.app.ui.viewmodel
 
 import android.content.ContentValues
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.aprsdroid.app.StorageDatabase
 import org.aprsdroid.app.data.repository.MessageSource
 import org.aprsdroid.app.model.ConversationItem
 import org.aprsdroid.app.model.MessageItem
 import org.aprsdroid.app.service.AprsMessageEvent
 import org.aprsdroid.app.service.ServiceEventBus
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.aprsdroid.app.awaitUntil
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageChatViewModelTest {
 
+    private val testScheduler = TestCoroutineScheduler()
+    private var viewModel: MessageChatViewModel? = null
 
     @Before
     fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         ServiceEventBus.resetForTesting()
+    }
+
+    @After
+    fun tearDown() {
+        viewModel?.viewModelScope?.cancel()
+        Dispatchers.resetMain()
     }
 
     private class FakeMessageSource : MessageSource {
@@ -85,22 +102,22 @@ class MessageChatViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource)
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals("", state.targetCall)
         assertTrue(state.messages.isEmpty())
     }
 
     @Test
-    fun refreshLoadsMessagesForCall() = runBlocking {
+    fun refreshLoadsMessagesForCall() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource)
 
-        viewModel.refresh("BG1ABC")
-        awaitUntil { viewModel.uiState.value.messages.size == 1 && fakeSource.queryCount == 1 }
+        viewModel!!.refresh("BG1ABC")
+        advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals("BG1ABC", state.targetCall)
         assertEquals(1, state.messages.size)
         assertEquals("Hello 705", state.messages[0].text)
@@ -108,32 +125,32 @@ class MessageChatViewModelTest {
     }
 
     @Test
-    fun deleteMessageRemovesItemAndRefreshes() = runBlocking {
+    fun deleteMessageRemovesItemAndRefreshes() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource)
 
-        viewModel.refresh("BG1ABC")
-        awaitUntil { viewModel.uiState.value.messages.size == 1 }
-        assertEquals(1, viewModel.uiState.value.messages.size)
+        viewModel!!.refresh("BG1ABC")
+        advanceUntilIdle()
+        assertEquals(1, viewModel!!.uiState.value.messages.size)
 
-        viewModel.deleteMessage(1L, "BG1ABC")
-        awaitUntil { viewModel.uiState.value.messages.isEmpty() && fakeSource.deletedId == 1L }
+        viewModel!!.deleteMessage(1L, "BG1ABC")
+        advanceUntilIdle()
 
         assertEquals(1L, fakeSource.deletedId)
-        assertTrue(viewModel.uiState.value.messages.isEmpty())
+        assertTrue(viewModel!!.uiState.value.messages.isEmpty())
     }
 
     @Test
-    fun restartMessageUpdatesValuesAndInvokesCallback() = runBlocking {
+    fun restartMessageUpdatesValuesAndInvokesCallback() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource)
         val target = fakeSource.messages[0]
 
         var callbackCalled = false
-        viewModel.restartMessage(target, "BG1ABC") {
+        viewModel!!.restartMessage(target, "BG1ABC") {
             callbackCalled = true
         }
-        awaitUntil { callbackCalled && fakeSource.updatedId == 1L }
+        advanceUntilIdle()
 
         assertTrue(callbackCalled)
         assertEquals(1L, fakeSource.updatedId)
@@ -141,16 +158,16 @@ class MessageChatViewModelTest {
     }
 
     @Test
-    fun abortMessageUpdatesTypeAndInvokesCallback() = runBlocking {
+    fun abortMessageUpdatesTypeAndInvokesCallback() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource)
         val target = fakeSource.messages[0]
 
         var callbackCalled = false
-        viewModel.abortMessage(target, "BG1ABC") {
+        viewModel!!.abortMessage(target, "BG1ABC") {
             callbackCalled = true
         }
-        awaitUntil { callbackCalled && fakeSource.updatedId == 1L }
+        advanceUntilIdle()
 
         assertTrue(callbackCalled)
         assertEquals(1L, fakeSource.updatedId)
@@ -158,12 +175,12 @@ class MessageChatViewModelTest {
     }
 
     @Test
-    fun serviceEventBusMessageEventsTriggerAutomaticRefreshForTarget() = runBlocking {
+    fun serviceEventBusMessageEventsTriggerAutomaticRefreshForTarget() = runTest(testScheduler) {
         val fakeSource = FakeMessageSource()
-        val viewModel = MessageChatViewModel(fakeSource)
+        viewModel = MessageChatViewModel(fakeSource)
 
-        viewModel.refresh("BG1ABC")
-        awaitUntil { fakeSource.queryCount == 1 }
+        viewModel!!.refresh("BG1ABC")
+        advanceUntilIdle()
         assertEquals(1, fakeSource.queryCount)
 
         // Event for unrelated callsign does not refresh
@@ -186,7 +203,7 @@ class MessageChatViewModelTest {
                 isOutgoing = true,
             )
         )
-        awaitUntil { fakeSource.queryCount == 2 }
+        advanceUntilIdle()
         assertEquals(2, fakeSource.queryCount)
 
         // Event where sender is targetCall triggers refresh
@@ -198,7 +215,7 @@ class MessageChatViewModelTest {
                 isOutgoing = false,
             )
         )
-        awaitUntil { fakeSource.queryCount == 3 }
+        advanceUntilIdle()
         assertEquals(3, fakeSource.queryCount)
     }
 }

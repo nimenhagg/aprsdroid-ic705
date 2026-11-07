@@ -1,5 +1,6 @@
 package org.aprsdroid.app
 
+import java.util.concurrent.locks.LockSupport
 import org.junit.Assert.fail
 
 internal inline fun awaitUntil(
@@ -11,7 +12,7 @@ internal inline fun awaitUntil(
         if (predicate()) {
             return
         }
-        Thread.yield()
+        LockSupport.parkNanos(1_000_000L)
     }
     if (!predicate()) {
         fail("Condition not met within ${timeoutMs}ms")

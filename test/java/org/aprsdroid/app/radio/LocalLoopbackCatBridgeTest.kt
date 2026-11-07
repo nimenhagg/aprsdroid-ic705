@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.aprsdroid.app.awaitUntil
 import org.junit.Test
 
 class LocalLoopbackCatBridgeTest {
@@ -93,11 +94,7 @@ class LocalLoopbackCatBridgeTest {
         radioStream.radioSideOut.close()
 
         // Give the pump thread a brief moment to observe EOF and trigger bridge close
-        val deadline = System.currentTimeMillis() + 1000
-        while (!bridge.isClosed && System.currentTimeMillis() < deadline) {
-            Thread.yield()
-        }
-
+        awaitUntil(1000) { bridge.isClosed }
         assertTrue(bridge.isClosed)
         socket.close()
     }

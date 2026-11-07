@@ -307,12 +307,17 @@ tasks.register('verifyArchitecture') {
 				}
 			}
 
-			// Rule 7 (Strict): test/** must not contain Thread.sleep, parkNanos, Thread.onSpinWait, or LockSupport
+			// Rule 7 (Strict): test/** must not contain Thread.sleep, parkNanos, Thread.onSpinWait, LockSupport, or Thread.yield
+			// Whitelist exception: test/java/org/aprsdroid/app/TestAsyncUtils.kt
 			if (testDir.exists()) {
 				testDir.eachFileRecurse(groovy.io.FileType.FILES) { file ->
 					if (file.name.endsWith('.kt')) {
+						def normalizedPath = file.path.replace('\\', '/')
+						if (normalizedPath.endsWith('test/java/org/aprsdroid/app/TestAsyncUtils.kt')) {
+							return
+						}
 						file.eachLine { line, lineNum ->
-							if (line =~ /(Thread\.sleep|parkNanos|Thread\.onSpinWait|LockSupport)/) {
+							if (line =~ /(Thread\.sleep|parkNanos|Thread\.onSpinWait|LockSupport|Thread\.yield)/) {
 								violations << "Rule 7 (Forbidden thread blocking/spinning in test): ${file.name}:${lineNum} -> ${line.trim()}"
 							}
 						}

@@ -42,7 +42,7 @@ class StationViewModel(
     private val refreshChannel = Channel<Pair<String, String>>(Channel.CONFLATED)
 
     init {
-        viewModelScope.launch(Dispatchers.Default) {
+        viewModelScope.launch {
             for (query in refreshChannel) {
                 // 250ms batching window: fold bursts into a single query
                 delay(250L)
@@ -54,7 +54,7 @@ class StationViewModel(
                 executeQuery(latest.first, latest.second)
             }
         }
-        viewModelScope.launch(Dispatchers.Default) {
+        viewModelScope.launch {
             eventBus.packetEvents.collect { event ->
                 val current = _uiState.value
                 val target = current.targetCall

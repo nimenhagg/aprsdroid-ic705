@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.aprsdroid.app.awaitUntil
 import org.junit.Test
 
 class Ic705PttStateMachineTest {
@@ -42,8 +43,7 @@ class Ic705PttStateMachineTest {
     }
 
     private fun waitUntil(timeoutMs: Long = 1_000L, condition: () -> Boolean) {
-        val deadline = System.nanoTime() + timeoutMs * 1_000_000L
-        while (!condition() && System.nanoTime() < deadline) Thread.yield()
+        awaitUntil(timeoutMs, condition)
         assertTrue("condition was not met within ${timeoutMs}ms", condition())
     }
 
@@ -81,13 +81,12 @@ class Ic705PttStateMachineTest {
      * confirms release on its own.
      */
     private fun acknowledgeRelease(sm: Ic705PttStateMachine, timeoutMs: Long = 2_000L) {
-        val deadline = System.nanoTime() + timeoutMs * 1_000_000L
-        while (sm.state != Ic705PttState.RX_IDLE && System.nanoTime() < deadline) {
+        awaitUntil(timeoutMs) {
             sm.onCivReceived(ackFrame())
             if (sm.state != Ic705PttState.RX_IDLE) {
                 sm.onCivReceived(pttStatusFrame(transmitting = false))
             }
-            if (sm.state != Ic705PttState.RX_IDLE) Thread.yield()
+            sm.state == Ic705PttState.RX_IDLE
         }
         assertEquals("radio release was not confirmed within ${timeoutMs}ms", Ic705PttState.RX_IDLE, sm.state)
     }

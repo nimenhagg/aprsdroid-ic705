@@ -14,6 +14,7 @@ import org.aprsdroid.app.audio.PcmSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.aprsdroid.app.awaitUntil
 import org.junit.Test
 import sivantoledo.ax25.Packet
 
@@ -169,11 +170,7 @@ class RadioAudioBackendTest {
 
         backend.start()
 
-        val deadline = System.currentTimeMillis() + 1000
-        while (decoder.receivedSamples.size < 256 && System.currentTimeMillis() < deadline) {
-            Thread.yield()
-        }
-
+        awaitUntil(1000) { decoder.receivedSamples.size >= 256 }
         assertTrue(decoder.receivedSamples.size >= 256)
         assertEquals(testData[0], decoder.receivedSamples[0])
         assertEquals(testData[255], decoder.receivedSamples[255])
@@ -297,8 +294,7 @@ class RadioAudioBackendTest {
         override fun read(buffer: ShortArray, offset: Int, length: Int): Int {
             if (closed) return -1
             if (pos >= data.size) {
-                Thread.yield()
-                return if (closed) -1 else 0
+                return -1
             }
             val toCopy = minOf(length, data.size - pos)
             System.arraycopy(data, pos, buffer, offset, toCopy)

@@ -1,20 +1,43 @@
 package org.aprsdroid.app.ui.viewmodel
 
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.aprsdroid.app.data.repository.StationDetailsData
 import org.aprsdroid.app.data.repository.StationDetailsSource
 import org.aprsdroid.app.model.StationItem
 import org.aprsdroid.app.service.AprsPacketEvent
 import org.aprsdroid.app.service.ServiceEventBus
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.aprsdroid.app.awaitUntil
+import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class StationViewModelTest {
 
+    private val testScheduler = TestCoroutineScheduler()
+    private var viewModel: StationViewModel? = null
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        ServiceEventBus.resetForTesting()
+    }
+
+    @After
+    fun tearDown() {
+        viewModel?.viewModelScope?.cancel()
+        Dispatchers.resetMain()
+    }
 
     private class FakeStationDetailsSource : StationDetailsSource {
         var queryCount = 0
@@ -47,9 +70,9 @@ class StationViewModelTest {
     @Test
     fun initialStateIsEmpty() {
         val fakeSource = FakeStationDetailsSource()
-        val viewModel = StationViewModel(fakeSource)
+        viewModel = StationViewModel(fakeSource)
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals("", state.targetCall)
         assertNull(state.stationItem)
         assertEquals(0, state.myLat)
@@ -57,15 +80,15 @@ class StationViewModelTest {
     }
 
     @Test
-    fun requestRefreshUpdatesStateAfterBatchingWindow() = runBlocking {
+    fun requestRefreshUpdatesStateAfterBatchingWindow() = runTest(testScheduler) {
         val fakeSource = FakeStationDetailsSource()
-        val viewModel = StationViewModel(fakeSource)
+        viewModel = StationViewModel(fakeSource)
 
-        viewModel.requestRefresh("BG1ABC", "N0CALL")
+        viewModel!!.requestRefresh("BG1ABC", "N0CALL")
 
-        awaitUntil { viewModel.uiState.value.targetCall == "BG1ABC" && viewModel.uiState.value.stationItem != null }
+        advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals("BG1ABC", state.targetCall)
         assertEquals(39904200, state.myLat)
         assertEquals(116407400, state.myLon)
@@ -74,29 +97,29 @@ class StationViewModelTest {
     }
 
     @Test
-    fun rapidConsecutiveRequestsAreConflatedIntoSingleQuery() = runBlocking {
+    fun rapidConsecutiveRequestsAreConflatedIntoSingleQuery() = runTest(testScheduler) {
         val fakeSource = FakeStationDetailsSource()
-        val viewModel = StationViewModel(fakeSource)
+        viewModel = StationViewModel(fakeSource)
 
         // Dispatch multiple rapid bursts within batching window
-        viewModel.requestRefresh("BG1ABC-1", "N0CALL")
-        viewModel.requestRefresh("BG1ABC-2", "N0CALL")
-        viewModel.requestRefresh("BG1ABC-9", "N0CALL")
+        viewModel!!.requestRefresh("BG1ABC-1", "N0CALL")
+        viewModel!!.requestRefresh("BG1ABC-2", "N0CALL")
+        viewModel!!.requestRefresh("BG1ABC-9", "N0CALL")
 
-        awaitUntil { viewModel.uiState.value.targetCall == "BG1ABC-9" && fakeSource.queryCount == 1 }
+        advanceUntilIdle()
 
         // Only the latest query should be executed due to Conflated Channel
         assertEquals(1, fakeSource.queryCount)
-        assertEquals("BG1ABC-9", viewModel.uiState.value.targetCall)
+        assertEquals("BG1ABC-9", viewModel!!.uiState.value.targetCall)
     }
 
     @Test
-    fun serviceEventBusPacketEventTriggersAutomaticRefresh() = runBlocking {
+    fun serviceEventBusPacketEventTriggersAutomaticRefresh() = runTest(testScheduler) {
         val fakeSource = FakeStationDetailsSource()
-        val viewModel = StationViewModel(fakeSource)
+        viewModel = StationViewModel(fakeSource)
 
-        viewModel.requestRefresh("BG1ABC-9", "N0CALL")
-        awaitUntil { viewModel.uiState.value.targetCall == "BG1ABC-9" && fakeSource.queryCount == 1 }
+        viewModel!!.requestRefresh("BG1ABC-9", "N0CALL")
+        advanceUntilIdle()
         assertEquals(1, fakeSource.queryCount)
 
         ServiceEventBus.postPacketEvent(
@@ -108,7 +131,7 @@ class StationViewModelTest {
             )
         )
 
-        awaitUntil { fakeSource.queryCount == 2 }
+        advanceUntilIdle()
         assertEquals(2, fakeSource.queryCount)
     }
 }

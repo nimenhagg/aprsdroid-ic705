@@ -35,6 +35,7 @@ import net.ab0oo.aprs.parser.Parser
 import org.aprsdroid.app.ic705.protocol.Ic705CivDatagram
 import org.aprsdroid.app.ic705.protocol.Ic705CivDatagramCodec
 import sivantoledo.ax25.Packet
+import org.aprsdroid.app.awaitUntil
 import org.junit.Test
 
 class Ic705RxSessionTest {
@@ -739,15 +740,9 @@ class Ic705RxSessionTest {
 
         fun awaitConnectionInfoCount(expectedCount: Int) {
             val control = factory.channel(Ic705ChannelRole.CONTROL)
-            val deadline = System.nanoTime() +
-                TimeUnit.SECONDS.toNanos(BARRIER_TIMEOUT_SECONDS)
-            while (
-                control.sentPackets.count { it.size == Ic705ConnectionInfoCodec.PACKET_SIZE } !=
-                expectedCount &&
-                System.nanoTime() < deadline
-            ) {
-                Thread.yield()
+            awaitUntil(TimeUnit.SECONDS.toMillis(BARRIER_TIMEOUT_SECONDS)) {
                 drain()
+                control.sentPackets.count { it.size == Ic705ConnectionInfoCodec.PACKET_SIZE } == expectedCount
             }
             assertEquals(
                 expectedCount,
@@ -805,11 +800,11 @@ class Ic705RxSessionTest {
         fun allChannels(): List<FakeChannel> = channels.values.toList()
 
         fun awaitAllClosed(): Boolean {
-            val deadline = System.nanoTime() +
-                TimeUnit.SECONDS.toNanos(BARRIER_TIMEOUT_SECONDS)
-            while (channels.values.any { it.isOpen } && System.nanoTime() < deadline) {
-                Thread.yield()
-            }
+            try {
+                awaitUntil(TimeUnit.SECONDS.toMillis(BARRIER_TIMEOUT_SECONDS)) {
+                    channels.values.none { it.isOpen }
+                }
+            } catch (_: Throwable) {}
             return channels.values.none { it.isOpen }
         }
     }

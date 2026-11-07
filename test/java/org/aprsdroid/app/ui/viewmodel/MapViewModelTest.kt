@@ -1,18 +1,40 @@
 package org.aprsdroid.app.ui.viewmodel
 
-import kotlinx.coroutines.CoroutineScope
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
-import org.aprsdroid.app.awaitUntil
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.aprsdroid.app.data.repository.MapStationSource
 import org.aprsdroid.app.map.MapStation
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
 
+    private val testScheduler = TestCoroutineScheduler()
+    private var viewModel: MapViewModel? = null
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+    }
+
+    @After
+    fun tearDown() {
+        viewModel?.viewModelScope?.cancel()
+        Dispatchers.resetMain()
+    }
 
     private class FakeMapStationSource : MapStationSource {
         var queryCount = 0
@@ -53,9 +75,9 @@ class MapViewModelTest {
     @Test
     fun initialStateIsEmptyBeforeRefresh() {
         val fakeSource = FakeMapStationSource()
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = true)
+        viewModel = MapViewModel(fakeSource, initialShowObjects = true)
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals(0, state.stations.size)
         assertTrue(state.showObjects)
         assertFalse(state.isLoading)
@@ -63,14 +85,14 @@ class MapViewModelTest {
     }
 
     @Test
-    fun refreshLoadsStations() = runBlocking {
+    fun refreshLoadsStations() = runTest(testScheduler) {
         val fakeSource = FakeMapStationSource()
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = true)
+        viewModel = MapViewModel(fakeSource, initialShowObjects = true)
 
-        viewModel.refresh()
-        awaitUntil { viewModel.uiState.value.stations.size == 2 && fakeSource.queryCount == 1 }
+        viewModel!!.refresh()
+        advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals(2, state.stations.size)
         assertTrue(state.showObjects)
         assertFalse(state.isLoading)
@@ -79,18 +101,18 @@ class MapViewModelTest {
     }
 
     @Test
-    fun refreshWithShowObjectsToggled() = runBlocking {
+    fun refreshWithShowObjectsToggled() = runTest(testScheduler) {
         val fakeSource = FakeMapStationSource()
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = true)
+        viewModel = MapViewModel(fakeSource, initialShowObjects = true)
 
-        viewModel.refresh()
-        awaitUntil { viewModel.uiState.value.stations.size == 2 }
-        assertEquals(2, viewModel.uiState.value.stations.size)
+        viewModel!!.refresh()
+        advanceUntilIdle()
+        assertEquals(2, viewModel!!.uiState.value.stations.size)
 
-        viewModel.refresh(showObjects = false)
-        awaitUntil { viewModel.uiState.value.stations.size == 1 && !viewModel.uiState.value.showObjects }
+        viewModel!!.refresh(showObjects = false)
+        advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals(1, state.stations.size)
         assertEquals("BG1ABC", state.stations[0].call)
         assertFalse(state.showObjects)
@@ -98,13 +120,13 @@ class MapViewModelTest {
     }
 
     @Test
-    fun refreshPreservesShowObjectsState() = runBlocking {
+    fun refreshPreservesShowObjectsState() = runTest(testScheduler) {
         val fakeSource = FakeMapStationSource()
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = false)
+        viewModel = MapViewModel(fakeSource, initialShowObjects = false)
 
-        viewModel.refresh()
-        awaitUntil { viewModel.uiState.value.stations.size == 1 }
-        assertEquals(1, viewModel.uiState.value.stations.size)
+        viewModel!!.refresh()
+        advanceUntilIdle()
+        assertEquals(1, viewModel!!.uiState.value.stations.size)
 
         fakeSource.stations.add(
             MapStation(
@@ -116,23 +138,23 @@ class MapViewModelTest {
             )
         )
 
-        viewModel.refresh()
-        awaitUntil { viewModel.uiState.value.stations.size == 2 }
+        viewModel!!.refresh()
+        advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertEquals(2, state.stations.size)
         assertFalse(state.showObjects)
     }
 
     @Test
-    fun failureResetsLoading() = runBlocking {
+    fun failureResetsLoading() = runTest(testScheduler) {
         val fakeSource = FakeMapStationSource().apply { shouldThrow = true }
-        val viewModel = MapViewModel(fakeSource, initialShowObjects = true)
+        viewModel = MapViewModel(fakeSource, initialShowObjects = true)
 
-        viewModel.refresh()
-        awaitUntil { !viewModel.uiState.value.isLoading && fakeSource.queryCount == 1 }
+        viewModel!!.refresh()
+        advanceUntilIdle()
 
-        val state = viewModel.uiState.value
+        val state = viewModel!!.uiState.value
         assertFalse(state.isLoading)
         assertEquals(0, state.stations.size)
     }
