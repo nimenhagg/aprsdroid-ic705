@@ -3,13 +3,14 @@ package org.aprsdroid.app.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.aprsdroid.app.data.repository.LatestQuery
-import org.aprsdroid.app.data.repository.LogRepository
+import org.aprsdroid.app.data.repository.LogSource
 import org.aprsdroid.app.model.LogPostItem
 import org.aprsdroid.app.service.ServiceEventBus
 
@@ -19,20 +20,23 @@ data class LogUiState(
 )
 
 class LogViewModel(
-    private val repository: LogRepository,
+    private val repository: LogSource,
+    externalScope: CoroutineScope? = null,
     private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
+
+    private val scope = externalScope ?: viewModelScope
 
     private val _uiState = MutableStateFlow(LogUiState())
     val uiState: StateFlow<LogUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
+        scope.launch {
             eventBus.isServiceRunning.collect { running ->
                 _uiState.update { it.copy(isRunning = running) }
             }
         }
-        viewModelScope.launch {
+        scope.launch {
             eventBus.packetEvents.collect {
                 refresh()
             }
@@ -40,7 +44,7 @@ class LogViewModel(
     }
 
     private val refreshQueue = LatestQuery<String?, List<LogPostItem>>(
-        scope = viewModelScope,
+        scope = scope,
         initialRequest = null,
         query = { filter -> repository.getLogs(filter) },
         onResult = { logs, _ ->
