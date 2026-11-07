@@ -152,109 +152,38 @@ class PrefsAct : ComponentActivity() {
                         .map { mode -> mode.tag to (mode.title ?: mode.tag) }
                 }
 
-                SettingsScreen(
-                    callsign = uiState.callsign,
-                    ssid = uiState.ssid,
-                    digiPath = uiState.digiPath,
-                    userDigiPresets = uiState.userDigiPresets,
-                    symbol = uiState.symbol,
-                    frequency = uiState.frequency,
-                    status = uiState.status,
-                    backendName = prefs.getBackendName(),
-                    locationSourceName = prefs.getLocationSourceName(),
-                    mapModeTag = uiState.mapModeTag,
-                    mapModeTitle = uiState.mapModeTitle.ifEmpty {
-                        MapModes.defaultMapMode(this, prefs).title ?: getString(R.string.app_map)
-                    },
-                    mapModeOptions = availableMapModes,
-                    mapCustomUrl = uiState.mapCustomUrl,
-                    mapCustomSubdomains = uiState.mapCustomSubdomains,
-                    showObjects = uiState.showObjects,
-                    sendBatteryInfo = uiState.sendBatteryInfo,
-                    autoCheckUpdates = uiState.autoCheckUpdates,
-                    stationTapAction = uiState.stationTapAction,
-                    phgEnabled = uiState.phgEnabled,
-                    phgPower = uiState.phgPower,
-                    phgHeight = uiState.phgHeight,
-                    phgHeightUnit = uiState.phgHeightUnit,
-                    phgGain = uiState.phgGain,
-                    phgDir = uiState.phgDir,
-                    onBack = { onBackPressedDispatcher.onBackPressed() },
-                    onOpenCallsignDialog = {
-                        viewModel.onIntent(SettingsIntent.OpenIdentityDialog)
-                    },
-                    onSaveSsid = { newSsid ->
-                        viewModel.onIntent(SettingsIntent.SaveSsid(newSsid))
-                    },
-                    onSaveDigiPath = { newPath ->
-                        viewModel.onIntent(SettingsIntent.SaveDigiPath(newPath))
-                    },
-                    onAddDigiPreset = { preset ->
-                        viewModel.onIntent(SettingsIntent.AddDigiPreset(preset))
-                    },
-                    onDeleteDigiPreset = { preset ->
-                        viewModel.onIntent(SettingsIntent.DeleteDigiPreset(preset))
-                    },
-                    onOpenSymbolPicker = {
-                        startActivity(Intent(this@PrefsAct, PrefSymbolAct::class.java))
-                    },
-                    onSaveFrequency = { value ->
-                        viewModel.onIntent(SettingsIntent.SaveFrequency(value))
-                    },
-                    onSaveStatus = { value ->
-                        viewModel.onIntent(SettingsIntent.SaveStatus(value))
-                    },
-                    onSavePhg = { enabled, power, height, unit, gain, dir ->
-                        viewModel.onIntent(
-                            SettingsIntent.SavePhg(enabled, power, height, unit, gain, dir)
-                        )
-                    },
-                    onOpenConnectionSetup = {
-                        startActivity(Intent(this@PrefsAct, BackendPrefs::class.java))
-                    },
-                    onOpenLocationSetup = {
-                        startActivity(Intent(this@PrefsAct, LocationPrefs::class.java))
-                    },
-                    onSaveMapMode = { tag ->
-                        MapModes.setDefault(prefs, tag)
-                        val title = MapModes.defaultMapMode(this, prefs).title ?: getString(R.string.app_map)
-                        viewModel.onIntent(SettingsIntent.SaveMapMode(tag, title))
-                    },
-                    onSaveMapCustomUrl = { value ->
-                        viewModel.onIntent(SettingsIntent.SaveMapCustomUrl(value))
-                    },
-                    onSaveMapCustomSubdomains = { value ->
-                        viewModel.onIntent(SettingsIntent.SaveMapCustomSubdomains(value))
-                    },
-                    onToggleShowObjects = { enabled ->
-                        viewModel.onIntent(SettingsIntent.ToggleShowObjects(enabled))
-                    },
-                    onToggleSendBatteryInfo = { enabled ->
-                        viewModel.onIntent(SettingsIntent.ToggleSendBatteryInfo(enabled))
-                    },
-                    onToggleAutoCheckUpdates = { enabled ->
-                        viewModel.onIntent(SettingsIntent.ToggleAutoCheckUpdates(enabled))
-                    },
-                    onSaveStationTapAction = { action ->
-                        viewModel.onIntent(SettingsIntent.SaveStationTapAction(action))
-                    },
-                    onOpenNotificationPrefs = {
-                        startActivity(Intent(this@PrefsAct, NotificationSettingsActivity::class.java))
-                    },
-                    onExportProfile = { exportPrefs() },
-                    onImportProfile = { profileDocumentPicker.launch(arrayOf("*/*")) },
-                    onShareDiagnostics = {
-                        LogReportManager.shareDiagnosticReport(this@PrefsAct)
-                    },
-                    onCheckForUpdates = { checkForUpdatesManually() },
-                    onOpenCreditsAndLinks = {
-                        startActivity(Intent(this@PrefsAct, CreditsAndLinksActivity::class.java))
-                    },
-                    onOpenAbout = {
-                        viewModel.onIntent(SettingsIntent.OpenAboutDialog)
-                    },
-                )
+                val handleIntent: (SettingsIntent) -> Unit = { intent ->
+                    when (intent) {
+                        is SettingsIntent.NavigateBack -> onBackPressedDispatcher.onBackPressed()
+                        is SettingsIntent.OpenSymbolPicker -> startActivity(Intent(this@PrefsAct, PrefSymbolAct::class.java))
+                        is SettingsIntent.OpenConnectionSetup -> startActivity(Intent(this@PrefsAct, BackendPrefs::class.java))
+                        is SettingsIntent.OpenLocationSetup -> startActivity(Intent(this@PrefsAct, LocationPrefs::class.java))
+                        is SettingsIntent.OpenNotificationPrefs -> startActivity(Intent(this@PrefsAct, NotificationSettingsActivity::class.java))
+                        is SettingsIntent.ExportProfile -> exportPrefs()
+                        is SettingsIntent.ImportProfile -> profileDocumentPicker.launch(arrayOf("*/*"))
+                        is SettingsIntent.ShareDiagnostics -> LogReportManager.shareDiagnosticReport(this@PrefsAct)
+                        is SettingsIntent.CheckForUpdates -> checkForUpdatesManually()
+                        is SettingsIntent.OpenCreditsAndLinks -> startActivity(Intent(this@PrefsAct, CreditsAndLinksActivity::class.java))
+                        is SettingsIntent.SaveMapMode -> {
+                            MapModes.setDefault(prefs, intent.tag)
+                            val title = MapModes.defaultMapMode(this@PrefsAct, prefs).title ?: getString(R.string.app_map)
+                            viewModel.onIntent(SettingsIntent.SaveMapMode(intent.tag, title))
+                        }
+                        else -> viewModel.onIntent(intent)
+                    }
+                }
 
+                SettingsScreen(
+                    state = uiState.copy(
+                        mapModeOptions = availableMapModes,
+                        backendName = prefs.getBackendName(),
+                        locationSourceName = prefs.getLocationSourceName(),
+                        mapModeTitle = uiState.mapModeTitle.ifEmpty {
+                            MapModes.defaultMapMode(this, prefs).title ?: getString(R.string.app_map)
+                        },
+                    ),
+                    onIntent = handleIntent,
+                )
                 when (val dialog = uiState.activeDialog) {
                     is SettingsDialog.Identity -> {
                         PasscodeDialogCompose(
@@ -317,7 +246,7 @@ class PrefsAct : ComponentActivity() {
                             },
                         )
                     }
-                    null -> Unit
+                    else -> Unit
                 }
             }
         }

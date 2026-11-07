@@ -18,6 +18,15 @@ sealed interface SettingsDialog {
     data object Identity : SettingsDialog
     data object About : SettingsDialog
     data class Update(val update: UpdateCheckResult.UpdateAvailable) : SettingsDialog
+    data object Ssid : SettingsDialog
+    data object DigiPath : SettingsDialog
+    data object Frequency : SettingsDialog
+    data object Status : SettingsDialog
+    data object Phg : SettingsDialog
+    data object MapMode : SettingsDialog
+    data object MapCustomUrl : SettingsDialog
+    data object MapCustomSubdomains : SettingsDialog
+    data object StationTap : SettingsDialog
 }
 
 /**
@@ -48,6 +57,8 @@ data class SettingsUiState(
     val phgGain: String = "",
     val phgDir: String = "0",
     val activeDialog: SettingsDialog? = null,
+    val mapModeOptions: List<Pair<String, String>> = emptyList(),
+    val compactListMode: Boolean = false,
 )
 
 /**
@@ -58,6 +69,16 @@ sealed interface SettingsIntent {
     data object DismissDialog : SettingsIntent
     data object OpenIdentityDialog : SettingsIntent
     data object OpenAboutDialog : SettingsIntent
+    data object OpenSsidDialog : SettingsIntent
+    data object OpenDigiPathDialog : SettingsIntent
+    data object OpenFrequencyDialog : SettingsIntent
+    data object OpenStatusDialog : SettingsIntent
+    data object OpenPhgDialog : SettingsIntent
+    data object OpenMapModeDialog : SettingsIntent
+    data object OpenMapCustomUrlDialog : SettingsIntent
+    data object OpenMapCustomSubdomainsDialog : SettingsIntent
+    data object OpenStationTapDialog : SettingsIntent
+
     data class SaveCredentials(val callsign: String, val passcode: String) : SettingsIntent
     data class SaveSsid(val ssid: String) : SettingsIntent
     data class SaveDigiPath(val path: String) : SettingsIntent
@@ -79,8 +100,20 @@ sealed interface SettingsIntent {
     data class ToggleShowObjects(val enabled: Boolean) : SettingsIntent
     data class ToggleSendBatteryInfo(val enabled: Boolean) : SettingsIntent
     data class ToggleAutoCheckUpdates(val enabled: Boolean) : SettingsIntent
+    data class ToggleCompactListMode(val enabled: Boolean) : SettingsIntent
     data class SaveStationTapAction(val action: String) : SettingsIntent
     data class SetUpdateAvailable(val update: UpdateCheckResult.UpdateAvailable?) : SettingsIntent
+
+    data object NavigateBack : SettingsIntent
+    data object OpenSymbolPicker : SettingsIntent
+    data object OpenConnectionSetup : SettingsIntent
+    data object OpenLocationSetup : SettingsIntent
+    data object OpenNotificationPrefs : SettingsIntent
+    data object ExportProfile : SettingsIntent
+    data object ImportProfile : SettingsIntent
+    data object ShareDiagnostics : SettingsIntent
+    data object CheckForUpdates : SettingsIntent
+    data object OpenCreditsAndLinks : SettingsIntent
 }
 
 /**
@@ -131,6 +164,7 @@ class SettingsViewModel(
             phgGain = store.getString("phg_gain", ""),
             phgDir = store.getString("phg_dir", "0"),
             activeDialog = null,
+            compactListMode = store.getBoolean("ui.compact_lists", false),
         )
     }
 
@@ -138,7 +172,10 @@ class SettingsViewModel(
         when (intent) {
             is SettingsIntent.RefreshState -> {
                 _uiState.update {
-                    readCurrentState().copy(mapModeTitle = it.mapModeTitle.ifEmpty { defaultMapTitle })
+                    readCurrentState().copy(
+                        mapModeTitle = it.mapModeTitle.ifEmpty { defaultMapTitle },
+                        mapModeOptions = it.mapModeOptions,
+                    )
                 }
             }
             is SettingsIntent.DismissDialog -> {
@@ -149,6 +186,33 @@ class SettingsViewModel(
             }
             is SettingsIntent.OpenAboutDialog -> {
                 _uiState.update { it.copy(activeDialog = SettingsDialog.About) }
+            }
+            is SettingsIntent.OpenSsidDialog -> {
+                _uiState.update { it.copy(activeDialog = SettingsDialog.Ssid) }
+            }
+            is SettingsIntent.OpenDigiPathDialog -> {
+                _uiState.update { it.copy(activeDialog = SettingsDialog.DigiPath) }
+            }
+            is SettingsIntent.OpenFrequencyDialog -> {
+                _uiState.update { it.copy(activeDialog = SettingsDialog.Frequency) }
+            }
+            is SettingsIntent.OpenStatusDialog -> {
+                _uiState.update { it.copy(activeDialog = SettingsDialog.Status) }
+            }
+            is SettingsIntent.OpenPhgDialog -> {
+                _uiState.update { it.copy(activeDialog = SettingsDialog.Phg) }
+            }
+            is SettingsIntent.OpenMapModeDialog -> {
+                _uiState.update { it.copy(activeDialog = SettingsDialog.MapMode) }
+            }
+            is SettingsIntent.OpenMapCustomUrlDialog -> {
+                _uiState.update { it.copy(activeDialog = SettingsDialog.MapCustomUrl) }
+            }
+            is SettingsIntent.OpenMapCustomSubdomainsDialog -> {
+                _uiState.update { it.copy(activeDialog = SettingsDialog.MapCustomSubdomains) }
+            }
+            is SettingsIntent.OpenStationTapDialog -> {
+                _uiState.update { it.copy(activeDialog = SettingsDialog.StationTap) }
             }
             is SettingsIntent.SaveCredentials -> {
                 val cleanCall = intent.callsign.trim().uppercase(Locale.US)
@@ -163,11 +227,11 @@ class SettingsViewModel(
             }
             is SettingsIntent.SaveSsid -> {
                 store.set("ssid", intent.ssid)
-                _uiState.update { it.copy(ssid = intent.ssid) }
+                _uiState.update { it.copy(ssid = intent.ssid, activeDialog = null) }
             }
             is SettingsIntent.SaveDigiPath -> {
                 store.set("digi_path", intent.path)
-                _uiState.update { it.copy(digiPath = intent.path) }
+                _uiState.update { it.copy(digiPath = intent.path, activeDialog = null) }
             }
             is SettingsIntent.AddDigiPreset -> {
                 val current = HashSet(_uiState.value.userDigiPresets)
@@ -186,12 +250,12 @@ class SettingsViewModel(
             is SettingsIntent.SaveFrequency -> {
                 val trimmed = intent.freq.trim()
                 store.set("frequency", trimmed)
-                _uiState.update { it.copy(frequency = trimmed) }
+                _uiState.update { it.copy(frequency = trimmed, activeDialog = null) }
             }
             is SettingsIntent.SaveStatus -> {
                 val trimmed = intent.status.take(42)
                 store.set("status", trimmed)
-                _uiState.update { it.copy(status = trimmed) }
+                _uiState.update { it.copy(status = trimmed, activeDialog = null) }
             }
             is SettingsIntent.SavePhg -> {
                 store.set("phg_enabled", intent.enabled)
@@ -208,22 +272,23 @@ class SettingsViewModel(
                         phgHeightUnit = intent.unit,
                         phgGain = intent.gain,
                         phgDir = intent.dir,
+                        activeDialog = null,
                     )
                 }
             }
             is SettingsIntent.SaveMapMode -> {
                 store.set("map_mode", intent.tag)
-                _uiState.update { it.copy(mapModeTag = intent.tag, mapModeTitle = intent.title) }
+                _uiState.update { it.copy(mapModeTag = intent.tag, mapModeTitle = intent.title, activeDialog = null) }
             }
             is SettingsIntent.SaveMapCustomUrl -> {
                 val trimmed = intent.url.trim()
                 store.set("map_custom_url", trimmed)
-                _uiState.update { it.copy(mapCustomUrl = trimmed) }
+                _uiState.update { it.copy(mapCustomUrl = trimmed, activeDialog = null) }
             }
             is SettingsIntent.SaveMapCustomSubdomains -> {
                 val trimmed = intent.subdomains.trim()
                 store.set("map_custom_subdomains", trimmed)
-                _uiState.update { it.copy(mapCustomSubdomains = trimmed) }
+                _uiState.update { it.copy(mapCustomSubdomains = trimmed, activeDialog = null) }
             }
             is SettingsIntent.ToggleShowObjects -> {
                 store.set("show_objects", intent.enabled)
@@ -237,9 +302,13 @@ class SettingsViewModel(
                 store.set("check_updates_automatically", intent.enabled)
                 _uiState.update { it.copy(autoCheckUpdates = intent.enabled) }
             }
+            is SettingsIntent.ToggleCompactListMode -> {
+                store.set("ui.compact_lists", intent.enabled)
+                _uiState.update { it.copy(compactListMode = intent.enabled) }
+            }
             is SettingsIntent.SaveStationTapAction -> {
                 store.set("station_tap_action", intent.action)
-                _uiState.update { it.copy(stationTapAction = intent.action) }
+                _uiState.update { it.copy(stationTapAction = intent.action, activeDialog = null) }
             }
             is SettingsIntent.SetUpdateAvailable -> {
                 _uiState.update {
@@ -247,6 +316,18 @@ class SettingsViewModel(
                         activeDialog = if (intent.update != null) SettingsDialog.Update(intent.update) else null,
                     )
                 }
+            }
+            is SettingsIntent.NavigateBack,
+            is SettingsIntent.OpenSymbolPicker,
+            is SettingsIntent.OpenConnectionSetup,
+            is SettingsIntent.OpenLocationSetup,
+            is SettingsIntent.OpenNotificationPrefs,
+            is SettingsIntent.ExportProfile,
+            is SettingsIntent.ImportProfile,
+            is SettingsIntent.ShareDiagnostics,
+            is SettingsIntent.CheckForUpdates,
+            is SettingsIntent.OpenCreditsAndLinks -> {
+                // UI-level navigation / action intents handled by host
             }
         }
     }

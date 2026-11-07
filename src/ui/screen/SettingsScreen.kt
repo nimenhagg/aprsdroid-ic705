@@ -10,7 +10,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
-
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CellTower
@@ -18,7 +17,6 @@ import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Link
-
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Notifications
@@ -39,12 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,75 +52,17 @@ import org.aprsdroid.app.ui.component.PreferenceItem
 import org.aprsdroid.app.ui.component.PreferenceSelectDialog
 import org.aprsdroid.app.ui.component.PreferenceSwitchItem
 import org.aprsdroid.app.ui.component.PreferenceValueItem
-import org.aprsdroid.app.ui.prefs.rememberCompactListMode
-import org.aprsdroid.app.ui.prefs.setCompactListMode
+import org.aprsdroid.app.ui.viewmodel.SettingsDialog
+import org.aprsdroid.app.ui.viewmodel.SettingsIntent
+import org.aprsdroid.app.ui.viewmodel.SettingsUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    callsign: String,
-    ssid: String,
-    digiPath: String,
-    userDigiPresets: Set<String>,
-    symbol: String,
-    frequency: String,
-    status: String,
-    backendName: String,
-    locationSourceName: String,
-    mapModeTag: String,
-    mapModeTitle: String,
-    mapModeOptions: List<Pair<String, String>>,
-    mapCustomUrl: String,
-    mapCustomSubdomains: String,
-    showObjects: Boolean,
-    sendBatteryInfo: Boolean,
-    autoCheckUpdates: Boolean,
-    stationTapAction: String,
-    phgEnabled: Boolean,
-    phgPower: String,
-    phgHeight: String,
-    phgHeightUnit: String,
-    phgGain: String,
-    phgDir: String,
-    onBack: () -> Unit,
-    onOpenCallsignDialog: () -> Unit,
-    onSaveSsid: (String) -> Unit,
-    onSaveDigiPath: (String) -> Unit,
-    onAddDigiPreset: (String) -> Unit,
-    onDeleteDigiPreset: (String) -> Unit,
-    onOpenSymbolPicker: () -> Unit,
-    onSaveFrequency: (String) -> Unit,
-    onSaveStatus: (String) -> Unit,
-    onSavePhg: (Boolean, String, String, String, String, String) -> Unit,
-    onOpenConnectionSetup: () -> Unit,
-    onOpenLocationSetup: () -> Unit,
-    onSaveMapMode: (String) -> Unit,
-    onSaveMapCustomUrl: (String) -> Unit,
-    onSaveMapCustomSubdomains: (String) -> Unit,
-    onToggleShowObjects: (Boolean) -> Unit,
-    onToggleSendBatteryInfo: (Boolean) -> Unit,
-    onToggleAutoCheckUpdates: (Boolean) -> Unit,
-    onSaveStationTapAction: (String) -> Unit,
-    onOpenNotificationPrefs: () -> Unit,
-    onExportProfile: () -> Unit,
-    onImportProfile: () -> Unit,
-    onShareDiagnostics: () -> Unit,
-    onCheckForUpdates: () -> Unit,
-    onOpenCreditsAndLinks: () -> Unit,
-    onOpenAbout: () -> Unit,
+    state: SettingsUiState,
+    onIntent: (SettingsIntent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val compactListMode by rememberCompactListMode()
-    var showSsidDialog by remember { mutableStateOf(false) }
-    var showDigiPathDialog by remember { mutableStateOf(false) }
-    var showFrequencyDialog by remember { mutableStateOf(false) }
-    var showStatusDialog by remember { mutableStateOf(false) }
-    var showPhgDialog by remember { mutableStateOf(false) }
-    var showMapModeDialog by remember { mutableStateOf(false) }
-    var showMapCustomUrlDialog by remember { mutableStateOf(false) }
-    var showMapCustomSubdomainsDialog by remember { mutableStateOf(false) }
-    var showStationTapDialog by remember { mutableStateOf(false) }
-
     val ssidOptions = listOf(
         "0" to stringResource(R.string.setting_ssid_0),
         "1" to stringResource(R.string.setting_ssid_1),
@@ -146,16 +81,16 @@ fun SettingsScreen(
         "14" to stringResource(R.string.setting_ssid_14),
         "15" to stringResource(R.string.setting_ssid_15),
     )
-    val callsignDisplay = if (callsign.isEmpty()) stringResource(R.string.setting_not_set) else callsign
-    val ssidDisplay = if (ssid == "0") "0" else "-$ssid"
-    val digiPathDisplay = if (digiPath.isEmpty()) stringResource(R.string.setting_direct_path) else digiPath
-    val frequencyDisplay = if (frequency.isEmpty()) stringResource(R.string.setting_not_set) else frequency
-    val statusDisplay = if (status.isEmpty()) stringResource(R.string.setting_not_set) else status
-    val phgDisplay = if (phgEnabled) {
-        val hUnit = if (phgHeightUnit.equals("ft", ignoreCase = true)) "ft" else "m"
-        val pStr = if (phgPower.isNotEmpty()) "${phgPower}W" else ""
-        val hStr = if (phgHeight.isNotEmpty()) "$phgHeight$hUnit" else ""
-        val gStr = if (phgGain.isNotEmpty()) "${phgGain}dB" else ""
+    val callsignDisplay = if (state.callsign.isEmpty()) stringResource(R.string.setting_not_set) else state.callsign
+    val ssidDisplay = if (state.ssid == "0") "0" else "-${state.ssid}"
+    val digiPathDisplay = if (state.digiPath.isEmpty()) stringResource(R.string.setting_direct_path) else state.digiPath
+    val frequencyDisplay = if (state.frequency.isEmpty()) stringResource(R.string.setting_not_set) else state.frequency
+    val statusDisplay = if (state.status.isEmpty()) stringResource(R.string.setting_not_set) else state.status
+    val phgDisplay = if (state.phgEnabled) {
+        val hUnit = if (state.phgHeightUnit.equals("ft", ignoreCase = true)) "ft" else "m"
+        val pStr = if (state.phgPower.isNotEmpty()) "${state.phgPower}W" else ""
+        val hStr = if (state.phgHeight.isNotEmpty()) "${state.phgHeight}$hUnit" else ""
+        val gStr = if (state.phgGain.isNotEmpty()) "${state.phgGain}dB" else ""
         val parts = listOfNotNull(pStr.ifEmpty { null }, hStr.ifEmpty { null }, gStr.ifEmpty { null })
         if (parts.isNotEmpty()) parts.joinToString(" / ") else stringResource(R.string.setting_phg_enabled)
     } else {
@@ -163,6 +98,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -172,7 +108,7 @@ fun SettingsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { onIntent(SettingsIntent.NavigateBack) }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(android.R.string.cancel),
@@ -180,13 +116,13 @@ fun SettingsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onImportProfile) {
+                    IconButton(onClick = { onIntent(SettingsIntent.ImportProfile) }) {
                         Icon(
                             imageVector = Icons.Default.FileOpen,
                             contentDescription = stringResource(R.string.profile_load),
                         )
                     }
-                    IconButton(onClick = onExportProfile) {
+                    IconButton(onClick = { onIntent(SettingsIntent.ExportProfile) }) {
                         Icon(
                             imageVector = Icons.Default.Save,
                             contentDescription = stringResource(R.string.profile_export),
@@ -214,7 +150,7 @@ fun SettingsScreen(
                     value = callsignDisplay,
                     summary = stringResource(R.string.setting_callsign_summary_mod),
                     icon = Icons.Default.Person,
-                    onClick = onOpenCallsignDialog,
+                    onClick = { onIntent(SettingsIntent.OpenIdentityDialog) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
@@ -222,7 +158,7 @@ fun SettingsScreen(
                     value = ssidDisplay,
                     summary = stringResource(R.string.setting_ssid_summary),
                     icon = Icons.Default.Radio,
-                    onClick = { showSsidDialog = true },
+                    onClick = { onIntent(SettingsIntent.OpenSsidDialog) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
@@ -230,14 +166,14 @@ fun SettingsScreen(
                     value = digiPathDisplay,
                     summary = stringResource(R.string.setting_digi_path_summary),
                     icon = Icons.Default.Route,
-                    onClick = { showDigiPathDialog = true },
+                    onClick = { onIntent(SettingsIntent.OpenDigiPathDialog) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
                     title = stringResource(R.string.p_symbol),
-                    summary = stringResource(R.string.setting_symbol_summary_mod) + ": " + symbol,
+                    summary = stringResource(R.string.setting_symbol_summary_mod) + ": " + state.symbol,
                     icon = Icons.Default.LocationOn,
-                    onClick = onOpenSymbolPicker,
+                    onClick = { onIntent(SettingsIntent.OpenSymbolPicker) },
                 )
             }
 
@@ -247,9 +183,9 @@ fun SettingsScreen(
             PreferenceGroupCard {
                 PreferenceItem(
                     title = stringResource(R.string.p_connsetup),
-                    summary = backendName,
+                    summary = state.backendName,
                     icon = Icons.Default.CellTower,
-                    onClick = onOpenConnectionSetup,
+                    onClick = { onIntent(SettingsIntent.OpenConnectionSetup) },
                 )
             }
 
@@ -259,9 +195,9 @@ fun SettingsScreen(
             PreferenceGroupCard {
                 PreferenceItem(
                     title = stringResource(R.string.setting_location_source),
-                    summary = locationSourceName,
+                    summary = state.locationSourceName,
                     icon = Icons.Default.LocationOn,
-                    onClick = onOpenLocationSetup,
+                    onClick = { onIntent(SettingsIntent.OpenLocationSetup) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
@@ -269,7 +205,7 @@ fun SettingsScreen(
                     value = frequencyDisplay,
                     summary = stringResource(R.string.p_frequency_summary),
                     icon = Icons.Default.Radio,
-                    onClick = { showFrequencyDialog = true },
+                    onClick = { onIntent(SettingsIntent.OpenFrequencyDialog) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
@@ -277,7 +213,7 @@ fun SettingsScreen(
                     value = statusDisplay,
                     summary = stringResource(R.string.p_status_summary),
                     icon = Icons.Default.Info,
-                    onClick = { showStatusDialog = true },
+                    onClick = { onIntent(SettingsIntent.OpenStatusDialog) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
@@ -285,15 +221,15 @@ fun SettingsScreen(
                     value = phgDisplay,
                     summary = stringResource(R.string.p_phg_summary),
                     icon = Icons.Default.SettingsInputAntenna,
-                    onClick = { showPhgDialog = true },
+                    onClick = { onIntent(SettingsIntent.OpenPhgDialog) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceSwitchItem(
                     title = stringResource(R.string.setting_send_battery),
                     summary = stringResource(R.string.setting_send_battery_summary),
                     icon = Icons.Default.BatteryFull,
-                    checked = sendBatteryInfo,
-                    onCheckedChange = onToggleSendBatteryInfo,
+                    checked = state.sendBatteryInfo,
+                    onCheckedChange = { onIntent(SettingsIntent.ToggleSendBatteryInfo(it)) },
                 )
             }
 
@@ -303,67 +239,67 @@ fun SettingsScreen(
             PreferenceGroupCard {
                 PreferenceValueItem(
                     title = stringResource(R.string.setting_default_map_source),
-                    value = mapModeTitle,
+                    value = state.mapModeTitle,
                     summary = stringResource(R.string.setting_default_map_source_summary),
                     icon = Icons.Default.Map,
-                    onClick = { showMapModeDialog = true },
+                    onClick = { onIntent(SettingsIntent.OpenMapModeDialog) },
                 )
-                if (mapModeTag == "custom") {
+                if (state.mapModeTag == "custom") {
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     PreferenceItem(
                         title = stringResource(R.string.p_map_custom_url),
-                        summary = mapCustomUrl.ifEmpty { stringResource(R.string.p_map_custom_url_summary) },
+                        summary = state.mapCustomUrl.ifEmpty { stringResource(R.string.p_map_custom_url_summary) },
                         icon = Icons.Default.Map,
-                        onClick = { showMapCustomUrlDialog = true },
+                        onClick = { onIntent(SettingsIntent.OpenMapCustomUrlDialog) },
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     PreferenceItem(
                         title = stringResource(R.string.p_map_custom_subdomains),
-                        summary = mapCustomSubdomains.ifEmpty {
+                        summary = state.mapCustomSubdomains.ifEmpty {
                             stringResource(R.string.p_map_custom_subdomains_summary)
                         },
                         icon = Icons.Default.Map,
-                        onClick = { showMapCustomSubdomainsDialog = true },
+                        onClick = { onIntent(SettingsIntent.OpenMapCustomSubdomainsDialog) },
                     )
                 }
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceValueItem(
                     title = stringResource(R.string.setting_station_tap_action),
-                    value = if (stationTapAction == "details") {
+                    value = if (state.stationTapAction == "details") {
                         stringResource(R.string.setting_station_tap_details)
                     } else {
                         stringResource(R.string.setting_station_tap_message)
                     },
-                    summary = if (stationTapAction == "details") {
+                    summary = if (state.stationTapAction == "details") {
                         stringResource(R.string.setting_station_long_press_message)
                     } else {
                         stringResource(R.string.setting_station_long_press_details)
                     },
                     icon = Icons.Default.Person,
-                    onClick = { showStationTapDialog = true },
+                    onClick = { onIntent(SettingsIntent.OpenStationTapDialog) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceSwitchItem(
                     title = stringResource(R.string.setting_show_aprs_objects),
                     summary = stringResource(R.string.setting_show_aprs_objects_summary),
                     icon = Icons.Default.Layers,
-                    checked = showObjects,
-                    onCheckedChange = onToggleShowObjects,
+                    checked = state.showObjects,
+                    onCheckedChange = { onIntent(SettingsIntent.ToggleShowObjects(it)) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceSwitchItem(
                     title = stringResource(R.string.setting_compact_lists),
                     summary = stringResource(R.string.setting_compact_lists_summary),
                     icon = Icons.AutoMirrored.Filled.List,
-                    checked = compactListMode,
-                    onCheckedChange = { enabled -> setCompactListMode(context, enabled) },
+                    checked = state.compactListMode,
+                    onCheckedChange = { onIntent(SettingsIntent.ToggleCompactListMode(it)) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
                     title = stringResource(R.string.setting_notifications),
                     summary = stringResource(R.string.setting_notifications_summary),
                     icon = Icons.Default.Notifications,
-                    onClick = onOpenNotificationPrefs,
+                    onClick = { onIntent(SettingsIntent.OpenNotificationPrefs) },
                 )
             }
 
@@ -375,7 +311,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.setting_share_diagnostics),
                     summary = stringResource(R.string.setting_share_diagnostics_summary),
                     icon = Icons.Default.BugReport,
-                    onClick = onShareDiagnostics,
+                    onClick = { onIntent(SettingsIntent.ShareDiagnostics) },
                     showChevron = false,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -383,15 +319,15 @@ fun SettingsScreen(
                     title = stringResource(R.string.setting_auto_check_updates),
                     summary = stringResource(R.string.setting_auto_check_updates_summary),
                     icon = Icons.Default.Sync,
-                    checked = autoCheckUpdates,
-                    onCheckedChange = onToggleAutoCheckUpdates,
+                    checked = state.autoCheckUpdates,
+                    onCheckedChange = { onIntent(SettingsIntent.ToggleAutoCheckUpdates(it)) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
                     title = stringResource(R.string.setting_check_updates),
                     summary = stringResource(R.string.setting_check_updates_summary),
                     icon = Icons.Default.SystemUpdateAlt,
-                    onClick = onCheckForUpdates,
+                    onClick = { onIntent(SettingsIntent.CheckForUpdates) },
                     showChevron = false,
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -399,7 +335,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.setting_credits_links),
                     summary = stringResource(R.string.setting_credits_links_summary),
                     icon = Icons.Default.Link,
-                    onClick = onOpenCreditsAndLinks,
+                    onClick = { onIntent(SettingsIntent.OpenCreditsAndLinks) },
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 PreferenceItem(
@@ -410,7 +346,7 @@ fun SettingsScreen(
                         BuildConfig.BUILD_TYPE,
                     ),
                     icon = Icons.Default.Info,
-                    onClick = onOpenAbout,
+                    onClick = { onIntent(SettingsIntent.OpenAboutDialog) },
                 )
             }
 
@@ -418,105 +354,106 @@ fun SettingsScreen(
         }
     }
 
-    if (showSsidDialog) {
+    if (state.activeDialog is SettingsDialog.Ssid) {
         PreferenceSelectDialog(
             title = stringResource(R.string.setting_ssid_dialog),
             options = ssidOptions,
-            selected = ssid,
-            onDismiss = { showSsidDialog = false },
-            onSelect = onSaveSsid,
+            selected = state.ssid,
+            onDismiss = { onIntent(SettingsIntent.DismissDialog) },
+            onSelect = { onIntent(SettingsIntent.SaveSsid(it)) },
         )
     }
 
-    if (showFrequencyDialog) {
+    if (state.activeDialog is SettingsDialog.Frequency) {
         PreferenceEditDialog(
             title = stringResource(R.string.p_frequency),
-            initialValue = frequency,
+            initialValue = state.frequency,
             label = stringResource(R.string.p_frequency_summary),
-            onDismiss = { showFrequencyDialog = false },
-            onSave = onSaveFrequency,
+            onDismiss = { onIntent(SettingsIntent.DismissDialog) },
+            onSave = { onIntent(SettingsIntent.SaveFrequency(it)) },
         )
     }
 
-    if (showStatusDialog) {
+    if (state.activeDialog is SettingsDialog.Status) {
         PreferenceEditDialog(
             title = stringResource(R.string.p_status_entry),
-            initialValue = status,
+            initialValue = state.status,
             label = stringResource(R.string.p_status_summary),
-            onDismiss = { showStatusDialog = false },
-            onSave = { onSaveStatus(it.take(42)) },
+            onDismiss = { onIntent(SettingsIntent.DismissDialog) },
+            onSave = { onIntent(SettingsIntent.SaveStatus(it.take(42))) },
         )
     }
 
-    if (showMapModeDialog) {
+    if (state.activeDialog is SettingsDialog.MapMode) {
         PreferenceSelectDialog(
             title = stringResource(R.string.setting_default_map_source),
-            options = mapModeOptions,
-            selected = mapModeTag,
-            onDismiss = { showMapModeDialog = false },
-            onSelect = onSaveMapMode,
+            options = state.mapModeOptions,
+            selected = state.mapModeTag,
+            onDismiss = { onIntent(SettingsIntent.DismissDialog) },
+            onSelect = { tag ->
+                val title = state.mapModeOptions.find { it.first == tag }?.second ?: tag
+                onIntent(SettingsIntent.SaveMapMode(tag, title))
+            },
         )
     }
 
-    if (showMapCustomUrlDialog) {
+    if (state.activeDialog is SettingsDialog.MapCustomUrl) {
         PreferenceEditDialog(
             title = stringResource(R.string.p_map_custom_url),
-            initialValue = mapCustomUrl,
+            initialValue = state.mapCustomUrl,
             label = stringResource(R.string.p_map_custom_url_summary),
-            onDismiss = { showMapCustomUrlDialog = false },
-            onSave = onSaveMapCustomUrl,
+            onDismiss = { onIntent(SettingsIntent.DismissDialog) },
+            onSave = { onIntent(SettingsIntent.SaveMapCustomUrl(it)) },
         )
     }
 
-    if (showMapCustomSubdomainsDialog) {
+    if (state.activeDialog is SettingsDialog.MapCustomSubdomains) {
         PreferenceEditDialog(
             title = stringResource(R.string.p_map_custom_subdomains),
-            initialValue = mapCustomSubdomains,
+            initialValue = state.mapCustomSubdomains,
             label = stringResource(R.string.p_map_custom_subdomains_summary),
-            onDismiss = { showMapCustomSubdomainsDialog = false },
-            onSave = onSaveMapCustomSubdomains,
+            onDismiss = { onIntent(SettingsIntent.DismissDialog) },
+            onSave = { onIntent(SettingsIntent.SaveMapCustomSubdomains(it)) },
         )
     }
 
-    if (showStationTapDialog) {
+    if (state.activeDialog is SettingsDialog.StationTap) {
         PreferenceSelectDialog(
             title = stringResource(R.string.setting_station_tap_action),
             options = listOf(
                 "message" to stringResource(R.string.setting_station_tap_message_option),
                 "details" to stringResource(R.string.setting_station_tap_details_option),
             ),
-            selected = stationTapAction,
-            onDismiss = { showStationTapDialog = false },
+            selected = state.stationTapAction,
+            onDismiss = { onIntent(SettingsIntent.DismissDialog) },
             onSelect = { action ->
-                onSaveStationTapAction(action)
-                showStationTapDialog = false
+                onIntent(SettingsIntent.SaveStationTapAction(action))
             },
         )
     }
 
-    if (showDigiPathDialog) {
+    if (state.activeDialog is SettingsDialog.DigiPath) {
         DigiPathDialogCompose(
-            currentPath = digiPath,
-            userPresets = userDigiPresets,
-            onSavePath = onSaveDigiPath,
-            onAddPreset = onAddDigiPreset,
-            onDeletePreset = onDeleteDigiPreset,
-            onDismiss = { showDigiPathDialog = false },
+            currentPath = state.digiPath,
+            userPresets = state.userDigiPresets,
+            onSavePath = { onIntent(SettingsIntent.SaveDigiPath(it)) },
+            onAddPreset = { onIntent(SettingsIntent.AddDigiPreset(it)) },
+            onDeletePreset = { onIntent(SettingsIntent.DeleteDigiPreset(it)) },
+            onDismiss = { onIntent(SettingsIntent.DismissDialog) },
         )
     }
 
-    if (showPhgDialog) {
+    if (state.activeDialog is SettingsDialog.Phg) {
         PhgDialogCompose(
-            initialEnabled = phgEnabled,
-            initialPower = phgPower,
-            initialHeight = phgHeight,
-            initialHeightUnit = phgHeightUnit,
-            initialGain = phgGain,
-            initialDir = phgDir,
-            onDismiss = { showPhgDialog = false },
+            initialEnabled = state.phgEnabled,
+            initialPower = state.phgPower,
+            initialHeight = state.phgHeight,
+            initialHeightUnit = state.phgHeightUnit,
+            initialGain = state.phgGain,
+            initialDir = state.phgDir,
+            onDismiss = { onIntent(SettingsIntent.DismissDialog) },
             onSave = { enabled, power, height, heightUnit, gain, dir ->
-                onSavePhg(enabled, power, height, heightUnit, gain, dir)
-                showPhgDialog = false
+                onIntent(SettingsIntent.SavePhg(enabled, power, height, heightUnit, gain, dir))
             },
         )
     }
