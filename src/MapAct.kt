@@ -23,6 +23,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.gson.JsonObject
 import org.aprsdroid.app.ic705.diagnostic.Ic705RxDiagnosticActivity
 import org.aprsdroid.app.map.OnlineTileSources
+import org.aprsdroid.app.map.StationMapIconRenderer
 import org.aprsdroid.app.map.TileUrlTemplate
 import org.aprsdroid.app.ui.component.AboutDialogContent
 import org.aprsdroid.app.ui.screen.MapScreen
@@ -322,7 +323,7 @@ class MapAct : MapLoaderBase() {
             val features = stations.mapIndexed { index, station ->
                 val symbol = station.symbol ?: "/$"
                 val iconId = symbolImages.getOrPut(symbol) {
-                    val id = "aprs-symbol-${encodeImageId(symbol)}"
+                    val id = "aprs-symbol-${StationMapIconRenderer.encodeImageId(symbol)}"
                     val icon = MapModes.symbol2bitmap(symbol, iconSize).apply {
                         this.density = resources.displayMetrics.densityDpi
                     }
@@ -330,8 +331,8 @@ class MapAct : MapLoaderBase() {
                     activeImageIds.add(id)
                     id
                 }
-                val labeledIconId = "aprs-station-$index-${encodeImageId(station.call)}"
-                style.addImage(labeledIconId, createLabeledStationBitmap(station.call, symbol, iconSize))
+                val labeledIconId = "aprs-station-$index-${StationMapIconRenderer.encodeImageId(station.call)}"
+                style.addImage(labeledIconId, StationMapIconRenderer.createLabeledStationBitmap(this, station.call, symbol, iconSize))
                 activeImageIds.add(labeledIconId)
 
                 val properties = JsonObject().apply {
@@ -349,55 +350,6 @@ class MapAct : MapLoaderBase() {
             Log.e(TAG, "updateStationLayer error", e)
             onStopLoading()
         }
-    }
-
-    private fun createLabeledStationBitmap(call: String, symbol: String, iconSize: Int): Bitmap {
-        val density = resources.displayMetrics.density
-        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLACK
-            textSize = 12f * density
-            typeface = Typeface.DEFAULT_BOLD
-        }
-        val textWidth = ceil(textPaint.measureText(call)).toInt()
-        val textHeight = ceil(textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent).toInt()
-        val textBaseline = -textPaint.fontMetrics.ascent
-        val padding = (3f * density).roundToInt()
-        val cornerRadius = 3f * density
-        val spacing = (2f * density).roundToInt()
-
-        val symbolBitmap = MapModes.symbol2bitmap(symbol, iconSize)
-        val bitmapWidth = max(iconSize, textWidth + padding * 2)
-        val bitmapHeight = iconSize + spacing + textHeight + padding * 2
-
-        val bitmap = createBitmap(bitmapWidth, bitmapHeight).apply {
-            this.density = resources.displayMetrics.densityDpi
-        }
-        val canvas = Canvas(bitmap)
-
-        val symbolLeft = ((bitmapWidth - iconSize) / 2f).coerceAtLeast(0f)
-        canvas.drawBitmap(symbolBitmap, symbolLeft, 0f, null)
-
-        val backgroundRect = RectF(
-            ((bitmapWidth - (textWidth + padding * 2)) / 2f).coerceAtLeast(0f),
-            iconSize.toFloat() + spacing,
-            ((bitmapWidth + (textWidth + padding * 2)) / 2f).coerceAtMost(bitmapWidth.toFloat()),
-            bitmapHeight.toFloat()
-        )
-        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(200, 255, 255, 255)
-        }
-        val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(120, 0, 0, 0)
-            style = Paint.Style.STROKE
-            strokeWidth = 1f * density
-        }
-        canvas.drawRoundRect(backgroundRect, cornerRadius, cornerRadius, bgPaint)
-        canvas.drawRoundRect(backgroundRect, cornerRadius, cornerRadius, borderPaint)
-
-        val textLeft = backgroundRect.left + padding
-        val textTop = backgroundRect.top + padding + textBaseline
-        canvas.drawText(call, textLeft, textTop, textPaint)
-        return bitmap
     }
 
     private fun onMapTap(point: LatLng): Boolean {
@@ -495,11 +447,6 @@ class MapAct : MapLoaderBase() {
             camera.zoom.toFloat()
         )
     }
-
-    private fun encodeImageId(value: String): String = Base64.encodeToString(
-        value.toByteArray(Charsets.UTF_8),
-        Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
-    )
 
     private data class TileConfiguration(
         val urlPattern: String,

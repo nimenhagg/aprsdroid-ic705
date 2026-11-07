@@ -48,6 +48,7 @@ import org.aprsdroid.app.PrefsWrapper
 import org.aprsdroid.app.R
 import org.aprsdroid.app.map.MapStation
 import org.aprsdroid.app.map.StationFeature
+import org.aprsdroid.app.map.StationMapIconRenderer
 import org.aprsdroid.app.map.StationImage
 import org.aprsdroid.app.map.stationImages
 import org.aprsdroid.app.UrlOpener
@@ -638,8 +639,8 @@ private class MapLibreStationCache {
 }
 
 private fun StationImage.imageId(): String =
-    if (call == null) "aprs-symbol-${encodeImageId(symbol)}"
-    else "aprs-station-${encodeImageId(call)}-${encodeImageId(symbol)}"
+    if (call == null) "aprs-symbol-${StationMapIconRenderer.encodeImageId(symbol)}"
+    else "aprs-station-${StationMapIconRenderer.encodeImageId(call)}-${StationMapIconRenderer.encodeImageId(symbol)}"
 
 private suspend fun updateMapLibreStations(
     context: Context,
@@ -662,7 +663,7 @@ private suspend fun updateMapLibreStations(
                     density = context.resources.displayMetrics.densityDpi
                 }
             } else {
-                createLabeledStationBitmap(context, key.call, key.symbol, iconSize)
+                StationMapIconRenderer.createLabeledStationBitmap(context, key.call, key.symbol, iconSize)
             }
         }
         val features = snapshot.map { station ->
@@ -729,55 +730,6 @@ private fun handleMapLibreTap(
     }
 }
 
-private fun createLabeledStationBitmap(
-    context: Context,
-    call: String,
-    symbol: String,
-    iconSize: Int
-): Bitmap {
-    val density = context.resources.displayMetrics.density
-    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.BLACK
-        textSize = 12f * density
-        typeface = Typeface.DEFAULT_BOLD
-    }
-    val textWidth = ceil(textPaint.measureText(call)).toInt()
-    val textHeight = ceil(textPaint.fontMetrics.descent - textPaint.fontMetrics.ascent).toInt()
-    val textBaseline = -textPaint.fontMetrics.ascent
-    val padding = (3f * density).roundToInt()
-    val cornerRadius = 3f * density
-    val spacing = (2f * density).roundToInt()
-
-    val symbolBitmap = MapModes.symbol2bitmap(symbol, iconSize)
-    val bitmapWidth = max(iconSize, textWidth + padding * 2)
-    val bitmapHeight = iconSize + spacing + textHeight + padding * 2
-    val bitmap = createBitmap(bitmapWidth, bitmapHeight).apply {
-        this.density = context.resources.displayMetrics.densityDpi
-    }
-    val canvas = Canvas(bitmap)
-    val symbolLeft = ((bitmapWidth - iconSize) / 2f).coerceAtLeast(0f)
-    canvas.drawBitmap(symbolBitmap, symbolLeft, 0f, null)
-
-    val backgroundRect = RectF(
-        ((bitmapWidth - (textWidth + padding * 2)) / 2f).coerceAtLeast(0f),
-        iconSize.toFloat() + spacing,
-        ((bitmapWidth + (textWidth + padding * 2)) / 2f).coerceAtMost(bitmapWidth.toFloat()),
-        bitmapHeight.toFloat()
-    )
-    val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.argb(200, 255, 255, 255)
-    }
-    val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.argb(120, 0, 0, 0)
-        style = Paint.Style.STROKE
-        strokeWidth = density
-    }
-    canvas.drawRoundRect(backgroundRect, cornerRadius, cornerRadius, backgroundPaint)
-    canvas.drawRoundRect(backgroundRect, cornerRadius, cornerRadius, borderPaint)
-    canvas.drawText(call, backgroundRect.left + padding, backgroundRect.top + padding + textBaseline, textPaint)
-    return bitmap
-}
-
 private data class InitialPosition(val lat: Double, val lon: Double, val zoom: Float)
 
 private fun initialPosition(prefs: PrefsWrapper, stations: List<MapStation>): InitialPosition {
@@ -802,11 +754,6 @@ private fun savePosition(prefs: PrefsWrapper, lat: Double, lon: Double, zoom: Fl
         putFloat("map_zoom", zoom)
     }
 }
-
-private fun encodeImageId(value: String): String = Base64.encodeToString(
-    value.toByteArray(Charsets.UTF_8),
-    Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING
-)
 
 private data class TileConfiguration(
     val urlPattern: String,
