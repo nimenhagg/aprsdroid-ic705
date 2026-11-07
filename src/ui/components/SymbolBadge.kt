@@ -18,12 +18,16 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import org.aprsdroid.app.SymbolView
 
+internal fun isValidSymbolIndex(index: Int): Boolean = index in 0 until (6 * 16)
+
+internal fun symbolIndex(char: Char): Int = char.code - 33
+
 @Composable
 fun SymbolBadge(
     symbol: String,
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
-    drawContainer: Boolean = true
+    drawContainer: Boolean = true,
 ) {
     val context = LocalContext.current
     val bitmap: Bitmap = remember { SymbolView.getSingleton(context) }
@@ -41,19 +45,21 @@ fun SymbolBadge(
             drawRoundRect(
                 color = bgColor,
                 size = Size(w, h),
-                cornerRadius = cornerRadius
+                cornerRadius = cornerRadius,
             )
             drawRoundRect(
                 color = strokeColor,
                 size = Size(w, h),
                 cornerRadius = cornerRadius,
-                style = Stroke(width = 1.dp.toPx())
+                style = Stroke(width = 1.dp.toPx()),
             )
         }
 
         // Calculate source rect in sprite sheet.
         val page = if (symbol.isNotEmpty() && symbol[0] == '/') 0 else 1
-        val index = if (symbol.length > 1) symbol[1].code - 33 else 0
+        val index = if (symbol.length > 1) symbolIndex(symbol[1]) else 0
+        if (!isValidSymbolIndex(index)) return@Canvas
+
         val altOffset = page * symbolSize * 6
         val srcY = (index / 16) * symbolSize + altOffset
         val srcX = (index % 16) * symbolSize
@@ -70,22 +76,24 @@ fun SymbolBadge(
             srcOffset = IntOffset(srcX, srcY),
             srcSize = IntSize(symbolSize, symbolSize),
             dstOffset = IntOffset(pad, pad),
-            dstSize = IntSize(destSize, destSize)
+            dstSize = IntSize(destSize, destSize),
         )
 
         // Draw overlay character if present.
         if (symbol.isNotEmpty() && symbol[0] != '/' && symbol[0] != '\\') {
-            val overlayIndex = symbol[0].code - 33
-            val overlayY = (overlayIndex / 16) * symbolSize + (2 * symbolSize * 6)
-            val overlayX = (overlayIndex % 16) * symbolSize
+            val overlayIndex = symbolIndex(symbol[0])
+            if (isValidSymbolIndex(overlayIndex)) {
+                val overlayY = (overlayIndex / 16) * symbolSize + (2 * symbolSize * 6)
+                val overlayX = (overlayIndex % 16) * symbolSize
 
-            drawImage(
-                image = imageBitmap,
-                srcOffset = IntOffset(overlayX, overlayY),
-                srcSize = IntSize(symbolSize, symbolSize),
-                dstOffset = IntOffset(pad, pad),
-                dstSize = IntSize(destSize, destSize)
-            )
+                drawImage(
+                    image = imageBitmap,
+                    srcOffset = IntOffset(overlayX, overlayY),
+                    srcSize = IntSize(symbolSize, symbolSize),
+                    dstOffset = IntOffset(pad, pad),
+                    dstSize = IntSize(destSize, destSize),
+                )
+            }
         }
     }
 }

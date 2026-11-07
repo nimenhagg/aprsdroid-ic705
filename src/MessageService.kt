@@ -8,6 +8,7 @@ import android.util.Log
 import net.ab0oo.aprs.parser.APRSPacket
 import net.ab0oo.aprs.parser.MessagePacket
 import java.util.Locale
+import kotlin.math.max
 import kotlin.math.min
 import org.aprsdroid.app.service.AprsMessageEvent
 import org.aprsdroid.app.service.ServiceEventBus
@@ -31,6 +32,8 @@ class MessageService(val s: AprsService) {
     companion object {
         const val TAG = "APRSdroid.MsgService"
         const val NUM_OF_RETRIES = 7
+
+        fun calculateRetryDelayMs(retrycnt: Int): Long = 30000L * (1 shl max(min(retrycnt - 1, 6), 0))
     }
 
     val pendingSender = Runnable { sendPendingMessages() }
@@ -128,7 +131,7 @@ class MessageService(val s: AprsService) {
         }
     }
 
-    fun getRetryDelayMS(retrycnt: Int): Long = 30000L * (1 shl min(retrycnt - 1, 6))
+    fun getRetryDelayMS(retrycnt: Int): Long = calculateRetryDelayMs(retrycnt)
 
     fun scheduleNextSend(delay: Long) {
         Log.d(TAG, "scheduling TX in " + (delay + 999) / 1000 + "s")
