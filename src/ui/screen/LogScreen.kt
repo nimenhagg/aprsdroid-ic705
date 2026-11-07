@@ -66,6 +66,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,11 +108,11 @@ fun LogScreen(
     val context = LocalContext.current
     val compactListMode by rememberCompactListMode()
     val largeFont = LocalDensity.current.fontScale >= 1.15f
-    var showMenu by remember { mutableStateOf(false) }
-    var showSearch by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedFilterType by remember { mutableIntStateOf(-1) }
-    var showClearConfirmDialog by remember { mutableStateOf(false) }
+    var showMenu by rememberSaveable { mutableStateOf(false) }
+    var showSearch by rememberSaveable { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var selectedFilterType by rememberSaveable { mutableIntStateOf(-1) }
+    var showClearConfirmDialog by rememberSaveable { mutableStateOf(false) }
 
     val filteredItems = remember(items, searchQuery, selectedFilterType) {
         items.filter { item ->

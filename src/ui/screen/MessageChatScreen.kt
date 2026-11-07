@@ -54,7 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,13 +87,13 @@ fun MessageChatScreen(
     onExportLogs: () -> Unit
 ) {
     val context = LocalContext.current
-    var inputText by remember { mutableStateOf("") }
+    var inputText by rememberSaveable { mutableStateOf("") }
     val listState = rememberLazyListState()
     val focusManager = LocalFocusManager.current
 
-    var selectedItemForMenu by remember { mutableStateOf<MessageItem?>(null) }
-    var showClearDialog by remember { mutableStateOf(false) }
-    var showTopMenu by remember { mutableStateOf(false) }
+    var selectedItemId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showClearDialog by rememberSaveable { mutableStateOf(false) }
+    var showTopMenu by rememberSaveable { mutableStateOf(false) }
 
     // Scroll to bottom when new messages arrive
     LaunchedEffect(messages.size) {
@@ -236,7 +236,7 @@ fun MessageChatScreen(
                     item = item,
                     myCall = myCall,
                     targetCall = targetCall,
-                    onLongClick = { selectedItemForMenu = item }
+                    onLongClick = { selectedItemId = item.id }
                 )
             }
 
@@ -245,29 +245,29 @@ fun MessageChatScreen(
     }
 
     // Message options dialog
-    selectedItemForMenu?.let { item ->
+    messages.firstOrNull { it.id == selectedItemId }?.let { item ->
         MessageItemActionDialog(
             item = item,
             targetCall = targetCall,
-            onDismiss = { selectedItemForMenu = null },
+            onDismiss = { selectedItemId = null },
             onCopy = {
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 clipboard.setPrimaryClip(ClipData.newPlainText("APRS message", item.text))
                 Toast.makeText(context, R.string.text_copied, Toast.LENGTH_SHORT).show()
-                selectedItemForMenu = null
+                selectedItemId = null
             },
             onDelete = {
                 onDeleteMessage(item.id)
                 Toast.makeText(context, R.string.message_deleted, Toast.LENGTH_SHORT).show()
-                selectedItemForMenu = null
+                selectedItemId = null
             },
             onRestart = {
                 onRestartMessage(item)
-                selectedItemForMenu = null
+                selectedItemId = null
             },
             onAbort = {
                 onAbortMessage(item)
-                selectedItemForMenu = null
+                selectedItemId = null
             }
         )
     }
