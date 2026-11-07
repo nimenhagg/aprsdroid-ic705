@@ -28,7 +28,7 @@ data class AprsMessageEvent(
  * Reactive event hub decoupling background APRS services and ViewModels/UI.
  * Eliminates reliance on untyped Android BroadcastReceivers for intra-app communication.
  */
-object ServiceEventBus {
+open class ServiceEventBus {
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
 
@@ -65,11 +65,13 @@ object ServiceEventBus {
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun resetForTesting() {
+    internal fun resetState() {
         _isServiceRunning.value = false
         _linkError.value = 0
         _liveStatus.value = null
         _packetEvents.resetReplayCache()
         _messageEvents.resetReplayCache()
     }
+
+    companion object : ServiceEventBus()
 }

@@ -205,7 +205,7 @@ android {
 
 def expectedReleaseTag = "Mod-v${mod_version}"
 
-def verifyArchStrictProvider = providers.gradleProperty('verifyArch.strict').orElse('false')
+def verifyArchStrictProvider = providers.gradleProperty('verifyArch.strict').orElse('true')
 tasks.register('verifyArchitecture') {
 	group = 'verification'
 	description = 'Enforces architectural guardrails across UI dependencies, testing hooks, and tests.'

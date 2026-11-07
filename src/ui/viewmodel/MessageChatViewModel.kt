@@ -20,11 +20,16 @@ data class MessageChatUiState(
     val messages: List<MessageItem> = emptyList(),
 )
 
-class MessageChatViewModel(
+class MessageChatViewModel internal constructor(
     private val repository: MessageSource,
-    externalScope: CoroutineScope? = null,
+    externalScope: CoroutineScope?,
     private val eventBus: ServiceEventBus = ServiceEventBus,
 ) : ViewModel() {
+
+    constructor(
+        repository: MessageSource,
+        eventBus: ServiceEventBus = ServiceEventBus,
+    ) : this(repository, null, eventBus)
 
     private val scope = externalScope ?: viewModelScope
 
