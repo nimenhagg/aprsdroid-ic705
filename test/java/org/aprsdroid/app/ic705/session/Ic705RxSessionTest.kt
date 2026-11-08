@@ -529,6 +529,59 @@ class Ic705RxSessionTest {
     }
 
     @Test
+    fun transmitEncodingDoesNotBlockIncomingRxFramesOrOverflowAudioQueue() {
+        val sink = CountingPcmSink()
+        val harness = SessionHarness(audioSink = sink)
+        lateinit var civ: FakeChannel
+        val txFinished = CountDownLatch(1)
+        try {
+            harness.advanceToReceiving()
+            val audio = harness.factory.channel(Ic705ChannelRole.AUDIO)
+            civ = harness.factory.channel(Ic705ChannelRole.CIV)
+            civ.installSendBlock()
+            val packet = Parser.parseAX25(
+                Packet(
+                    "APRS",
+                    "N0CALL",
+                    arrayOf("WIDE1-1"),
+                    Packet.AX25_CONTROL_APRS,
+                    Packet.AX25_PROTOCOL_NO_LAYER_3,
+                    "!4903.50N/07201.75W-TX isolation".toByteArray(Charsets.ISO_8859_1),
+                ).bytesWithoutCRC(),
+            )
+            val txThread = Thread {
+                try {
+                    harness.session.transmit(packet)
+                } finally {
+                    txFinished.countDown()
+                }
+            }
+            txThread.start()
+            val sendStarted = requireNotNull(civ.sendStarted)
+            assertTrue(sendStarted.await(BARRIER_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+
+            repeat(3) { sequence ->
+                audio.emit(audioDatagram(audioSequence = sequence + 2, pcmSample = sequence))
+            }
+            val rxProgressedDuringTransmit = try {
+                awaitUntil(TimeUnit.MILLISECONDS.toMillis(300)) {
+                    sink.writeCount.get() == 4
+                }
+                true
+            } catch (_: Throwable) {
+                false
+            }
+            civ.releaseSend?.countDown()
+            assertTrue(txFinished.await(BARRIER_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+            assertTrue("RX should continue while TX send is blocked", rxProgressedDuringTransmit)
+            assertTrue(harness.issues.none { it.code == Ic705RxSessionIssueCode.AUDIO_QUEUE_OVERFLOW })
+        } finally {
+            civ.releaseSend?.countDown()
+            harness.close()
+        }
+    }
+
+    @Test
     fun closeCallbackWaitsForBlockedPcmWriteAndQueuedAudioDoesNotRunAfterClose() {
         val sink = BlockingPcmSink()
         val harness = SessionHarness(audioSink = sink)
@@ -703,7 +756,7 @@ class Ic705RxSessionTest {
         fun advanceToReceiving(): FakeChannel {
             val audio = advanceToStreamsReady()
             audio.emit(audioDatagram(audioSequence = 1, pcmSample = 0x1234))
-            drainAudio()
+            flushAudio()
             drain()
             assertEquals(Ic705RxSessionEngine.Phase.RECEIVING, session.state.phase)
             return factory.channel(Ic705ChannelRole.CONTROL)
@@ -750,7 +803,7 @@ class Ic705RxSessionTest {
             )
         }
 
-        private fun drainAudio() {
+        fun flushAudio() {
             audioExecutor.submit {}.get(BARRIER_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         }
 
@@ -814,6 +867,16 @@ class Ic705RxSessionTest {
         private val onDatagram: (Ic705ReceivedDatagram) -> Unit,
         override val localPort: Int,
     ) : Ic705DatagramChannel {
+        var sendStarted: CountDownLatch? = null
+            private set
+        var releaseSend: CountDownLatch? = null
+            private set
+
+        fun installSendBlock() {
+            sendStarted = CountDownLatch(1)
+            releaseSend = CountDownLatch(1)
+        }
+
         override val boundLocalAddress: InetAddress = InetAddress.getByName("192.168.1.23")
         val sentPackets = CopyOnWriteArrayList<ByteArray>()
 
@@ -835,6 +898,12 @@ class Ic705RxSessionTest {
 
         override fun send(data: ByteArray) {
             check(isOpen)
+            val started = sendStarted
+            val released = releaseSend
+            if (started != null && released != null && data.size > Ic705CivDatagramCodec.HEADER_SIZE) {
+                started.countDown()
+                check(released.await(BARRIER_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+            }
             sentPackets += data.copyOf()
         }
 
@@ -861,6 +930,17 @@ class Ic705RxSessionTest {
         )
 
         override fun write(buffer: ShortArray, offset: Int, length: Int) = Unit
+        override fun close() = Unit
+    }
+
+    private class CountingPcmSink : PcmSink {
+        override val format = NoOpPcmSink.format
+        val writeCount = AtomicInteger()
+
+        override fun write(buffer: ShortArray, offset: Int, length: Int) {
+            writeCount.addAndGet(length)
+        }
+
         override fun close() = Unit
     }
 

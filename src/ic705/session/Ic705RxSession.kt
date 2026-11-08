@@ -206,6 +206,7 @@ class Ic705RxSession internal constructor(
 
     /** Guarded by [audioLifecycleLock]. */
     private var audioWrittenInGeneration = false
+    private var txStartPending = false
 
     /** Accessed only by the control executor. */
     private var restartResetDeliveredByClose = false
@@ -229,7 +230,9 @@ class Ic705RxSession internal constructor(
         get() = pttStateMachine.isTransmitting
 
     override fun transmit(packet: APRSPacket): Boolean {
-        synchronized(audioLifecycleLock) {
+        val encodedPacket = Ax25PacketEncoder.encode(packet)
+        val samples = afskPcmGenerator.generateSamples(encodedPacket)
+        val datagrams = synchronized(audioLifecycleLock) {
             val now = monotonicMillis()
             val cooldownRemaining = TX_COOLDOWN_GUARD_MILLIS - (now - lastTxCompletedMonotonicMillis)
             if (cooldownRemaining > 0) {
@@ -240,7 +243,7 @@ class Ic705RxSession internal constructor(
                 Log.w(TAG, "transmit() rejected: engine phase is ${engineState.phase}")
                 return false
             }
-            if (pttStateMachine.isTransmitting) {
+            if (txStartPending || pttStateMachine.isTransmitting) {
                 Log.w(TAG, "transmit() rejected: ptt is already transmitting")
                 return false
             }
@@ -257,8 +260,6 @@ class Ic705RxSession internal constructor(
                 return false
             }
 
-            val ax25 = Ax25PacketEncoder.encode(packet)
-            val samples = afskPcmGenerator.generateSamples(ax25)
             val packetizer = Ic705TxAudioPacketizer(
                 senderId = audioRuntime.localId,
                 receiverId = audioRemoteId,
@@ -269,21 +270,26 @@ class Ic705RxSession internal constructor(
             
             nextTxOuterSequence = packetizer.outerSequence
             nextTxAudioSequence = packetizer.audioSequence
+            txStartPending = true
 
-            val started = try {
-                pttStateMachine.beginTransmission()
-            } catch (error: Exception) {
-                Log.e(TAG, "transmit() failed to send PTT ON", error)
-                reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, Ic705ChannelRole.CIV)
-                return false
-            }
-            if (!started) {
-                Log.w(TAG, "transmit() pttStateMachine.beginTransmission() returned false")
-                return false
-            }
-            startTxAudioStreaming(datagrams)
-            return true
+            datagrams
         }
+
+        val started = try {
+            pttStateMachine.beginTransmission()
+        } catch (error: Exception) {
+            Log.e(TAG, "transmit() failed to send PTT ON", error)
+            synchronized(audioLifecycleLock) { txStartPending = false }
+            reportIssue(Ic705RxSessionIssueCode.SOCKET_IO, Ic705ChannelRole.CIV)
+            return false
+        }
+        synchronized(audioLifecycleLock) { txStartPending = false }
+        if (!started) {
+            Log.w(TAG, "transmit() pttStateMachine.beginTransmission() returned false")
+            return false
+        }
+        startTxAudioStreaming(datagrams)
+        return true
     }
 
     private fun startTxAudioStreaming(datagrams: List<ByteArray>) {
