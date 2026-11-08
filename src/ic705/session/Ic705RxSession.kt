@@ -109,15 +109,24 @@ class Ic705RxSession internal constructor(
         wireProfile = wireProfile,
     )
 
-    private data class ChannelRuntime(
+    private inner class ChannelRuntime(
         val role: Ic705ChannelRole,
-        var localId: Int,
         val trackedPackets: Ic705TrackedPacketStore,
-        var remoteId: Int? = null,
-        var pingSequence: Int = 0,
-        var civSequence: Int = 0,
         val lastReceivedAtMillis: AtomicLong,
-    )
+        @Volatile var pingSequence: Int = 0,
+    ) {
+        var localId: Int
+            get() = channelSnapshot.channels.getValue(role).localId
+            set(value) {
+                updateChannelIds(role) { it.copy(localId = value) }
+            }
+
+        var remoteId: Int?
+            get() = channelSnapshot.channels.getValue(role).remoteId
+            set(value) {
+                updateChannelIds(role) { it.copy(remoteId = value) }
+            }
+    }
 
     private data class StreamRecoveryState(
         val attempt: Int,
@@ -142,8 +151,8 @@ class Ic705RxSession internal constructor(
         Thread(runnable, "ic705-tx").apply { isDaemon = true }
     }
     private val afskPcmGenerator = Afsk1200PcmGenerator(sampleRateHz = Ic705AudioPacketCodec.SAMPLE_RATE_HZ)
-    private var nextTxOuterSequence = 1
-    private var nextTxAudioSequence = 1
+    @Volatile
+    private var channelSnapshot = Ic705ChannelSnapshot()
     @Volatile
     private var lastTxCompletedMonotonicMillis = 0L
 
@@ -156,16 +165,18 @@ class Ic705RxSession internal constructor(
                 val runtime = checkNotNull(channelRuntimes[Ic705ChannelRole.CIV]) {
                     "CI-V channel is unavailable"
                 }
-                val remoteId = checkNotNull(runtime.remoteId) {
+                val snapshot = channelSnapshot
+                val ids = snapshot.channels[runtime.role]
+                val remoteId = checkNotNull(ids?.remoteId) {
                     "CI-V remote endpoint is unavailable"
                 }
                 val civEnvelope = Ic705CivDatagramCodec.encode(
                     Ic705CivDatagram(
                         type = 0,
                         sequence = 0,
-                        senderId = runtime.localId,
+                        senderId = ids.localId,
                         receiverId = remoteId,
-                        civSequence = nextCivSequence(runtime),
+                        civSequence = nextCivSequence(runtime.role),
                         civFrame = frame,
                     )
                 )
@@ -232,7 +243,7 @@ class Ic705RxSession internal constructor(
     override fun transmit(packet: APRSPacket): Boolean {
         val encodedPacket = Ax25PacketEncoder.encode(packet)
         val samples = afskPcmGenerator.generateSamples(encodedPacket)
-        val datagrams = synchronized(audioLifecycleLock) {
+        val txSnapshot = synchronized(audioLifecycleLock) {
             val now = monotonicMillis()
             val cooldownRemaining = TX_COOLDOWN_GUARD_MILLIS - (now - lastTxCompletedMonotonicMillis)
             if (cooldownRemaining > 0) {
@@ -251,29 +262,43 @@ class Ic705RxSession internal constructor(
                 Log.w(TAG, "transmit() rejected: session is closed")
                 return false
             }
+            val snapshot = channelSnapshot
             val audioRuntime = channelRuntimes[Ic705ChannelRole.AUDIO]
-            val audioRemoteId = audioRuntime?.remoteId
-            val civRuntime = channelRuntimes[Ic705ChannelRole.CIV]
-            val civRemoteId = civRuntime?.remoteId
-            if (audioRuntime == null || audioRemoteId == null || civRuntime == null || civRemoteId == null) {
-                Log.w(TAG, "transmit() rejected: audio or civ runtime/remoteId is null (audio=$audioRemoteId, civ=$civRemoteId)")
+            val audioIds = snapshot.channels[Ic705ChannelRole.AUDIO]
+            val audioRemoteId = audioIds?.remoteId
+            if (audioRuntime == null || audioRemoteId == null) {
+                Log.w(TAG, "transmit() rejected: audio runtime/remoteId is null (audio=$audioRemoteId)")
                 return false
             }
-
-            val packetizer = Ic705TxAudioPacketizer(
-                senderId = audioRuntime.localId,
-                receiverId = audioRemoteId,
-                initialOuterSequence = nextTxOuterSequence,
-                initialAudioSequence = nextTxAudioSequence,
-            )
-            val datagrams = packetizer.packetize(samples)
-            
-            nextTxOuterSequence = packetizer.outerSequence
-            nextTxAudioSequence = packetizer.audioSequence
             txStartPending = true
-
-            datagrams
+            snapshot to requireNotNull(audioIds)
         }
+        val (snapshot, audioIds) = txSnapshot
+        val packetizer = Ic705TxAudioPacketizer(
+            senderId = audioIds.localId,
+            receiverId = requireNotNull(audioIds.remoteId),
+            initialOuterSequence = snapshot.txOuterSequence,
+            initialAudioSequence = snapshot.txAudioSequence,
+        )
+        val datagrams = try {
+            packetizer.packetize(samples)
+        } catch (error: Exception) {
+            synchronized(audioLifecycleLock) { txStartPending = false }
+            throw error
+        }
+        val sequenceCommitted = synchronized(audioLifecycleLock) {
+            if (channelSnapshot.resetEpoch != snapshot.resetEpoch || closed.get()) {
+                txStartPending = false
+                false
+            } else {
+                channelSnapshot = channelSnapshot.withTxSequences(
+                    outerSequence = packetizer.outerSequence,
+                    audioSequence = packetizer.audioSequence,
+                )
+                true
+            }
+        }
+        if (!sequenceCommitted) return false
 
         val started = try {
             pttStateMachine.beginTransmission()
@@ -507,19 +532,16 @@ class Ic705RxSession internal constructor(
         radioToken = 0
         localToken = if (wireProfile.randomizeTokenRequest) randomInt() and 0xffff else 0
         authInnerSequence = wireProfile.initialAuthInnerSequence
-        nextTxOuterSequence = 1
-        nextTxAudioSequence = 1
+        synchronized(audioLifecycleLock) {
+            val previousSnapshot = channelSnapshot
+            channelSnapshot = previousSnapshot.resetChannels()
+        }
         firstAudioReported = false
         val now = monotonicMillis()
 
         Ic705ChannelRole.values().forEach { role ->
             val runtime = ChannelRuntime(
                 role = role,
-                // The Icom LAN client ID is derived only after UDP bind assigns the
-                // actual local port. wfview and rigplane both tie this value to the
-                // local endpoint; a random ID can leave an IC-705 accepting login but
-                // silently ignoring the following connection-info request.
-                localId = 0,
                 trackedPackets = Ic705TrackedPacketStore(
                     initialSequence = wireProfile.initialTrackedSequence,
                     monotonicMillis = monotonicMillis,
@@ -527,6 +549,9 @@ class Ic705RxSession internal constructor(
                 lastReceivedAtMillis = AtomicLong(now),
             )
             channelRuntimes[role] = runtime
+            synchronized(audioLifecycleLock) {
+                channelSnapshot = channelSnapshot.withChannelIds(role, Ic705ChannelIds(localId = 0))
+            }
             channels[role] = channelFactory.create(
                 role,
                 preferredLocalAddress(role),
@@ -542,12 +567,17 @@ class Ic705RxSession internal constructor(
         channels.values.forEach(Ic705DatagramChannel::open)
         channelRuntimes.values.forEach { runtime ->
             val channel = channels.getValue(runtime.role)
-            runtime.localId = if (wireProfile.randomizeClientId) {
+            val localId = if (wireProfile.randomizeClientId) {
                 // Official RS-BA1 captures assign a fresh independent 32-bit ID to
                 // control, CI-V, and audio on every connection, despite fixed ports.
                 randomInt().takeUnless { it == 0 } ?: 1
             } else {
                 ic705ClientIdForEndpoint(null, channel.localPort)
+            }
+            synchronized(audioLifecycleLock) {
+                val snapshot = channelSnapshot
+                val ids = requireNotNull(snapshot.channels[runtime.role]).copy(localId = localId)
+                channelSnapshot = snapshot.withChannelIds(runtime.role, ids)
             }
         }
         startFixedTask(
@@ -762,7 +792,11 @@ class Ic705RxSession internal constructor(
         source: InetSocketAddress,
     ) {
         if (runtime.remoteId != null && !wireProfile.repeatReadyOnDuplicateDiscovery) return
-        runtime.remoteId = remoteId
+        synchronized(audioLifecycleLock) {
+            val snapshot = channelSnapshot
+            val ids = requireNotNull(snapshot.channels[runtime.role])
+            channelSnapshot = snapshot.withChannelIds(runtime.role, ids.copy(remoteId = remoteId))
+        }
         channels.getValue(runtime.role).setRemoteEndpoint(source, lockSource = true)
         if (runtime.role == Ic705ChannelRole.CONTROL) discoveredRadioAddress = source.address
         cancelTask(discoveryTask(runtime.role))
@@ -1619,11 +1653,29 @@ class Ic705RxSession internal constructor(
         return result
     }
 
-    private fun nextCivSequence(runtime: ChannelRuntime): Int {
-        val result = runtime.civSequence
-        runtime.civSequence = (runtime.civSequence + 1) and 0xffff
-        return result
+    private fun updateChannelIds(
+        role: Ic705ChannelRole,
+        update: (Ic705ChannelIds) -> Ic705ChannelIds,
+    ) {
+        synchronized(audioLifecycleLock) {
+            val snapshot = channelSnapshot
+            val current = snapshot.channels.getValue(role)
+            channelSnapshot = snapshot.withChannelIds(role, update(current))
+        }
     }
+
+    private fun nextCivSequence(role: Ic705ChannelRole): Int = synchronized(audioLifecycleLock) {
+        val snapshot = channelSnapshot
+        val current = snapshot.channels.getValue(role)
+        val result = current.civSequence
+        channelSnapshot = snapshot.withChannelIds(
+            role,
+            current.copy(civSequence = (result + 1) and 0xffff),
+        )
+        result
+    }
+
+    private fun nextCivSequence(runtime: ChannelRuntime): Int = nextCivSequence(runtime.role)
 
     private fun discoveryTask(role: Ic705ChannelRole) = "discovery-$role"
     private fun discoveryTimeoutTask(role: Ic705ChannelRole) = "discovery-timeout-$role"
