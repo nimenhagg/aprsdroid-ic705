@@ -100,6 +100,7 @@ enum class Ic705RxSessionIssueCode {
     MALFORMED_PACKET,
     AUDIO_QUEUE_OVERFLOW,
     AUDIO_DROP_OLDEST,
+    PTT_RELEASE_FAILED,
 }
 
 enum class Ic705PacketReceiverKind {

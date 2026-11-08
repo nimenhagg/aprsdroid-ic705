@@ -4,7 +4,9 @@
 package org.aprsdroid.app.ic705.session
 
 import java.util.Collections
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -73,12 +75,8 @@ class Ic705PttStateMachineTest {
      * Answers PTT OFF attempts the way a real radio does: every attempt is
      * acknowledged and, when the coordinator asks for a readback, reports RX.
      *
-     * The coordinator keeps retrying on its own retry timer while the ACK is
-     * missing, so a single acknowledgement is only correct when it happens to
-     * land inside one retry window. On a loaded machine that window (10 ms in
-     * these tests) can elapse between two test statements, which is a race in
-     * the test, not in the state machine. Keep answering until the coordinator
-     * confirms release on its own.
+     * ACK and readback can race the short retry timer in these tests. Keep
+     * answering until the coordinator confirms release on its own.
      */
     private fun acknowledgeRelease(sm: Ic705PttStateMachine, timeoutMs: Long = 2_000L) {
         awaitUntil(timeoutMs) {
@@ -190,9 +188,11 @@ class Ic705PttStateMachineTest {
             assertTrue(sm.beginTransmission())
             assertTrue(sm.onAudioStreamingFinished())
             sm.finishTransmission()
-            val attemptsAtShutdown = actions.civSendAttempts.get()
+            val attemptsBeforeShutdown = actions.civSendAttempts.get()
             sm.shutdown()
 
+            assertEquals(attemptsBeforeShutdown + 1, actions.civSendAttempts.get())
+            assertEquals(0x00.toByte(), actions.sentCivFrames.last()[6])
             assertTrue(sm.isShutdown)
             assertEquals(Ic705PttState.DRAINING, sm.state)
             assertTrue(sm.isTransmitting)
@@ -201,7 +201,7 @@ class Ic705PttStateMachineTest {
             assertFalse(sm.beginTransmission())
 
             java.util.concurrent.CountDownLatch(1).await(100, java.util.concurrent.TimeUnit.MILLISECONDS)
-            assertEquals(attemptsAtShutdown, actions.civSendAttempts.get())
+            assertEquals(attemptsBeforeShutdown + 1, actions.civSendAttempts.get())
             assertEquals(Ic705PttState.DRAINING, sm.state)
             assertTrue(sm.isRadioPttOn)
         } finally {
@@ -258,20 +258,31 @@ class Ic705PttStateMachineTest {
     }
 
     @Test
-    fun watchdogRetriesAfterAllLocalPttOffSendsFail() {
+    fun pttOffRetryGivesUpAfterThreeAttempts() {
         val actions = FakePttActions()
         val watchdog = Executors.newSingleThreadScheduledExecutor()
-        val sm = Ic705PttStateMachine(actions = actions, ackTimeoutMs = 10L, absoluteWatchdogMs = 80L, maxReleaseAttempts = 3, watchdogExecutor = watchdog)
+        val releaseFailures = AtomicInteger()
+        val sm = Ic705PttStateMachine(
+            actions = actions,
+            ackTimeoutMs = 10L,
+            absoluteWatchdogMs = 80L,
+            maxReleaseAttempts = 3,
+            watchdogExecutor = watchdog,
+            onReleaseFailed = { releaseFailures.incrementAndGet() },
+        )
         try {
             assertTrue(sm.beginTransmission())
-            actions.remainingCivFailures.set(3)
             sm.finishTransmission()
-            waitUntil { actions.civSendAttempts.get() >= 5 }
+            waitUntil { releaseFailures.get() == 1 }
+            val sendsAtFailure = actions.civSendAttempts.get()
+            val retryWindowElapsed = CountDownLatch(1)
+            watchdog.schedule({ retryWindowElapsed.countDown() }, 30L, TimeUnit.MILLISECONDS)
+            assertTrue(retryWindowElapsed.await(1L, TimeUnit.SECONDS))
+            assertEquals(4, sendsAtFailure)
+            assertEquals(sendsAtFailure, actions.civSendAttempts.get())
             assertEquals(Ic705PttState.DRAINING, sm.state)
             assertTrue(sm.isRadioPttOn)
-            acknowledgeRelease(sm)
-            assertEquals(Ic705PttState.RX_IDLE, sm.state)
-            assertFalse(sm.isRadioPttOn)
+            assertEquals(1, releaseFailures.get())
         } finally {
             watchdog.shutdownNow()
         }
@@ -281,18 +292,25 @@ class Ic705PttStateMachineTest {
     fun missingOffAckNeverReportsFalseIdle() {
         val actions = FakePttActions()
         val watchdog = Executors.newSingleThreadScheduledExecutor()
-        val sm = Ic705PttStateMachine(actions = actions, ackTimeoutMs = 10L, absoluteWatchdogMs = 60_000L, maxReleaseAttempts = 4, watchdogExecutor = watchdog)
+        val releaseFailures = AtomicInteger()
+        val sm = Ic705PttStateMachine(
+            actions = actions,
+            ackTimeoutMs = 10L,
+            absoluteWatchdogMs = 60_000L,
+            maxReleaseAttempts = 3,
+            watchdogExecutor = watchdog,
+            onReleaseFailed = { releaseFailures.incrementAndGet() },
+        )
         try {
             assertTrue(sm.beginTransmission())
             assertTrue(sm.onAudioStreamingFinished())
             sm.finishTransmission()
-            waitUntil { actions.civSendAttempts.get() >= 3 }
+            waitUntil { releaseFailures.get() == 1 }
+            assertEquals(4, actions.civSendAttempts.get())
             assertEquals(Ic705PttState.DRAINING, sm.state)
             assertTrue(sm.isTransmitting)
             assertTrue(sm.isRadioPttOn)
-            acknowledgeRelease(sm)
-            assertEquals(Ic705PttState.RX_IDLE, sm.state)
-            assertFalse(sm.isRadioPttOn)
+            assertEquals(1, releaseFailures.get())
         } finally {
             watchdog.shutdownNow()
         }

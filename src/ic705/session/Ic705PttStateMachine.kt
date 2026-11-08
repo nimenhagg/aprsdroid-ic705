@@ -33,9 +33,8 @@ interface Ic705PttActions {
  * or the ACK is lost, the state deliberately remains asserted and the absolute
  * watchdog keeps retrying rather than reporting a false RX state.
  *
- * [shutdown] terminates this coordinator's local lifetime only. It deliberately
- * does not report RX_IDLE or clear [isRadioPttOn], because losing the local
- * session is not evidence that the radio actually released PTT.
+ * [shutdown] makes one synchronous best-effort PTT OFF send when asserted, then
+ * terminates local callbacks without claiming RX_IDLE or clearing asserted state.
  */
 class Ic705PttStateMachine(
     private val actions: Ic705PttActions,
@@ -45,6 +44,7 @@ class Ic705PttStateMachine(
     val absoluteWatchdogMs: Long = DEFAULT_WATCHDOG_MS,
     val maxReleaseAttempts: Int = DEFAULT_RELEASE_ATTEMPTS,
     private val watchdogExecutor: ScheduledExecutorService = defaultWatchdogExecutor,
+    private val onReleaseFailed: () -> Unit = {},
 ) {
     @Volatile
     var state: Ic705PttState = Ic705PttState.RX_IDLE
@@ -171,6 +171,13 @@ class Ic705PttStateMachine(
     @Synchronized
     fun shutdown() {
         if (shutdown) return
+        if (isPttAsserted.get()) {
+            try {
+                sendPttCommand(false)
+            } catch (error: Exception) {
+                AppLog.e("IC705.PTT", "shutdown_ptt_off_send_failed", error = error)
+            }
+        }
         shutdown = true
         cancelReleaseTimer()
         cancelWatchdog()
@@ -284,7 +291,7 @@ class Ic705PttStateMachine(
                 "ptt_off_all_sends_failed",
                 mapOf("attempts" to releaseAttempts, "retaining_asserted_state" to true),
             )
-            scheduleWatchdog()
+            failRelease()
         }
     }
 
@@ -316,7 +323,7 @@ class Ic705PttStateMachine(
             if (releaseAttempts < maxReleaseAttempts) {
                 attemptRelease("PTT OFF state verification send failed")
             } else {
-                scheduleWatchdog()
+                failRelease()
             }
         }
     }
@@ -347,7 +354,7 @@ class Ic705PttStateMachine(
                 if (releaseAttempts < maxReleaseAttempts) {
                     attemptRelease("PTT state readback still reports TX")
                 } else {
-                    scheduleWatchdog()
+                    failRelease()
                 }
             }
             else -> AppLog.w(
@@ -381,13 +388,20 @@ class Ic705PttStateMachine(
                             "ptt_off_ack_timeout",
                             mapOf("attempts" to releaseAttempts, "retaining_asserted_state" to true),
                         )
-                        scheduleWatchdog()
+                        failRelease()
                     }
                 }
             },
             ackTimeoutMs,
             TimeUnit.MILLISECONDS,
         )
+    }
+
+    private fun failRelease() {
+        cancelReleaseTimer()
+        cancelWatchdog()
+        pendingCommand = null
+        runCatching(onReleaseFailed)
     }
 
     private fun completeRelease() {

@@ -196,6 +196,11 @@ class Ic705RxSession internal constructor(
         },
         radioAddress = config.radioCivAddress,
         watchdogExecutor = controlExecutor,
+        onReleaseFailed = {
+            submitForGeneration(generation) {
+                reportIssue(Ic705RxSessionIssueCode.PTT_RELEASE_FAILED, Ic705ChannelRole.CIV)
+            }
+        },
     )
 
     @Volatile
