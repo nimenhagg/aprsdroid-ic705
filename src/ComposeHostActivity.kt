@@ -14,7 +14,7 @@ import androidx.core.net.toUri
  * UI chrome belongs to each Compose screen; this class intentionally carries no
  * AppCompat ActionBar/menu responsibilities.
  */
-abstract class BaseRecyclerActivity : ComponentActivity(), LoadingIndicator, PermissionHelper {
+abstract class ComposeHostActivity : ComponentActivity(), LoadingIndicator, PermissionHelper {
 
     companion object {
         private const val APRS_SERVICE_PERMISSION = 1020

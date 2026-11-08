@@ -6,7 +6,7 @@ package org.aprsdroid.app
  * The old AppCompat ActionBar/context-menu hooks were removed after those actions
  * moved into the Compose UI.
  */
-abstract class StationHelper : BaseRecyclerActivity() {
+abstract class StationHelper : ComposeHostActivity() {
     val targetcall: String? by lazy {
         intent.dataString?.removePrefix("call:")?.removePrefix("sms:")?.takeIf { it.isNotEmpty() }
             ?: intent.getStringExtra("call")

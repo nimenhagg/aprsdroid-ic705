@@ -73,7 +73,7 @@ import org.aprsdroid.app.diagnostic.AppLog
 import org.aprsdroid.app.update.GitHubUpdateChecker
 import org.aprsdroid.app.update.UpdateCheckResult
 
-class HubActivity : BaseRecyclerActivity() {
+class HubActivity : ComposeHostActivity() {
 
     companion object {
         const val EXTRA_START_DESTINATION = "start_destination"
