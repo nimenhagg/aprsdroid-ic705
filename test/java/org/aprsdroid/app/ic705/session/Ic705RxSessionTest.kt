@@ -582,6 +582,40 @@ class Ic705RxSessionTest {
     }
 
     @Test
+    fun audioQueueOverflowDropsOldestWithoutResettingAudio() {
+        val sink = BlockingPcmSink()
+        val resets = CopyOnWriteArrayList<Ic705AudioReset>()
+        val harness = SessionHarness(audioSink = sink, onAudioReset = resets::add)
+        try {
+            harness.advanceToStreamsReady()
+            val audio = harness.factory.channel(Ic705ChannelRole.AUDIO)
+            audio.emit(audioDatagram(audioSequence = 2, pcmSample = 2))
+            assertTrue(sink.writeStarted.await(BARRIER_TIMEOUT_SECONDS, TimeUnit.SECONDS))
+
+            repeat(8) { index ->
+                audio.emit(audioDatagram(audioSequence = index + 3, pcmSample = index + 3))
+            }
+            awaitUntil(TimeUnit.SECONDS.toMillis(BARRIER_TIMEOUT_SECONDS)) {
+                harness.issues.count { it.code == Ic705RxSessionIssueCode.AUDIO_DROP_OLDEST } >= 3
+            }
+            assertTrue(harness.issues.none { it.code == Ic705RxSessionIssueCode.AUDIO_QUEUE_OVERFLOW })
+
+            sink.releaseWrite.countDown()
+            awaitUntil(TimeUnit.SECONDS.toMillis(BARRIER_TIMEOUT_SECONDS)) {
+                sink.writeCount.get() >= 4
+            }
+            assertTrue("queued audio should continue after oldest frames are dropped", sink.writeCount.get() >= 4)
+            assertTrue(
+                "queue overflow must not reset audio",
+                resets.none { it.reason == Ic705AudioResetReason.AUDIO_QUEUE_OVERFLOW },
+            )
+        } finally {
+            sink.releaseWrite.countDown()
+            harness.close()
+        }
+    }
+
+    @Test
     fun closeCallbackWaitsForBlockedPcmWriteAndQueuedAudioDoesNotRunAfterClose() {
         val sink = BlockingPcmSink()
         val harness = SessionHarness(audioSink = sink)
@@ -620,6 +654,7 @@ class Ic705RxSessionTest {
             autoReconnect = false,
             timing = quietTiming(),
         ),
+        onAudioReset: (Ic705AudioReset) -> Unit = {},
     ) : AutoCloseable {
         val factory = FakeChannelFactory()
         val issues = CopyOnWriteArrayList<Ic705RxSessionIssue>()
@@ -644,7 +679,7 @@ class Ic705RxSessionTest {
         val session = Ic705RxSession(
             config = config,
             audioSink = audioSink,
-            callbacks = Ic705RxSessionCallbacks(onIssue = issues::add),
+            callbacks = Ic705RxSessionCallbacks(onIssue = issues::add, onAudioReset = onAudioReset),
             channelFactory = factory,
             controlExecutor = controlExecutor,
             audioExecutor = audioExecutor,

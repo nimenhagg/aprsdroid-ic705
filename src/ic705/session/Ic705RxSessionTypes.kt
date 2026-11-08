@@ -99,6 +99,7 @@ enum class Ic705RxSessionIssueCode {
     SOCKET_IO,
     MALFORMED_PACKET,
     AUDIO_QUEUE_OVERFLOW,
+    AUDIO_DROP_OLDEST,
 }
 
 enum class Ic705PacketReceiverKind {

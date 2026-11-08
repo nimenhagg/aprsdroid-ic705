@@ -1256,44 +1256,47 @@ class Ic705RxSession internal constructor(
         runtime: ChannelRuntime,
         data: ByteArray,
     ) {
-        try {
-            audioExecutor.execute {
-                try {
-                    val result = synchronized(audioLifecycleLock) {
-                        if (generation != expectedGeneration || closed.get()) {
-                            return@synchronized null
-                        }
-                        val receiver = audioReceiver ?: return@synchronized null
-                        receiver.accept(data).also { receiveResult ->
-                            if (receiveResult == Ic705AudioReceiveResult.ACCEPTED) {
-                                audioWrittenInGeneration = true
-                            }
-                        }
-                    } ?: return@execute
-                    runtime.lastReceivedAtMillis.set(monotonicMillis())
-                    if (result == Ic705AudioReceiveResult.ACCEPTED && !firstAudioReported) {
-                        submitForGeneration(expectedGeneration) {
-                            if (generation == expectedGeneration && !firstAudioReported) {
-                                firstAudioReported = true
-                                dispatch(Ic705RxSessionEngine.Event.FirstAudio)
-                            }
-                        }
+        val audioTask = Runnable {
+            try {
+                val result = synchronized(audioLifecycleLock) {
+                    if (generation != expectedGeneration || closed.get()) {
+                        return@Runnable
                     }
-                } catch (_: IllegalArgumentException) {
-                    submitForGeneration(expectedGeneration) {
-                        reportIssue(
-                            Ic705RxSessionIssueCode.MALFORMED_PACKET,
-                            Ic705ChannelRole.AUDIO,
-                            ic705PacketDiagnostic(data, runtime.localId),
-                        )
+                    val receiver = audioReceiver ?: return@Runnable
+                    receiver.accept(data).also { receiveResult ->
+                        if (receiveResult == Ic705AudioReceiveResult.ACCEPTED) {
+                            audioWrittenInGeneration = true
+                        }
                     }
                 }
+                runtime.lastReceivedAtMillis.set(monotonicMillis())
+                if (result == Ic705AudioReceiveResult.ACCEPTED && !firstAudioReported) {
+                    submitForGeneration(expectedGeneration) {
+                        if (generation == expectedGeneration && !firstAudioReported) {
+                            firstAudioReported = true
+                            dispatch(Ic705RxSessionEngine.Event.FirstAudio)
+                        }
+                    }
+                }
+            } catch (_: IllegalArgumentException) {
+                submitForGeneration(expectedGeneration) {
+                    reportIssue(
+                        Ic705RxSessionIssueCode.MALFORMED_PACKET,
+                        Ic705ChannelRole.AUDIO,
+                        ic705PacketDiagnostic(data, runtime.localId),
+                    )
+                }
             }
+        }
+        try {
+            audioExecutor.execute(audioTask)
         } catch (_: RejectedExecutionException) {
-            audioExecutor.queue.clear()
-            submitForGeneration(expectedGeneration) {
-                reportIssue(Ic705RxSessionIssueCode.AUDIO_QUEUE_OVERFLOW, Ic705ChannelRole.AUDIO)
-                notifyAudioReset(Ic705AudioResetReason.AUDIO_QUEUE_OVERFLOW)
+            val droppedOldest = audioExecutor.queue.poll() != null
+            val retried = droppedOldest && runCatching { audioExecutor.execute(audioTask) }.isSuccess
+            if (retried || droppedOldest) {
+                submitForGeneration(expectedGeneration) {
+                    reportIssue(Ic705RxSessionIssueCode.AUDIO_DROP_OLDEST, Ic705ChannelRole.AUDIO)
+                }
             }
         }
     }
