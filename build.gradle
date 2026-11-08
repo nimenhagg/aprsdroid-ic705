@@ -52,7 +52,7 @@ ext {
 	base_version = "APRSdroid v1.7.0"
 	source_revision = sourceRevisionProvider.get().toString()
 	build_revision = "Mod-v${mod_version}"
-	build_version = "APRSdroid Mod Debug ${mod_version} (based on ${base_version}) ${build_date}"
+	build_version = "APRSdroid Mod ${mod_version} (based on ${base_version}) ${build_date}"
 }
 
 if (!(mod_version ==~ /\d+\.\d+\.\d+/)) {
@@ -76,12 +76,18 @@ def mapsApiKey() {
 
 def configuredMapsApiKey = mapsApiKey()
 
+// Canary builds use their release tag as the debug version suffix so the update
+// checker can compare the installed build against the correct Canary release.
+def debugTrackTag = providers.gradleProperty("DEBUG_TRACK_TAG")
+    .orElse(providers.environmentVariable("RELEASE_TAG"))
+    .orElse(providers.environmentVariable("RELEASE_TAG_OVERRIDE"))
+    .orElse("Canary-${new Date().format('yyyyMMddHHmm', TimeZone.getTimeZone('UTC'))}")
+
 android {
 	namespace = 'org.aprsdroid.app'
 	compileSdk = 37
 	defaultConfig {
-		applicationId = "me.nimenhagg.aprsdroidic705mod.debug"
-		manifestPlaceholders = [appName: "APRSdroid Mod Debug"]
+		applicationId = "me.nimenhagg.aprsdroidic705mod"
 		minSdk = 28
 		targetSdk = 37
 		versionName "$build_revision"
@@ -92,9 +98,6 @@ android {
 		buildConfigField "boolean", "GOOGLE_MAPS_ENABLED", (!configuredMapsApiKey.isEmpty()).toString()
 		buildConfigField "String", "MAPLIBRE_VERSION", "\"${maplibre_version}\""
 		buildConfigField "String", "SOURCE_REVISION", "\"${source_revision}\""
-		buildConfigField "boolean", "IS_DEBUG_TRACK", "true"
-		buildConfigField "String", "UPDATE_TRACK_TAG_PREFIX", "\"Canary-\""
-
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
 	compileOptions {
@@ -140,11 +143,18 @@ android {
 
 	buildTypes {
 		debug {
+			// Keep the test build installable alongside the stable application.
+			applicationIdSuffix ".debug"
+			versionNameSuffix "-${debugTrackTag.get()}"
+			buildConfigField "boolean", "IS_DEBUG_TRACK", "true"
+			buildConfigField "String", "UPDATE_TRACK_TAG_PREFIX", "\"Canary-\""
 			minifyEnabled = true
 			shrinkResources = false
 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.cfg', 'proguard-debug.cfg'
 		}
 		release {
+			buildConfigField "boolean", "IS_DEBUG_TRACK", "false"
+			buildConfigField "String", "UPDATE_TRACK_TAG_PREFIX", "\"Mod-v\""
 			minifyEnabled = true
 			shrinkResources = true
 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.cfg'
